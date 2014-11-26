@@ -1,0 +1,248 @@
+check keywords warn
+
+$name = "model1"
+$yearinsec = 365.25*24*60*60
+$rhoi = 917.0/(1.0e6*yearinsec^2)   
+$rhow = 1025.0/(1.0e6*yearinsec^2) 
+$gravity = -9.81*yearinsec^2
+
+$ function waterpressure(Z) {\
+  rhow = 1025.0;\
+  waterline = 0.0;\
+  G = 9.81;\
+  _waterpressure = 0.0;\
+  if (Z>waterline) {\
+       _waterpressure = 0.0;\
+  }else {\
+       _waterpressure = 1.0 * rhow * G * (waterline - Z);\
+  }\
+}
+
+Header
+  Mesh DB "Mesh_Input" "elmer"
+End
+
+Constants
+! For the Buoyancy User function
+  Buoyancy Use Basal Melt = Logical True 
+  Bottom Surface Name = String "Zs Bottom"
+  Water Density = Real $rhow          
+End
+
+!---------------------------------------------------
+!---------------- SIMULATION -----------------------
+!---------------------------------------------------
+
+Simulation
+  Coordinate System  = Cartesian 3D
+  Coordinate Mapping(3) = 1 2 3
+  Simulation Type = Steady State
+
+  !Timestepping Method = "BDF"
+  !BDF Order = 1
+  !Timestep Intervals = 5
+  !Output Intervals = 1        
+  !Timestep Sizes = $(5/365)
+  
+  Steady State Max Iterations = 20
+  Steady State Min Iterations = 1
+
+  Max output level = 3
+
+  Output File = "$name".result"
+End
+
+!---------------------------------------------------
+!---------------- BODIES ---------------------------
+!---------------------------------------------------
+
+!! the ice core (2d)
+Body 1
+  Name = "ice"
+  Equation = 1
+  Body Force = 1
+  Material = 1
+  Initial Condition = 1
+End
+
+!---------------------------------------------------
+!---------------- INITIAL CONDITIONS ---------------
+!---------------------------------------------------
+
+!! for ice core
+Initial Condition 1
+  Depth = Real 0.0
+  Pressure = Real 0.0e0
+  Velocity 1 = Real 0
+  Velocity 2 = Real 0.0e0
+  Velocity 3 = Real 0.0e0
+End
+
+!---------------------------------------------------
+!---------------- BODY FORCES ----------------------
+!---------------------------------------------------
+
+Body Force 1
+  Flow BodyForce 1 = Real 0.0
+  Flow BodyForce 2 = Real 0.0
+  Flow BodyForce 3 = Real $gravity
+End
+
+
+!---------------------------------------------------
+!---------------- MATERIALS ------------------------
+!---------------------------------------------------
+
+!! ice material properties in MPa - m - a system 
+Material 1
+  Density = Real $rhoi     
+  Viscosity = Variable Coordinate 3,
+    Real Procedure "Rheology.so" "Viscosity"
+  Viscosity Model = String "power law"
+  Viscosity Exponent = Real $(1.0/3.0)
+  Critical Shear Rate = Real 1.0e-10
+  
+  Sea level = Real 0.0
+
+  !! for computeDevStress
+  Cauchy = Logical True
+  
+End
+
+!---------------------------------------------------
+!---------------- SOLVERS --------------------------
+!---------------------------------------------------
+Solver 1
+  Equation = "Navier-Stokes"
+  Stabilize = Logical True
+  Flow Model = Stokes
+  Linear System Solver = Direct
+  Linear System Direct Method = MUMPS
+  Nonlinear System Max Iterations = 100
+  Nonlinear System Convergence Tolerance  = 1.0e-6
+  Nonlinear System Newton After Iterations = 100
+  Nonlinear System Newton After Tolerance = 1.0e-06
+  Nonlinear System Relaxation Factor = 1.00
+  Nonlinear System Reset Newton = Logical True
+  Steady State Convergence Tolerance = Real 1.0e-3
+  Exported Variable 1 = Flow Solution Loads[Stress Vector:3 CEQ Residual:1]
+  Calculate Loads = Logical True
+End
+
+Solver 2
+  Equation = String "StressSolver"
+  Procedure = "ElmerIceSolvers" "ComputeDevStress"          
+  Variable = -nooutput "Sij"
+  Variable DOFs = 1
+  Exported Variable 1 = Stress[Sxx:1 Syy:1 Szz:1 Sxy:1 Syz:1 Sxz:1]
+  Exported Variable 1 DOFs = 6
+  
+  Flow Solver Name = String "Flow Solution"
+  Stress Variable Name = String "Stress"
+  Linear System Solver = Direct         
+  Linear System Direct Method = Mumps
+End 
+
+Solver 3
+  Equation = SaveLine
+  Procedure = "SaveData" "SaveLine"
+  Exec Solver = String "After all"
+  Filename = "elmer/"$name".dat"
+  
+  !Parallel Reduce = Logical True
+End
+
+Solver 4
+  Procedure = File "SaveData" "SaveScalars"
+  Exec Solver = After TimeStep
+  Filename =  "elmer/"$name"_mass.dat"
+  File Append = Logical True     ! For transient simulation
+  Variable 1 = String "Time"
+  Variable 2 = String "Flow Solution"
+  Operator 2 = String "Convective Flux"
+  Parallel Reduce = Logical True
+End
+
+Solver 5
+  Equation = "ResultOutput"
+  Procedure = File "ResultOutputSolve" "ResultOutputSolver"
+  Output File Name = File "$name""
+  Vtu Format = logical true
+  Binary Output = True
+  Single Precision = True
+
+End
+
+!---------------------------------------------------
+!---------------- EQUATIONS ------------------------
+!---------------------------------------------------
+
+Equation 1
+  Active Solvers(5) = 1 2 3 4 5
+End
+
+!---------------------------------------------------
+!---------------- BOUNDARY CONDITIONS --------------
+!---------------------------------------------------
+Boundary Condition 1
+  Name = "Side Walls"
+  Target Boundaries(1) = 4
+  Normal-Tangential Velocity = Logical True
+  Velocity 1 = Real 0.0e0
+  Velocity 2 = Real 0.0e0
+  Velocity 3 = Real 0.0e0
+  
+  Save Line = Logical True
+End
+
+Boundary Condition 2
+  Name = "Inflow"
+  Target Boundaries(1) = 5
+  Save Line = Logical True
+
+! Dirichlet BCs
+  Velocity 1 = Variable Coordinate 3
+    Real procedure "SIA.so" "USIA"
+  Velocity 2 = Variable Coordinate 3
+    Real procedure "SIA.so" "VSIA"
+  Velocity 3 = Real 0.0e0
+  
+  Save Line = Logical True
+  Save Scalars = Logical True
+End
+
+Boundary Condition 3
+  Name = "bed"
+  Target Boundaries(1) = 1
+
+  Normal-Tangential Velocity = Logical True
+  Flow Force BC = Logical True
+  
+  Velocity 1 = Real 0.0e0
+  Slip Coefficient 2 = Variable Coordinate 1, Coordinate 2
+     REAL Procedure "Sliding_Beta.so" "Linear"
+  Slip Coefficient 3 = Variable Coordinate 1, Coordinate 2
+     REAL Procedure "Sliding_Beta.so" "Linear"
+     
+  Save Line = Logical True
+End
+
+! Upper Surface
+Boundary Condition 4
+  !Name= "Surface" mandatory to compute cost function
+  Name = "Surface"
+  Target Boundaries(1) = 2
+  
+  Save Line = Logical True
+End 
+
+Boundary Condition 5
+  Name = "front"
+  Target Boundaries(1) = 3
+  Flow Force BC = Logical True
+  External Pressure = Variable Coordinate 3 !we are in MPa units
+    Real MATC "-1.0*waterpressure(tx)*1.0E-06"
+    
+  Save Line = Logical True
+  Save Scalars = Logical True
+End

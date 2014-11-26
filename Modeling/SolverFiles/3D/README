@@ -1,0 +1,38 @@
+(1) FIX/CHECK SIA - maybe not doing it the best way right now - 
+should I be pulling thickness and height from mesh rather than from original data?
+(it doesn't really matter, but first approach might be more sound)
+
+(2) Weertman
+-probably can't invert for this coefficient directly, but should be able to compute from beta squared
+-however, this is giving weird results
+-might be because we are looking at a steady state simulation? maybe we need to do a transient simulation with free surfaces
+
+-NEXT STEP: try it with high res
+
+(3) Free surface
+
+(4) Flowing too fast at calving face
+
+
+model1.sif
+-STEADY STATE
+-no free surfaces
+-water pressure at calving front
+-linear sliding law
+
+model2.sif
+-model1.sif
+-changes sliding law to Weertman's sliding law
+
+model3.sif
+-model2.sif
+-TRANSIENT
+-adds free surface to surface
+
+model4.sif
+-model3.sif
+-adds free surface to bottom
+
+model5.sif
+-model4.sif
+-adds buoyancy solver

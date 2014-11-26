@@ -1,0 +1,7 @@
+All elmer modeling codes
+
+Dependencies:
+-Python: numpy,scipy,pyshape
+-Matlab (a few mfiles)
+-Elmer parallel version
+
