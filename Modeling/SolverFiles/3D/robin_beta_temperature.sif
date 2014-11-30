@@ -39,7 +39,7 @@ $gravity = -9.81*yearinsec^2
 
 
 Header
-  Mesh DB "../../../../../Models/Meshes/3D/Helheim/Low" "elmer"
+  Mesh DB "../../../../../Models/Helheim/Meshes/3D/Low" "elmer"
 End
 
 
