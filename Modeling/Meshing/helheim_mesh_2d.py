@@ -212,10 +212,12 @@ for i in range(0,len(values)):
   bednodes[i,1]=np.min(meshnode[ind,3])
 
 # Add bed measurements in front of mesh nodes, so that the glacier can advance
-ind=np.where(flowline[:,0] > bed[-1,0])
-bedflow=np.zeros([len(ind[0]),2])
-bedflow[:,0]=flowline[ind,0]
-bedflow[:,1]=flowline[ind,3]
+## Interpolate forward using the same grid size as near the terminus
+delta = np.min(np.diff(bednodes[:,0]))
+xnew = np.arange(bednodes[-1,0],flowline[-1,0],delta)
+bedflow=np.zeros([len(xnew)-1,2])
+bedflow[:,0]=xnew[1:len(xnew)]
+bedflow[:,1]=np.interp(xnew[1:len(xnew)],flowline[:,0],flowline[:,3])
 
 bed=np.row_stack([bednodes,bedflow])
 
