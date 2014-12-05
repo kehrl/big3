@@ -76,7 +76,7 @@ Function BedFromFile(x)
    	USE types
    	IMPLICIT NONE
    	INTEGER :: i, R7, ind
-   	REAL(KIND=dp) :: x, ratio, dist, mindist
+   	REAL(KIND=dp) :: x, dist, mindist
    	REAL(KIND=dp) :: BedFromFile
    	REAL(KIND=dp), ALLOCATABLE :: xbed(:), ybed(:), zbed(:)
 
@@ -101,25 +101,24 @@ Function BedFromFile(x)
 
    	found = .false.
    	mindist=dabs(2*(xbed(1)-xbed(2)))
-   	do 20, i=1,R7
+   	IF (x < xbed(1)) THEN
+    	ind=i
+    	found = .true.
+    ELSE
+   		DO 20, i=1,R7
       	dist=dabs(x-xbed(i))
-      	If (dist<=mindist .and. xbed(i)<=x) then
-        	mindist=dist
-        	ind=i
-        	found = .true.
-        Else 
-          If (dist<=mindist .and. xbed(i)>=x) then
-            ind=i
-            found = .true.
-          Endif
-      	Endif 
-   	20 Enddo
+      		IF (dist<=mindist .and. xbed(i)<=x) THEN
+        		mindist=dist
+        		ind=i
+        		found = .true.
+      		Endif 
+   		20 Enddo
+   	END IF
 
-   	if (.not.found) then
+   	IF (.not.found) THEN
       	print *, 'Could not find a suitable bed to interpolate ',x
-   	else
-      	ratio=(x-xbed(ind))/(xbed(ind+1)-xbed(ind))
-      	BedFromFile=ybed(ind)+ratio*(ybed(ind+1)-ybed(ind))
-   	endif
+   	ELSE
+      	BedFromFile=((x-xbed(ind))/(xbed(ind+1)-xbed(ind)))*(ybed(ind+1)-ybed(ind))+ybed(ind)
+   	END IF
 
 END FUNCTION BedFromFile

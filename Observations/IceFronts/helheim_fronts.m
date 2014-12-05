@@ -5,10 +5,10 @@
 %
 %LMK, UW, 5/1/2014
 
-cd ~/Dropbox/Code/Ice_Fronts/
+cd ~/Code/IceFronts/
 system('python helheim_compile.py');
 
-junk = importdata('~/Dropbox/Code/Solver_files/Flowline/Helheim/Inputs/flowline.dat',' ',1);
+junk = importdata('~/Code/Helheim/Modeling/SolverFiles/Flowline/Helheim/Inputs/flowline.dat',' ',1);
 flowline = junk.data; clear junk
 
 %Ice front positions

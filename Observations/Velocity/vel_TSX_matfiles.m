@@ -6,9 +6,9 @@ for i=1:length(D)
     clear x y vx vy ex ey v info date file_out
     file_out_mat=sprintf('Outputs/vel_%s.mat',D(i).name);
     file_out_txt=sprintf('Outputs/vel_%s.txt',D(i).name);
-    if exist(file_out_txt,'file')
-        fprintf('Already imported \n');
-    else  
+    %if exist(file_out_mat,'file')
+    %    fprintf('Already imported \n');
+    %else  
         cd(D(i).name)
         [x,y,vx,vy,ex,ey,v]= read_velocity('mosaicOffsets',0);
         
@@ -31,8 +31,7 @@ for i=1:length(D)
                 n=n+1;
             end
         end
-        dlmwrite(file_out_txt,[x1' y1' v1' vx1' ex1' vy1' ey1'],'delimiter',' ','precision','%.6f');
-    end
+    %end
 end
 
 %Combine all the velocities into one matrix

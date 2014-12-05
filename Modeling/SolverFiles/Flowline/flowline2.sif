@@ -287,7 +287,9 @@ Boundary Condition 1
   Slip Coefficient 2 =  Variable Coordinate 1
     Real Procedure "ElmerIceUSF" "Sliding_Weertman"   
   Weertman Friction Coefficient = Variable Coordinate 1
-    Real Procedure "Flowline.so" "Slip_Weertman"    
+    Real
+      Include "Inputs/beta_weertman.dat"
+    End 
   Weertman Exponent = Real $(1.0/3.0)
   Weertman Linear Velocity = Real 0.00001   
 

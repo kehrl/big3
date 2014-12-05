@@ -15,9 +15,9 @@ Function Inflow (Model, nodenumber, dumy) RESULT(vel)
    	REAL(KIND=dp) :: x, y, vel, thick, mindist, dist, dumy
    	REAL(KIND=dp) :: xf, yf, df, zb, zs, dv, us, ub
    	
-   	logical :: found
-   	logical :: Firsttime1=.true.
-   	logical :: Firsttime2=.true.
+   	LOGICAL :: found
+   	LOGICAL :: Firsttime1=.true.
+   	LOGICAL :: Firsttime2=.true.
         
    	SAVE Firsttime1,Firsttime2,dv,us,df,zb,zs
 	
@@ -67,9 +67,9 @@ FUNCTION ShapeFactor (Model, nodenumber) RESULT(output)
    	INTEGER :: nodenumber,ind, Rw, i
    	REAL(KIND=dp) :: x, dist, mindist, output, ratio
    	REAL(KIND=dp), ALLOCATABLE :: xw(:), yw(:)
-   	logical :: found
+   	LOGICAL :: found
    
-    logical :: Firsttime3=.true.
+    LOGICAL :: Firsttime3=.true.
         
    	SAVE Firsttime3,xw,yw,Rw
    
@@ -124,9 +124,9 @@ FUNCTION USF_Init (Model, nodenumber) RESULT(vel)
    	INTEGER :: nodenumber,ind, Rs, i
    	REAL(KIND=dp) :: x, dist, mindist, output, ratio, vel
    	REAL(KIND=dp), ALLOCATABLE :: xs(:), vs(:)
-   	logical :: found
+   	LOGICAL :: found
    
-    logical :: Firsttime4=.true.
+    LOGICAL :: Firsttime4=.true.
         
    	SAVE Firsttime4,xs,vs,Rs
    
@@ -174,11 +174,12 @@ FUNCTION Viscosity( Model, nodenumber) RESULT(eta) !
 	TYPE(Model_t) :: Model
     Real(kind=dp) :: T,eta,Aval,yearinsec,mindist,dist
     Real(kind=dp),allocatable :: xA(:),yA(:),A(:)
-    Real(kind=dp) :: x,y,z
-    Integer :: nodenumber,minind,RA,i
+    Real(kind=dp) :: x,y,z,xnew
+    INTEGER :: nodenumber,minind,RA,i
+    CHARACTER(LEN=MAX_NAME_LEN) :: SolverName = 'Viscosity'
 		
-    Logical :: Firsttime5=.true.
-    logical :: found
+    LOGICAL :: Firsttime5=.true.
+    LOGICAL :: found
 
     SAVE xA,yA,A,RA
     SAVE Firsttime5
@@ -198,25 +199,39 @@ FUNCTION Viscosity( Model, nodenumber) RESULT(eta) !
     End if
 
     ! position current point
-    x=Model % Nodes % x (nodenumber)
-    y=Model % Nodes % y (nodenumber)
+    x = Model % Nodes % x (nodenumber)
+    y = Model % Nodes % y (nodenumber)
 
-   	found = .false.		
+	! Now find data closest to current position
+   	found = .FALSE.		
 	
-	mindist=1000
-   	do 20, i=1,RA
-      	dist=sqrt((x-xA(i))**2+(y-yA(i))**2)
-      	if (dist<=mindist) then
-        	mindist=dist
-        	minind=i
-        	found = .true.
-      	endif 
-   	20 enddo
+	IF (x > xA(RA)) THEN
+		xnew = XA(RA)
+		mindist=10000
+   	ELSE
+   		xnew = x
+   		mindist=5000
+   	END IF 
+   	
+   	DO i=1,RA
+      	dist=sqrt((xnew-xA(i))**2+(y-yA(i))**2)
+      	IF (dist<=mindist) THEN
+        mindist=dist
+        minind=i
+        found = .true.
+      	END IF
+   	END DO
 	
-	yearinsec=365.25*24*60*60
-    Aval=A(minind)
-	eta=(2.0*Aval*yearinsec)**(-1.0_dp/3.0_dp)*1.0e-6
-	
+	IF (found) THEN
+		yearinsec=365.25*24*60*60
+    	Aval=A(minind)
+		eta=(2.0*Aval*yearinsec)**(-1.0_dp/3.0_dp)*1.0e-6
+		!print *,'',x,y,eta
+	else
+		print *,'No viscosity at',x,y
+		CALL FATAL(SolverName,'No viscosity found for above coordinates')
+	end if	
+    !print *,'Viscosity is',x,y,eta
     Return
 End
 
@@ -234,9 +249,9 @@ FUNCTION Slip_Linear (Model, nodenumber) RESULT(coefficient1)
    	INTEGER :: nodenumber,ind, R6, i
    	REAL(KIND=dp) :: x, dist, mindist, ratio, coefficient1
    	REAL(KIND=dp), ALLOCATABLE :: xb(:), beta(:), yb(:)
-   	logical :: found
+   	LOGICAL :: found
 
-    Logical :: Firsttime6=.true.
+    LOGICAL :: Firsttime6=.true.
 
     SAVE xb,yb,beta
     SAVE Firsttime6,R6
@@ -290,9 +305,9 @@ FUNCTION Slip_Weertman (Model, nodenumber) RESULT(coefficient1)
    	INTEGER :: nodenumber,ind, R6, i
    	REAL(KIND=dp) :: x, dist, mindist, ratio, coefficient1
    	REAL(KIND=dp), ALLOCATABLE :: xb(:), beta(:), yb(:)
-   	logical :: found
+   	LOGICAL :: found
 
-    Logical :: Firsttime6=.true.
+    LOGICAL :: Firsttime6=.true.
 
     SAVE xb,yb,beta
     SAVE Firsttime6,R6
@@ -335,6 +350,7 @@ FUNCTION Slip_Weertman (Model, nodenumber) RESULT(coefficient1)
       	endif
    	endif
    
+   	print *,'bed is',x,coefficient1
    	Return
 End
 
@@ -353,8 +369,8 @@ Function Bedrock (Model, nodenumber, znode) RESULT(BED)
    	REAL(KIND=dp) :: x, y, z, znode
    	REAL(KIND=dp) :: BED,ratio,mindist,dist
    	REAL(KIND=dp), ALLOCATABLE :: xbed(:), ybed(:), zbed(:)
-   	Logical :: Firsttime7=.true.
-	Logical :: found
+   	LOGICAL :: Firsttime7=.true.
+	LOGICAL :: found
 
     SAVE xbed,ybed
     SAVE Firsttime7,R7
@@ -390,7 +406,6 @@ Function Bedrock (Model, nodenumber, znode) RESULT(BED)
    	else
       	ratio=(x-xbed(ind))/(xbed(ind+1)-xbed(ind))
       	BED=ybed(ind)+ratio*(ybed(ind+1)-ybed(ind))
-      	print *,'bed is',x,BED
    	endif
 
    Return

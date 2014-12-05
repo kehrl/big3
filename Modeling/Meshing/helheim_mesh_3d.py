@@ -20,7 +20,7 @@ import flowparameter
 MESHNAME='High_Normal'
 
 # Directories
-DIRS=os.path.join(os.getenv("HOME"),"Code//Helheim/Modeling/SolverFiles/3D")
+DIRS=os.path.join(os.getenv("HOME"),"Code/Helheim/Modeling/SolverFiles/3D")
 DIRM=os.path.join(os.getenv("HOME"),"Models/Helheim/Meshes/3D/"+MESHNAME+"/")
 DIRR=os.path.join(os.getenv("HOME"),"Models/Helheim/Results/3D/")
 DIRX=os.path.join(os.getenv("HOME"),"Data/ShapeFiles/Glaciers/3D/Helheim/")

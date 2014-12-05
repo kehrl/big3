@@ -23,7 +23,7 @@
 ! ******************************************************************************
 ! *
 ! *  Authors: Olivier Gagliardini, Ga¨el Durand
-! *  Email:   
+! *  Modified by Laura Kehrl to account for horizontal mesh movement 
 ! *  Web:     http://elmerice.elmerfem.org
 ! *
 ! *  Original Date: 
@@ -269,9 +269,9 @@ FUNCTION ZsBottomMzsIni ( Model, nodenumber, Zs) RESULT(mu)
    USE ElementDescription
    USE DefUtils
    IMPLICIT NONE
-   TYPE(Variable_t), POINTER :: ZsSol, MeshVariable 
-   INTEGER, POINTER :: ZsPerm(:), MeshPerm(:) 
-   REAL(KIND=dp), POINTER :: MeshValues(:)
+   TYPE(Variable_t), POINTER :: ZsSol, MeshVariable, GroundedMaskVariable 
+   INTEGER, POINTER :: ZsPerm(:), MeshPerm(:), GroundedMaskPerm(:) 
+   REAL(KIND=dp), POINTER :: MeshValues(:), GroundedMaskValues(:)
    TYPE(Model_t) :: Model
    TYPE(Solver_t), TARGET :: Solver
    INTEGER :: nodenumber,  NMAX, i, dim, R, ind
@@ -284,27 +284,19 @@ FUNCTION ZsBottomMzsIni ( Model, nodenumber, Zs) RESULT(mu)
    SAVE FirstTime
    SAVE Zs0, ZsPerm, XIni, xbed, ybed 
 
-   ! Current value of Zs Bottom
-   ZsSol => VariableGet( Model % Variables, 'ZsBottomIni')
-   IF (ASSOCIATED(ZsSol)) THEN
-        ZsPerm => ZsSol % Perm
-   ELSE
-        CALL FATAL('ZsBottomMZsIni','Could not find variable >Zs Bottom<')
-   END IF
-   
-   ! Current value of Mesh Update 1
-   MeshVariable => VariableGet( Model % Variables, 'Mesh Update 1' )
-   IF (ASSOCIATED(MeshVariable)) THEN
-    	MeshPerm    => MeshVariable % Perm
-    	MeshValues  => MeshVariable % Values
-   ELSE
-        CALL FATAL('ZsBottomMZsIni','Could not find variable >Mesh Update 1<')
-   END IF
-
    IF (FirstTime) THEN
-        FirstTime = .False.
-        dim = CoordinateSystemDimension()
-        NMAX = COUNT( ZsPerm > 0 ) 
+        FirstTime = .False. 
+ 
+    	! Get initial value of Zs Bottom
+   		ZsSol => VariableGet( Model % Variables, 'ZsBottomIni')
+   		IF (ASSOCIATED(ZsSol)) THEN
+        	ZsPerm => ZsSol % Perm
+   		ELSE
+        	CALL FATAL('ZsBottomMZsIni','Could not find variable >Zs Bottom<')
+   		END IF
+   		
+   		dim = CoordinateSystemDimension()
+        NMAX = COUNT( ZsPerm > 0 )
         ALLOCATE(XIni(Model % NumberofNodes))
         AllOCATE(Zs0(NMAX))
         DO i = 1, Model % NumberofNodes
@@ -316,13 +308,35 @@ FUNCTION ZsBottomMzsIni ( Model, nodenumber, Zs) RESULT(mu)
              Zs0(ZsPerm(i)) = Model % Nodes % z (i)
           END IF
         END DO
-
+   END IF
+   
+   ! Get current value of Mesh Update 1
+   MeshVariable => VariableGet( Model % Variables, 'Mesh Update 1' )
+   IF (ASSOCIATED(MeshVariable)) THEN
+    	MeshPerm    => MeshVariable % Perm
+    	MeshValues  => MeshVariable % Values
+   ELSE
+        CALL FATAL('ZsBottomMZsIni','Could not find variable >Mesh Update 1<')
+   END IF
+   
+   ! Get current value of GroundedMask
+   GroundedMaskVariable => VariableGet( Model % Variables, 'GroundedMask' )
+   IF (ASSOCIATED(GroundedMaskVariable)) THEN
+    	GroundedMaskPerm    => GroundedMaskVariable % Perm
+    	GroundedMaskValues  => GroundedMaskVariable % Values
+   ELSE
+        CALL FATAL('ZsBottomMZsIni','Could not find variable >Grounded Mask<')
    END IF
 
-	! Calculate current x-coordinate
-	x = XIni(nodenumber) + MeshValues(MeshPerm(nodenumber))
-	  
-	ZsNew = BedFromFile(x)
+   IF (GroundedMaskValues(GroundedMaskPerm(nodenumber)) > -0.5_dp) THEN
+		! Update so that it is equal to the bed
+		! Calculate current x-coordinate
+		x = XIni(nodenumber) + MeshValues(MeshPerm(nodenumber))
+	  	ZsNew = BedFromFile(x)
+   ELSE
+   		ZsNew = Zs
+   END IF
+    
     mu =  ZsNew -  Zs0(ZsPerm(nodenumber)) 
       !print *,'Test me', Xini(nodenumber), x, ZsNew
 

@@ -1,8 +1,13 @@
 # This code runs a steady state Helheim simulation.
 
 import os
+import sys
 from subprocess import call
 import shutil
+sys.path.append(os.path.join(os.getenv("HOME"),"Code/Util/Modules"))
+import elmer_read
+import numpy as np
+import matplotlib.pyplot as plt
 
 ##########
 # Inputs #
@@ -17,7 +22,15 @@ DIRR=os.path.join(os.getenv("HOME"),"Models/Helheim/Results/Flowline/"+MESHNAME+
 
 # Solver file
 #solverfile='flowline1.sif'
+#solverfile = 'flowline2.sif'
+#runname='flowline2'
 solverfile='flowline4_lagrangian_nofree.sif'
+runname='flowline4_lag'
+
+# Boundaries
+bbed=1
+bsurf=2
+bcalve=3
 
 ############################################
 # Check that fortran routines are compiled #
@@ -58,6 +71,24 @@ fid = open(DIRS+"ELMERSOLVER_STARTINFO","w")
 fid.write('{}'.format('temp.sif'))
 fid.close()
 
-
-
 call(["mpirun","-n","4","elmersolver_mpi"])
+
+##############################
+# Load results from saveline #
+##############################
+bed = elmer_read.saveline_boundary(DIRM+"Elmer",runname,bbed)
+surf = elmer_read.saveline_boundary(DIRM+"Elmer",runname,bsurf)
+terminus = elmer_read.saveline_boundary(DIRM+"Elmer",runname,bcalve)
+
+for time in range(0,5):
+  ind1 = np.where(surf['timestep'] == time)
+  ind2 = np.where(terminus['timestep'] == time)
+  coord1 = surf['coord1'][ind1]
+  var = surf['vel1'][ind1]
+  sortind=np.argsort(coord1)
+  plt.plot(coord1[sortind],var[sortind],'k-')
+  coord1 = terminus['coord1'][ind2]
+  var = terminus['vel1'][ind2]
+  sortind=np.argsort(coord1)
+  plt.plot(coord1[sortind],var[sortind],'-')
+  

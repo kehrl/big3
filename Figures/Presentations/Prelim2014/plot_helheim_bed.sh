@@ -31,10 +31,10 @@ IMAGE=$HOME/Data/Mosaics/Greenland/mosaic100m.00-01geo.grd
 
 # Outlines
 COAST=$HOME/Data/Shape_files/greenland_coast_polar.txt
-GLACIER=$HOME/Dropbox/Code/Solver_files/3D/Helheim/Inputs/mesh_extent.dat
-FLOWLINE=$HOME/Data/Shape_files/Glaciers/Flowlines/Helheim/helheim_flowline.dat
-HOLE1=$HOME/Dropbox/Code/Solver_files/3D/Helheim/Inputs/mesh_hole1.dat
-HOLE2=$HOME/Dropbox/Code/Solver_files/3D/Helheim/Inputs/mesh_hole2.dat
+GLACIER=$HOME/Models/Helheim/Meshes/3D/High_Normal/Inputs/mesh_extent.dat
+FLOWLINE=$HOME/Data/ShapeFiles/Glaciers/Flowlines/Helheim/helheim_flowline.dat
+HOLE1=$HOME/Models/Helheim/Meshes/3D/High_Normal/Inputs/mesh_hole1.dat
+HOLE2=$HOME/Models/Helheim/Meshes/3D/High_Normal/Inputs/mesh_hole2.dat
 
 #Grid bed data
 grdmask $HOLE1 -Ghole1.grd $R -I300 -N1/1/NaN

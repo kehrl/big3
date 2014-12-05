@@ -20,11 +20,11 @@ FILE=stdvel_polar.ps
 IMAGE=$HOME/Data/Mosaics/Greenland/mosaic100m.00-01geo.grd
 
 # Outlines
-COAST=$HOME/Data/Shape_files/greenland_coast_polar.txt
-GLACIER=$HOME/Dropbox/Code/Solver_files/3D/Helheim/Inputs/mesh_extent.dat
-FLOWLINE=$HOME/Data/Shape_files/Glaciers/Flowlines/Helheim/helheim_flowline.dat
-HOLE1=$HOME/Dropbox/Code/Solver_files/3D/Helheim/Inputs/mesh_hole1.dat
-HOLE2=$HOME/Dropbox/Code/Solver_files/3D/Helheim/Inputs/mesh_hole2.dat
+COAST=$HOME/Data/ShapeFiles/greenland_coast_polar.txt
+GLACIER=$HOME/Models/Helheim/Meshes/3D/High_Normal/Inputs/mesh_extent.dat
+FLOWLINE=$HOME/Data/ShapeFiles/Glaciers/Flowlines/Helheim/helheim_flowline.dat
+HOLE1=$HOME/Models/Helheim/Meshes/3D/High_Normal/Inputs/mesh_hole1.dat
+HOLE2=$HOME/Models/Helheim/Meshes/3D/High_Normal/Inputs/mesh_hole2.dat
 
 xyz2grd velocities_all_std.dat -Gtaub1.grd $R -I100
 #triangulate taub_1e10.dat -Gtaub1.grd $R -I100
@@ -96,3 +96,5 @@ pstext $R $J -O <<END>> $FILE
 END
 
 ps2raster -Tf stdvel_polar.ps
+
+rm taub2.grd taub1.grd mask.grd extent.grd hole1.grd hole2.grd grayscale.cpt gmt.history gmt.conf

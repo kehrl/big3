@@ -1,3 +1,12 @@
+! ******************************************************************************
+! *
+! *  Laura Kehrl
+! *  University of Washington
+! *  Dec. 1, 2014
+! * 
+! *****************************************************************************
+
+! Initialize the calving front
 FUNCTION XCalvingFrontIni ( Model, nodenumber, x) RESULT(CalvingFront)
    USE types
    USE CoordinateSystems
@@ -12,7 +21,7 @@ FUNCTION XCalvingFrontIni ( Model, nodenumber, x) RESULT(CalvingFront)
    INTEGER :: nodenumber,  NMAX, i, dim
    REAL(KIND=dp) :: x,   CalvingFront      
    REAL(KIND=dp), ALLOCATABLE :: Zs0(:)       
-   LOGICAL :: FirstTime=.True. 
+   LOGICAL :: FirstTime=.True.
 
    SAVE FirstTime
    SAVE Zs0 
@@ -43,7 +52,8 @@ FUNCTION XCalvingFrontIni ( Model, nodenumber, x) RESULT(CalvingFront)
 
 END FUNCTION XCalvingFrontIni
 
-FUNCTION XCalvingFront ( Model, nodenumber, dumy) RESULT(XTotDelta)
+! Find the calving front
+FUNCTION Advance ( Model, nodenumber, dumy) RESULT(XTotDelta)
    	USE types
    	USE CoordinateSystems
    	USE SolverUtils
@@ -52,23 +62,23 @@ FUNCTION XCalvingFront ( Model, nodenumber, dumy) RESULT(XTotDelta)
    	IMPLICIT NONE
    	TYPE(Model_t) :: Model
    	TYPE(Solver_t), TARGET :: Solver
+   	Type(Mesh_t), TARGET :: OldMesh
    	TYPE(Mesh_t), POINTER :: Mesh
    	TYPE(Variable_t), POINTER :: XIniVariable, XVariable, XVelVariable, TimestepVariable, TimestepSizeVariable
    	REAL(KIND=dp), POINTER :: XVelValues(:), XIniValues(:), XValues(:)
    	INTEGER, POINTER :: BoundaryPerm(:), XVelPerm(:), XIniPerm(:), XPerm(:)
    	INTEGER, ALLOCATABLE :: boundIndex(:)
-   	REAL(KIND=dp) :: Bed, XTotDelta, XDelta, dt, CalvingFront, dumy        
-	INTEGER :: N, BoundaryNodes, BedNode, nodenumber,  i, dim, Timestep, LastTimestep
+   	REAL(KIND=dp) :: minvelcalve, XTotDelta, XDelta, dt, CalvingFront, dumy, Retreated        
+	INTEGER :: N, BoundaryNodes, minvelcalveNode, nodenumber,  i, dim, Timestep, LastTimestep
 	LOGICAL :: FirstTime = .TRUE.
-	INTEGER :: CoupledIter,PrevCoupledIter=-1
 
    	SAVE FirstTime 
 	SAVE BoundaryPerm, BoundaryNodes, LastTimestep
-	SAVE XVelPerm, XVelValues, XIniPerm, XIniValues, BedNode 
+	SAVE XVelPerm, XVelValues, XIniPerm, XIniValues, minvelcalveNode 
 	SAVE XValues, XPerm
+	SAVE Retreated
 
-!********************************************************************************!
-! ACCESS BOUNDARY ONLY ELEMENTS USING MakePermUsingMask
+! Set up variables for first time
 IF (FirstTime) then
    LastTimestep=0
    dim = CoordinateSystemDimension()
@@ -80,7 +90,7 @@ IF (FirstTime) then
    BoundaryNodes = 0
    CALL MakePermUsingMask(Model,Model%Solver,Model%Mesh,'CalvingMask',.FALSE.,BoundaryPerm,BoundaryNodes)
 
-  ! READ IN ALL VALUES OF RELEVANT VARIABLES 
+  ! Read in variables
   XVelVariable => VariableGet( Model % Variables, 'Velocity 1' )
   XIniVariable => VariableGet( Model % Variables, 'CalvingFrontIni')
   XVariable => VariableGet( Model % Variables, 'CalvingFront')
@@ -97,37 +107,43 @@ IF (FirstTime) then
     XVelValues  => XVelVariable % Values	
   END IF
 
-  !Find node at bed
-  Bed=1.0e4
-  DO i = 1,size(BoundaryPerm)
-  	IF (BoundaryPerm(i) /=0 ) THEN  		
-  		Bed = min(bed, Model % Nodes % y (i))
-  		BedNode=i
-    END IF    
-  END DO
   FirstTime = .FALSE.
 END IF
 
+! Get time info
 TimestepVariable => VariableGet( Model % Variables,'Timestep')
 Timestep=TimestepVariable % Values(1)
 TimestepSizeVariable => VariableGet( Model % Variables,'Timestep Size')
 dt=TimestepSizeVariable % Values(1)
 
-! Get velocity at bottom of calving front
-CoupledIter = GetCoupledIter()
+! Find new calving front offset based on minimum velocity at the calving front, 
+! only do this once per timestep
 IF( Timestep > LastTimestep) THEN
-  	XDelta=dt*XVelValues(XVelPerm(BedNode))
-  	
+	! Find the minimum velocity at the calving front
+  	minvelcalve = 2.0e4
+  	DO i = 1,size(BoundaryPerm)
+  	IF (BoundaryPerm(i) /=0 ) THEN  		
+  		minvelcalve = min(minvelcalve, XVelValues(XVelPerm(i)))
+    END IF    
+  END DO
+
+	! Find advance in terminus position
+  	XDelta=dt*minvelcalve
+
+  	! Update current terminus position
   	DO i = 1,size(BoundaryPerm)
   		IF (BoundaryPerm(i) /=0 ) THEN  		
   			XValues(XPerm(i)) = XDelta + XValues(XPerm(i))
     	END IF    
   	END DO
-  	!CalvingFront=CalvingFront+XDelta 	
-
-    LastTimestep = Timestep
+	
+	! Compute mesh update
+	XTotDelta= XValues(XPerm(nodenumber)) -  XIniValues(XIniPerm(nodenumber))
+	
+	LastTimestep = Timestep
+ELSE
+	! Compute mesh update
+	XTotDelta = XValues(XPerm(nodenumber)) -  XIniValues(XIniPerm(nodenumber))
 END IF
 
-XTotDelta= XValues(XPerm(nodenumber)) -  XIniValues(XIniPerm(nodenumber))
-
-END FUNCTION XCalvingFront
+END FUNCTION Advance

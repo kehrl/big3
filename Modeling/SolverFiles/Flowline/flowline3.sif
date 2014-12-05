@@ -41,7 +41,7 @@ Simulation
 
   Timestepping Method = "BDF"
   BDF Order = 1
-  Timestep Intervals = 365
+  Timestep Intervals = 20
   Output Intervals = 1        
   Timestep Sizes = $(1/365)
   
@@ -419,7 +419,9 @@ Boundary Condition 1
     Real Procedure "ElmerIceUSF" "SlidCoef_Contact"
   Sliding Law = String weertman
   Weertman Friction Coefficient = Variable Coordinate 1
-    Real Procedure "Flowline.so" "Slip_Weertman"
+    Real
+      Include "Inputs/beta_weertman.dat"
+    End
   Weertman Exponent = Real $(1.0/3.0)  
   Weertman Linear Velocity = Real 0.00001
 

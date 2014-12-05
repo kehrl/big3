@@ -23,6 +23,7 @@ import geotiff
 ##########
 
 MESHNAME='Worldview_Advance'
+file_mesh_out="Retreat500"
 
 DIRS=os.path.join(os.getenv("HOME"),"Code/Helheim/Modeling/SolverFiles/Flowline/")
 DIRM=os.path.join(os.getenv("HOME"),"Models/Helheim/Meshes/Flowline/"+MESHNAME+"/")
@@ -57,14 +58,13 @@ file_surf_wv=[os.path.join(os.getenv("HOME"),"Data/DEMs/Worldview/Helheim/201205
 			  os.path.join(os.getenv("HOME"),"Data/DEMs/Worldview/Helheim/20120624_1421_102001001B87EF00_102001001B1FB900-DEM_32m_trans.tif")]
 
 ## Horizontal coordinate for calving front, so that we can easily change it
-calving_coord=310610
+calving_coord=310610-500
 
 
 ###########
 # Outputs #
 ###########
 
-file_mesh_out="Elmer"
 file_shapefactor_out = DIRM+"Inputs/shapefactor.dat"
 file_bedrock_out = DIRM+"Inputs/roughbed.dat"
 file_flowline_out = DIRM+"Inputs/flowline.dat"
@@ -134,12 +134,12 @@ call(["MshGlacier"])
 ##################
 print "\n## Partitioning mesh into ", partitions, "parts"
 os.chdir(DIRM)
-call(["ElmerGrid","2","2","Elmer","dir","-metis",partitions,"0"])
+call(["ElmerGrid","2","2",file_mesh_out,"dir","-metis",partitions,"0"])
 
 ##########################################
 # Update the Gmsh file for visualization #
 ##########################################
-call(["ElmerGrid","2","4","elmer"])
+call(["ElmerGrid","2","4",file_mesh_out])
 
 #################################
 # Print out temperature profile #
@@ -201,7 +201,7 @@ del dist1,dist2,xdata,ydata,surf,bed,height,ndata,T,A
 #####################################
 print "\n## Printing out bedrock from mesh file for grounded solver ##"
 
-meshnode=np.genfromtxt(DIRM+"Elmer/mesh.nodes")
+meshnode=np.genfromtxt(DIRM+file_mesh_out+"/mesh.nodes")
 
 # Take bed values from mesh for consistency using a Lagrangian mesh
 values=np.unique(meshnode[:,2])
@@ -246,8 +246,6 @@ for i in range(0,R):
   fid.write("{0} {1:.4g}\n".format(flowline[i,0],f[i]))
 fid.close()
 del fid
-
-
 
 #########################################################
 # Finally export coordinates of flowline for future use #

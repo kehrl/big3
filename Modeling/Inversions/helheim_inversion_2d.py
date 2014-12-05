@@ -34,8 +34,8 @@ DIRM=os.path.join(os.getenv("HOME"),"Models/Helheim/Meshes/Flowline/"+MESHNAME+"
 DIRR=os.path.join(os.getenv("HOME"),"Models/Helheim/Results/Flowline/"+MESHNAME+"/Inversion/")
 
 # Velocity for inversion
-file_velocity_in1=os.path.join(os.getenv("HOME"),"Data/Velocity/TSX/Helheim/Outputs/vel_track-27794.mat") #June 25, 2012, one day from Worldview DEM
-file_velocity_in2=os.path.join(os.getenv("HOME"),"Data/Velocity/Random/Greenland/track-07to10/vel_track-07to10.mat")
+file_velocity_in1=os.path.join(os.getenv("HOME"),"Data/Velocity/TSX/Helheim/track-27794/mosaicOffsets") #June 25, 2012, one day from Worldview DEM
+file_velocity_in2=os.path.join(os.getenv("HOME"),"Data/Velocity/Random/Greenland/track-07to10/mosaicOffsets")
 
 # Flowline
 file_flowline_in=DIRM+"Inputs/flowline.dat"
@@ -63,7 +63,7 @@ file_beta_out=DIRM+"Inputs/beta.dat"
 print "Loading flowline"
 flowline=np.loadtxt(file_flowline_in,skiprows=1)
 
-if not(os.path.exists(file_velocity_out)):
+if (os.path.exists(file_velocity_out)):
   # Get velocity along flowline from velocity profiles
   v=velocity_flowline.alongflow(flowline[:,1:3],file_velocity_in1,file_velocity_in2)
 
