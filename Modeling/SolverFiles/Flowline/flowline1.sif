@@ -20,7 +20,7 @@ $ function waterpressure(Z) {\
 }
 
 Header
-  Mesh DB "Mesh_Input" "Retreat500"
+  Mesh DB "." "Elmer"
 End
 
 Constants
@@ -155,7 +155,30 @@ Solver 3
 End
 
 Solver 4
- Exec Solver = "After TimeStep"
+  Equation = "Eij"          
+  Variable = -nooutput "Eij"     
+  Variable DOFs = 1
+
+  Exported Variable 1 = StrainRate[Exx:1 Eyy:1 Ezz:1 Exy:1 Eii:1]
+  Exported Variable 1 DOFs = 5
+
+  Procedure = "ElmerIceSolvers" "ComputeStrainRate"
+  Flow Solver Name = String "Flow Solution"
+  StrainRate Variable Name = String "StrainRate"
+
+  Linear System Solver = Direct         
+  Linear System Direct Method = mumps
+End 
+
+Solver 5
+  Exec Solver = "After timestep"
+  Equation = "InterpolateMesh"
+  Procedure = "InterpolateMesh.so" "InterpolateMesh"
+  Mesh = File "Retreat1000m"
+End
+
+Solver 6
+ Exec Solver = "After timestep"
  Exec Interval = 1
  Equation = "result output"
  Procedure = "ResultOutputSolve" "ResultOutputSolver"
@@ -163,7 +186,7 @@ Solver 4
  Output Format = String "vtu"
 End
 
-Solver 5
+Solver 7
   Equation = SaveLine
   Procedure = "SaveData" "SaveLine"
   Exec Solver = String "After all"
@@ -171,12 +194,13 @@ Solver 5
 End
 
 
+
 !---------------------------------------------------
 !---------------- EQUATIONS ------------------------
 !---------------------------------------------------
 
 Equation 1
-  Active Solvers(5) = 1 2 3 4 5
+  Active Solvers(7) = 1 2 3 4 5 6 7
 End
 
 !---------------------------------------------------

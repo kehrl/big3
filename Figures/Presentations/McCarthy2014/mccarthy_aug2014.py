@@ -6,7 +6,7 @@
 import os
 import sys
 import numpy as np
-sys.path.append(os.path.join(os.getenv("HOME"),"Dropbox/Code/Modules"))
+sys.path.append(os.path.join(os.getenv("HOME"),"Code/Util/Modules"))
 from geodat import *
 from subprocess import call
 import math
@@ -30,15 +30,15 @@ plot_2D=0
 plot_comparison=0
 
 # 3D
-DIRR_3D=os.path.join(os.getenv("HOME"),"Results/Elmer/3D/Helheim/Inversion/")
+DIRR_3D=os.path.join(os.getenv("HOME"),"Models/Helheim/Results/3D/High_Normal/Inversion/")
 bbed_3D=3
 bsurf_3D=4
 runname="beta"
 
 # Flowline
-DIRR_2D=os.path.join(os.getenv("HOME"),"Results/Elmer/Flowline/Helheim/Inversion/")
+DIRR_2D=os.path.join(os.getenv("HOME"),"Models/Helheim/Results/Flowline/Worldview_Advance/Inversion/")
 DIRS_2D=os.path.join(os.getenv("HOME"),"Dropbox/Code/Solver_Files/Flowline/Helheim/Inputs/")
-runname = 'beta'
+runname = 'beta_1e12'
 bbed_2D=1
 bsurf_2D=2
 

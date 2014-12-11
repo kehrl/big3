@@ -177,31 +177,38 @@ FUNCTION ZsTopMzsIni ( Model, nodenumber, Zs) RESULT(mu)
    USE ElementDescription
    USE DefUtils
    IMPLICIT NONE
-   TYPE(Variable_t), POINTER :: ZsSol
-   INTEGER, POINTER :: ZsPerm(:)
+   TYPE(Variable_t), POINTER :: ZsSol, MeshVariable, GroundedMaskVariable 
+   INTEGER, POINTER :: ZsPerm(:), MeshPerm(:), GroundedMaskPerm(:) 
+   REAL(KIND=dp), POINTER :: MeshValues(:), GroundedMaskValues(:)
    TYPE(Model_t) :: Model
    TYPE(Solver_t), TARGET :: Solver
-   INTEGER :: nodenumber,  NMAX, i, dim
-   REAL(KIND=dp) :: mu,   Zs       
-   REAL(KIND=dp), ALLOCATABLE :: Zs0(:)       
+   INTEGER :: nodenumber,  NMAX, i, dim, R, ind
+   REAL(KIND=dp) :: mu,   Zs, x , ratio, ZsNew, mindist, dist, junk      
+   REAL(KIND=dp), ALLOCATABLE :: Zs0(:), XIni(:), xSurf(:), ySurf(:)       
    LOGICAL :: FirstTime=.True. 
+   LOGICAL :: found=.False.
+   Real(kind=dp) :: SurfFromFile
 
    SAVE FirstTime
-   SAVE Zs0 
-
-   ZsSol => VariableGet( Model % Variables, 'Zs Top')
-   IF (ASSOCIATED(ZsSol)) THEN
-        ZsPerm => ZsSol % Perm
-   ELSE
-        CALL FATAL('ZsTopMZsIni','Could not find variable >Zs Top<')
-   END IF
+   SAVE Zs0, ZsPerm, XIni, xSurf, ySurf 
 
    IF (FirstTime) THEN
-        FirstTime = .False.
-        dim = CoordinateSystemDimension()
-        NMAX = COUNT( ZsPerm > 0 ) 
-        ALLOCATE(Zs0(NMAX))
-        DO i = 1, Model % NumberOfNodes
+        FirstTime = .False. 
+ 
+    	! Get initial value of Zs Top
+   		ZsSol => VariableGet( Model % Variables, 'ZsTopIni')
+   		IF (ASSOCIATED(ZsSol)) THEN
+        	ZsPerm => ZsSol % Perm
+   		ELSE
+        	CALL FATAL('ZsTopMZsIni','Could not find variable >Zs Top<')
+   		END IF
+   		
+   		dim = CoordinateSystemDimension()
+        NMAX = COUNT( ZsPerm > 0 )
+        ALLOCATE(XIni(Model % NumberofNodes))
+        AllOCATE(Zs0(NMAX))
+        DO i = 1, Model % NumberofNodes
+          XIni(i) = Model % Nodes % x (i)
           IF (ZsPerm(i)==0) CYCLE
           IF (dim==2) THEN
              Zs0(ZsPerm(i)) = Model % Nodes % y (i)
@@ -210,10 +217,38 @@ FUNCTION ZsTopMzsIni ( Model, nodenumber, Zs) RESULT(mu)
           END IF
         END DO
    END IF
+   
+   ! Get current value of Mesh Update 1
+   MeshVariable => VariableGet( Model % Variables, 'Mesh Update 1' )
+   IF (ASSOCIATED(MeshVariable)) THEN
+    	MeshPerm    => MeshVariable % Perm
+    	MeshValues  => MeshVariable % Values
+   ELSE
+        CALL FATAL('ZsTopMZsIni','Could not find variable >Mesh Update 1<')
+   END IF
+   
+   ! Get current value of GroundedMask
+   GroundedMaskVariable => VariableGet( Model % Variables, 'GroundedMask' )
+   IF (ASSOCIATED(GroundedMaskVariable)) THEN
+    	GroundedMaskPerm    => GroundedMaskVariable % Perm
+    	GroundedMaskValues  => GroundedMaskVariable % Values
+   ELSE
+        CALL FATAL('ZsTopMZsIni','Could not find variable >Grounded Mask<')
+   END IF
 
-      mu =  Zs -  Zs0(ZsPerm(nodenumber)) 
+   IF (GroundedMaskValues(GroundedMaskPerm(nodenumber)) > -0.5_dp) THEN
+		! Update so that it is equal to the Surf
+		! Calculate current x-coordinate
+		x = XIni(nodenumber) + MeshValues(MeshPerm(nodenumber))
+	  	ZsNew = SurfFromFile(x)
+   ELSE
+   		ZsNew = Zs
+   END IF
+    
+    mu =  ZsNew -  Zs0(ZsPerm(nodenumber)) 
+      !print *,'Test me', Xini(nodenumber), x, ZsNew
 
-END FUNCTION ZsTopMZsIni
+END FUNCTION ZsTopMzsIni
 
 !--------------------------------------------------------------------
 
@@ -345,3 +380,4 @@ END FUNCTION ZsBottomMzsIni
 !---------------------------------------------------------------------------
 
 include 'Bedrock.f90'
+include 'Surface.f90'

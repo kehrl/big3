@@ -1,0 +1,44 @@
+<VTKFile type="PUnstructuredGrid" version="0.1" byte_order="LittleEndian">
+  <PUnstructuredGrid>
+    <PPointData Scalars="groundedmask" Vectors="normal vector">
+      <PDataArray type="Float64" Name="groundedmask" NumberOfComponents="1" format="appended"/>
+      <PDataArray type="Float64" Name="bodymask" NumberOfComponents="1" format="appended"/>
+      <PDataArray type="Float64" Name="fx" NumberOfComponents="1" format="appended"/>
+      <PDataArray type="Float64" Name="fy" NumberOfComponents="1" format="appended"/>
+      <PDataArray type="Float64" Name="pressure" NumberOfComponents="1" format="appended"/>
+      <PDataArray type="Float64" Name="ceq residual" NumberOfComponents="1" format="appended"/>
+      <PDataArray type="Float64" Name="calvingfront" NumberOfComponents="1" format="appended"/>
+      <PDataArray type="Float64" Name="calvingfrontini" NumberOfComponents="1" format="appended"/>
+      <PDataArray type="Float64" Name="zs top" NumberOfComponents="1" format="appended"/>
+      <PDataArray type="Float64" Name="zs top residual" NumberOfComponents="1" format="appended"/>
+      <PDataArray type="Float64" Name="zstopini" NumberOfComponents="1" format="appended"/>
+      <PDataArray type="Float64" Name="zs bottom" NumberOfComponents="1" format="appended"/>
+      <PDataArray type="Float64" Name="zs bottom residual" NumberOfComponents="1" format="appended"/>
+      <PDataArray type="Float64" Name="zsbottomini" NumberOfComponents="1" format="appended"/>
+      <PDataArray type="Float64" Name="sxx" NumberOfComponents="1" format="appended"/>
+      <PDataArray type="Float64" Name="syy" NumberOfComponents="1" format="appended"/>
+      <PDataArray type="Float64" Name="szz" NumberOfComponents="1" format="appended"/>
+      <PDataArray type="Float64" Name="sxy" NumberOfComponents="1" format="appended"/>
+      <PDataArray type="Float64" Name="exx" NumberOfComponents="1" format="appended"/>
+      <PDataArray type="Float64" Name="eyy" NumberOfComponents="1" format="appended"/>
+      <PDataArray type="Float64" Name="ezz" NumberOfComponents="1" format="appended"/>
+      <PDataArray type="Float64" Name="exy" NumberOfComponents="1" format="appended"/>
+      <PDataArray type="Float64" Name="eii" NumberOfComponents="1" format="appended"/>
+      <PDataArray type="Float64" Name="bedrock" NumberOfComponents="1" format="appended"/>
+      <PDataArray type="Float64" Name="normal vector" NumberOfComponents="3" format="appended"/>
+      <PDataArray type="Float64" Name="velocity" NumberOfComponents="3" format="appended"/>
+      <PDataArray type="Float64" Name="stress vector" NumberOfComponents="3" format="appended"/>
+      <PDataArray type="Float64" Name="mesh update" NumberOfComponents="3" format="appended"/>
+      <PDataArray type="Float64" Name="mesh velocity" NumberOfComponents="3" format="appended"/>
+    </PPointData>
+    <PCellData>
+    </PCellData>
+    <PPoints>
+      <DataArray type="Float64" NumberOfComponents="3" format="appended"/>
+    </PPoints>
+    <Piece Source="flowline4_lag.0001par0002.vtu"/>
+    <Piece Source="flowline4_lag.0002par0002.vtu"/>
+    <Piece Source="flowline4_lag.0003par0002.vtu"/>
+    <Piece Source="flowline4_lag.0004par0002.vtu"/>
+  </PUnstructuredGrid>
+</VTKFile>

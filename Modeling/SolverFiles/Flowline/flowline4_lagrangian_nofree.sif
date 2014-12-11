@@ -7,7 +7,6 @@ $yearinsec = 365.25*24*60*60
 $rhoi = 917.0/(1.0e6*yearinsec^2)   
 $rhow = 1025.0/(1.0e6*yearinsec^2) 
 $gravity = -9.81*yearinsec^2
-$timestep=(1/365.25)
 
 $ function waterpressure(Z) {\
   rhow = 1025.0;\
@@ -22,7 +21,7 @@ $ function waterpressure(Z) {\
 }
 
 Header
-  Mesh DB "Mesh_Input" "Retreat500"
+  Mesh DB "." "Retreat1000m"
 End
 
 Constants
@@ -42,20 +41,20 @@ Simulation
 
   Timestepping Method = "BDF"
   BDF Order = 1
-  Timestep Intervals = 20
+  Timestep Intervals = 112
   Output Intervals = 1        
-  Timestep Sizes = $timestep
+  Timestep Sizes = $(1/(2*365))
   
   Steady State Max Iterations = 20
   Steady State Min Iterations = 1
 
   Max output level = 3
   
-  !Restart File = "flowline1.result"
-  Restart Position = 1
+  Restart File = "flowline1.result"
+  Output File = "flowline4.result"
   
   Initialize Dirichlet Conditions = Logical False
-  !Restart Before Initial Conditions = Logical True
+  Restart Before Initial Conditions = Logical True
 End
 
 !---------------------------------------------------
@@ -256,7 +255,6 @@ Solver 3
 End
 
 Solver 4
-  !Mesh = "Retreat500"
   !Exec Solver = "Never"
   Equation = "Navier-Stokes"
   Linear System Solver = Direct
@@ -324,7 +322,7 @@ Solver 5
 End
 
 Solver 6
-  !Exec Solver = "Never"
+  Exec Solver = "Never"
   Equation = "Free Surface Sea/Shelf"
   Variable = "Zs Bottom"
 
@@ -486,16 +484,16 @@ Boundary Condition 1
     Real
       Include "Inputs/roughbed.dat"
     End
-  Zs Bottom Condition = Variable GroundedMask
-    Real MATC "tx + 0.5"
+  !Zs Bottom Condition = Variable GroundedMask
+  !  Real MATC "tx + 0.5"
   Velocity 1 = Real 0.0
-  Velocity 1 Condition = Variable GroundedMask
-     Real MATC "tx + 0.5"
+  !Velocity 1 Condition = Variable GroundedMask
+  !   Real MATC "tx + 0.5"
   ComputeNormal = Logical True
-  ComputeNormal Condition = Variable GroundedMask
-    Real MATC "tx + 0.5"
-  Slip Coefficient 2 = Variable Coordinate 1
-     Real Procedure "ElmerIceUSF" "SlidCoef_Contact"
+  !ComputeNormal Condition = Variable GroundedMask
+  !  Real MATC "tx + 0.5"
+  !Slip Coefficient 2 = Variable Coordinate 1
+  !g   Real Procedure "ElmerIceUSF" "SlidCoef_Contact"
   Slip Coefficient 2 = Variable Coordinate 1
     Real Procedure "ElmerIceUSF" "Sliding_Weertman" 
   Sliding Law = String weertman
@@ -507,12 +505,12 @@ Boundary Condition 1
   Weertman Linear Velocity = Real 0.00001
 
   !! Shelf conditions
-  External Pressure = Variable Coordinate 2 !we are in MPa units
-    Real MATC "-1.0*waterpressure(tx)*1.0E-06"
-  Slip Coefficient 1 = Variable Coordinate 2
-    Real Procedure "ElmerIceUSF" "SeaSpring"  
-  Compute Sea Spring = Logical True
-  Compute Sea Pressure = Logical True
+  !External Pressure = Variable Coordinate 2 !we are in MPa units
+  !  Real MATC "-1.0*waterpressure(tx)*1.0E-06"
+  !Slip Coefficient 1 = Variable Coordinate 2
+  !  Real Procedure "ElmerIceUSF" "SeaSpring"  
+  !Compute Sea Spring = Logical True
+  !Compute Sea Pressure = Logical True
   
   !Mesh Update 1 = Real 0.0e0
   Mesh Update 2 = Variable Zs Bottom
@@ -528,6 +526,10 @@ Boundary Condition 2
   Shape Surface = Logical True
   
   !Mesh Update 1 = Real 0.0e0
+  Zs Top = Variable Coordinate 1
+    Real
+      include "Inputs/surf.dat"
+    End
   Mesh Update 2 = Variable Zs Top
     Real Procedure "USF_Zs.so" "ZsTopMzsIni" 
   Save Line = Logical True

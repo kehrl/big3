@@ -22,8 +22,8 @@ import geotiff
 # Inputs #
 ##########
 
-MESHNAME='Worldview_Advance'
-file_mesh_out="Retreat500"
+MESHNAME='Higher'
+file_mesh_out="Elmer"
 
 DIRS=os.path.join(os.getenv("HOME"),"Code/Helheim/Modeling/SolverFiles/Flowline/")
 DIRM=os.path.join(os.getenv("HOME"),"Models/Helheim/Meshes/Flowline/"+MESHNAME+"/")
@@ -35,7 +35,7 @@ if not(os.path.isdir(DIRM)):
   os.makedirs(DIRM)
   os.makedirs(DIRM+"Inputs")
 
-lc=[250,500,5000] # characteristic length scales for meshing
+lc=[50,100,500] # characteristic length scales for meshing
 lc_d=[0,5000,15000] # transition points between different mesh sizes
 width_filt_len = 5000.0 # length along flowline for filtering widths
 partitions="4" # Number of partitions
@@ -53,13 +53,14 @@ file_bed_in2=os.path.join(os.getenv("HOME"),"Data/Bed/CreSIS/helheim_flightline_
 
 ## Surface inputs
 file_surf_gimp=os.path.join(os.getenv("HOME"),"Data/DEMs/Gimp/gimpdem3_1.tif")
-file_surf_wv=[os.path.join(os.getenv("HOME"),"Data/DEMs/Worldview/Helheim/20120513_1410_102001001B4C6F00_102001001BD7E800-DEM_32m_trans.tif"),
-			  os.path.join(os.getenv("HOME"),"Data/DEMs/Worldview/Helheim/20120520_1443_102001001BD45E00_102001001C07FB00-DEM_32m_trans.tif"),
+file_surf_wv=[os.path.join(os.getenv("HOME"),"Data/DEMs/Worldview/Helheim/20120520_1443_102001001BD45E00_102001001C07FB00-DEM_32m_trans.tif"),
+			  os.path.join(os.getenv("HOME"),"Data/DEMs/Worldview/Helheim/20120513_1410_102001001B4C6F00_102001001BD7E800-DEM_32m_trans.tif"),
 			  os.path.join(os.getenv("HOME"),"Data/DEMs/Worldview/Helheim/20120624_1421_102001001B87EF00_102001001B1FB900-DEM_32m_trans.tif")]
-
 ## Horizontal coordinate for calving front, so that we can easily change it
-calving_coord=310610-500
-
+calving_coord=310610 #Distance is 85005
+#calving_coord=310412 # Calving event of 200 m
+#calving_coord=310117 # Calving event of 500 m
+#calving_coord=309625 # Calving event of 1000m
 
 ###########
 # Outputs #
@@ -93,18 +94,36 @@ flowline[ind,3]=np.interp(flowline[ind,1],bed2001[:,0],bed2001[:,7]+130)
 fid = open(DIRM+file_mesh_out+"_bed.dat",'w')
 fid.write('{} {} \n'.format(flowline[0,0]-100,flowline[0,3]))
 ind=np.where(flowline[:,1] <= calving_coord)
-for i in ind[0]:
+for i in range(0,len(flowline[:,0])):
   fid.write('{} {} \n'.format(flowline[i,0],flowline[i,3]))
 fid.write('{} {} \n'.format(flowline[i,0]+100,flowline[i,3]))
 fid.close()
 
 # Adjust surface DEM to worldview DEM
+flowline_old = np.array(flowline)
 for file in file_surf_wv:
   [xs,ys,zs] = geotiff.read(file)
   zs_dem = interpolate.RectBivariateSpline(ys,xs,zs)
   zs_interp = zs_dem.ev(flowline[:,2],flowline[:,1])
-  ind=np.where(zs_interp > 50.0)
+  ind=np.where(zs_interp > 100.0)
   flowline[ind,4]=zs_interp[ind]
+flowline[ind[0][-1]+1:-1,4] = np.mean(flowline[3370:3390,4])
+ind = np.where(abs(np.diff(flowline[:,4])) > 20)
+for i in range(0,len(ind[0])):
+  satisfied1 = 0; satisfied2 = 0
+  ind1=ind[0][i]-1
+  ind2=ind[0][i]+1
+  while not(satisfied1):
+    if ind1 not in ind[0]:
+      satisfied1 = 1
+    else:
+      ind1 = ind1-1
+  while not(satisfied2):
+    if ind2 not in ind[0]:
+      satisfied2 = 1
+    else:
+      ind2 = ind2+1
+  flowline[ind[0][i],4] = np.mean([flowline[ind1,4],flowline[ind2,4]])    
 surf_filt_len=float(1000)
 cutoff=(1/surf_filt_len)/(1/(np.diff(flowline[1:3,0])*2))
 b,a=signal.butter(4,cutoff,btype='low')
@@ -113,7 +132,7 @@ flowline[:,4]=signal.filtfilt(b,a,flowline[:,4])
 fid = open(DIRM+file_mesh_out+"_surf.dat",'w')
 fid.write('{} {} \n'.format(flowline[0,0]-100,flowline[0,4]))
 ind=np.where(flowline[:,1] <= calving_coord)
-for i in ind[0]:
+for i in range(0,len(flowline[:,0])):
   fid.write('{} {} \n'.format(flowline[i,0],flowline[i,4]))
 fid.write('{} {} \n'.format(flowline[i,0]+100,flowline[i,4]))
 fid.close()
