@@ -20,7 +20,7 @@ $ function waterpressure(Z) {\
 }
 
 Header
-  Mesh DB "Mesh_Input" "Elmer"
+  Mesh DB "." "Elmer"
 End
 
 Constants
@@ -39,7 +39,7 @@ Simulation
   BDF Order = 1
   Timestep Intervals = 10
   Output Intervals = 1        
-  Timestep Sizes = $(10/365)       
+  Timestep Sizes = $(1/365)       
   
   Steady State Max Iterations = 5
   Steady State Min Iterations = 1
@@ -230,6 +230,13 @@ Solver 5
 End
 
 Solver 6
+  Exec Solver = "After timestep"
+  Equation = "InterpolateMesh"
+  Procedure = "InterpolateMesh.so" "InterpolateMesh"
+  Mesh = File "Retreat200m"
+End
+
+Solver 7
  Exec Solver = "After TimeStep"
  Exec Interval = 1
  Equation = "result output"
@@ -238,11 +245,11 @@ Solver 6
  Output Format = String "vtu"
 End
 
-Solver 7
+Solver 8
   Equation = SaveLine
   Procedure = "SaveData" "SaveLine"
-  Exec Solver = String "After all"
-  Filename = "elmer/"$name".dat"
+  Exec Solver = String "After timestep"
+  Filename = "Elmer/"$name".dat"
 End
 
 
@@ -253,8 +260,7 @@ End
 !! Glacier
 Equation 1
   Flow Solution Name = String "Flow Solution"
-  Active Solvers(6) = 1 2 4 5 6 7
-  NS Convect= False
+  Active Solvers(7) = 1 2 4 5 6 7 8
 End
 
 !! Surface

@@ -41,7 +41,7 @@ Simulation
 
   Timestepping Method = "BDF"
   BDF Order = 1
-  Timestep Intervals = 20
+  Timestep Intervals = 365
   Output Intervals = 1        
   Timestep Sizes = $(1/365)
   
