@@ -11,9 +11,9 @@ import shutil
 MESHNAME='Centerline' 
 
 # Directories
-DIRS=os.path.join(os.getenv("HOME"),"Code/Modeling/SolverFiles/Flowline/Helheim/")
-DIRM=os.path.join(os.getenv("HOME"),"Models/Meshes/Flowline/Helheim/"+MESHNAME+"/")
-DIRR=os.path.join(os.getenv("HOME"),"Models/Results//Flowline/Helheim/")
+DIRS=os.path.join(os.getenv("HOME"),"Code/Helheim/Modeling/SolverFiles/Flowline/")
+DIRM=os.path.join(os.getenv("HOME"),"Models/Helheim/Meshes/Flowline/"+MESHNAME+"/")
+DIRR=os.path.join(os.getenv("HOME"),"Models/Helheim/Results//Flowline/")
 
 # Solver file
 solverfile='flowline1.sif'
@@ -21,7 +21,7 @@ solverfile='flowline1.sif'
 ############################################
 # Check that fortran routines are compiled #
 ############################################
-os.chdir(os.path.join(os.getenv("HOME"),"Code/Modeling/Elmerlib"))
+os.chdir(os.path.join(os.getenv("HOME"),"Code/Helheim/Modeling/Elmerlib"))
 routines = ['Flowline']
 for routine in routines:
   #if not(os.path.exists(DIRS+"../../lib/"+routine+".so")):

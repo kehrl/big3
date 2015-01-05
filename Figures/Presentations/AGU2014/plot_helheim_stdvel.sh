@@ -36,6 +36,7 @@ grdmath taub1.grd mask.grd MUL = taub2.grd
 grdmath taub2.grd 1000 DIV = taub2.grd
 
 makecpt -Cgray -T0/255/1 -Z > grayscale.cpt
+makecpt -Chaxby -T0.001/1/3 -I -Qo > velocity_change.cpt
 
 psbasemap $J $R $B -P -K -V > $FILE
 grdimage $IMAGE -Cgray $J $R $B -K -O -V >> $FILE
@@ -58,7 +59,7 @@ psxy $R $J -O -K -L -W0.5p -G255/255/255 <<END>> $FILE
 END
 
 #Scale bars
-psscale -D2.45i/2.9i/0.9i/0.15ih -Cvelocity_change.cpt -Qo -B0::/:: -O -K -V >> $FILE
+psscale -D2.45i/2.9i/0.9i/0.15ih -Cvelocity_change.cpt -Qo -B0 -O -K -V >> $FILE
 psxy $R $J -O -K -W1p <<END>> $FILE 
 304700	-2564700 
 304700	-2564000 
@@ -66,19 +67,15 @@ psxy $R $J -O -K -W1p <<END>> $FILE
 309700	-2564700 
 END
 
+
 psxy $R $J -O -K -W1p -G255/255/255 <<END>> $FILE 
-308700 -2556500
-308700 -2558000
+309500 -2556500
+309500 -2558000
 END
 
 psxy $R $J -O -K -W1p -G255/255/255 <<END>> $FILE 
-311200 -2556500
-311200 -2558000
-END
-
-psxy $R $J -O -K -W1p -G255/255/255 <<END>> $FILE 
-306000 -2556500
-306000 -2558000
+306300 -2556500
+306300 -2558000
 END
 
 pstext $R $J -O <<END>> $FILE
@@ -86,10 +83,10 @@ pstext $R $J -O <<END>> $FILE
 303500 -2553900 18 0 0 TL Std Dev
 304200  -2565000 14 0 0 TL 0
 308700  -2565000 14 0 0 TL 5 km
-308000  -2558400 14 0 0 TL 100
-#312400  -2558000 11 0 0 TL 1000
+305700  -2558400 14 0 0 TL 10
+309300  -2558400 14 0 0 TL 100
 306000  -2560200 14 0 0 TL m/yr
-305200  -2558400 14 0 0 TL 10
+302900  -2558400 14 0 0 TL 1
 END
 
 ps2raster -Tf stdvel_polar.ps

@@ -26,7 +26,7 @@ solverfile='flowline1.sif'
 #solverfile = 'flowline2.sif'
 #runname='flowline2'
 #solverfile='flowline4_lagrangian_nofree.sif'
-runname='flowline4_lag'
+runname='flowline1_lag'
 
 # Boundaries
 bbed=1
