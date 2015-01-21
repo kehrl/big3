@@ -6,6 +6,7 @@ $yearinsec = 365.25*24*60*60
 $rhoi = 917.0/(1.0e6*yearinsec^2)   
 $rhow = 1025.0/(1.0e6*yearinsec^2) 
 $gravity = -9.81*yearinsec^2
+$n=3
 
 $ function waterpressure(Z) {\
   rhow = 1025.0;\
@@ -20,7 +21,7 @@ $ function waterpressure(Z) {\
 }
 
 Header
-  Mesh DB "." "Elmer"
+  Mesh DB "Mesh_Input" "Elmer"
 End
 
 Constants
@@ -39,10 +40,10 @@ Simulation
   BDF Order = 1
   Output Intervals = 1        
   
-  Steady State Max Iterations = 5
+  Steady State Max Iterations = 20
   Steady State Min Iterations = 1
 
-  Max output level = 3
+  Max Output Level = 3
   Output File = File "$name".result"
 End
 
@@ -75,17 +76,36 @@ End
 !---------------------------------------------------
 
 Body Force 1
-  Flow BodyForce 1 = Variable Coordinate 1
-     Real Procedure "ElmerIceUSF" "ShapeFactorGravity_x"
-  Flow BodyForce 2 = Variable Coordinate 1
-     Real Procedure "ElmerIceUSF" "ShapeFactorGravity_y"
-  Shape Gravity 1 = Real  0.0                                 
-  Shape Gravity 2 = Real $gravity      
+  ! Shape factor
+  !Flow BodyForce 1 = Variable Coordinate 1
+  !   Real Procedure "ElmerIceUSF" "ShapeFactorGravity_x"
+  !Flow BodyForce 2 = Variable Coordinate 1
+  !   Real Procedure "ElmerIceUSF" "ShapeFactorGravity_y"
+  !Shape Gravity 1 = Real  0.0                                 
+  !Shape Gravity 2 = Real $gravity      
 
-  Shape Factor = Variable Coordinate 1
-    Real
-      Include "Inputs/shapefactor.dat"
-    End
+  !Shape Factor = Variable Coordinate 1
+  !  Real
+  !    Include "Inputs/shapefactor.dat"
+  !  End
+  
+  ! Lateral Friction, Gagliardini 2010
+  Flow BodyForce 1 = Variable Coordinate 1
+     Real Procedure "ElmerIceUSF" "LateralFriction_x"
+  Flow BodyForce 2 = Variable Coordinate 1
+     Real Procedure "ElmerIceUSF" "LateralFriction_y"
+  Lateral Friction Gravity 1 = Real 0.0    
+  Lateral Friction Gravity 2 = Real $gravity    
+
+
+  Lateral Friction Coefficient = Variable Coordinate 1
+    Real Procedure "Flowline.so" "LateralFrictionCoefficient"
+  Lateral Friction Exponent = Real $(1.0/n)
+  Flow Solver Name = String Flow Solution
+  
+  !Pressure Load = Variable Coordinate 1
+  !  Real Procedure "Flowline.so" "LateralConvergence"
+  
 End
 
 !---------------------------------------------------
@@ -94,11 +114,12 @@ End
 
 !! ice material properties in MPa - m - a system 
 Material 1
+
   Density = Real $rhoi     
-  Viscosity = Variable Coordinate 2,
+  Viscosity = Variable Coordinate 2
     Real Procedure "Flowline.so" "Viscosity"
   Viscosity Model = String "power law"
-  Viscosity Exponent = Real $1.0/3.0
+  Viscosity Exponent = Real $(1.0/n)
   Critical Shear Rate = Real 1.0e-10
 
   !! for computeDevStress
@@ -112,6 +133,11 @@ End
 !---------------------------------------------------
 
 Solver 1
+  Procedure = "SaveData" "SaveMaterials"
+  Parameter 1 = "Viscosity"
+End
+
+Solver 2
    Exec Solver = "Before Timestep"
    Equation = "Normal Vector"
    Variable = "Normal Vector"   
@@ -120,15 +146,18 @@ Solver 1
    Procedure = "ElmerIceSolvers" "ComputeNormalSolver"
    Optimize Bandwidth = Logical False 
    ComputeAll = Logical False
+   
 End
 
-Solver 2
+Solver 3
   !Exec Solver = "Never"
   Equation = "Navier-Stokes"
+  Variable = Flow Solution[Velocity:2 Pressure:1]
   Stabilize = Logical True
   Flow Model = Stokes
   Linear System Solver = Direct
   Linear System Direct Method = MUMPS
+  Linear System Preconditioning = "ILU1" 
   Nonlinear System Max Iterations = 100
   Nonlinear System Convergence Tolerance  = 1.0e-6
   Nonlinear System Newton After Iterations = 100
@@ -136,11 +165,14 @@ Solver 2
   Nonlinear System Relaxation Factor = 1.00
   Nonlinear System Reset Newton = Logical False
   Steady State Convergence Tolerance = Real 1.0e-3
-  Exported Variable 1 = Flow Solution Loads[Stress Vector:3 CEQ Residual:1]
   Calculate Loads = Logical True
+  Calculate Weights = Logical True
+
+  Update Exported Variables = Logical True
+  Nonlinear Update Exported Variables = Logical True
 End
 
-Solver 3
+Solver 4
   Equation = String "StressSolver"
   Procedure = "ElmerIceSolvers" "ComputeDevStress"          
   Variable = -nooutput "Sij"
@@ -154,7 +186,7 @@ Solver 3
   Linear System Direct Method = MUMPS
 End
 
-Solver 4
+Solver 5
   Equation = "Eij"          
   Variable = -nooutput "Eij"     
   Variable DOFs = 1
@@ -169,13 +201,6 @@ Solver 4
   Linear System Solver = Direct         
   Linear System Direct Method = mumps
 End 
-
-Solver 5
-  Exec Solver = "After timestep"
-  Equation = "InterpolateMesh"
-  Procedure = "InterpolateMesh.so" "InterpolateMesh"
-  Mesh = File "Retreat1000m"
-End
 
 Solver 6
  Exec Solver = "After timestep"
@@ -227,7 +252,7 @@ Boundary Condition 1
   Slip Coefficient 2 =  Variable Coordinate 1
     Real Procedure "ElmerIceUSF" "Sliding_Weertman"   
   Weertman Friction Coefficient = Variable Coordinate 1
-        Real
+    Real
       Include "Inputs/beta_weertman.dat"
     End  
   Weertman Exponent = Real $(1.0/3.0)

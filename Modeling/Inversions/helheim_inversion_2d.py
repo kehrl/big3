@@ -21,12 +21,12 @@ import elmer_read
 # Inputs #
 ##########
 
-MESHNAME='Higher'
+MESHNAME='High'
 
 # Regularization parameters (lambda)
 #regpars=['1e11','1.5e11','1e12','1.5e12','1e13','1e14','1e15']
 #regpars=['1e3','1e4','1e5','1e6','1e7','1e8','1e9','1e10','1e11','1e12','1e13','1e14','1e15','1e16']
-regpars=['1e14']
+regpars=['1e12']
 
 # Directories
 DIRS=os.path.join(os.getenv("HOME"),"Code/Helheim/Modeling/SolverFiles/Flowline/")
@@ -63,16 +63,19 @@ file_beta_out=DIRM+"Inputs/beta.dat"
 print "Loading flowline"
 flowline=np.loadtxt(file_flowline_in,skiprows=1)
 
-if (os.path.exists(file_velocity_out)):
+if not(os.path.exists(file_velocity_out)):
+  print "Loading velocity data"
   # Get velocity along flowline from velocity profiles
   v=velocity_flowline.alongflow(flowline[:,1],flowline[:,2],file_velocity_in1,file_velocity_in2)
-
+  nonnan = np.where(~(np.isnan(v)))
+  vnonnan = np.interp(flowline[:,0],flowline[nonnan[0],0],v[nonnan[0]])
+  
   # Write out the velocity data
   fid = open(file_velocity_out,'w')
   R=len(v)
   fid.write('{0}\n'.format(R))
   for j in range(0,R):
-     fid.write('{} {}\n'.format(flowline[j,0],v[j,0]))
+     fid.write('{} {}\n'.format(flowline[j,0],vnonnan[j]))
   fid.close()
   del R,fid
 

@@ -22,7 +22,7 @@ import geotiff
 # Inputs #
 ##########
 
-MESHNAME='Higher'
+MESHNAME='High'
 file_mesh_out="Elmer"
 
 DIRS=os.path.join(os.getenv("HOME"),"Code/Helheim/Modeling/SolverFiles/Flowline/")
@@ -36,8 +36,8 @@ if not(os.path.isdir(DIRM)):
   os.makedirs(DIRM+"Inputs")
 
 lc=[50,100,500] # characteristic length scales for meshing
-lc_d=[0,5000,15000] # transition points between different mesh sizes
-width_filt_len = 5000.0 # length along flowline for filtering widths
+lc_d=[0,10000,40000] # transition points between different mesh sizes
+width_filt_len = 2000.0 # length along flowline for filtering widths
 partitions="4" # Number of partitions
 layers=10 # Number of extrusions for mesh
 
@@ -224,21 +224,21 @@ meshnode=np.genfromtxt(DIRM+file_mesh_out+"/mesh.nodes")
 
 # Take bed values from mesh for consistency using a Lagrangian mesh
 values=np.unique(meshnode[:,2])
-bednodes=np.zeros([len(values),2])
+flowlinenodes=np.zeros([len(values),2])
 for i in range(0,len(values)):
   ind=np.where(meshnode[:,2] == values[i])
-  bednodes[i,0]=values[i]
-  bednodes[i,1]=np.min(meshnode[ind,3])
+  flowlinenodes[i,0]=values[i]
+  flowlinenodes[i,1]=np.min(meshnode[ind,3])
 
 # Add bed measurements in front of mesh nodes, so that the glacier can advance
 ## Interpolate forward using the same grid size as near the terminus
-delta = np.min(np.diff(bednodes[:,0]))
-xnew = np.arange(bednodes[-1,0],flowline[-1,0],delta)
+delta = np.min(np.diff(flowlinenodes[:,0]))
+xnew = np.arange(flowlinenodes[-1,0],flowline[-1,0],delta)
 bedflow=np.zeros([len(xnew)-1,2])
 bedflow[:,0]=xnew[1:len(xnew)]
 bedflow[:,1]=np.interp(xnew[1:len(xnew)],flowline[:,0],flowline[:,3])
 
-bed=np.row_stack([bednodes,bedflow])
+bed=np.row_stack([flowlinenodes,bedflow])
 
 fid = open(file_bedrock_out,'w')
 fid.write('{}\n'.format(len(bed[:,0])))
@@ -247,24 +247,32 @@ for i in range(0,len(bed[:,0])):
 fid.close()
 del fid
 
-#################################################################
-# Print out width along flowline for shapefactor in elmersolver #
-#################################################################
+####################################################################################
+# Print out width and dw/dx for shapefactor and lateral convergence in elmersolver #
+####################################################################################
 
 # Calculate width
 width = shapefactor.glacierwidth(flowline,file_rightside_in,file_leftside_in,width_filt_len)
+width = np.interp(flowlinenodes[:,0],flowline[:,0],width)
+thick = np.interp(flowlinenodes[:,0],flowline[:,0],flowline[:,4]-flowline[:,3])
 
 # Calculate shape factor
-f = shapefactor.trapezoid(width,flowline[:,4]-flowline[:,3])
+# f = shapefactor.trapezoid(width,thick)
+dwdx = shapefactor.dwdx(flowlinenodes[:,0],width)
 
-# Write shape factor for elmer
-R = len(f)
+# Write out width and dw/dx for elmersolver 
+R = len(width)
 fid = open(file_shapefactor_out,'w')
-fid.write("{0} {1:.4g}\n".format(-10,f[0]))
+fid.write("{0} \n".format(R))
+fid.write("{0} {1:.4g} {2}\n".format(-10,width[0],dwdx[0]))
 for i in range(0,R):
-  fid.write("{0} {1:.4g}\n".format(flowline[i,0],f[i]))
+  fid.write("{0} {1:.4g} {2}\n".format(flowlinenodes[i,0],width[i],dwdx[i]))
 fid.close()
 del fid
+
+del thick, dwdx, R
+
+
 
 #########################################################
 # Finally export coordinates of flowline for future use #

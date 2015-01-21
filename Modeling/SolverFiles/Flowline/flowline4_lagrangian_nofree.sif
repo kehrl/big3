@@ -531,7 +531,7 @@ Boundary Condition 2
       include "Inputs/surf.dat"
     End
   Mesh Update 2 = Variable Zs Top
-    Real Procedure "USF_Zs.so" "ZsTopMzsIni" 
+    Real Procedure "USF_Zs" "ZsTopMzsIni" 
   Save Line = Logical True
 
 End
