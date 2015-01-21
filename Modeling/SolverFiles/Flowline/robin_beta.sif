@@ -13,11 +13,6 @@ $ function betaSquare(tx) {\
   _betaSquare=beta*beta/(1.0e06*yearinsec);\
 }
 
-! Reference Viscosity used to construct surface velocities (T = -5 deg C)
-$ function MuSquare(tx) {\
-   yearinsec = 365.25*24*60*60;\
-  _MuSquare=(2*(9.3*10^-25)*yearinsec*(10^18))^(-1/3);\
-}
 
 ! Water pressure at ice front
 $ function waterpressure(Z) {\
@@ -37,6 +32,7 @@ $yearinsec = 365.25*24*60*60
 $rhoi = 917.0/(1.0e6*yearinsec^2) ! MPa - a - m
 $rhow = 1025.0/(1.0e6*yearinsec^2) ! MPa - a - m
 $gravity = -9.81*yearinsec^2
+$n=3
 
 Header
   Mesh DB "Mesh_Input" "Elmer"
@@ -102,17 +98,35 @@ End
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 Body Force 1
+  ! Shape factor
   Flow BodyForce 1 = Variable Coordinate 1
      Real Procedure "ElmerIceUSF" "ShapeFactorGravity_x"
   Flow BodyForce 2 = Variable Coordinate 1
      Real Procedure "ElmerIceUSF" "ShapeFactorGravity_y"
   Shape Gravity 1 = Real  0.0                                 
   Shape Gravity 2 = Real $gravity      
-
+  
   Shape Factor = Variable Coordinate 1
     Real
       Include "Inputs/shapefactor.dat"
-    End 
+    End
+  
+  ! Lateral Friction, Gagliardini 2010
+  !Flow BodyForce 1 = Variable Coordinate 1
+  !   Real Procedure "ElmerIceUSF" "LateralFriction_x"
+  !Flow BodyForce 2 = Variable Coordinate 1
+  !   Real Procedure "ElmerIceUSF" "LateralFriction_y"
+  !Lateral Friction Gravity 1 = Real 0.0    
+  !Lateral Friction Gravity 2 = Real $gravity    
+
+
+  !Lateral Friction Coefficient = Variable Coordinate 1
+  !  Real Procedure "Flowline.so" "LateralFrictionCoefficient"
+  !Lateral Friction Exponent = Real $(1.0/n)
+  !Flow Solver Name = String Flow Solution
+  
+  Pressure Load = Variable Coordinate 1
+    Real Procedure "Flowline.so" "LateralConvergence"
 End
 
 
@@ -129,6 +143,11 @@ Material 1
 End
 
 Solver 1
+  Procedure = "SaveData" "SaveMaterials"
+  Parameter 1 = "Viscosity"
+End
+
+Solver 2
    Exec Solver = "Before Timestep"
    Equation = "Normal Vector"
    Variable = "Normal Vector"   
@@ -140,7 +159,7 @@ Solver 1
 End
 
 !!!! Navier-Stokes Solution
-Solver 2
+Solver 3
  Equation = "Navier-Stokes"
   
   Stabilize = logical True
@@ -149,7 +168,7 @@ Solver 2
   Linear System Solver = Direct
   Linear System Direct Method = mumps
   mumps percentage increase working space = integer 60
-  !Linear System Solver = Iterative
+  ! Linear System Solver = Iterative
   ! Linear System Iterative Method = GMRES
   ! Linear System GMRES Restart = 100
   ! Linear System Preconditioning= ILU2
@@ -157,7 +176,7 @@ Solver 2
   ! Linear System Max Iterations = 1000
 
 !
-  Nonlinear System Max Iterations = Integer 100
+  Nonlinear System Max Iterations = Integer 1000
   Nonlinear System Convergence Tolerance = Real 1.0e-7
   Nonlinear System Newton After Iterations = Integer 10
   Nonlinear System Newton After Tolerance = Real 1.0e-03
@@ -166,6 +185,9 @@ Solver 2
   Nonlinear System Reset Newton = Logical True
 
   Steady State Convergence Tolerance = Real 1.0e-12
+  
+  Calculate Loads = Logical True
+  Calculate Weights = Logical True
 
 ! Define some usefull Variables
   Exported Variable 1 = BetaS
@@ -189,7 +211,7 @@ Solver 2
 End
 
 !!!! Navier-Stokes = Dirichlet Problem
-Solver 3
+Solver 4
   Equation = "NS-Dirichlet"
 
   Variable = VeloD
@@ -221,7 +243,7 @@ Solver 3
 End
 
 !!! Compute Cost function
-Solver 4
+Solver 5
 
   Equation = "Cost"
 
@@ -245,7 +267,7 @@ Solver 4
 end
 
 !!!!! Compute Derivative of Cost function / Beta
-Solver 5
+Solver 6
   Equation = "DJDBeta"
 
 !! Solver need to be associated => Define dumy variable
@@ -265,7 +287,7 @@ Solver 5
 end
 
 !!!!! Optimization procedure
-Solver 6
+Solver 7
   Equation = "Optimize_m1qn3"
 
 !! Solver need to be associated => Define dumy variable
@@ -294,7 +316,7 @@ Solver 6
 
 end
 
-Solver 7
+Solver 8
   Equation = "ResultOutput"
 
   Procedure = File "ResultOutputSolve" "ResultOutputSolver"
@@ -306,14 +328,14 @@ Solver 7
 
 End
 
-Solver 8
+Solver 9
   Equation = SaveLine
   Procedure = "SaveData" "SaveLine"
   Exec Solver = String "After all"
   Filename = "elmer/beta.dat"
 End
 
-Solver 9
+Solver 10
   Equation = String "StressSolver"
   Procedure = "ElmerIceSolvers" "ComputeDevStress"          
   Variable = -nooutput "Sij"
@@ -329,12 +351,12 @@ End
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 Equation 1
-  Active Solvers (6)= 1 2 3 4 7 9
+  Active Solvers (7)= 1 2 3 4 5 8 10
   NS Convect= False
 End
 
 Equation 2
- Active Solvers (3)= 5 6 8
+ Active Solvers (3)= 6 7 9
 End
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

@@ -1,4 +1,10 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!! Calculates the velocity at the inflow boundary in the flowline model, using 
+!! the SIA approximation. Currently assumes a basal velocity of 60 m/a at inflow (may
+!! want to change when everything else is fixed).
+!!
+!! LMK, UW, 09/10/2014
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 Function Inflow (Model, nodenumber, dumy) RESULT(vel)
    	USE types
@@ -52,62 +58,183 @@ Function Inflow (Model, nodenumber, dumy) RESULT(vel)
 
    	Return 
 End
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-FUNCTION ShapeFactor (Model, nodenumber) RESULT(output)
-   	USE types
-   	USE CoordinateSystems
-   	USE SolverUtils
-   	USE ElementDescription
+FUNCTION LateralConvergence (Model, nodenumber, dumy) RESULT(MassLoad)
+   	USE Types
    	USE DefUtils
    	IMPLICIT NONE
    	TYPE(Model_t) :: Model
    	TYPE(Solver_t), TARGET :: Solver
-   	INTEGER :: nodenumber,ind, Rw, i
-   	REAL(KIND=dp) :: x, dist, mindist, output, ratio
-   	REAL(KIND=dp), ALLOCATABLE :: xw(:), yw(:)
-   	LOGICAL :: found
-   
-    LOGICAL :: Firsttime3=.true.
-        
-   	SAVE Firsttime3,xw,yw,Rw
-   
+   	TYPE(Nodes_t) :: ElementNodes
+   	TYPE(Variable_t), POINTER :: WeightVariable,VelocityVariable
 
-   	if (Firsttime3) then
-   		! Read file
-   		Firsttime3=.False.
-   		
-   		OPEN(10,file="Inputs/shapefactor.dat")
-   		Read(10,*) Rw
-   		ALLOCATE(xw(Rw), yw(Rw))
-   		READ(10,*)(xw(i), yw(i), i=1,Rw)
-   		CLOSE(10)
-   	End if
+   	INTEGER :: nodenumber, i, R, minind
+   	INTEGER, POINTER :: WeightPerm(:), VelocityPerm(:)
+   	
+   	REAL(KIND=dp) :: x, y, velx
+	REAL(KIND=dp), ALLOCATABLE :: xhw(:), hw(:), dwdx(:)
+   	REAL(KIND=dp) :: dumy, MassLoad, weight, ratio, dist, mindist, width, dw
+   	REAL(KIND=dp), POINTER :: WeightValues(:), VelocityValues(:)
+   	
+   	LOGICAL :: FirstTimeLC = .TRUE.
+   	LOGICAL :: found = .FALSE.
+	
+	! Save inputs from file for future use
+	SAVE xhw, hw, dwdx, FirstTimeLC
+	
+	if (FirstTimeLC) then
 
-   	x=Model % Nodes % x (nodenumber)   
-   
-   	found = .false.
-   	mindist=dabs(2*(xw(2)-xw(3)))
+    	FirsttimeLC=.False.
 
-   	do 20, i=1,Rw
-      	dist=dabs(x-xw(i))
-      	if (dist<=mindist .and. xw(i)<=x) then
-        	mindist=dist
-        	ind=i
-        	found = .true.
-      	endif 
-   	20 enddo
+        ! open file
+        Open(10,file='Inputs/width.dat')
+        Read(10,*) R
+        Allocate(xhw(R),hw(R),dwdx(R))
+        Do i=1,R
+        	Read(10,*) xhw(i),hw(i),dwdx(i)
+		End do
+		Close(10)
+    End if
+	
+	! Get current location
+	x = Model % Nodes % x (nodenumber) 
+	y = Model % Nodes % y (nodenumber)
+	
+	! Get element areas
+	WeightVariable => VariableGet( Model % Variables, 'Flow Solution Weights' )
+	IF (ASSOCIATED(WeightVariable)) THEN
+    	WeightPerm    => WeightVariable % Perm
+    	WeightValues  => WeightVariable % Values
+    ELSE
+        CALL FATAL('LateralConvergence','Could not find variable Weights. You need to add the Calculate Weights option.')
+	END IF
+	
+	! Get velocity
+	VelocityVariable => VariableGet( Model % Variables, 'Velocity 1' )
+	IF (ASSOCIATED(VelocityVariable)) THEN
+    	VelocityPerm    => VelocityVariable % Perm
+    	VelocityValues  => VelocityVariable % Values
+    ELSE
+        CALL FATAL('LateralConvergence','Could not find x-velocity.')
+	END IF
+	
+	! Get width at that location
+	mindist=10000
+   	DO i=1,SIZE(xhw)
+      	dist=dabs(xhw(i)-x)
+      	IF (dist<=mindist) THEN
+        mindist=dist
+        minind=i
+        found = .true.
+      	END IF
+   	END DO
 
+	! Interpolate width to current position
    	if (.not.found) then
-      	print *, 'Could not find a suitable shapefactor to interpolate ',x
+      	print *, 'LateralConvergence: Could not find a suitable width to interpolate ',x
    	else
-      	ratio=(x-xw(ind))/(xw(ind+1)-xw(ind))
-      	output=yw(ind)+ratio*(yw(ind+1)-yw(ind))
-      	!
+   		if (xhw(minind) >= x) then 
+      		ratio=(x-xhw(minind))/(xhw(minind+1)-xhw(minind))
+      		width=(hw(minind)+ratio*(hw(minind+1)-hw(minind)))
+      		dw=(dwdx(minind)+ratio*(dwdx(minind+1)-dwdx(minind)))
+      	else 
+      		ratio=(x-xhw(minind))/(xhw(minind)-(xhw(minind-1)))
+      		width=(hw(minind)+ratio*(hw(minind)-hw(minind-1)))
+      		dw=(dwdx(minind)+ratio*(dwdx(minind)-dwdx(minind-1)))
+      	endif
    	endif
-    !print *,'',x,output
-   	Return
+	
+	weight = WeightValues(WeightPerm(nodenumber))
+	velx = VelocityValues(VelocityPerm(nodenumber))
+	
+	MassLoad = (-dw/width)*weight*velx	
+	RETURN
+END
+FUNCTION LateralFrictionCoefficient( Model, nodenumber, dumy) RESULT(kcoeff) !
+    USE types
+	Use DefUtils
+    implicit none
+	TYPE(Model_t) :: Model
+    Real(kind=dp) :: kcoeff, halfwidth, eta, dumy
+    Real(kind=dp),allocatable :: xwidths(:),widths(:),junk(:)
+    Real(kind=dp) :: x,y,mindist,dist,ratio,n,yearinsec,rhoi
+    INTEGER :: nodenumber,minind,R,i
+    TYPE(Variable_t), POINTER :: ViscosityVariable
+    INTEGER, POINTER :: ViscosityPerm(:)
+  	REAL(KIND=dp), POINTER :: ViscosityValues(:)
+		
+    LOGICAL :: FirsttimeLFC=.true.
+    LOGICAL :: found
+
+    SAVE xwidths, widths
+    SAVE FirsttimeLFC
+	
+	if (FirsttimeLFC) then
+
+    	FirsttimeLFC=.False.
+
+        ! open file
+        Open(10,file='Inputs/width.dat')
+        Read(10,*) R
+        Allocate(xwidths(R),widths(R),junk(R))
+        Do i=1,R
+        	Read(10,*) xwidths(i),widths(i),junk(i)
+		End do
+		Close(10)
+    End if
+    
+    
+    
+    x = Model % Nodes % x (nodenumber)  
+    
+    ! Now find data closest to current position
+   	found = .FALSE.		
+	
+   	mindist=100000
+   	DO i=1,SIZE(xwidths)
+      	dist=dabs(xwidths(i)-x)
+      	IF (dist<=mindist) THEN
+        mindist=dist
+        minind=i
+        found = .true.
+      	END IF
+   	END DO
+
+	! Interpolate width to current position, and then find halfwidth for friction coefficient calculation
+   	if (.not.found) then
+      	print *, 'LateralFrictionCoefficient: Could not find a suitable width to interpolate ',x
+   	else
+   		if (xwidths(minind) >= x) then 
+      		ratio=(x-xwidths(minind))/(xwidths(minind+1)-xwidths(minind))
+      		halfwidth=(widths(minind)+ratio*(widths(minind+1)-widths(minind)))/2
+      	else 
+      		ratio=(x-xwidths(minind))/(xwidths(minind)-(xwidths(minind-1)))
+      		halfwidth=(widths(minind)+ratio*(widths(minind)-widths(minind-1)))/2
+      	endif
+   	endif
+    
+	
+	! Get viscosity at location
+	ViscosityVariable => VariableGet( Model % Variables, 'Viscosity' )
+   	IF (ASSOCIATED(ViscosityVariable)) THEN
+    	ViscosityPerm    => ViscosityVariable % Perm
+    	ViscosityValues  => ViscosityVariable % Values
+    ELSE
+        CALL FATAL('LateralFrictionCoefficient','Could not find variable Viscosity')
+  	END IF
+  	
+  	eta = ViscosityValues(ViscosityPerm(nodenumber))
+	n = 3
+	yearinsec = 365.25*24*60*60
+	rhoi = 917.0/(1.0e6*yearinsec**2)
+	
+	kcoeff = eta * (n+1)**(1/n) / (halfwidth**(1+(1/n)))
+	
+    Return
 End
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -164,7 +291,6 @@ FUNCTION USF_Init (Model, nodenumber) RESULT(vel)
    
    	Return
 End
-
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 FUNCTION Viscosity( Model, nodenumber) RESULT(eta) !
@@ -235,178 +361,3 @@ FUNCTION Viscosity( Model, nodenumber) RESULT(eta) !
     Return
 End
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-FUNCTION Slip_Linear (Model, nodenumber) RESULT(coefficient1)
-   	USE types
-   	USE CoordinateSystems
-   	USE SolverUtils
-   	USE ElementDescription
-   	USE DefUtils
-   	IMPLICIT NONE
-   	TYPE(Model_t) :: Model
-   	TYPE(Solver_t), TARGET :: Solver
-   	INTEGER :: nodenumber,ind, R6, i
-   	REAL(KIND=dp) :: x, dist, mindist, ratio, coefficient1
-   	REAL(KIND=dp), ALLOCATABLE :: xb(:), beta(:), yb(:)
-   	LOGICAL :: found
-
-    LOGICAL :: Firsttime6=.true.
-
-    SAVE xb,yb,beta
-    SAVE Firsttime6,R6
-
-    if (Firsttime6) then
-
-    	Firsttime6=.False.
-
-   		! Read file
-   		OPEN(10,file="Inputs/beta_linear.xy")
-   		Read(10,*) R6
-   		ALLOCATE(xb(R6), yb(R6), beta(R6))
-   		READ(10,*)(xb(i), yb(i),beta(i), i=1,R6)
-   		CLOSE(10)
-   		
-    End if
-   
-	x=Model % Nodes % x (nodenumber)
-   
-   	found = .false.
-   	mindist=dabs(2*(xb(1)-xb(2)))
-   	do 20, i=1,R6
-      	dist=dabs(x-xb(i))
-      	if (dist<=mindist .and. xb(i)<=x) then
-        	mindist=dist
-        	ind=i
-        	found = .true.
-      	endif 
-   	20 enddo
-
-   	if (.not.found) then
-      	print *, 'Could not find a suitable beta to interpolate ',x
-   	else
-      	ratio=(x-xb(ind))/(xb(ind+1)-xb(ind))
-      	coefficient1=beta(ind)+ratio*(beta(ind+1)-beta(ind))
-   	endif
-   
-   	Return
-End
-
-
-FUNCTION Slip_Weertman (Model, nodenumber) RESULT(coefficient1)
-   	USE types
-   	USE CoordinateSystems
-   	USE SolverUtils
-   	USE ElementDescription
-   	USE DefUtils
-   	IMPLICIT NONE
-   	TYPE(Model_t) :: Model
-   	TYPE(Solver_t), TARGET :: Solver
-   	INTEGER :: nodenumber,ind, R6, i
-   	REAL(KIND=dp) :: x, dist, mindist, ratio, coefficient1
-   	REAL(KIND=dp), ALLOCATABLE :: xb(:), beta(:), yb(:)
-   	LOGICAL :: found
-
-    LOGICAL :: Firsttime6=.true.
-
-    SAVE xb,yb,beta
-    SAVE Firsttime6,R6
-
-    if (Firsttime6) then
-
-    	Firsttime6=.False.
-
-   		! Read file
-   		OPEN(10,file="Inputs/beta_weertman.xy")
-   		Read(10,*) R6
-   		ALLOCATE(xb(R6), yb(R6), beta(R6))
-   		READ(10,*)(xb(i), yb(i),beta(i), i=1,R6)
-   		CLOSE(10)
-   		
-    End if
-   
-	x=Model % Nodes % x (nodenumber)
-   
-   	found = .false.
-   	mindist=dabs(2*(xb(1)-xb(2)))
-   	do 20, i=1,R6
-      	dist=dabs(x-xb(i))
-      	if (dist<=mindist) then
-        	mindist=dist
-        	ind=i
-        	found = .true.
-      	endif 
-   	20 enddo
-
-   	if (.not.found) then
-      	print *, 'Could not find a suitable beta to interpolate ',x
-   	else
-   		if (xb(ind) >= x) then 
-      		ratio=(x-xb(ind))/(xb(ind+1)-xb(ind))
-      		coefficient1=beta(ind)+ratio*(beta(ind+1)-beta(ind))
-      	else 
-      		ratio=(x-xb(ind))/(xb(ind)-(xb(ind-1)))
-      		coefficient1=beta(ind)+ratio*(beta(ind)-beta(ind-1))
-      	endif
-   	endif
-   
-   	print *,'bed is',x,coefficient1
-   	Return
-End
-
-Function Bedrock (Model, nodenumber, znode) RESULT(BED)
-   	USE types
-   	USE CoordinateSystems
-   	USE SolverUtils
-   	USE ElementDescription
-   	USE DefUtils
-   	IMPLICIT NONE
-   	TYPE(Model_t) :: Model
-   	TYPE(Solver_t), TARGET :: Solver
-   	INTEGER :: nodenumber, ind
-   	REAL(KIND=dp) :: Mask
-   	INTEGER :: NMAX, i, R7, DIM
-   	REAL(KIND=dp) :: x, y, z, znode
-   	REAL(KIND=dp) :: BED,ratio,mindist,dist
-   	REAL(KIND=dp), ALLOCATABLE :: xbed(:), ybed(:), zbed(:)
-   	LOGICAL :: Firsttime7=.true.
-	LOGICAL :: found
-
-    SAVE xbed,ybed
-    SAVE Firsttime7,R7
-
-    if (Firsttime7) then
-
-    	Firsttime7=.False.
-
-   		! Load bedrock
-   		OPEN(10,file="Inputs/roughbed.dat")
-   		Read(10,*) R7
-   		ALLOCATE(xbed(R7), ybed(R7))
-   		READ(10,*)(xbed(i), ybed(i), i=1,R7)
-   		CLOSE(10)
-   		
-    End if
-
-	x=Model % Nodes % x (nodenumber)
-
-  	found = .false.
-   	mindist=dabs(2*(xbed(1)-xbed(2)))
-   	do 20, i=1,R7
-      	dist=dabs(x-xbed(i))
-      	if (dist<=mindist .and. xbed(i)<=x) then
-        	mindist=dist
-        	ind=i
-        	found = .true.
-      	endif 
-   	20 enddo
-
-   	if (.not.found) then
-      	print *, 'Could not find a suitable bed to interpolate ',x
-   	else
-      	ratio=(x-xbed(ind))/(xbed(ind+1)-xbed(ind))
-      	BED=ybed(ind)+ratio*(ybed(ind+1)-ybed(ind))
-   	endif
-
-   Return
-End

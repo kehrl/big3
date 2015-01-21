@@ -44,7 +44,7 @@ Simulation
   !Output Intervals = 1        
   !Timestep Sizes = $(5/365)
   
-  Steady State Max Iterations = 20
+  Steady State Max Iterations = 1
   Steady State Min Iterations = 1
 
   Max output level = 3

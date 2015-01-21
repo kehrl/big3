@@ -13,15 +13,15 @@ import shutil
 ##########
 
 # Mesh
-RES="Low_Normal"
+RES="High_Normal"
 
 # Solver file
-solverfile='model6.sif'
+solverfile='model2.sif'
 
 # Directories
-DIRS=os.path.join(os.getenv("HOME"),"Code/Modeling/SolverFiles/3D/Helheim/")
-DIRM=os.path.join(os.getenv("HOME"),"Models/Meshes/3D/Helheim/"+RES+"/")
-DIRR=os.path.join(os.getenv("HOME"),"Models/Results/3D/Helheim/"+RES+"/Inversion/")
+DIRS=os.path.join(os.getenv("HOME"),"Code/Helheim/Modeling/SolverFiles/3D/")
+DIRM=os.path.join(os.getenv("HOME"),"Models/Helheim/Meshes/3D/"+RES+"/")
+DIRR=os.path.join(os.getenv("HOME"),"Models/Helheim/Results/3D/"+RES+"/Inversion/")
 DIRX=os.path.join(os.getenv("HOME"),"Data/ShapeFiles/Glaciers/3D/Helheim/")
 
 ####################################################
@@ -40,7 +40,7 @@ fid1 = open(solverfile, 'r')
 fid2 = open('temp.sif', 'w')
 lines=fid1.readlines()
 for line in lines:
-  line=line.replace('Mesh_Input','{}'.format("../../../../../Models/Meshes/3D/Helheim/"+RES))
+  line=line.replace('Mesh_Input','{}'.format("../../../../../Models/Helheim/Meshes/3D/"+RES))
   fid2.write(line)
 fid1.close()
 fid2.close()

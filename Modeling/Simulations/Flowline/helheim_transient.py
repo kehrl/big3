@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 # Inputs #
 ##########
 
-MESHNAME='Worldview_Advance' 
+MESHNAME='High' 
 
 # Directories
 DIRS=os.path.join(os.getenv("HOME"),"Code/Helheim/Modeling/SolverFiles/Flowline/")
@@ -21,11 +21,12 @@ DIRM=os.path.join(os.getenv("HOME"),"Models/Helheim/Meshes/Flowline/"+MESHNAME+"
 DIRR=os.path.join(os.getenv("HOME"),"Models/Helheim/Results/Flowline/"+MESHNAME+"/")
 
 # Solver file
-#solverfile='flowline1.sif'
+solverfile='flowline2.sif'
+
 #solverfile = 'flowline2.sif'
 #runname='flowline2'
-solverfile='flowline4_lagrangian_nofree.sif'
-runname='flowline4_lag'
+#solverfile='flowline4_lagrangian_nofree.sif'
+runname='flowline2'
 
 # Boundaries
 bbed=1
@@ -78,17 +79,17 @@ call(["mpirun","-n","4","elmersolver_mpi"])
 ##############################
 bed = elmer_read.saveline_boundary(DIRM+"Elmer",runname,bbed)
 surf = elmer_read.saveline_boundary(DIRM+"Elmer",runname,bsurf)
+surf1 = elmer_read.saveline_boundary(DIRM+"Elmer",'flowline1',bsurf)
 terminus = elmer_read.saveline_boundary(DIRM+"Elmer",runname,bcalve)
 
-for time in range(0,5):
-  ind1 = np.where(surf['timestep'] == time)
-  ind2 = np.where(terminus['timestep'] == time)
-  coord1 = surf['coord1'][ind1]
-  var = surf['vel1'][ind1]
-  sortind=np.argsort(coord1)
-  plt.plot(coord1[sortind],var[sortind],'k-')
-  coord1 = terminus['coord1'][ind2]
-  var = terminus['vel1'][ind2]
-  sortind=np.argsort(coord1)
-  plt.plot(coord1[sortind],var[sortind],'-')
+coord1=np.sort(surf['coord1'][np.where(surf['timestep'] == 1)])
+elevation=np.zeros([len(coord1),np.max(surf['timestep'])])
+timesteps=np.unique(surf['timestep'])
+for i in range(0,len(timesteps)):
+  ind1 = np.where(surf['timestep'] == timesteps[i])
+  x = surf['coord1'][ind1]
+  y = surf['coord2'][ind1]
+  sortind=np.argsort(x)
+  elevation[:,i]=y[sortind]
+
   

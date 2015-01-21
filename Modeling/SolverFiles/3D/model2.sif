@@ -36,7 +36,7 @@ End
 Simulation
   Coordinate System  = Cartesian 3D
   Coordinate Mapping(3) = 1 2 3
-  Simulation Type = Transient
+  Simulation Type = Steady State
 
   Timestepping Method = "BDF"
   BDF Order = 1

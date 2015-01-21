@@ -3,17 +3,19 @@
 import os
 from subprocess import call
 import shutil
+import glob
 
 ##########
 # Inputs #
 ##########
 
-MESHNAME='Centerline' 
+MESHNAME='High' 
 
 # Directories
-DIRS=os.path.join(os.getenv("HOME"),"Code/Modeling/SolverFiles/Flowline/Helheim/")
-DIRM=os.path.join(os.getenv("HOME"),"Models/Meshes/Flowline/Helheim/"+MESHNAME+"/")
-DIRR=os.path.join(os.getenv("HOME"),"Models/Results//Flowline/Helheim/")
+DIRS=os.path.join(os.getenv("HOME"),"Code/Helheim/Modeling/SolverFiles/Flowline/")
+DIRM=os.path.join(os.getenv("HOME"),"Models/Helheim/Meshes/Flowline/"+MESHNAME+"/")
+DIRR=os.path.join(os.getenv("HOME"),"Models/Helheim/Results//Flowline/")
+DIRELMERLIB = os.path.join(os.getenv("HOME"),"Code/Helheim/Modeling/Elmerlib/")
 
 # Solver file
 solverfile='flowline1.sif'
@@ -21,11 +23,18 @@ solverfile='flowline1.sif'
 ############################################
 # Check that fortran routines are compiled #
 ############################################
-os.chdir(os.path.join(os.getenv("HOME"),"Code/Modeling/Elmerlib"))
-routines = ['Flowline']
-for routine in routines:
-  #if not(os.path.exists(DIRS+"../../lib/"+routine+".so")):
-  call(["elmerf90","-o",routine+".so",routine+".f90"])
+readfiles = glob.glob(DIRELMERLIB+"Flowline/"+"*.f90")
+
+with open(DIRELMERLIB+"Flowline.f90", "wb") as outfile:
+  for f in readfiles:
+    with open(f, "rb") as infile:
+      outfile.write(infile.read())
+      outfile.write("\n")
+outfile.close()
+
+os.chdir(DIRELMERLIB)
+call(["elmerf90","-o","Flowline.so","Flowline.f90"])
+del DIRELMERLIB
   
 ####################################################
 # Copy model inputs into the solver file directory #
@@ -43,7 +52,7 @@ fid1 = open(solverfile, 'r')
 fid2 = open('temp.sif', 'w')
 lines=fid1.readlines()
 for line in lines:
-  line=line.replace('Mesh_Input','{}'.format("../../../../../Models/Meshes/Flowline/Helheim/"+MESHNAME))
+  line=line.replace('Mesh_Input','{}'.format("../../../../../Models/Helheim/Meshes/Flowline/"+MESHNAME))
   fid2.write(line)
 fid1.close()
 fid2.close()

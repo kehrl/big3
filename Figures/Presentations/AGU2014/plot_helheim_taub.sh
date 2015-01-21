@@ -17,7 +17,7 @@ B=-B100000000m100000000m100000000
 FILE=taub_polar.ps
 
 # Radar images
-IMAGE=$HOME/Data/Mosaics/Greenland/mosaic100m.00-01geo.grd
+IMAGE=$HOME/Data/Mosaics/Greenland/mosaic100m.05-06geo.grd
 
 # Outlines
 COAST=$HOME/Data/ShapeFiles/greenland_coast_polar.txt
@@ -44,51 +44,51 @@ psxy $GLACIER $HOLE1 $HOLE2 -W1p $R $J -L -O -K -V >> $FILE
 
 psxy $R $J -O -K -L -W0.5p -G255/255/255 <<END>> $FILE
 313400 -2553500
-313400 -2561000
-302500 -2561000
+313400 -2562000
+302500 -2562000
 302500 -2553500
 END
 
 psxy $R $J -O -K -L -W0.5p -G255/255/255 <<END>> $FILE
-313400 -2566700
+313400 -2567000
 313400 -2563300
 303700 -2563300
-303700 -2566700
+303700 -2567000
 END
 
 #Scale bars
-psscale -D2.45i/2.95i/0.9i/0.15ih -Ccolorscale.cpt -B0::/:: -Qo -O -K -V >> $FILE
+psscale -D2.45i/2.9i/0.9i/0.15ih -Ccolorscale.cpt -B0::/:: -Qo -O -K -V >> $FILE
 psxy $R $J -O -K -W1p <<END>> $FILE 
-305000	-2564500 
-305000	-2564000 
-310000	-2564000 
-310000	-2564500 
+304700	-2564700 
+304700	-2564000 
+309700	-2564000 
+309700	-2564700 
 END
 
 psxy $R $J -O -K -W1p -G255/255/255 <<END>> $FILE 
-309500 -2556000
-309500 -2557500
+309500 -2556500
+309500 -2558000
 END
 
 psxy $R $J -O -K -W1p -G255/255/255 <<END>> $FILE 
-306400 -2556000
-306400 -2557500
+306400 -2556500
+306400 -2558000
 END
 
 pstext $R $J -O <<END>> $FILE
-284100 -2555000 12 1 1 TL a
-302800 -2554200 9 0 0 TL Basal shear stress
-304500  -2565000 11 0 0 TL 0
-309500  -2565000 11 0 0 TL 5 km
+284100 -2555000 18 1 1 TL b
+304200 -2553900 18 0 0 TL Stress
+304200  -2565000 14 0 0 TL 0
+308700  -2565000 14 0 0 TL 5 km
 #308500  -2567200 11 0 0 TL km
-306000  -2558000 11 0 0 TL 10
-308800  -2558000 11 0 0 TL 100
-306000  -2559400 11 0 0 TL kPa
-303200  -2558000 11 0 0 TL 1
+306000  -2558400 14 0 0 TL 10
+308800  -2558400 14 0 0 TL 100
+306000  -2560200 14 0 0 TL kPa
+303200  -2558400 14 0 0 TL 1
 #305073.776937 -2578289.20561 9 0 0 TL 0 km
 #289749.968209 -2566725.38141 9 0 0 TL 20 km
 END
 
 ps2raster -Tf taub_polar.ps
 
-rm hole1.grd hole2.grd mask.grd taub1.grd taub2.grd grayscale.cpt gmt.history gmt.conf extent.grd colorscale.cpt
+rm hole1.grd hole2.grd mask.grd  taub1.grd taub2.grd grayscale.cpt gmt.history gmt.conf extent.grd colorscale.cpt
