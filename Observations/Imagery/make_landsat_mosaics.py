@@ -3,6 +3,7 @@ import sys
 import shutil
 import numpy as np
 sys.path.append(os.path.join(os.getenv("HOME"),"Code/Util/Modules"))
+sys.path.append("/usr/local/bin/")
 import velocity_flowline
 from subprocess import call
 import math
