@@ -42,9 +42,10 @@ for file in files:
       min = str(line[27:29])
       sec = str(line[30:32])
   filename=DIR+glacier+"/TIF/"+year+month+day+hour+min+sec+"_"+file+".tif"
-  print filename
-  sys.argv[1:] = ['-separate',file+"_B3.tif",file+"_B2.tif",file+"_B1.tif",'-o',filename]
-  gdal_merge.main()
+  if not(os.path.isfile(filename)):
+    print filename
+    sys.argv[1:] = ['-separate',file+"_B3.tif",file+"_B2.tif",file+"_B1.tif",'-o',filename]
+    gdal_merge.main()
   
 #############
 # Landsat 8 #
@@ -66,6 +67,11 @@ for file in files:
       min = str(line[27:29])
       sec = str(line[30:32])
   filename=DIR+glacier+"/TIF/"+year+month+day+hour+min+sec+"_"+file+".tif"
-  print filename
-  sys.argv[1:] = ['-separate',file+"_B4.tif",file+"_B3.tif",file+"_B2.tif",'-o',filename]
-  gdal_merge.main()
+  if not(os.path.isfile(filename)):
+    print filename
+    sys.argv[1:] = ['-separate',file+"_B4.tif",file+"_B3.tif",file+"_B2.tif",'-o','temp1.tif']
+    gdal_merge.main()
+    os.system('gdalwarp temp1.tif temp2.tif -t_srs EPSG:3413')
+    os.rename('temp2.tif',filename)
+os.remove('temp1.tif')
+
