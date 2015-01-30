@@ -40,6 +40,7 @@ def velocity_at_points(xpt,ypt):
 
   vpt=np.zeros([m,n])
   tpt=np.zeros([m,1])
+  ept=np.zeros([m,n])
   count=0
   for j in range(0,len(DIRS)):
     DIR=DIRS[j]
@@ -57,12 +58,14 @@ def velocity_at_points(xpt,ypt):
           yind = (abs(y-ypt)).argmin()
 
         vpt[count,i] = v[yind,xind]
+        ept[count,i] = math.sqrt(ex[yind,xind]**2+ey[yind,xind]**2)
         #print (abs(x-xpt)).min()
         
       count = count + 1
   
   # Sort arrays by time
   tpt_tsx = tpt
+  ept_tsx = ept
   vpt_tsx = vpt
   
   ######################
@@ -77,6 +80,7 @@ def velocity_at_points(xpt,ypt):
       m = m+1
 
   vpt=np.zeros([m,n])
+  ept=np.zeros([m,n])
   tpt=np.zeros([m,1])
   count=0
   for j in range(0,len(DIRS)):
@@ -93,24 +97,29 @@ def velocity_at_points(xpt,ypt):
       	except:
       	  xind = (abs(x-xpt)).argmin()
           yind = (abs(y-ypt)).argmin()
-
+        
         vpt[count,i] = v[yind,xind]
+        ept[count,i] = math.sqrt(ex[yind,xind]**2+ey[yind,xind]**2)
         #print (abs(x-xpt)).min()
         
       count = count + 1
   
   tpt_radarsat = tpt
   vpt_radarsat = vpt
+  ept_radarsat = ept
   
   tpt_all = np.row_stack([tpt_radarsat,tpt_tsx])
   vpt_all = np.row_stack([vpt_radarsat,vpt_tsx])
+  ept_all = np.row_stack([ept_radarsat,ept_tsx])
   
   # Sort arrays by time  
   sortind=np.argsort(tpt_all,0)
   tpt_all = tpt_all[sortind[:,0]]
   vpt_all = vpt_all[sortind[:,0],:]
+  ept_all = ept_all[sortind[:,0],:]
       	  
-  return vpt_all,tpt_all
+  return vpt_all,tpt_all, ept_all
+  
 
 def velocity_along_flowline(xf,yf,dists):      
   # Uses a linear interpolation to flowline coordinates xf, yf
@@ -165,9 +174,9 @@ def velocity_along_flowline(xf,yf,dists):
       
       velocities[minind:maxind,count] = fv(coords,'linear')
     
-      if DIR.endswith('33047') or DIR.endswith('33214'):
-        print "Still ignoring some directories"
-        velocities[:,count] = 'NaN'
+      #if DIR.endswith('33047') or DIR.endswith('33214'):
+      #  print "Still ignoring some directories"
+      #  velocities[:,count] = 'NaN'
       
       count = count + 1
   

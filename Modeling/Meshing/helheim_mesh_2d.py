@@ -52,10 +52,10 @@ file_bed_in1=os.path.join(os.getenv("HOME"),"Data/Bed/Morlighem_2014/morlighem_h
 file_bed_in2=os.path.join(os.getenv("HOME"),"Data/Bed/CreSIS/helheim_flightline_05212001_good_nsidc.dat")	
 
 ## Surface inputs
-file_surf_gimp=os.path.join(os.getenv("HOME"),"Data/DEMs/Gimp/gimpdem3_1.tif")
-file_surf_wv=[os.path.join(os.getenv("HOME"),"Data/DEMs/Worldview/Helheim/20120520_1443_102001001BD45E00_102001001C07FB00-DEM_32m_trans.tif"),
-			  os.path.join(os.getenv("HOME"),"Data/DEMs/Worldview/Helheim/20120513_1410_102001001B4C6F00_102001001BD7E800-DEM_32m_trans.tif"),
-			  os.path.join(os.getenv("HOME"),"Data/DEMs/Worldview/Helheim/20120624_1421_102001001B87EF00_102001001B1FB900-DEM_32m_trans.tif")]
+file_surf_gimp=os.path.join(os.getenv("HOME"),"Data/Elevation/Gimp/gimpdem3_1.tif")
+file_surf_wv=[os.path.join(os.getenv("HOME"),"Data/Elevation/Worldview/Helheim/20120520_1443_102001001BD45E00_102001001C07FB00-DEM_32m_trans.tif"),
+			  os.path.join(os.getenv("HOME"),"Data/Elevation/Worldview/Helheim/20120513_1410_102001001B4C6F00_102001001BD7E800-DEM_32m_trans.tif"),
+			  os.path.join(os.getenv("HOME"),"Data/Elevation/Worldview/Helheim/20120624_1421_102001001B87EF00_102001001B1FB900-DEM_32m_trans.tif")]
 ## Horizontal coordinate for calving front, so that we can easily change it
 calving_coord=310610 #Distance is 85005
 #calving_coord=310412 # Calving event of 200 m
