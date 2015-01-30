@@ -44,8 +44,11 @@ for file in files:
   filename=DIR+glacier+"/TIF/"+year+month+day+hour+min+sec+"_"+file+".tif"
   if not(os.path.isfile(filename)):
     print filename
-    sys.argv[1:] = ['-separate',file+"_B3.tif",file+"_B2.tif",file+"_B1.tif",'-o',filename]
+    sys.argv[1:] = ['-separate',file+"_B3.tif",file+"_B2.tif",file+"_B1.tif",'-o','temp1.tif']
     gdal_merge.main()
+    os.system('gdalwarp temp1.tif temp2.tif -t_srs EPSG:3413')
+    os.rename('temp2.tif',filename)
+    os.remove('temp1.tif')
   
 #############
 # Landsat 8 #
@@ -73,5 +76,5 @@ for file in files:
     gdal_merge.main()
     os.system('gdalwarp temp1.tif temp2.tif -t_srs EPSG:3413')
     os.rename('temp2.tif',filename)
-os.remove('temp1.tif')
+    os.remove('temp1.tif')
 
