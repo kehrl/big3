@@ -8,6 +8,7 @@ import velocity_flowline
 from subprocess import call
 import math
 import gdal_merge
+#import otbApplication
 
 from geodat import *
 
@@ -46,9 +47,12 @@ for file in files:
     print filename
     sys.argv[1:] = ['-separate',file+"_B3.tif",file+"_B2.tif",file+"_B1.tif",'-o','temp1.tif']
     gdal_merge.main()
-    os.system('gdalwarp temp1.tif temp2.tif -t_srs EPSG:3413')
-    os.rename('temp2.tif',filename)
-    os.remove('temp1.tif')
+    os.system('gdal_translate -co PHOTOMETRIC=RGB temp1.tif temp2.tif')
+    os.system('otbcli_BundleToPerfectSensor -inp '+file+'_B8.tif  -inxs temp2.tif -out temp3.tif uint16')
+    os.system('gdalwarp temp3.tif '+filename+' -t_srs EPSG:3413')
+  os.remove('temp1.tif')
+  os.remove('temp2.tif')
+  os.remove('temp3.tif')
   
 #############
 # Landsat 8 #
@@ -74,7 +78,10 @@ for file in files:
     print filename
     sys.argv[1:] = ['-separate',file+"_B4.tif",file+"_B3.tif",file+"_B2.tif",'-o','temp1.tif']
     gdal_merge.main()
-    os.system('gdalwarp temp1.tif temp2.tif -t_srs EPSG:3413')
-    os.rename('temp2.tif',filename)
-    os.remove('temp1.tif')
+    os.system('gdal_translate -co PHOTOMETRIC=RGB temp1.tif temp2.tif')
+    os.system('otbcli_BundleToPerfectSensor -inp '+file+'_B8.tif  -inxs temp2.tif -out temp3.tif uint16')
+    os.system('gdalwarp temp3.tif '+filename+' -t_srs EPSG:3413')
+  os.remove('temp1.tif')
+  os.remove('temp2.tif')
+  os.remove('temp3.tif')
 
