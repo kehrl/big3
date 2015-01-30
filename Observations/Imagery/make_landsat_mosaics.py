@@ -50,9 +50,9 @@ for file in files:
     os.system('gdal_translate -co PHOTOMETRIC=RGB temp1.tif temp2.tif')
     os.system('otbcli_BundleToPerfectSensor -inp '+file+'_B8.tif  -inxs temp2.tif -out temp3.tif uint16')
     os.system('gdalwarp temp3.tif '+filename+' -t_srs EPSG:3413')
-  os.remove('temp1.tif')
-  os.remove('temp2.tif')
-  os.remove('temp3.tif')
+    os.remove('temp1.tif')
+    os.remove('temp2.tif')
+    os.remove('temp3.tif')
   
 #############
 # Landsat 8 #
@@ -60,6 +60,7 @@ for file in files:
 files = os.listdir(DIR+glacier+"/OriginalData/L8")
 
 for file in files:
+<<<<<<< HEAD
   if file.startswith("L"):
     DIRFILE=DIR+glacier+"/OriginalData/L8/"+file+"/"
     os.chdir(DIRFILE)
@@ -82,7 +83,7 @@ for file in files:
       os.system('gdal_translate -co PHOTOMETRIC=RGB temp1.tif temp2.tif')
       os.system('otbcli_BundleToPerfectSensor -inp '+file+'_B8.tif  -inxs temp2.tif -out temp3.tif uint16')
       os.system('gdalwarp temp3.tif '+filename+' -t_srs EPSG:3413')
-    os.remove('temp1.tif')
-    os.remove('temp2.tif')
-    os.remove('temp3.tif')
+      os.remove('temp1.tif')
+      os.remove('temp2.tif')
+      os.remove('temp3.tif')
 
