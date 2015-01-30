@@ -81,7 +81,7 @@ vy_vec=reshape(vyr2,[length(xr)*length(yr),1]);
 x_vec=reshape(xgrid,[length(xr)*length(yr),1]);
 y_vec=reshape(ygrid,[length(xr)*length(yr),1]);
 
-cd ~/Code/Modeling/SolverFiles/3D/Helheim/Inputs/
+cd ~/Code/Helheim/Modeling/SolverFiles/3D/Inputs/
 fid = fopen('UDEM.xy','w');
 fprintf(fid,'%d\n%d\n',length(xr),length(yr));
 fclose(fid);

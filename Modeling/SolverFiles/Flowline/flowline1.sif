@@ -186,7 +186,11 @@ Solver 4
   Linear System Direct Method = MUMPS
 End
 
+<<<<<<< HEAD
+Solver 4
+=======
 Solver 5
+>>>>>>> a4bcdc177172275cd805d62f2887fadbff4e1114
   Equation = "Eij"          
   Variable = -nooutput "Eij"     
   Variable DOFs = 1
@@ -202,6 +206,16 @@ Solver 5
   Linear System Direct Method = mumps
 End 
 
+<<<<<<< HEAD
+Solver 5
+  Exec Solver = "After timestep"
+  Equation = "InterpolateMesh"
+  Procedure = "InterpolateMesh.so" "InterpolateMesh"
+  Mesh = File "Retreat1000m"
+End
+
+=======
+>>>>>>> a4bcdc177172275cd805d62f2887fadbff4e1114
 Solver 6
  Exec Solver = "After timestep"
  Exec Interval = 1

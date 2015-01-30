@@ -232,6 +232,13 @@ Solver 5
 End
 
 Solver 6
+<<<<<<< HEAD
+  Exec Solver = "After timestep"
+  Equation = "InterpolateMesh"
+  Procedure = "InterpolateMesh.so" "InterpolateMesh"
+  Mesh = File "Retreat200m"
+End
+=======
   Equation = "Eij"          
   Variable = -nooutput "Eij"     
   Variable DOFs = 1
@@ -246,6 +253,7 @@ Solver 6
   Linear System Solver = Direct         
   Linear System Direct Method = mumps
 End 
+>>>>>>> a4bcdc177172275cd805d62f2887fadbff4e1114
 
 Solver 7
  Exec Solver = "After TimeStep"
