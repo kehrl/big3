@@ -12,7 +12,7 @@ import sys
 import scipy.interpolate
 import numpy as np
 sys.path.append(os.path.join(os.getenv("HOME"),"Code/Util/Modules"))
-sys.path.append(os.path.join(os.getenv("HOME"),"Code/Helheim/Observations/IceFronts"))
+sys.path.append(os.path.join(os.getenv("HOME"),"Code/Helheim/Tools"))
 import geodat, helheim_icefronts
 
 #########################################################################################

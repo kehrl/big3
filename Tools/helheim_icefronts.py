@@ -58,7 +58,8 @@ def distance_along_flowline(x,y,dists,type):
 
   terminus_time = np.array(terminus_time)
   terminus_val = np.array(terminus_val)
-
+  terminus_val = terminus_val[:,0]
+  
   sortind=np.argsort(terminus_time,0)
   terminus_time = terminus_time[sortind]
   terminus_val = terminus_val[sortind]

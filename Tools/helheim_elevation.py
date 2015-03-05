@@ -2,8 +2,10 @@ import os
 import sys
 import numpy as np
 sys.path.append(os.path.join(os.getenv("HOME"),"Code/Util/Modules"))
+sys.path.append(os.path.join(os.getenv("HOME"),"Code/Helheim/Tools"))
+import helheim_icefronts
 import coords, geotiff
-import scipy.interpolate, jdcal
+import scipy.interpolate, jdcal, dist
 
 def atm(years):
 
@@ -88,52 +90,110 @@ def worldview(years,resolution):
       else: 
         if DIR[0:4] in years:
           dates.append(DIR[0:8])
-    
-    for date in dates:
-      if resolution == 32:
-        for DIR in DIRs:
-          if DIR.startswith(date) and DIR.endswith('_32m_trans.tif'): 
-            worldview[date] = geotiff.read(DIR) 
-      elif resolution == 2:
-        for DIR in DIRs:
-          if DIR.startswith(date) and DIR.endswith('_tr4x_align'):
-            worldview[date] = geotiff.read(DIR+"/"+DIR[0:56]+"-trans_reference-DEM.tif")
+ 
+  for date in dates:
+    if resolution == 32:
+      for DIR in DIRs:
+        if DIR.startswith(date) and DIR.endswith('_32m_trans.tif'): 
+          print "Loading data from "+DIR+"\n"
+          worldview[date] = geotiff.read(DIR) 
+    elif resolution == 2:
+      for DIR in DIRs:
+        if DIR.startswith(date) and DIR.endswith('_tr4x_align'):
+          print "Loading data from "+DIR+"\n"
+          worldview[date] = geotiff.read(DIR+"/"+DIR[0:56]+"-trans_reference-DEM.tif")
     
   return worldview
 
 
 def worldview_at_pts(xpts,ypts,resolution,years):
 
-  data = worldview(years,resolution)
-
-  dates = data.keys()
+  # Worldview data
+  WVDIR = os.path.join(os.getenv("HOME"),'/Users/kehrl/Data/Elevation/Worldview/Helheim/')
+  DIRs = os.listdir(WVDIR)
+  os.chdir(WVDIR)
+  
+  # Load ice front positions so we can toss data in front of terminus
+  dists = dist.transect(xpts,ypts)
+  term_values, term_time = helheim_icefronts.distance_along_flowline(xpts,ypts,dists,'icefront')
+  
+  dates=[]
+  for DIR in DIRs:
+    if (DIR[0:8] not in dates) and DIR.startswith('2'):
+      if not(years) or (years=='all'):
+        dates.append(DIR[0:8])
+      else: 
+        if DIR[0:4] in years:
+          dates.append(DIR[0:8])
+ 
   n = 0
   time = np.zeros(len(dates))
   zpts = np.zeros([len(xpts),len(dates)])
   zpts[:,:] = 'NaN'
   for date in dates:
-    # Get DEM measurements for that date
-    x = data[date][0]
-    y = data[date][1]
-    z = data[date][2]
-    z[z == 0] ='NaN'
+    if resolution == 32:
+      for DIR in DIRs:
+        if DIR.startswith(date) and DIR.endswith('_32m_trans.tif'): 
+          print "Loading data from "+DIR+"\n"
+          data = geotiff.read(DIR)
+          x = data[0]
+          y = data[1]
+          z = data[2]
+          z[z == 0] ='NaN'
+
+          dem = scipy.interpolate.RegularGridInterpolator([y,x],z)
     
-    # Create DEM interpolation product
-    dem = scipy.interpolate.RegularGridInterpolator([y,x],z)
+          # Find points that fall within the DEM
+          ind = np.where((xpts > np.min(x)) & (xpts < np.max(x)) & (ypts > np.min(y)) & (ypts < np.max(y)))
+          if ind:
+            # Get fractional year
+            year = float(date[0:4])
+            day = jdcal.gcal2jd(year,float(date[4:6]),float(date[6:8]))
+            day2 = jdcal.gcal2jd(year,12,31)
+            day1 = jdcal.gcal2jd(year-1,12,31)
+            doy = day[1]+day[0]-day1[1]-day1[0]
+            time[n] = ( year + doy/(day2[1]+day2[0]-day1[0]-day1[1])) 
+            
+            # Get terminus position at time of worldview image
+            terminus = np.interp(time[n],term_time,term_values)
+            inds = np.where(dists[ind] > terminus)
+            
+            print inds[0]
+            print ind
+            
+            # Get elevation at coordinates
+            zpts[ind[inds[0]],n] = dem(np.column_stack([ypts[ind[inds[0]]],xpts[ind[inds[0]]]]))
+    	    n = n+1
+    	    
+    elif resolution == 2:
+      for DIR in DIRs:
+        if DIR.startswith(date) and DIR.endswith('_tr4x_align'):
+          print "Loading data from "+DIR+"\n"
+          data = geotiff.read(DIR+"/"+DIR[0:56]+"-trans_reference-DEM.tif")
+          x = data[0]
+          y = data[1]
+          z = data[2]
+          z[z == 0] ='NaN'
+
+          dem = scipy.interpolate.RegularGridInterpolator([y,x],z)
     
-    # Find points that fall within the DEM
-    ind = np.where((xpts > np.min(x)) & (xpts < np.max(x)) & (ypts > np.min(y)) & (ypts < np.max(y)))
-    if ind:
-      # Get fractional year
-      year = float(date[0:4])
-      day = jdcal.gcal2jd(year,float(date[4:6]),float(date[6:8]))
-      day2 = jdcal.gcal2jd(year,12,31)
-      day1 = jdcal.gcal2jd(year-1,12,31)
-      doy = day[1]+day[0]-day1[1]-day1[0]
-      time[n] = ( year + doy/(day2[1]+day2[0]-day1[0]-day1[1])) 
-      
-      # Get elevation at coordinates
-      zpts[ind,n] = dem(np.column_stack([ypts[ind],xpts[ind]]))  
-      n = n+1
+          # Find points that fall within the DEM
+          ind = np.where((xpts > np.min(x)) & (xpts < np.max(x)) & (ypts > np.min(y)) & (ypts < np.max(y)))
+          if ind:
+            # Get fractional year
+            year = float(date[0:4])
+            day = jdcal.gcal2jd(year,float(date[4:6]),float(date[6:8]))
+            day2 = jdcal.gcal2jd(year,12,31)
+            day1 = jdcal.gcal2jd(year-1,12,31)
+            doy = day[1]+day[0]-day1[1]-day1[0]
+            time[n] = ( year + doy/(day2[1]+day2[0]-day1[0]-day1[1])) 
+            
+            # Get terminus position at time of worldview image
+            terminus = np.interp(time[n],term_time,term_values)
+            inds = np.where(dists[ind] > terminus)
+            
+            # Get elevation at coordinates
+            zpts[ind[inds[0]],n] = dem(np.column_stack([ypts[ind[inds[0]]],xpts[ind[inds[0]]]]))
+    	    n = n+1
       
   return time,zpts
