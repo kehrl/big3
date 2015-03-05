@@ -25,7 +25,6 @@ def distance_along_flowline(x,y,dists,type):
   n = 0
   for file in files:
     if file.endswith('.shp') and (not "moon" in file):
-      print file
       # Load shapefile
       sf = shapefile.Reader(DIRI+file)
       shapes = sf.shapes()
@@ -105,7 +104,6 @@ def load_all(time1,time2,type):
   termy[:,:]= 'NaN'
   for i in range(0,n):
     file = shapefiles[i]
-    print file
     # Load shapefile
     sf = shapefile.Reader(DIRI+file)
     shapes = sf.shapes()

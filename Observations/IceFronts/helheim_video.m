@@ -25,7 +25,7 @@ limit=11/365.25; %if time difference between images exceeds this, we want to
 %hold the frame so that timing is right in the video
 
 n=1;
-len=length(find(time(:,1) >= 2012));
+len=length(find(time(:,1) >= 2010));
 cd ~/Desktop/test
 clear writerObj
 %writerObj = VideoWriter('helheim.avi','uncompressed avi');
@@ -33,7 +33,7 @@ clear writerObj
 %writerObj.Quality=100;
 %open(writerObj);
 for i=1:length(time)
-    if time(i,1) >= 2012
+    if time(i,1) >= 2010
     hold off;
     imshow(I(i).z,'xdata',I(i).x,'ydata',I(i).y); hold on;
     set(gca,'ydir','normal');

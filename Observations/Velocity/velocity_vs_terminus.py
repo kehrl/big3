@@ -4,9 +4,7 @@ import os
 import sys
 import numpy as np
 sys.path.append(os.path.join(os.getenv("HOME"),"Code/Util/Modules"))
-sys.path.append(os.path.join(os.getenv("HOME"),"Code/Helheim/Observations/IceFronts"))
-sys.path.append(os.path.join(os.getenv("HOME"),"Code/Helheim/Observations/Velocity"))
-sys.path.append(os.path.join(os.getenv("HOME"),"Code/Helheim/Observations/Bed"))
+sys.path.append(os.path.join(os.getenv("HOME"),"Code/Helheim/Tools"))
 import helheim_velocity, helheim_icefronts, helheim_bed
 import matplotlib.pyplot as plt
 import matplotlib, geotiff
@@ -28,7 +26,9 @@ DIRM = os.path.join(os.getenv("HOME"),"Models/Helheim/Meshes/Flowline/"+MESHNAME
 flowline = np.loadtxt(DIRM+"Inputs/flowline.dat",skiprows=1)
 
 # Locations for velocities
-dists = [0,5,10,20,28.9] # kilometers
+Lagrangian = 1
+dists_eul = [0,5,10,20,30] # kilometers
+dists_lag = np.array([1.0,5.0,10.0,20.0,30.0])
 terminus = 82 # location of terminus in flowline (km)
 
 # Image for plotting
@@ -44,24 +44,49 @@ seasonal = 1 # plot seasonal bars, to highlight seasonal trends
 normalizedvelocity = 0 # divide by average velocity
 terminusbed = 1
 
-##################################
-# Get velocities at those points # 
-##################################
+############################
+# Get velocities at points # 
+############################
+
+# Lagrangian points
+
+vellag_val,vellag_time,vellag_error,pos = helheim_velocity.velocity_at_lagpoints(flowline[:,1],flowline[:,2],flowline[:,0],np.array(dists_lag)*1e3)
+vellag_val[80,2:4]='NaN'
+vellag_val[81,:]='NaN'
+
+indt = np.where((vellag_time > time1) & (vellag_time < time2))
+vellag_time = vellag_time[indt[0]]
+vellag_val = vellag_val[indt[0],:]
+pos=pos[indt[0],:]
+
+del indt
+
+# Eulerian points
 
 ind=[]
-for i in range(0,len(dists)):
-  ind.append( (abs(flowline[:,0] - 1e3*(terminus - dists[i]))).argmin() )
+for i in range(0,len(dists_eul)):
+  ind.append( (abs(flowline[:,0] - 1e3*(terminus - dists_eul[i]))).argmin() )
 
-velocity_val,velocity_time, velocity_error = helheim_velocity.velocity_at_points(flowline[ind,1],flowline[ind,2])
-velocity_val[81,0] = 'NaN' # Ignore bad velocities
-velocity_val[80,1] = 'NaN' # Ignore bad velocities
-velocity_val[80:82,2] = 'NaN' # Ignore bad velocities
+veleul_val,veleul_time, veleul_error = helheim_velocity.velocity_at_eulpoints(flowline[ind,1],flowline[ind,2])
+veleul_val[81,0] = 'NaN' # Ignore bad velocities
+veleul_val[80,1] = 'NaN' # Ignore bad velocities
+veleul_val[80:82,2] = 'NaN' # Ignore bad velocities
 velocitypoints = np.column_stack([flowline[ind,1],flowline[ind,2]])
 
-indt = np.where((velocity_time > time1) & (velocity_time < time2))
-velocity_time = velocity_time[indt[0]]
-velocity_val = velocity_val[indt[0],:]
+indt = np.where((veleul_time > time1) & (veleul_time < time2))
+veleul_time = veleul_time[indt[0]]
+veleul_val = veleul_val[indt[0],:]
+
 del indt
+
+if Lagrangian == 1:
+  velocity_val = vellag_val
+  velocity_time = vellag_time
+  dists = dists_lag
+else:
+  velocity_val = veleul_val
+  velocity_time = veleul_time
+  dists_eul
 
 ##################
 # Get ice fronts #
@@ -82,7 +107,7 @@ del indt
 ###########
 
 bed2001 = helheim_bed.cresis('2001')
-bed2001dist = np.interp(bed2001[:,0],flowline[:,1],flowline[:,2])
+bed2001dist = np.interp(bed2001[:,0],flowline[:,1],flowline[:,0])
 
 ############################################
 # Plot: velocity vs. terminus through time #
@@ -125,7 +150,7 @@ plt.legend(loc=2,fontsize=10)
 ax.tick_params('both', length=20, width=2, which='major')
 ax.tick_params('both', length=10, width=1, which='minor')
 if seasonal:
-  xTickPos = np.linspace(time1,time2,(time2-time1)*2+1)
+  xTickPos = np.linspace(time1-0.25,time2-0.25,(time2-time1)*2+1)
   xTickPos = xTickPos[:-1]
   ax.bar(xTickPos, [max(plt.ylim())-min(plt.ylim())] * len(xTickPos), (xTickPos[1]-xTickPos[0]), bottom=min(plt.ylim()), color=['0.9','w'],linewidth=0)
 
@@ -150,7 +175,7 @@ plt.ylabel('Terminus position \n (km)',fontsize=12)
 ax.tick_params('both', length=20, width=2, which='major')
 ax.tick_params('both', length=10, width=1, which='minor')
 if seasonal == 1:
-  xTickPos = np.linspace(time1,time2,(time2-time1)*2+1)
+  xTickPos = np.linspace(time1-0.25,time2-0.25,(time2-time1)*2+1)
   xTickPos = xTickPos[:-1]
   ax.bar(xTickPos, [max(plt.ylim())-min(plt.ylim())] * len(xTickPos), (xTickPos[1]-xTickPos[0]),bottom=min(plt.ylim()), color=['0.9','w'],linewidth=0)
 if terminusbed == 1:
@@ -160,26 +185,29 @@ if terminusbed == 1:
   terminus_bed = np.interp(terminus_val,bed2001dist,bed2001[:,2])
   plt.subplot(gs[3, :])
   ax = plt.gca()
-  plt.xticks(range(2000,2016),fontsize=12)
-  ax.set_xticklabels([])
-  ax.xaxis.set_major_formatter(x_formatter)
-  ax.xaxis.set_minor_locator(AutoMinorLocator(2))
-  ax.yaxis.set_minor_locator(AutoMinorLocator(2))
-  plt.xlim([time1,time2]) 
   ax.tick_params('both', length=20, width=2, which='major')
   ax.tick_params('both', length=10, width=1, which='minor')
   plt.ylabel('Bed at terminus \n (m)',fontsize=12)
   plt.plot(terminus_time,terminus_bed,'ko-',linewidth=2,markersize=5)
+  plt.xticks(range(2000,2016),fontsize=12)
+  labels=[]
+  for i in range(2000,2017):
+    labels.append('Jan \n'+str(i))
+  ax.set_xticklabels(labels)
+  plt.xlim([time1,time2]) 
+  #ax.xaxis.set_major_formatter(x_formatter)
+  ax.xaxis.set_minor_locator(AutoMinorLocator(2))
+  ax.yaxis.set_minor_locator(AutoMinorLocator(2))
   plt.yticks([-700,-600,-500])
   if seasonal:
-    xTickPos = np.linspace(time1,time2,(time2-time1)*2+1)
+    xTickPos = np.linspace(time1-0.25,time2-0.25,(time2-time1)*2+1)
     xTickPos = xTickPos[:-1]
     ax.bar(xTickPos, [max(plt.ylim())-min(plt.ylim())] * len(xTickPos), (xTickPos[1]-xTickPos[0]), bottom=min(plt.ylim()), color=['0.9','w'],linewidth=0)
- 
+
+plt.subplots_adjust(hspace=0.1,wspace=0) 
 plt.tight_layout()
-plt.subplots_adjust(hspace=0.1,wspace=0)
-plt.savefig('fig_velocity_time_'+str(time1)+'to'+str(time2)+'.pdf',FORMAT='PDF')
-plt.close()
+#plt.savefig(os.path.join(os.getenv("HOME"),'Bigtmp/fig_velocity_time_'+str(time1)+'to'+str(time2)+'.pdf'),FORMAT='PDF')
+#plt.close()
 
 #########################################
 # Plot overview map for previous figure #
@@ -199,91 +227,62 @@ plt.plot(flowline[:,1],flowline[:,2],'k',linewidth=1.5)
 plt.title('Terminus positions from '+str(time1)+' to '+str(time2))
 for i in range(0,len(coloptions)):
   plt.plot(velocitypoints[i,0],velocitypoints[i,1],'o',color=coloptions[i],markersize=10)
-plt.savefig('fig_velocity_map_'+str(time1)+'to'+str(time2)+'.pdf',FORMAT='PDF')
+plt.savefig(os.path.join(os.getenv("HOME"),'Bigtmp/fig_velocity_map_'+str(time1)+'to'+str(time2)+'.pdf'),FORMAT='PDF')
 plt.close()
 
-# Plot velocity vs. terminus position
-#plt.figure(figsize=(5,5))
-#gs = matplotlib.gridspec.GridSpec(3,1)
+###################################################
+# Plot terminus position, bed depth, vs. velocity #
+###################################################
 
-#plt.subplot(gs[:2, :]) 
-#ind = np.where(terminus_time > 2008)
-#ind2 = np.where(velocity_time > 2008)
-#terminus_interp = np.interp(velocity_time[ind2],terminus_time[ind],terminus_val[ind])
-#plt.plot((terminus_interp)/1e3-82,(velocity_val[ind2[0],0])/1e3,'bo',label='Measured',markeredgecolor='b')
-#plt.plot(term_rkm/1e3-82,velocities_rkm[:,0]/1e3,'ro',label='Simulated',markeredgecolor='r')
-#ax = plt.gca()
-#plt.xlim([0,4])
-#plt.xticks([0,1,2,3,4],fontsize=24)
-#plt.yticks([7,8,9,10],fontsize=24)
-#plt.ylim([6.5,10.5])
-#ax.xaxis.set_minor_locator(AutoMinorLocator(2))
-#ax.yaxis.set_minor_locator(AutoMinorLocator(2))
-#ax.tick_params('both', length=10, width=1, which='major')
-#ax.tick_params('both', length=5, width=1, which='minor')
-#plt.ylabel('Velocity (km/yr)',fontsize=28)
-#plt.legend(fontsize=20,numpoints=1,handlelength=0)
-#plt.xlabel('Terminus (km)',fontsize=28)
-#plt.tight_layout()
+plt.figure(figsize=(10,5))
 
-#plt.subplot(gs[2, :]) 
-#ax = plt.gca()
-#plt.plot((flowline[:,0]-82000)/1e3,flowline[:,3],'k',linewidth=2)
-#plt.plot((flowline[:,0]-82000)/1e3,flowline[:,4],'k',linewidth=2)
-#plt.xlim([0,4])
-#plt.yticks([-700,-600,-500],fontsize=24)
-#plt.ylim([-700,-500])
-#plt.ylabel('Bed (m asl)',fontsize=30)
-#plt.xlabel('Terminus (km)',fontsize=30)
-#ax.xaxis.set_minor_locator(AutoMinorLocator(2))
-#ax.yaxis.set_minor_locator(AutoMinorLocator(2))
-#ax.tick_params('both', length=10, width=1, which='major')
-#ax.tick_params('both', length=5, width=1, which='minor')
-#plt.xticks([0,1,2,3,4],fontsize=24)
-#plt.tight_layout()
-#plt.subplots_adjust(hspace=0.1,wspace=0)
+# Terminus position vs. velocity
+terminus_interped = np.interp(velocity_time,terminus_time,terminus_val)
+bed_interped = np.interp(terminus_interped,bed2001dist,bed2001[:,2])
 
 
-# Plot terminus position along flowline
-#plt.figure(figsize=(8,4))
-#pylab.rcParams['xtick.major.pad']='8'
-#pylab.rcParams['ytick.major.pad']='8'
-#jet = cm = plt.get_cmap('RdYlBu_r')
-#cNorm  = colors.Normalize(vmin=6, vmax=10)
-#scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=jet)
-#CS3 = plt.contourf([[0,0],[0,0]],np.arange(6,10.1,.1), cmap=jet)
+plt.subplot(121) 
+ind=np.where(~np.isnan(velocity_val[:,0]))
+R = np.corrcoef(terminus_interped[ind,0],velocity_val[ind,0])
+plt.plot(terminus_interped/1e3-82,velocity_val[:,0]/1e3,'k.')
+plt.text(3,10,"R$^2$ = %.2f" % R[0,1]**2)
+plt.xlabel('Terminus position (km)')
+plt.ylabel('Glacier velocity (km/yr)')
+plt.xticks([0,1,2,3,4])
 
-#floatheight = -(flowline[:,3])*(1.024/0.917-1)
-#ind = np.where((terminus_time > 2008))
-#terminus_interp = terminus_val[ind]
-#velocity_interp = np.interp(terminus_time[ind],velocity_time[:,0],velocity_val[:,0])
-#surf_interp = np.interp(terminus_interp,flowline[:,0],floatheight)
-#bed_interp = np.interp(terminus_interp,flowline[:,0],flowline[:,3])
+plt.subplot(122)
+plt.plot(bed_interped,velocity_val[:,0]/1e3,'k.')
+R = np.corrcoef(bed_interped[ind,0],velocity_val[ind,0])
+plt.xlabel('Bed at terminus (m)')
+plt.ylabel('Glacier velocity (km/yr)')
+plt.xticks([-700,-600,-500])
+plt.text(-550,10,"R$^2$ = %.2f" % R[0,1]**2)
 
-#plt.plot(flowline[0:-74,0]/1e3-82,flowline[0:-74,4],'k',linewidth=3)
+###########################
+# Plot velocity radargram #
+###########################
 
-#for i in range(0,len(surf_interp)):
-  #velcolor = scalarMap.to_rgba(velocity_interp[i]/1e3)
-#  plt.plot([terminus_interp[i]/1e3-82,terminus_interp[i]/1e3-82],[surf_interp[i],bed_interp[i]],color='0.8',linewidth=2)
-#plt.plot(flowline[:,0]/1e3-82,floatheight,'k--',linewidth=3,label='Flotation height')
-#pylab.fill_between(flowline[:,0]/1e3-82,-10000,flowline[:,3],facecolor=[139/255.0,90/255.0,43/255.0],alpha=0.5)
-#plt.plot(flowline[:,0]/1e3-82,flowline[:,3],'k',linewidth=3)
+flowline_v,flowline_t,termini = helheim_velocity.velocity_along_flowline(flowline[:,1],flowline[:,2],flowline[:,0])
+flowline_tint=np.linspace(2009,2015,1001)
+term_int=np.zeros([len(flowline_tint),1])
+flowline_vint = np.zeros([len(flowline[:,0]),len(flowline_tint)])
 
-#plt.plot([flowline[-16,0]/1e3-82,flowline[-16,0]/1e3-82],np.array([flowline[-16,4]-10,flowline[-16,3]]),'k',linewidth=2)
-#plt.plot(terminus1_rkm['coord1']/1e3-82,terminus1_rkm['coord2'],'k',linewidth=3)
-#plt.plot([terminus1_rkm['coord1'][0]/1e3-82-1,terminus1_rkm['coord1'][0]/1e3-82-1],[np.interp(terminus1_rkm['coord1'][0]-1000,flowline[:,0],flowline[:,4]),np.interp(terminus1_rkm['coord1'][0]-1000,flowline[:,0],flowline[:,3])],'r',linewidth=3)
-#plt.plot([terminus1_rkm['coord1'][0]/1e3-82-0.25,terminus1_rkm['coord1'][0]/1e3-82-0.25],[np.interp(terminus1_rkm['coord1'][0]-250,flowline[:,0],flowline[:,4]),np.interp(terminus1_rkm['coord1'][0]-250,flowline[:,0],flowline[:,3])],'b',linewidth=3)
+for i in range(0,len(flowline_tint)):
+  ind = np.argmin(abs(flowline_tint[i]-flowline_t))
+  term_int[i] = termini[ind]
+  flowline_vint[:,i] = np.log10(flowline_v[:,ind])
 
-#ax = plt.gca()
-#ax.tick_params('both', length=10, width=1, which='major')
-#plt.xlim([-12,4.7])
-#plt.ylim([-1000,800])
-#plt.xticks([-12,-8,-4,0,4],fontsize=24)
-#plt.yticks([-1000,-500,0,500],fontsize=24)
-#cbar = plt.colorbar(CS3,ticks=range(6,12))
-#cbar.set_label('Velocity near terminus (km/yr)',fontsize=20)
-#cbar.ax.set_ylim([cbar.norm(6), cbar.norm(11)])
-#plt.legend(fontsize=20,handlelength=0)
-#plt.xlabel('Distance along flowline (km)',fontsize=26)
-#plt.ylabel('Elevation (m asl)',fontsize=26)
-#plt.tight_layout()
+plt.figure(figsize=(6,6))
+ax=plt.gca()
+plt.imshow(flowline_vint,extent=[flowline_tint[0],flowline_tint[-1],flowline[-1,0]/1e3,flowline[0,0]],interpolation='nearest',aspect='auto',norm=matplotlib.colors.LogNorm())
+plt.fill_between(terminus_time,terminus_val/1e3,88,color='w')
+plt.plot(terminus_time,terminus_val/1e3,'k.-')
+plt.xlim([2009,2014.5])
+ax.get_xaxis().get_major_formatter().set_useOffset(False)
+plt.ylim([87,57])
+plt.xticks([2009,2010,2011,2012,2013,2014,2015])
+plt.clim(np.log10(4000),np.log10(9000))
+cb=plt.colorbar()
+cb.set_ticks([np.log10(4000),np.log10(5000),np.log10(6000),np.log10(7000),np.log10(8000),np.log10(9000)])
+cb.set_ticklabels(['4','5','6','7','8','9'])
+cb.set_label('Velocity (km/yr)')

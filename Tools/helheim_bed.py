@@ -21,7 +21,7 @@ def cresis(year):
     x2,y2 = coords.convert(x,y,4326,3413)
     
     surf=helheim_elevation.atm('2001')
-    zs = scipy.interpolate.griddata(surf[:,0:2],surf[:,2],np.column_stack([x2,y2]),method='nearest')
+    zs = scipy.interpolate.griddata(surf['20010521'][:,0:2],surf['20010521'][:,2],np.column_stack([x2,y2]),method='nearest')
     bed = np.column_stack([x2,y2,zs-H,zs])
   
   else:

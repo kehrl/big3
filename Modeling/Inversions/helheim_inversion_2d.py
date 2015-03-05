@@ -66,7 +66,7 @@ flowline=np.loadtxt(file_flowline_in,skiprows=1)
 if not(os.path.exists(file_velocity_out)):
   print "Loading velocity data"
   # Get velocity along flowline from velocity profiles
-  v=velocity_flowline.alongflow(flowline[:,1],flowline[:,2],file_velocity_in1,file_velocity_in2)
+  v=values_along_flowline.alongflow(flowline[:,1],flowline[:,2],file_velocity_in1,file_velocity_in2)
   nonnan = np.where(~(np.isnan(v)))
   vnonnan = np.interp(flowline[:,0],flowline[nonnan[0],0],v[nonnan[0]])
   
