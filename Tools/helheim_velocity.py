@@ -1,6 +1,7 @@
 #Various scripts for processing and pulling Helheim velocity data:
 
-## velocity_at_eulpoints(xpt,ypt): get velocity timeseries at an Eulerian point
+## velocity_at_eulpoints(xpt,ypt): get velocity magnitude timeseries at an Eulerian point
+## divergence_at_eulpoints(xpt,ypt): get divx,divy at Eulerian points through time
 ## velocity_at_lagpoints(x,y,dists,pts): get velocity timeseries at a Lagrangian point
 ## velocity_along_flowline(x,y): get velocity timeseries along flowline
 
@@ -240,8 +241,7 @@ def velocity_along_flowline(xf,yf,dists):
   tpt_sort = tpt_all[sortind[:,0]]
   term_sort = term_all[sortind[:,0]]
   vpt_sort = vpt_all[:,sortind[:,0]]  	  
-  
-  #return velocities_tsx,time_tsx,term_tsx    	  
+    	  
   return vpt_sort,tpt_sort,term_sort
 
 
@@ -255,7 +255,6 @@ def velocity_at_lagpoints(xf,yf,dists,pts):
   ###############################################################################
   # Load terminus profiles so we can calculate lagrangian points #
   ###############################################################################
-
   term_values, term_time = helheim_icefronts.distance_along_flowline(xf,yf,dists,'icefront')
 
   #################
@@ -339,9 +338,9 @@ def velocity_at_lagpoints(xf,yf,dists,pts):
   positions = np.zeros([m,len(pts)])
   positions[:,:] = 'nan'
   xpts_all = np.zeros([m,len(pts)])
-  xpts_all = 'nan'
+  xpts_all[:,:] = 'nan'
   ypts_all = np.zeros([m,len(pts)])
-  ypts_all = 'nan'
+  ypts_all[:,:] = 'nan'
   count=0
   for j in range(0,len(DIRS)):
     DIR=DIRS[j]
@@ -377,8 +376,8 @@ def velocity_at_lagpoints(xf,yf,dists,pts):
   velocities_radarsat = velocities
   error_radarsat = error
   pos_radarsat = positions
-  xpt_tsx = xpts_all
-  ypt_tsx = ypts_all
+  xpt_radarsat = xpts_all
+  ypt_radarsat = ypts_all
 
   del positions,error,times,velocities,xpts_all,ypts_all
 
@@ -394,9 +393,159 @@ def velocity_at_lagpoints(xf,yf,dists,pts):
   tpt_all = tpt_all[sortind[:,0]]
   vpt_all = vpt_all[sortind[:,0],:]
   ept_all = ept_all[sortind[:,0],:]
-  xpt_all = ypt_all[sortind[:,0],:]
-  xpt_all = ypt_all[sortind[:,0],:]
+  xpt_all = xpt_all[sortind[:,0],:]
+  ypt_all = ypt_all[sortind[:,0],:]
   dists_all = dists_all[sortind[:,0],:]
       	  
-  return vpt_all,tpt_all, ept_all, dists_all, xpts_all, ypts_all 
+  return vpt_all,tpt_all, ept_all, dists_all, xpt_all, ypt_all 
 
+#########################################################################################
+def divergence_at_eulpoints(xpt,ypt):
+  # Finds velocity at nearest gridcell to xpt, ypt
+
+  try:
+    n = len(xpt)
+  except:
+    n = 0
+
+  DIR_TSX = os.path.join(os.getenv("HOME"),"Data/Velocity/TSX/Helheim/")
+  DIR_RADARSAT = os.path.join(os.getenv("HOME"),"Data/Velocity/RADARSAT/Helheim/")
+
+  #################
+  # LOAD TSX Data #
+  #################
+
+  DIRS=os.listdir(DIR_TSX)
+  tpt=[]
+  
+  # Get number of velocity files
+  m=0
+  for DIR in DIRS:
+    if DIR.startswith('track'):
+      m = m+1
+
+  divxpt=np.zeros([m,n])
+  divypt=np.zeros([m,n])
+  vpt=np.zeros([m,n])
+  vxpt=np.zeros([m,n])
+  vypt=np.zeros([m,n])
+  tpt=np.zeros([m,1])
+  count=0
+  for j in range(0,len(DIRS)):
+    DIR=DIRS[j]
+    if DIR.startswith('track'):
+      infile=DIR_TSX+DIR
+      x,y,v,vx,vy,ex,ey,time=geodat.readvelocity(infile+"/mosaicOffsets")
+      tpt[count]=time
+      
+      for i in range(0,n):
+        try:
+          xind = (abs(x-xpt[i])).argmin()
+          yind = (abs(y-ypt[i])).argmin()
+          vpt[count,i] = v[yind,xind]
+          vxpt[count,i] = vx[yind,xind]
+          vypt[count,i] = vy[yind,xind]
+          if (x[xind] > xpt[i]):
+            xind=xind-1
+          if (y[yind] > ypt[i]):
+            yind=yind-1
+        except:
+      	  xind = (abs(x-xpt)).argmin()
+          yind = (abs(y-ypt)).argmin()
+          vpt[count,i] = v[yind,xind]
+          vxpt[count,i] = vx[yind,xind]
+          vypt[count,i] = vy[yind,xind]
+          if (x[xind] > xpt):
+            xind=xind-1
+          if (y[yind] > ypt):
+            yind=yind-1
+        
+        divxpt[count,i] = (vx[yind,xind+1]-vx[yind,xind])/(x[xind+1]-x[xind])
+        divypt[count,i] = (vy[yind+1,xind]-vy[yind,xind])/(y[yind+1]-y[yind])
+        
+      count = count + 1
+  
+  # Sort arrays by time
+  tpt_tsx = tpt
+  vpt_tsx = vpt
+  vxpt_tsx = vxpt
+  vypt_tsx = vypt
+  divxpt_tsx = divxpt
+  divypt_tsx = divypt
+  
+  ######################
+  # Load RADARSAT data #
+  ######################
+  DIRS=os.listdir(DIR_RADARSAT)
+  
+  # Get number of velocity files
+  m=0
+  for DIR in DIRS:
+    if DIR.startswith('winter'):
+      m = m+1
+
+  divxpt=np.zeros([m,n])
+  divypt=np.zeros([m,n])
+  vpt=np.zeros([m,n])
+  vxpt=np.zeros([m,n])
+  vypt=np.zeros([m,n])
+  tpt=np.zeros([m,1])
+  count=0
+  for j in range(0,len(DIRS)):
+    DIR=DIRS[j]
+    if DIR.startswith('winter'):
+      infile=DIR_RADARSAT+DIR
+      x,y,v,vx,vy,ex,ey,time=geodat.readvelocity(infile+"/mosaicOffsets")
+      tpt[count]=time
+      
+      for i in range(0,n):
+        try:
+          xind = (abs(x-xpt[i])).argmin()
+          yind = (abs(y-ypt[i])).argmin()
+          vpt[count,i] = v[yind,xind]
+          vxpt[count,i] = vx[yind,xind]
+          vypt[count,i] = vy[yind,xind]
+          if (x[xind] > xpt[i]):
+            xind=xind-1
+          if (y[yind] > ypt[i]):
+            yind=yind-1
+        except:
+      	  xind = (abs(x-xpt)).argmin()
+          yind = (abs(y-ypt)).argmin()
+          vpt[count,i] = v[yind,xind]
+          vxpt[count,i] = vx[yind,xind]
+          vypt[count,i] = vy[yind,xind]
+          if (x[xind] > xpt):
+            xind=xind-1
+          if (y[yind] > ypt):
+            yind=yind-1
+
+        divxpt[count,i] = (vx[yind,xind+1]-vx[yind,xind])/(x[xind+1]-x[xind])
+        divypt[count,i] = (vy[yind+1,xind]-vy[yind,xind])/(y[yind+1]-y[yind])
+        
+      count = count + 1
+  
+  tpt_radarsat = tpt
+  vpt_radarsat = vpt
+  vxpt_radarsat = vxpt
+  vypt_radarsat = vypt
+  divxpt_radarsat = divxpt
+  divypt_radarsat = divypt
+  
+  tpt_all = np.row_stack([tpt_radarsat,tpt_tsx])
+  vpt_all = np.row_stack([vpt_radarsat,vpt_tsx])
+  vxpt_all = np.row_stack([vxpt_radarsat,vxpt_tsx])
+  vypt_all = np.row_stack([vypt_radarsat,vypt_tsx])
+  divxpt_all = np.row_stack([divxpt_radarsat,divxpt_tsx])
+  divypt_all = np.row_stack([divypt_radarsat,divypt_tsx])
+  
+  # Sort arrays by time  
+  sortind=np.argsort(tpt_all,0)
+  tpt_all = tpt_all[sortind[:,0]]
+  vpt_all = vpt_all[sortind[:,0],:]
+  vxpt_all = vxpt_all[sortind[:,0],:]
+  vypt_all = vypt_all[sortind[:,0],:]
+  divxpt_all = divxpt_all[sortind[:,0],:]
+  divypt_all = divypt_all[sortind[:,0],:]
+      	  
+  return vpt_all,vxpt_all, vypt_all, divxpt_all, divypt_all, tpt_all

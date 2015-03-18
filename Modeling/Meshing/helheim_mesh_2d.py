@@ -278,6 +278,7 @@ del thick, dwdx, R
 # Finally export coordinates of flowline for future use #
 #########################################################
 print "\n ## Saving flowline coordinates ##"
+R = len(flowline[:,0])
 fid = open(file_flowline_out,'w')
 fid.write("{}\n".format(R))
 for i in range(0,R):

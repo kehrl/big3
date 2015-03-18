@@ -9,6 +9,7 @@ sys.path.append(os.path.join(os.getenv("HOME"),"Code/Util/Modules"))
 sys.path.append(os.path.join(os.getenv("HOME"),"Code/Helheim/Observations/Elevation"))
 import coords, helheim_elevation
 import scipy.interpolate
+import geotiff
 
 def cresis(year):
 
@@ -67,3 +68,12 @@ def cresis(year):
 
   return bed
 
+def morlighem(xpts,ypts):
+  file = os.path.join(os.getenv("HOME"),"Data/Bed/Morlighem_2014/morlighem_helheim_bed.tif")
+  [x,y,z]=geotiff.read(file)
+  
+  f = scipy.interpolate.RectBivariateSpline(y,x,z)
+  bed = f.ev(ypts,xpts)
+  bed[bed<-2000]='NaN'
+      
+  return bed

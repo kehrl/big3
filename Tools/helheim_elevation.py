@@ -7,11 +7,20 @@ import helheim_icefronts
 import coords, geotiff
 import scipy.interpolate, jdcal, dist
 
+def gimp(xpts,ypts):
+  file = os.path.join(os.getenv("HOME"),'Data/Elevation/Gimp/gimpdem3_1.tif')
+  [x,y,z]=geotiff.read(file)
+  
+  f = scipy.interpolate.RectBivariateSpline(y,x,z)
+  elev = f.ev(ypts,xpts)
+  
+  return elev
+
 def atm(years):
 
   atm = {}
   
-  ATMDIR = os.path.join(os.getenv("HOME"),'/Users/kehrl/Data/Elevation/ATM/Helheim/')
+  ATMDIR = os.path.join(os.getenv("HOME"),'Data/Elevation/ATM/Helheim/')
   DIRs = os.listdir(ATMDIR)
   
   if (not years) or (years=='all'):
@@ -155,15 +164,13 @@ def worldview_at_pts(xpts,ypts,resolution,years):
             time[n] = ( year + doy/(day2[1]+day2[0]-day1[0]-day1[1])) 
             
             # Get terminus position at time of worldview image
-            terminus = np.interp(time[n],term_time,term_values)
-            inds = np.where(dists[ind] > terminus)
-            
-            print inds[0]
-            print ind
+            terminus = np.interp(time[n],term_time,term_values[:,0])
             
             # Get elevation at coordinates
-            zpts[ind[inds[0]],n] = dem(np.column_stack([ypts[ind[inds[0]]],xpts[ind[inds[0]]]]))
-    	    n = n+1
+            zpts[ind,n] = dem(np.column_stack([ypts[ind],xpts[ind]]))
+            ind = np.where(dists > terminus)
+            zpts[ind,n] = 'NaN' 
+            n = n+1
     	    
     elif resolution == 2:
       for DIR in DIRs:
@@ -189,11 +196,16 @@ def worldview_at_pts(xpts,ypts,resolution,years):
             time[n] = ( year + doy/(day2[1]+day2[0]-day1[0]-day1[1])) 
             
             # Get terminus position at time of worldview image
-            terminus = np.interp(time[n],term_time,term_values)
-            inds = np.where(dists[ind] > terminus)
+            termind = np.argmin(abs(term_time-time[n]))
+            if term_time[termind] < time[n]:
+              terminus = np.max(term_values[termind],term_values[termind+1])
+            else:
+              terminus = np.max(term_values[termind-1],term_values[termind])
             
             # Get elevation at coordinates
-            zpts[ind[inds[0]],n] = dem(np.column_stack([ypts[ind[inds[0]]],xpts[ind[inds[0]]]]))
+            zpts[ind,n] = dem(np.column_stack([ypts[ind],xpts[ind]]))
+            ind = np.where(dists > terminus)
+            zpts[ind,n] = 'NaN'
     	    n = n+1
       
-  return time,zpts
+  return zpts,time
