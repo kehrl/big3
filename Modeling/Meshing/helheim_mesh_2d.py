@@ -22,7 +22,7 @@ import geotiff
 # Inputs #
 ##########
 
-MESHNAME='High'
+MESHNAME='MorlighemNew'
 file_mesh_out="Elmer"
 
 DIRS=os.path.join(os.getenv("HOME"),"Code/Helheim/Modeling/SolverFiles/Flowline/")
@@ -41,14 +41,14 @@ width_filt_len = 2000.0 # length along flowline for filtering widths
 partitions="4" # Number of partitions
 layers=10 # Number of extrusions for mesh
 
-
+# Shapefiles for flowline
 file_flowline_in = os.path.join(os.getenv("HOME"),"Data/ShapeFiles/Glaciers/Flowlines/Helheim/helheim_center_flowline")
 file_leftside_in = os.path.join(os.getenv("HOME"),"Data/ShapeFiles/Glaciers/Flowlines/Helheim/helheim_flowline_side2")
 file_rightside_in = os.path.join(os.getenv("HOME"),"Data/ShapeFiles/Glaciers/Flowlines/Helheim/helheim_flowline_side1")
 
 # Bed and surface topographies
 ## Bed inputs
-file_bed_in1=os.path.join(os.getenv("HOME"),"Data/Bed/Morlighem_2014/morlighem_helheim_bed.tif")
+file_bed_in1=os.path.join(os.getenv("HOME"),"Data/Bed/Morlighem_2014/morlighem_bed.tif")
 file_bed_in2=os.path.join(os.getenv("HOME"),"Data/Bed/CreSIS/helheim_flightline_05212001_good_nsidc.dat")	
 
 ## Surface inputs
@@ -56,11 +56,9 @@ file_surf_gimp=os.path.join(os.getenv("HOME"),"Data/Elevation/Gimp/gimpdem3_1.ti
 file_surf_wv=[os.path.join(os.getenv("HOME"),"Data/Elevation/Worldview/Helheim/20120520_1443_102001001BD45E00_102001001C07FB00-DEM_32m_trans.tif"),
 			  os.path.join(os.getenv("HOME"),"Data/Elevation/Worldview/Helheim/20120513_1410_102001001B4C6F00_102001001BD7E800-DEM_32m_trans.tif"),
 			  os.path.join(os.getenv("HOME"),"Data/Elevation/Worldview/Helheim/20120624_1421_102001001B87EF00_102001001B1FB900-DEM_32m_trans.tif")]
+
 ## Horizontal coordinate for calving front, so that we can easily change it
-calving_coord=310610 #Distance is 85005
-#calving_coord=310412 # Calving event of 200 m
-#calving_coord=310117 # Calving event of 500 m
-#calving_coord=309625 # Calving event of 1000m
+file_terminus = os.path.join(os.getenv("HOME"),"Data/ShapeFiles/IceFronts/Helheim/2011-177_TSX.shp")
 
 ###########
 # Outputs #
@@ -79,7 +77,7 @@ flowline = mesh.shp_to_flowline(file_flowline_in)
 del file_flowline_in
 
 # Create geo file for flowline
-flowline = mesh.xy_to_gmsh_box(flowline,calving_coord,DIRM,file_mesh_out,file_bed_in1,file_surf_gimp,lc,lc_d,layers)
+flowline = mesh.xy_to_gmsh_box(flowline,file_terminus,DIRM,file_mesh_out,file_bed_in1,file_surf_gimp,lc,lc_d,layers)
 
 # Adjust bed DEM to 2001 bed profile near terminus
 ## The present flowline runs off the Morlighem bed DEM, so we need to set the bed near the 
@@ -93,7 +91,6 @@ flowline[ind,3]=np.interp(flowline[ind,1],bed2001[:,0],bed2001[:,7]+130)
 
 fid = open(DIRM+file_mesh_out+"_bed.dat",'w')
 fid.write('{} {} \n'.format(flowline[0,0]-100,flowline[0,3]))
-ind=np.where(flowline[:,1] <= calving_coord)
 for i in range(0,len(flowline[:,0])):
   fid.write('{} {} \n'.format(flowline[i,0],flowline[i,3]))
 fid.write('{} {} \n'.format(flowline[i,0]+100,flowline[i,3]))
@@ -131,7 +128,6 @@ flowline[:,4]=signal.filtfilt(b,a,flowline[:,4])
 
 fid = open(DIRM+file_mesh_out+"_surf.dat",'w')
 fid.write('{} {} \n'.format(flowline[0,0]-100,flowline[0,4]))
-ind=np.where(flowline[:,1] <= calving_coord)
 for i in range(0,len(flowline[:,0])):
   fid.write('{} {} \n'.format(flowline[i,0],flowline[i,4]))
 fid.write('{} {} \n'.format(flowline[i,0]+100,flowline[i,4]))

@@ -17,7 +17,7 @@ import flowparameter
 # Inputs #
 ##########
 
-MESHNAME='High_Normal'
+MESHNAME='MorlighemNew'
 
 # Directories
 DIRS=os.path.join(os.getenv("HOME"),"Code/Helheim/Modeling/SolverFiles/3D")
@@ -44,8 +44,8 @@ levels=10 #levels of extrusion
 partitions="4" # Number of partitions
 
 # Bed, surface, and velocity
-file_bed_in=os.path.join(os.getenv("HOME"),"Data/Bed/Morlighem_2014/morlighem_helheim_bed") #Ben's bed
-file_surf_in=os.path.join(os.getenv("HOME"),"Data/DEMs/Gimp/gimpdem_helheim")
+file_bed_in=os.path.join(os.getenv("HOME"),"Data/Bed/Morlighem_2014/morlighem_bed") 
+file_surf_in=os.path.join(os.getenv("HOME"),"Data/Elevation/Gimp/gimpdem_helheim")
 
 ###########
 # Outputs #
@@ -53,7 +53,7 @@ file_surf_in=os.path.join(os.getenv("HOME"),"Data/DEMs/Gimp/gimpdem_helheim")
 #Set output name for gmsh file
 file_2d=os.path.join(DIRM+"Planar")
 file_3d=os.path.join(DIRM+"Elmer")
-DEM=os.path.join(DIRM+"/../DEM")
+DEM=os.path.join(DIRM+"../DEM")
 
 #################
 # Mesh Geometry #
@@ -91,9 +91,15 @@ refine = mesh.shp_to_xy(DIRX+"refine")
 # Make mesh #
 #############
 # Set up bedrock and surface topographies for Extrude mesh
-if not(os.path.exists(DEM+"/bed.xyz")):
-  shutil.copy2(file_bed_in+".txt",DEM+"/bed.xyz")
+if (os.path.exists(DEM+"/bed.xyz")):
+  x,y,bed=geotiff.read(file_bed_in+".tif",np.min(exterior[0])-5e3,np.max(exterior[0])+5e3,np.min(exterior[1])-5e3,np.max(exterior[1])+5e3)
+  fid = open(DEM+"/bed.xyz","w")
+  for i in range(0,len(x)):
+    for j in range(0,len(y)):
+      fid.write('{} {} {}\n'.format(x[i],y[j],bed[j,i]))
+  fid.close()
   shutil.copy2(file_surf_in+".txt",DEM+"/surf.xyz")
+del x,y,bed
   
 # Gmsh .geo file
 mesh.xy_to_gmsh_3d(exterior,holes,refine,file_2d+".geo",lc1,lc2,lc3,lc4)

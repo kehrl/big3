@@ -39,11 +39,11 @@ image = geotiff.readrgb(os.path.join(os.getenv("HOME"),"Data/Imagery/Landsat/Hel
 # Plot options #
 ################
 
-time1 = 2009 #start time for plot
+time1 = 2000 #start time for plot
 time2 = 2015 # end time for plot
 seasonal = 1 # plot seasonal bars, to highlight seasonal trends
 normalizedvelocity = 0 # divide by average velocity
-terminusbed = 1
+terminusbed = 0
 
 ############################
 # Get velocities at points # 
@@ -149,7 +149,7 @@ if seasonal:
   ax.bar(xTickPos, [max(plt.ylim())-min(plt.ylim())] * len(xTickPos), (xTickPos[1]-xTickPos[0]), bottom=min(plt.ylim()), color=['0.9','w'],linewidth=0)
 
 plt.subplot(gs[2, :])
-plt.plot(terminus_time,(terminus_val/1e3-terminus,'ko-',linewidth=2,markersize=5)
+plt.plot(terminus_time,terminus_val/1e3-terminus,'ko-',linewidth=2,markersize=5)
 plt.plot(rift_time,rift_val/1e3-terminus,'ro',linewidth=2,markersize=5)
 ax = plt.gca()
 ax.xaxis.set_major_formatter(x_formatter)
@@ -301,35 +301,121 @@ plt.close()
 ###########################
 
 flowline_v,flowline_t,termini = helheim_velocity.velocity_along_flowline(flowline[:,1],flowline[:,2],flowline[:,0])
-flowline_tint=np.linspace(2009,2015,1001)
+flowline_tint=np.linspace(2008.5,2015,1051)
 term_int=np.zeros([len(flowline_tint),1])
 flowline_vint = np.zeros([len(flowline[:,0]),len(flowline_tint)])
+flowline_vintlog = np.zeros([len(flowline[:,0]),len(flowline_tint)])
+flowline_vintper = np.zeros([len(flowline[:,0]),len(flowline_tint)])
+
+# Filter velocities
+filt_len=1000.0 # meters
+cutoff=(1/filt_len)/(1/(np.diff(flowline[1:3,0])*2))
+b,a=signal.butter(4,cutoff,btype='low')
+flowline_vfilt=np.zeros_like(flowline_v)
+for i in range(0,len(flowline_t)):
+  nonnan = np.where(~(np.isnan(flowline_v[:,i])))
+  interped = np.interp(flowline[nonnan[0][0]:nonnan[0][-1],0],flowline[nonnan[0],0],flowline_v[nonnan[0],i])
+  flowline_vfilt[nonnan[0][0]:nonnan[0][-1],i]=signal.filtfilt(b,a,interped)
+flowline_vfilt[np.where(np.isnan(flowline_v))]='NaN'
+flowline_vfilt[flowline_vfilt==0]='NaN'
 
 for i in range(0,len(flowline_tint)):
   ind = np.argmin(abs(flowline_tint[i]-flowline_t))
   term_int[i] = termini[ind]
-  flowline_vint[:,i] = np.log10(flowline_v[:,ind])
+  flowline_vint[:,i]=flowline_vfilt[:,ind]
+  flowline_vintlog[:,i] = np.log10(flowline_vfilt[:,ind])
 
-plt.figure(figsize=(6,6))
+
+meanvel=np.zeros(len(flowline[:,0]))
+for i in range(0,len(flowline[:,0])):
+  nonnan = np.where(~np.isnan(flowline_vint[i,:]))
+  meanvel[i] = np.mean(flowline_vint[i,nonnan])  
+  
+for i in range(0,len(flowline_tint)):
+  ind = np.argmin(abs(flowline_tint[i]-flowline_t))
+  flowline_vintper[:,i]=((flowline_vfilt[:,ind]-meanvel))
+
+# Log plot
+#plt.figure(figsize=(6,6))
+#ax=plt.gca()
+#plt.imshow(flowline_vintlog,extent=[flowline_tint[0],flowline_tint[-1],flowline[-1,0]/1e3,flowline[0,0]],interpolation='nearest',aspect='auto',norm=matplotlib.colors.LogNorm())
+#plt.fill_between(terminus_time,terminus_val/1e3,88,color='w')
+#plt.plot(terminus_time,terminus_val/1e3,'k.-')
+#ax.get_xaxis().get_major_formatter().set_useOffset(False)
+#plt.ylim([87,57])
+#plt.xticks(range(2000,2017))
+#labels=[]
+#for i in range(2000,2017):
+#  labels.append('Jan \n'+str(i))
+#ax.set_xticklabels(labels)
+#for i in range(0,len(dists_eul)):
+#  plt.plot([2000,2017],[terminus-dists_eul[i],terminus-dists_eul[i]],coloptions[i],linewidth=1.5)
+#plt.xlim([2009,2014.5])
+#plt.clim(np.log10(4000),np.log10(9000))
+#cb=plt.colorbar()
+#cb.set_ticks([np.log10(4000),np.log10(5000),np.log10(6000),np.log10(7000),np.log10(8000),np.log10(9000)])
+#cb.set_ticklabels(['4','5','6','7','8','9'])
+#cb.set_label('Eulerian velocity (km/yr)')
+#plt.ylabel('Distance along flowline (km)')
+
+# Plot linear scale
+plt.figure(figsize=(12.5,8))
+plt.subplot(121)
 ax=plt.gca()
-plt.imshow(flowline_vint,extent=[flowline_tint[0],flowline_tint[-1],flowline[-1,0]/1e3,flowline[0,0]],interpolation='nearest',aspect='auto',norm=matplotlib.colors.LogNorm())
+plt.imshow(flowline_vint/1e3,extent=[flowline_tint[0],flowline_tint[-1],flowline[-1,0]/1e3,flowline[0,0]],interpolation='nearest',aspect='auto')
 plt.fill_between(terminus_time,terminus_val/1e3,88,color='w')
-plt.plot(terminus_time,terminus_val/1e3,'k.-')
+plt.plot(terminus_time,terminus_val/1e3,'ko-',markersize=5,linewidth=3)
 ax.get_xaxis().get_major_formatter().set_useOffset(False)
-plt.ylim([87,57])
-plt.xticks(range(2000,2017))
+plt.ylim([87,45])
+plt.xticks(range(2000,2017),fontsize=22)
 labels=[]
 for i in range(2000,2017):
   labels.append('Jan \n'+str(i))
 ax.set_xticklabels(labels)
-for i in range(0,len(dists_eul)):
-  plt.plot([2000,2017],[terminus-dists_eul[i],terminus-dists_eul[i]],coloptions[i],linewidth=1.5)
-plt.xlim([2009,2014.5])
-plt.clim(np.log10(4000),np.log10(9000))
-cb=plt.colorbar()
-cb.set_ticks([np.log10(4000),np.log10(5000),np.log10(6000),np.log10(7000),np.log10(8000),np.log10(9000)])
-cb.set_ticklabels(['4','5','6','7','8','9'])
-cb.set_label('Eulerian velocity (km/yr)')
-plt.ylabel('Distance along flowline (km)')
+#for i in np.array([4,6,8]):
+#  junk = np.zeros(len(flowline_tint))
+#  for j in range(0,len(flowline_tint)):
+#    nonnan = np.where(~(np.isnan(flowline_vint[:,j])))
+#    ind = np.argmin(abs(flowline_vint[nonnan,j]/1e3-i))
+#    junk[j] = flowline[nonnan[0][ind],0]/1e3
+#  plt.plot(flowline_tint,junk,'k',linewidth=1.5)
+plt.xlim([2008.5,2014.5])
+plt.clim(3,9)
+cb=plt.colorbar(orientation="horizontal",fraction=0.07)
+cb.set_ticks([3,4,5,6,7,8,9])
+cb.set_ticklabels(['3','4','5','6','7','8','9'])
+ax.xaxis.set_minor_locator(AutoMinorLocator(2))
+cb.set_label('Glaciern velocity (km/yr)',fontsize=24)
+plt.ylabel('Distance along flowline (km)',fontsize=24)
+ax.tick_params('both', length=20, width=2, which='major')
+ax.tick_params('both', length=10, width=1, which='minor')
+plt.text(2009,50,"a",color='w',fontsize=22,fontweight="bold")
+
+# Plot percentage
+plt.subplot(122)
+ax=plt.gca()
+plt.imshow(flowline_vintper/1e3,extent=[flowline_tint[0],flowline_tint[-1],flowline[-1,0]/1e3,flowline[0,0]],interpolation='nearest',aspect='auto',cmap='bwr')
+plt.fill_between(terminus_time,terminus_val/1e3,88,color='w')
+plt.plot(terminus_time,terminus_val/1e3,'ko-',markersize=5,linewidth=3)
+ax.get_xaxis().get_major_formatter().set_useOffset(False)
+plt.ylim([87,45])
+plt.xticks(range(2000,2017),fontsize=22)
+labels=[]
+for i in range(2000,2017):
+  labels.append('Jan \n'+str(i))
+ax.set_xticklabels(labels)
+plt.xlim([2008.5,2014.5])
+plt.clim(-0.5,0.5)
+cb=plt.colorbar(orientation="horizontal",fraction=0.07)
+ax.xaxis.set_minor_locator(AutoMinorLocator(2))
+cb.set_ticks([-0.4,-0.2,0,0.2,0.4])
+cb.set_label('Change from average (km/yr)',fontsize=24)
+ax.set_yticklabels([])
+ax.tick_params('both', length=20, width=2, which='major')
+ax.tick_params('both', length=10, width=1, which='minor')
+plt.text(2009,50,"b",fontsize=22,fontweight="bold")
+
+plt.subplots_adjust(hspace=0,wspace=-0.1) 
+plt.tight_layout()
 
 plt.savefig(os.path.join(os.getenv("HOME"),'Bigtmp/fig_velocity_radargram_lines_'+str(time1)+'to'+str(time2)+'.pdf'),FORMAT='PDF')

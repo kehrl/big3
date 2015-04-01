@@ -25,9 +25,9 @@ import scipy.signal as signal
 
 # What do you want to do?
 plot_3D=0
-plot_Lcurve_3D=1
+plot_Lcurve_3D=0
 plot_2D=0
-plot_comparison=0
+plot_comparison=1
 
 # 3D
 DIRR_3D=os.path.join(os.getenv("HOME"),"Models/Helheim/Results/3D/High_Normal/Inversion/")

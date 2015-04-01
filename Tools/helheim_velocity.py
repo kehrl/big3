@@ -176,10 +176,6 @@ def velocity_along_flowline(xf,yf,dists):
       
       termini[count]=terminus
       
-      #if DIR.endswith('33047') or DIR.endswith('33214'):
-      #  print "Still ignoring some directories"
-      #  velocities[:,count] = 'nan'
-      
       count = count + 1
   
   # Sort arrays by time
