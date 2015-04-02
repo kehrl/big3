@@ -12,6 +12,7 @@ from subprocess import call
 from scipy.interpolate import *
 import numpy as np
 import flowparameter
+import geotiff
 
 ##########
 # Inputs #

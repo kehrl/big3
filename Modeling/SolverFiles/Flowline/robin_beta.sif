@@ -99,31 +99,29 @@ End
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 Body Force 1
   ! Shape factor
-  Flow BodyForce 1 = Variable Coordinate 1
-     Real Procedure "ElmerIceUSF" "ShapeFactorGravity_x"
-  Flow BodyForce 2 = Variable Coordinate 1
-     Real Procedure "ElmerIceUSF" "ShapeFactorGravity_y"
-  Shape Gravity 1 = Real  0.0                                 
-  Shape Gravity 2 = Real $gravity      
+  !Flow BodyForce 1 = Variable Coordinate 1
+  !   Real Procedure "ElmerIceUSF" "ShapeFactorGravity_x"
+  !Flow BodyForce 2 = Variable Coordinate 1
+  !   Real Procedure "ElmerIceUSF" "ShapeFactorGravity_y"
+  !Shape Gravity 1 = Real  0.0                                 
+  !Shape Gravity 2 = Real $gravity      
   
-  Shape Factor = Variable Coordinate 1
-    Real
-      Include "Inputs/shapefactor.dat"
-    End
+  !Shape Factor = Variable Coordinate 1
+  !  Real
+  !    Include "Inputs/shapefactor.dat"
+  !  End
   
   ! Lateral Friction, Gagliardini 2010
-  !Flow BodyForce 1 = Variable Coordinate 1
-  !   Real Procedure "ElmerIceUSF" "LateralFriction_x"
-  !Flow BodyForce 2 = Variable Coordinate 1
-  !   Real Procedure "ElmerIceUSF" "LateralFriction_y"
-  !Lateral Friction Gravity 1 = Real 0.0    
-  !Lateral Friction Gravity 2 = Real $gravity    
-
-
-  !Lateral Friction Coefficient = Variable Coordinate 1
-  !  Real Procedure "Flowline.so" "LateralFrictionCoefficient"
-  !Lateral Friction Exponent = Real $(1.0/n)
-  !Flow Solver Name = String Flow Solution
+  Flow BodyForce 1 = Variable Coordinate 1
+     Real Procedure "ElmerIceUSF" "LateralFriction_x"
+  Flow BodyForce 2 = Variable Coordinate 1
+     Real Procedure "ElmerIceUSF" "LateralFriction_y"
+  Lateral Friction Gravity 1 = Real 0.0    
+  Lateral Friction Gravity 2 = Real $gravity    
+  Lateral Friction Coefficient = Variable Coordinate 1
+    Real Procedure "Flowline.so" "LateralFrictionCoefficient"
+  Lateral Friction Exponent = Real $(1.0/n)
+  Flow Solver Name = String Flow Solution
   
   Pressure Load = Variable Coordinate 1
     Real Procedure "Flowline.so" "LateralConvergence"
