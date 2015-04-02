@@ -64,7 +64,7 @@ file_terminus = os.path.join(os.getenv("HOME"),"Data/ShapeFiles/IceFronts/Helhei
 # Outputs #
 ###########
 
-file_shapefactor_out = DIRM+"Inputs/shapefactor.dat"
+file_shapefactor_out = DIRM+"Inputs/width.dat"
 file_bedrock_out = DIRM+"Inputs/roughbed.dat"
 file_flowline_out = DIRM+"Inputs/flowline.dat"
 
