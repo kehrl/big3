@@ -29,12 +29,6 @@ DIRS=os.path.join(os.getenv("HOME"),"Code/Helheim/Modeling/SolverFiles/Flowline/
 DIRM=os.path.join(os.getenv("HOME"),"Models/Helheim/Meshes/Flowline/"+MESHNAME+"/")
 DIRR=os.path.join(os.getenv("HOME"),"Models/Helheim/Results/Flowline/"+MESHNAME+"/")
 
-# Make mesh directories
-if not(os.path.isdir(DIRM)):
-  #os.makedirs(DIRR)
-  os.makedirs(DIRM)
-  os.makedirs(DIRM+"Inputs")
-
 lc=[50,100,500] # characteristic length scales for meshing
 lc_d=[0,10000,40000] # transition points between different mesh sizes
 width_filt_len = 2000.0 # length along flowline for filtering widths
@@ -57,7 +51,7 @@ file_surf_wv=[os.path.join(os.getenv("HOME"),"Data/Elevation/Worldview/Helheim/2
 			  os.path.join(os.getenv("HOME"),"Data/Elevation/Worldview/Helheim/20120513_1410_102001001B4C6F00_102001001BD7E800-DEM_32m_trans.tif"),
 			  os.path.join(os.getenv("HOME"),"Data/Elevation/Worldview/Helheim/20120624_1421_102001001B87EF00_102001001B1FB900-DEM_32m_trans.tif")]
 
-## Horizontal coordinate for calving front, so that we can easily change it
+## File to use for terminus position
 file_terminus = os.path.join(os.getenv("HOME"),"Data/ShapeFiles/IceFronts/Helheim/2011-177_TSX.shp")
 
 ###########
@@ -71,6 +65,12 @@ file_flowline_out = DIRM+"Inputs/flowline.dat"
 ###################################################################################
 # Make box mesh and then use "MshGlacier" to add surface and bedrock topographies #
 ###################################################################################
+
+# Make mesh directories
+if not(os.path.isdir(DIRM)):
+  #os.makedirs(DIRR)
+  os.makedirs(DIRM)
+  os.makedirs(DIRM+"Inputs")
 
 # Flowline coordinates
 flowline = mesh.shp_to_flowline(file_flowline_in)
@@ -88,7 +88,6 @@ bed2001=bed2001[3180:3297,:]
 flowline[ind,3]=np.interp(flowline[ind,1],bed2001[:,0],bed2001[:,7]+130)
 
 ## Save variable with rest of bed profile for grounded solver
-
 fid = open(DIRM+file_mesh_out+"_bed.dat",'w')
 fid.write('{} {} \n'.format(flowline[0,0]-100,flowline[0,3]))
 for i in range(0,len(flowline[:,0])):

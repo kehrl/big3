@@ -69,7 +69,7 @@ def cresis(year):
   return bed
 
 def morlighem(xpts,ypts):
-  file = os.path.join(os.getenv("HOME"),"Data/Bed/Morlighem_2014/morlighem_helheim_bed.tif")
+  file = os.path.join(os.getenv("HOME"),"Data/Bed/Morlighem_2014/morlighem_bed.tif")
   [x,y,z]=geotiff.read(file)
   
   f = scipy.interpolate.RectBivariateSpline(y,x,z)

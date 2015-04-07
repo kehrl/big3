@@ -166,7 +166,7 @@ for i in range(0,len(vt)):
 # Make some plots #
 ###################
 
-floatH=(1.02/0.917)*abs(bed[:,2])+bed[:,2]
+floatH=(1.02/0.9)*abs(bed[:,2])+bed[:,2]
 morlighem = helheim_bed.morlighem(bed[:,0],bed[:,1])
 morlighem[-41:]='NaN'
 
@@ -180,7 +180,7 @@ plt.plot(dists/1e3,elev,color=[1,0,0],linewidth=1.5)
 plt.plot(avedists/1e3,aveelevs,'k',label='Ave divu=0',linewidth=1.5)
 plt.plot(dists/1e3,floatH,'k--',label='Flotation height')
 plt.plot(dists/1e3,bed[:,2],'b',label='2001 bed',linewidth=1.5)
-plt.plot(dists/1e3,morlighem,'g',label='Morlighem bed',linewidth=1.5)
+#plt.plot(dists/1e3,morlighem,'g',label='Morlighem bed',linewidth=1.5)
 plt.plot(dists/1e3,gimp,'y',label='Gimp dem',linewidth=1.5)
 plt.xlim([-5.3,4.2])
 plt.ylim([-800,400])
