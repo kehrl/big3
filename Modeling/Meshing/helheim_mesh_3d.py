@@ -44,9 +44,12 @@ lc4=1000 # for regions surrounding channels
 levels=10 #levels of extrusion
 partitions="4" # Number of partitions
 
-# Bed, surface, and velocity
+# Bed and surface
 file_bed_in=os.path.join(os.getenv("HOME"),"Data/Bed/Morlighem_2014/morlighem_bed") 
 file_surf_in=os.path.join(os.getenv("HOME"),"Data/Elevation/Gimp/gimpdem_helheim")
+
+# Velocity profile for inversion
+file_velocity_in = os.path.join(os.getenv("HOME"),"Data/Velocity/TSX/Helheim/track-27794")
 
 ###########
 # Outputs #
@@ -127,13 +130,7 @@ call(["ElmerGrid","2","4","elmer"])
 ##########################################
 
 # Output files for velocities in x,y directions (u,v)
-udem=DIRS+"Inputs/UDEM.xy"
-eudem=DIRS+"Inputs/EUDEM.xy"
-vdem=DIRS+"Inputs/VDEM.xy"
-evdem=DIRS+"Inputs/EVDEM.xy"
-
-if not( os.path.exists(udem) or os.path.exists(vdem)):
-  call(['matlab','-nodisplay','-r "helheim_vel_inversion_3d; quit"'])
+helheim_velocity.inversion_3D(file_velocity_in,Inputs)
 
 #########################################################################
 # Import mesh boundary, calculate flow parameter at mesh nodes, and use #

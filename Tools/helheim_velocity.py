@@ -4,7 +4,7 @@
 ## divergence_at_eulpoints(xpt,ypt): get divx,divy at Eulerian points through time
 ## velocity_at_lagpoints(x,y,dists,pts): get velocity timeseries at a Lagrangian point
 ## velocity_along_flowline(x,y): get velocity timeseries along flowline
-## inversion_3D(velocity_file_in, velocity_file_out): output velocity data for ElmerSolver
+## inversion_3D(file_velocity_in, dir_velocity_out): output velocity data for ElmerSolver
 
 #LMK, UW, 04/01/2014
 
