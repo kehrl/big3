@@ -55,30 +55,6 @@ file_velocity_out=DIRM+"Inputs/velocity.dat"
 # Output files for computed friction coefficient
 file_beta_out=DIRM+"Inputs/beta.dat"
 
-###################################################
-# Load, find, and write velocities along flowline #
-###################################################
-
-# Load flowline
-print "Loading flowline"
-flowline=np.loadtxt(file_flowline_in,skiprows=1)
-
-if not(os.path.exists(file_velocity_out)):
-  print "Loading velocity data"
-  # Get velocity along flowline from velocity profiles
-  v=velocity_flowline.alongflow(flowline[:,1],flowline[:,2],file_velocity_in1,file_velocity_in2)
-  nonnan = np.where(~(np.isnan(v)))
-  vnonnan = np.interp(flowline[:,0],flowline[nonnan[0],0],v[nonnan[0]])
-  
-  # Write out the velocity data
-  fid = open(file_velocity_out,'w')
-  R=len(v)
-  fid.write('{0}\n'.format(R))
-  for j in range(0,R):
-     fid.write('{} {}\n'.format(flowline[j,0],vnonnan[j]))
-  fid.close()
-  del R,fid
-
 ############################################################
 # Run inversion solver file for different values of lambda #
 ############################################################
