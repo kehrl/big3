@@ -59,7 +59,6 @@ file_velocity_in = os.path.join(os.getenv("HOME"),"Data/Velocity/TSX/Helheim/tra
 #Set output name for gmsh file
 file_2d=os.path.join(DIRM+"Planar")
 file_3d=os.path.join(DIRM+"Elmer")
-DEM=os.path.join(DIRM+"DEM")
 
 #################
 # Mesh Geometry #
