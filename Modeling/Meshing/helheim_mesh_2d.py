@@ -155,6 +155,25 @@ call(["ElmerGrid","2","2",file_mesh_out,"dir","-metis",partitions,"0"])
 ##########################################
 call(["ElmerGrid","2","4",file_mesh_out])
 
+###################################################
+# Load, find, and write velocities along flowline #
+###################################################
+
+# Get velocity along flowline from velocity profiles
+v=velocity_flowline.alongflow(flowline[:,1],flowline[:,2],file_velocity_in1,file_velocity_in2)
+nonnan = np.where(~(np.isnan(v)))
+vnonnan = np.interp(flowline[:,0],flowline[nonnan[0],0],v[nonnan[0]])
+  
+# Write out the velocity data
+fid = open(file_velocity_out,'w')
+R=len(v)
+fid.write('{0}\n'.format(R))
+for j in range(0,R):
+  fid.write('{} {}\n'.format(flowline[j,0],vnonnan[j]))
+fid.close()
+del R,fid
+
+
 #################################
 # Print out temperature profile #
 #################################
