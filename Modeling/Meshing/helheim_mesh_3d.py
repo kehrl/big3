@@ -237,7 +237,7 @@ for i in range(0,len(inds)):
   Amean[i]=np.mean(Anodes[colinds]) 
     
 ## Get surface velocities
-fidu = open(udem,"r")
+fidu = open(Inputs+"UDEM.xy","r")
 lines=fidu.readlines()
 nx=int(lines[0])
 ny=int(lines[1])
@@ -252,7 +252,7 @@ for i in range(0,nx):
     y[j]=p[1]
     u[j,i]=p[2]
     n=n+1
-fidv = open(vdem,"r")
+fidv = open(Inputs+"VDEM.xy","r")
 lines=fidv.readlines()
 v=np.zeros([ny,nx])
 n=2
