@@ -3,7 +3,7 @@
 import os
 import sys
 from subprocess import call
-import shutil
+import shutil, glob
 sys.path.append(os.path.join(os.getenv("HOME"),"Code/Util/Modules"))
 import elmer_read
 import numpy as np
@@ -13,12 +13,13 @@ import matplotlib.pyplot as plt
 # Inputs #
 ##########
 
-MESHNAME='High' 
+MESHNAME='MorlighemNew' 
 
 # Directories
 DIRS=os.path.join(os.getenv("HOME"),"Code/Helheim/Modeling/SolverFiles/Flowline/")
 DIRM=os.path.join(os.getenv("HOME"),"Models/Helheim/Meshes/Flowline/"+MESHNAME+"/")
 DIRR=os.path.join(os.getenv("HOME"),"Models/Helheim/Results/Flowline/"+MESHNAME+"/")
+DIRELMERLIB = os.path.join(os.getenv("HOME"),"Code/Helheim/Modeling/Elmerlib/")
 
 # Solver file
 solverfile='flowline2.sif'
@@ -36,11 +37,18 @@ bcalve=3
 ############################################
 # Check that fortran routines are compiled #
 ############################################
-os.chdir(os.path.join(os.getenv("HOME"),"Code/Helheim/Modeling/Elmerlib"))
-routines = ['Flowline','USF_Calving','USF_Zs']
-#for routine in routines:
-  #if not(os.path.exists(DIRS+"../../lib/"+routine+".so")):
-  #call(["elmerf90","-o",routine+".so",routine+".f90"])
+readfiles = glob.glob(DIRELMERLIB+"Flowline/"+"*.f90")
+
+with open(DIRELMERLIB+"Flowline.f90", "wb") as outfile:
+  for f in readfiles:
+    with open(f, "rb") as infile:
+      outfile.write(infile.read())
+      outfile.write("\n")
+outfile.close()
+
+os.chdir(DIRELMERLIB)
+call(["elmerf90","-o","Flowline.so","Flowline.f90"])
+del DIRELMERLIB
   
 ####################################################
 # Copy model inputs into the solver file directory #

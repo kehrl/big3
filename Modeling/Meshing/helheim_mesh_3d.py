@@ -237,42 +237,17 @@ for i in range(0,len(inds)):
   Amean[i]=np.mean(Anodes[colinds]) 
     
 ## Get surface velocities
-fidu = open(Inputs+"UDEM.xy","r")
-lines=fidu.readlines()
-nx=int(lines[0])
-ny=int(lines[1])
-x=np.zeros([nx,1])
-y=np.zeros([ny,1])
-u=np.zeros([ny,nx])
-n=2
-for i in range(0,nx):
-  for j in range(0,ny):
-    p=lines[n].split()
-    x[i]=p[0]
-    y[j]=p[1]
-    u[j,i]=p[2]
-    n=n+1
-fidv = open(Inputs+"VDEM.xy","r")
-lines=fidv.readlines()
-v=np.zeros([ny,nx])
-n=2
-for i in range(0,nx):
-  for j in range(0,ny):
-    p=lines[n].split()
-    x[i]=p[0]
-    y[j]=p[1]
-    v[j,i]=p[2]
-    n=n+1
+udem=np.loadtxt(Inputs+"UDEM.xy")
+vdem=np.loadtxt(Inputs+"VDEM.xy")
 
 ## Interpolate surface velocities to nodes    
 node_u=np.zeros_like(xnodes)
 node_v=np.zeros_like(xnodes)
 node_surfmag=np.zeros_like(xnodes)
 for i in range(0,len(xnodes)):
-  xind=(abs(xnodes[i]-x)).argmin()
-  yind=(abs(ynodes[i]-y)).argmin()
-  node_u[i]=u[yind,xind]
-  node_v[i]=v[yind,xind]
+  ind=((xnodes[i]-udem[:,0])**2+(ynodes[i]-udem[:,1])**2).argmin()
+  node_u[i]=udem[ind,2]
+  node_v[i]=vdem[ind,2]
   node_surfmag[i]=np.sqrt(node_u[i]**2+node_v[i]**2)
 
 # Calculate basal speed
@@ -299,7 +274,7 @@ fid.write('{}\n'.format(len(xnodes)))
 for i in range(0,len(xnodes)):
   fid.write('{0} {1} {2} {3} {4} {5}\n'.format(xnodes[i],ynodes[i],surf[i],bed[i],node_v[i],node_vb[i]))
 fid.close()
-del xnodes,ynodes,surf,bed,node_v,node_vb,node_u,node_vb,Amean,height,fid,Anodes,rho,g,yearinsec
+del xnodes,ynodes,surf,bed,node_v,node_vb,node_u,Amean,height,fid,Anodes,rho,g,yearinsec
 
 ##############################################################
 # Print out bedrock and surface topographies for elmersolver #

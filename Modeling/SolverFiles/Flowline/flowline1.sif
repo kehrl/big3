@@ -45,6 +45,8 @@ Simulation
 
   Max Output Level = 3
   Output File = File "$name".result"
+  Output Variable 1 = Velocity 1
+  Output Variable 2 = Velocity 2
 End
 
 !---------------------------------------------------
@@ -103,8 +105,8 @@ Body Force 1
   Lateral Friction Exponent = Real $(1.0/n)
   Flow Solver Name = String Flow Solution
   
-  !Pressure Load = Variable Coordinate 1
-  !  Real Procedure "Flowline.so" "LateralConvergence"
+  Pressure Load = Variable Coordinate 1
+    Real Procedure "Flowline.so" "LateralConvergence"
   
 End
 
@@ -186,11 +188,8 @@ Solver 4
   Linear System Direct Method = MUMPS
 End
 
-<<<<<<< HEAD
-Solver 4
-=======
 Solver 5
->>>>>>> a4bcdc177172275cd805d62f2887fadbff4e1114
+
   Equation = "Eij"          
   Variable = -nooutput "Eij"     
   Variable DOFs = 1
@@ -206,16 +205,6 @@ Solver 5
   Linear System Direct Method = mumps
 End 
 
-<<<<<<< HEAD
-Solver 5
-  Exec Solver = "After timestep"
-  Equation = "InterpolateMesh"
-  Procedure = "InterpolateMesh.so" "InterpolateMesh"
-  Mesh = File "Retreat1000m"
-End
-
-=======
->>>>>>> a4bcdc177172275cd805d62f2887fadbff4e1114
 Solver 6
  Exec Solver = "After timestep"
  Exec Interval = 1

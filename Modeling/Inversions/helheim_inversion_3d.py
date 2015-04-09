@@ -24,7 +24,7 @@ import matplotlib
 ##########
 
 # Model Resolution
-RES = 'High_Normal'
+RES = 'MorlighemNew'
 
 # Directories
 DIRS=os.path.join(os.getenv("HOME"),"Code/Helheim/Modeling/SolverFiles/3D/")

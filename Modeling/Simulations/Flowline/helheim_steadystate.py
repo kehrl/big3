@@ -9,7 +9,7 @@ import glob
 # Inputs #
 ##########
 
-MESHNAME='High' 
+MESHNAME='MorlighemNew' 
 
 # Directories
 DIRS=os.path.join(os.getenv("HOME"),"Code/Helheim/Modeling/SolverFiles/Flowline/")

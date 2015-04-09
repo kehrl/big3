@@ -1,6 +1,6 @@
 check keywords warn
 
-$name = "flowline1"
+$name = "flowline2"
 
 $yearinsec = 365.25*24*60*60
 $rhoi = 917.0/(1.0e6*yearinsec^2)   
@@ -21,7 +21,7 @@ $ function waterpressure(Z) {\
 }
 
 Header
-  Mesh DB "../../../../../Models/Helheim/Meshes/Flowline/High" "Elmer"
+  Mesh DB "../../../../../Models/Helheim/Meshes/Flowline/MorlighemNew" "Elmer"
 End
 
 Constants
@@ -34,17 +34,22 @@ End
 
 Simulation
   Coordinate System  = Cartesian 2D
-  Simulation Type = Steady State
+  Simulation Type = Transient
 
   Timestepping Method = "BDF"
   BDF Order = 1
+  Timestep Intervals = 365
   Output Intervals = 1        
+  Timestep Sizes = $(1/365)       
   
-  Steady State Max Iterations = 20
+  Steady State Max Iterations = 5
   Steady State Min Iterations = 1
 
-  Max Output Level = 3
+  Max output level = 3
   Output File = File "$name".result"
+  
+  Restart File = "flowline1.result"
+  Restart Position = 0
 End
 
 !---------------------------------------------------
@@ -60,21 +65,38 @@ Body 1
   Initial Condition = 1
 End
 
+!! Surface
+Body 2
+  Name = "surface"
+  Equation = 2
+  Body Force = 2
+  Material = 1
+  Initial Condition = 2
+End
+
 !---------------------------------------------------
 !---------------- INITIAL CONDITIONS ---------------
 !---------------------------------------------------
 
 !! Glacier
 Initial Condition 1
+  Depth = Real 0.0
   Pressure = Real 0.0e0
   Velocity 1 = Real 0
   Velocity 2 = Real 0.0e0
+End
+
+!! Surface
+Initial Condition 2
+  Zs Top = Variable Coordinate 2
+    Real Procedure "ElmerIceUSF" "ZsTopIni"
 End
 
 !---------------------------------------------------
 !---------------- BODY FORCES ----------------------
 !---------------------------------------------------
 
+!! Glacier
 Body Force 1
   ! Shape factor
   !Flow BodyForce 1 = Variable Coordinate 1
@@ -103,9 +125,14 @@ Body Force 1
   Lateral Friction Exponent = Real $(1.0/n)
   Flow Solver Name = String Flow Solution
   
-  !Pressure Load = Variable Coordinate 1
-  !  Real Procedure "Flowline.so" "LateralConvergence"
-  
+  Pressure Load = Variable Coordinate 1
+    Real Procedure "Flowline.so" "LateralConvergence"
+End
+
+!! Surface
+Body Force 2
+  Zs Top Accumulation Flux 1 = Real 0.0e0
+  Zs Top Accumulation Flux 2 = Real 0.0e0
 End
 
 !---------------------------------------------------
@@ -114,16 +141,16 @@ End
 
 !! ice material properties in MPa - m - a system 
 Material 1
-
   Density = Real $rhoi     
-  Viscosity = Variable Coordinate 2
+  
+  Viscosity = Variable Coordinate 2,
     Real Procedure "Flowline.so" "Viscosity"
   Viscosity Model = String "power law"
-  Viscosity Exponent = Real $(1.0/n)
+  Viscosity Exponent = Real $1.0/3.0
   Critical Shear Rate = Real 1.0e-10
 
-  !! for computeDevStress
   Cauchy = Logical True
+  
   Sea level = Real 0.0
   
 End
@@ -145,8 +172,7 @@ Solver 2
    Variable DOFs = 2 
    Procedure = "ElmerIceSolvers" "ComputeNormalSolver"
    Optimize Bandwidth = Logical False 
-   ComputeAll = Logical False
-   
+   ComputeAll = Logical True
 End
 
 Solver 3
@@ -157,22 +183,67 @@ Solver 3
   Flow Model = Stokes
   Linear System Solver = Direct
   Linear System Direct Method = MUMPS
-  Linear System Preconditioning = "ILU1" 
   Nonlinear System Max Iterations = 100
   Nonlinear System Convergence Tolerance  = 1.0e-6
   Nonlinear System Newton After Iterations = 100
   Nonlinear System Newton After Tolerance = 1.0e-06
   Nonlinear System Relaxation Factor = 1.00
-  Nonlinear System Reset Newton = Logical False
+  Nonlinear System Reset Newton = Logical True
   Steady State Convergence Tolerance = Real 1.0e-3
   Calculate Loads = Logical True
   Calculate Weights = Logical True
-
+  
   Update Exported Variables = Logical True
   Nonlinear Update Exported Variables = Logical True
 End
 
 Solver 4
+  Equation = "Free Surface Top"
+  Variable = "Zs Top"
+
+  Variable DOFS =  1
+  Exported Variable 1 = "Zs Top Residual"
+  Exported Variable 1 DOFs = 1
+  Exported Variable 2 = "ZsTopIni"
+  Exported Variable 2 DOFs = 1
+
+  Procedure =  "FreeSurfaceSolver" "FreeSurfaceSolver"
+
+  Linear System Solver = Iterative
+  Linear System Max Iterations = 1500
+  Linear System Iterative Method = BiCGStab
+  Linear System Preconditioning = ILU0
+  Linear System Convergence Tolerance = Real 1.0e-9
+  Linear System Abort Not Converged = False
+  Linear System Residual Output = 1
+
+  Linear System Use Hypre = Logical False
+
+  Nonlinear System Max Iterations = 100
+  Nonlinear System Convergence Tolerance  = 1.0e-6
+  Nonlinear System Relaxation Factor = 1.00
+
+  Steady State Convergence Tolerance = 1.0e-03
+
+  Stabilization Method = Stabilized
+  Apply Dirichlet = Logical True
+End
+
+Solver 5
+  Equation = "Mesh Update"
+  Exec Solver = "After Timestep"
+
+  Linear System Solver = Iterative
+  Linear System Iterative Method = BiCGStab
+  Linear System Max Iterations  = 500
+  Linear System Preconditioning = ILU1
+  Linear System Convergence Tolerance = 1.0e-06
+
+  Nonlinear System Max Iterations = 1
+  Nonlinear System Convergence Tolerance = 1.0e-06
+End
+
+Solver 6
   Equation = String "StressSolver"
   Procedure = "ElmerIceSolvers" "ComputeDevStress"          
   Variable = -nooutput "Sij"
@@ -186,7 +257,7 @@ Solver 4
   Linear System Direct Method = MUMPS
 End
 
-Solver 5
+Solver 7
   Equation = "Eij"          
   Variable = -nooutput "Eij"     
   Variable DOFs = 1
@@ -202,8 +273,8 @@ Solver 5
   Linear System Direct Method = mumps
 End 
 
-Solver 6
- Exec Solver = "After timestep"
+Solver 8
+ Exec Solver = "After TimeStep"
  Exec Interval = 1
  Equation = "result output"
  Procedure = "ResultOutputSolve" "ResultOutputSolver"
@@ -211,21 +282,29 @@ Solver 6
  Output Format = String "vtu"
 End
 
-Solver 7
+Solver 9
   Equation = SaveLine
   Procedure = "SaveData" "SaveLine"
-  Exec Solver = String "After all"
-  Filename = "elmer/"$name".dat"
+  Exec Solver = String "After timestep"
+  Filename = "Elmer/"$name".dat"
 End
-
 
 
 !---------------------------------------------------
 !---------------- EQUATIONS ------------------------
 !---------------------------------------------------
 
+!! Glacier
 Equation 1
-  Active Solvers(7) = 1 2 3 4 5 6 7
+  Flow Solution Name = String "Flow Solution"
+  Active Solvers(8) = 1 2 3 5 6 7 8 9
+End
+
+!! Surface
+Equation 2 
+  Active Solvers(1) = 4
+  Flow Solution Name = String "Flow Solution"
+  Convection = String Computed
 End
 
 !---------------------------------------------------
@@ -234,13 +313,12 @@ End
 
 !! BC  Bedrock + Shelf
 Boundary Condition 1
-  Name = "bottom"
+  Name = "Bed"
   Target Boundaries(1) = 1  
   Shape Bedrock = Logical True
 
   Flow Force BC = Logical True
   Normal-Tangential Velocity = Logical True
-  Compute Normal = Logical True
   
   Velocity 1 = Real 0.0e0
   
@@ -254,9 +332,12 @@ Boundary Condition 1
   Weertman Friction Coefficient = Variable Coordinate 1
     Real
       Include "Inputs/beta_weertman.dat"
-    End  
+    End 
   Weertman Exponent = Real $(1.0/3.0)
-  Weertman Linear Velocity = Real 0.0001   
+  Weertman Linear Velocity = Real 0.00001   
+
+  Mesh Update 1 = Real 0.0e0
+  Mesh Update 2 = Real 0.0e0
 
   Save Line = Logical True
 End
@@ -264,10 +345,14 @@ End
 
 !! BC  Free surface Top
 Boundary Condition 2
-  Name = "glacier surface"
+  Name = "Surface"
   Target Boundaries(1) = 3
+  Body ID = 2
   Shape Surface = Logical True
-  Depth = Real 0.0
+  
+  Mesh Update 1 = Real 0.0e0
+  Mesh Update 2 = Variable Zs Top
+     Real Procedure "ElmerIceUSF" "ZsTopMzsIni"
   
   Save Line = Logical True
 End
@@ -280,6 +365,9 @@ Boundary Condition 3
   Velocity 1 = Variable Coordinate 2
      Real Procedure "Flowline.so" "Inflow"
 
+  Mesh Update 1 = Real 0.0e0
+  Mesh Update 2 = Real 0.0e0
+
   Save Line = Logical True
 End
 
@@ -290,12 +378,15 @@ Boundary Condition 4
   
   External Pressure = Variable Coordinate 2 !we are in MPa units
     Real MATC "-1.0*waterpressure(tx)*1.0E-06"
+    
+  Mesh Update 1 = Real 0.0e0
 
   Save Line = Logical True
 End
 
 !Boundary Condition 5
 !  Name = "Nodal Mass Source"
-!  Target Coordinates(2,2) = Real 544000.0 0.0 800000.0 0
-!  Pressure Load = Real 5.0e3
+!  Target Coordinates(1,2) = 54400.0 500.0
+!  !Pressure Load = Real 5.0e10
+!  Flow Solution 3 Load = Real 5.0e10
 !End

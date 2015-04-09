@@ -632,21 +632,24 @@ def inversion_3D(file_velocity_in,dir_velocity_out):
 
   # Write out velocities to files
   fid = open(dir_velocity_out+"/UDEM.xy","w")
+  fid.write('{}\n{}\n'.format(len(xfinal),len(yfinal)))
   for i in range(0,len(xfinal)):
     for j in range(0,len(yfinal)):
-      fid.write('{} {} {} \n'.format(xfinal[i],yfinal[j],vx_final[j,i]))
+      fid.write('{} {} {}\n'.format(xfinal[i],yfinal[j],vx_final[j,i]))
   fid.close()
   
   fid = open(dir_velocity_out+"/VDEM.xy","w")
+  fid.write('{}\n{}\n'.format(len(xfinal),len(yfinal)))
   for i in range(0,len(xfinal)):
     for j in range(0,len(yfinal)):
-      fid.write('{} {} {} \n'.format(xfinal[i],yfinal[j],vy_final[j,i]))
+      fid.write('{} {} {}\n'.format(xfinal[i],yfinal[j],vy_final[j,i]))
   fid.close()
 
   fid = open(dir_velocity_out+"/VMAG.xy","w")
+  fid.write('{}\n{}\n'.format(len(xfinal),len(yfinal)))
   for i in range(0,len(xfinal)):
     for j in range(0,len(yfinal)):
-      fid.write('{} {} {} \n'.format(xfinal[i],yfinal[j],v_final[j,i]))
+      fid.write('{} {} {}\n'.format(xfinal[i],yfinal[j],v_final[j,i]))
   fid.close()
 
   return 1

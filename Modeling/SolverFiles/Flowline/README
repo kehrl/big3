@@ -4,7 +4,7 @@ flowline1.sif
 - STEADY STATE
 - most simple model
 - boundary condition at calving front is water pressure
-- shape factor implemented
+- shape factor or Gagliardini lateral drag implemented
 - linear or weertman sliding law
 
 flowline2.sif
