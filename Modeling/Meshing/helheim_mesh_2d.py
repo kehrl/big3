@@ -52,7 +52,11 @@ file_surf_wv=[os.path.join(os.getenv("HOME"),"Data/Elevation/Worldview/Helheim/2
 			  os.path.join(os.getenv("HOME"),"Data/Elevation/Worldview/Helheim/20120624_1421_102001001B87EF00_102001001B1FB900-DEM_32m_trans.tif")]
 
 ## File to use for terminus position
-file_terminus = os.path.join(os.getenv("HOME"),"Data/ShapeFiles/IceFronts/Helheim/2011-177_TSX.shp")
+file_terminus = os.path.join(os.getenv("HOME"),"Data/ShapeFiles/IceFronts/Helheim/2012-174_TSX.shp")
+
+## Velocity for inversion
+file_velocity_in1=os.path.join(os.getenv("HOME"),"Data/Velocity/TSX/Helheim/track-27794/mosaicOffsets") #June 25, 2012, one day from Worldview DEM
+file_velocity_in2=os.path.join(os.getenv("HOME"),"Data/Velocity/Random/Greenland/track-07to10/mosaicOffsets")
 
 ###########
 # Outputs #
@@ -286,8 +290,6 @@ del fid
 
 del thick, dwdx, R
 
-
-
 #########################################################
 # Finally export coordinates of flowline for future use #
 #########################################################
@@ -299,3 +301,6 @@ for i in range(0,R):
   fid.write("{} {} {} {} {}\n".format(flowline[i,0],flowline[i,1],flowline[i,2],flowline[i,3],flowline[i,4]))
 fid.close()
 del fid 
+
+# Save this file in MESH directory for future reference
+shutil.copy('helheim_mesh_2d.py',DIRM+'helheim_mesh_2d.py')
