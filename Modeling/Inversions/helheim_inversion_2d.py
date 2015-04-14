@@ -33,10 +33,6 @@ DIRS=os.path.join(os.getenv("HOME"),"Code/Helheim/Modeling/SolverFiles/Flowline/
 DIRM=os.path.join(os.getenv("HOME"),"Models/Helheim/Meshes/Flowline/"+MESHNAME+"/")
 DIRR=os.path.join(os.getenv("HOME"),"Models/Helheim/Results/Flowline/"+MESHNAME+"/Inversion/")
 
-# Velocity for inversion
-file_velocity_in1=os.path.join(os.getenv("HOME"),"Data/Velocity/TSX/Helheim/track-27794/mosaicOffsets") #June 25, 2012, one day from Worldview DEM
-file_velocity_in2=os.path.join(os.getenv("HOME"),"Data/Velocity/Random/Greenland/track-07to10/mosaicOffsets")
-
 # Flowline
 file_flowline_in=DIRM+"Inputs/flowline.dat"
 
@@ -44,16 +40,6 @@ file_flowline_in=DIRM+"Inputs/flowline.dat"
 runname = 'beta'
 bbed=1
 bsurf=2
-
-###########
-# Outputs #
-###########
-
-# Output files for measured velocities along flowline
-file_velocity_out=DIRM+"Inputs/velocity.dat"
-
-# Output files for computed friction coefficient
-file_beta_out=DIRM+"Inputs/beta.dat"
 
 ############################################################
 # Run inversion solver file for different values of lambda #
