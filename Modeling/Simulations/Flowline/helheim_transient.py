@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 # Inputs #
 ##########
 
-MESHNAME='MorlighemNew' 
+MESHNAME='MorlighemNew_CorrectIceFront' 
 
 # Directories
 DIRS=os.path.join(os.getenv("HOME"),"Code/Helheim/Modeling/SolverFiles/Flowline/")

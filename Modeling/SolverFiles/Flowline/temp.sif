@@ -21,7 +21,7 @@ $ function waterpressure(Z) {\
 }
 
 Header
-  Mesh DB "../../../../../Models/Helheim/Meshes/Flowline/MorlighemNew" "Elmer"
+  Mesh DB "../../../../../Models/Helheim/Meshes/Flowline/MorlighemNew_CorrectIceFront" "Elmer"
 End
 
 Constants

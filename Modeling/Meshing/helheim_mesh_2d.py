@@ -13,6 +13,9 @@ import helheim_velocity
 import elmer_mesh as mesh
 import dist
 import shapefactor,flowparameter
+import elmer_mesh as mesh
+import dist
+import shapefactor,flowparameter
 import subprocess, shutil
 import matplotlib.pyplot as plt
 from subprocess import call
@@ -69,6 +72,12 @@ shutil.copy('helheim_mesh_2d.py',DIRM+'helheim_mesh_2d.py')
 file_shapefactor_out = DIRM+"Inputs/width.dat"
 file_bedrock_out = DIRM+"Inputs/roughbed.dat"
 file_flowline_out = DIRM+"Inputs/flowline.dat"
+
+# Output files for measured velocities along flowline
+file_velocity_out=DIRM+"Inputs/velocity.dat"
+
+# Save this file in MESH directory for future reference
+shutil.copy('helheim_mesh_2d.py',DIRM+'helheim_mesh_2d.py')
 
 ###################################################################################
 # Make box mesh and then use "MshGlacier" to add surface and bedrock topographies #
