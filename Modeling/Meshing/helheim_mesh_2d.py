@@ -8,10 +8,12 @@ import os
 import sys
 import numpy as np
 sys.path.append(os.path.join(os.getenv("HOME"),"Code/Util/Modules"))
+sys.path.append(os.path.join(os.getenv("HOME"),"Code/Helheim/Tools"))
+import helheim_velocity
 import elmer_mesh as mesh
 import dist
 import shapefactor,flowparameter
-import subprocess
+import subprocess, shutil
 import matplotlib.pyplot as plt
 from subprocess import call
 from scipy import interpolate
@@ -22,7 +24,7 @@ import geotiff
 # Inputs #
 ##########
 
-MESHNAME='MorlighemNew'
+MESHNAME='MorlighemNew_SmoothedVelocity'
 file_mesh_out="Elmer"
 
 DIRS=os.path.join(os.getenv("HOME"),"Code/Helheim/Modeling/SolverFiles/Flowline/")
@@ -55,8 +57,10 @@ file_surf_wv=[os.path.join(os.getenv("HOME"),"Data/Elevation/Worldview/Helheim/2
 file_terminus = os.path.join(os.getenv("HOME"),"Data/ShapeFiles/IceFronts/Helheim/2012-174_TSX.shp")
 
 ## Velocity for inversion
-file_velocity_in1=os.path.join(os.getenv("HOME"),"Data/Velocity/TSX/Helheim/track-27794/mosaicOffsets") #June 25, 2012, one day from Worldview DEM
-file_velocity_in2=os.path.join(os.getenv("HOME"),"Data/Velocity/Random/Greenland/track-07to10/mosaicOffsets")
+file_velocity_in=os.path.join(os.getenv("HOME"),"Data/Velocity/TSX/Helheim/track-27794/mosaicOffsets")
+
+# Save this file in MESH directory for future reference
+shutil.copy('helheim_mesh_2d.py',DIRM+'helheim_mesh_2d.py')
 
 ###########
 # Outputs #
@@ -164,18 +168,8 @@ call(["ElmerGrid","2","4",file_mesh_out])
 ###################################################
 
 # Get velocity along flowline from velocity profiles
-v=velocity_flowline.alongflow(flowline[:,1],flowline[:,2],file_velocity_in1,file_velocity_in2)
-nonnan = np.where(~(np.isnan(v)))
-vnonnan = np.interp(flowline[:,0],flowline[nonnan[0],0],v[nonnan[0]])
-  
-# Write out the velocity data
-fid = open(file_velocity_out,'w')
-R=len(v)
-fid.write('{0}\n'.format(R))
-for j in range(0,R):
-  fid.write('{} {}\n'.format(flowline[j,0],vnonnan[j]))
-fid.close()
-del R,fid
+helheim_velocity.inversion_2D(flowline[:,1],flowline[:,2],flowline[:,0],file_velocity_in,DIRM+"Inputs/")
+
 
 
 #################################
@@ -301,6 +295,3 @@ for i in range(0,R):
   fid.write("{} {} {} {} {}\n".format(flowline[i,0],flowline[i,1],flowline[i,2],flowline[i,3],flowline[i,4]))
 fid.close()
 del fid 
-
-# Save this file in MESH directory for future reference
-shutil.copy('helheim_mesh_2d.py',DIRM+'helheim_mesh_2d.py')
