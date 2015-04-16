@@ -62,9 +62,6 @@ file_terminus = os.path.join(os.getenv("HOME"),"Data/ShapeFiles/IceFronts/Helhei
 ## Velocity for inversion
 file_velocity_in=os.path.join(os.getenv("HOME"),"Data/Velocity/TSX/Helheim/track-27794/mosaicOffsets")
 
-# Save this file in MESH directory for future reference
-shutil.copy('helheim_mesh_2d.py',DIRM+'helheim_mesh_2d.py')
-
 ###########
 # Outputs #
 ###########
