@@ -8,10 +8,11 @@ import os
 import sys
 import numpy as np
 sys.path.append(os.path.join(os.getenv("HOME"),"Code/Util/Modules"))
+sys.path.append(os.path.join(os.getenv("HOME"),"Code/Helheim/Tools"))
 import elmer_mesh as mesh
 import dist
-import shapefactor,flowparameter
-import subprocess
+import shapefactor,flowparameter, velocity_flowline
+import subprocess, shutil
 import matplotlib.pyplot as plt
 from subprocess import call
 from scipy import interpolate
@@ -22,7 +23,7 @@ import geotiff
 # Inputs #
 ##########
 
-MESHNAME='MorlighemNew'
+MESHNAME='MorlighemNew_CorrectIceFront'
 file_mesh_out="Elmer"
 
 DIRS=os.path.join(os.getenv("HOME"),"Code/Helheim/Modeling/SolverFiles/Flowline/")
@@ -65,6 +66,12 @@ file_velocity_in2=os.path.join(os.getenv("HOME"),"Data/Velocity/Random/Greenland
 file_shapefactor_out = DIRM+"Inputs/width.dat"
 file_bedrock_out = DIRM+"Inputs/roughbed.dat"
 file_flowline_out = DIRM+"Inputs/flowline.dat"
+
+# Output files for measured velocities along flowline
+file_velocity_out=DIRM+"Inputs/velocity.dat"
+
+# Save this file in MESH directory for future reference
+shutil.copy('helheim_mesh_2d.py',DIRM+'helheim_mesh_2d.py')
 
 ###################################################################################
 # Make box mesh and then use "MshGlacier" to add surface and bedrock topographies #
@@ -301,6 +308,3 @@ for i in range(0,R):
   fid.write("{} {} {} {} {}\n".format(flowline[i,0],flowline[i,1],flowline[i,2],flowline[i,3],flowline[i,4]))
 fid.close()
 del fid 
-
-# Save this file in MESH directory for future reference
-shutil.copy('helheim_mesh_2d.py',DIRM+'helheim_mesh_2d.py')
