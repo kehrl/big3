@@ -5,6 +5,7 @@
 ## velocity_at_lagpoints(x,y,dists,pts): get velocity timeseries at a Lagrangian point
 ## velocity_along_flowline(x,y): get velocity timeseries along flowline
 ## inversion_3D(file_velocity_in, dir_velocity_out): output velocity data for ElmerSolver
+## inversion_2D(x,y,dist,file_velocity_in, dir_velocity_out): output velocity along flowline for ElmerSolver
 
 #LMK, UW, 04/01/2014
 
@@ -650,6 +651,50 @@ def inversion_3D(file_velocity_in,dir_velocity_out):
   for i in range(0,len(xfinal)):
     for j in range(0,len(yfinal)):
       fid.write('{} {} {}\n'.format(xfinal[i],yfinal[j],v_final[j,i]))
+  fid.close()
+
+  return 1
+
+def inversion_2D(x,y,d,file_velocity_in,dir_velocity_out):
+  import os
+  import sys
+  import numpy as np
+  sys.path.append(os.path.join(os.getenv("HOME"),"Code/Util/Modules"))
+  import scipy.interpolate 
+  import scipy.signal as signal
+  import geodat
+  
+  # Large velocity map, in case the small map isn't big enough
+  file_velocity_large = os.path.join(os.getenv("HOME"),"Data/Velocity/Random/Greenland/track-07to10/mosaicOffsets")
+  x2,y2,v2,vx2,vy2,ex2,ey2,time2=geodat.readvelocity(file_velocity_large)
+  f2 = scipy.interpolate.RegularGridInterpolator([y2,x2],v2)
+  vint2=f2(np.column_stack([y,x]),method='linear')
+  
+  # Individual velocity map
+  x1,y1,v1,vx1,vy1,ex1,ey1,time1=geodat.readvelocity(file_velocity_in)
+  f1 = scipy.interpolate.RegularGridInterpolator([y1,x1],v1,bounds_error=False)
+  vint1=f1(np.column_stack([y,x]),method='linear') 
+
+  # Combine velocity records
+  vcomb=vint1
+  nans = np.where((np.isnan(vcomb)))
+  vcomb[nans] = vint2[nans] 
+  
+  # Linearly interpolate NaN values
+  nonnan = np.where(~(np.isnan(vcomb)))
+  vnonnan = np.interp(d,d[nonnan],vcomb[nonnan])
+  
+  filt_len=5.0e3
+  cutoff=(1/filt_len)/(1/(np.diff(d[1:3])*2))
+  b,a=signal.butter(4,cutoff,btype='low')
+  filtered=signal.filtfilt(b,a,vnonnan)
+
+  # Write out the velocity data
+  fid = open(dir_velocity_out+"velocity.dat",'w')
+  R=len(filtered)
+  fid.write('{0}\n'.format(R))
+  for j in range(0,R):
+    fid.write('{} {}\n'.format(d[j],filtered[j]))
   fid.close()
 
   return 1
