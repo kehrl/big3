@@ -73,9 +73,6 @@ file_flowline_out = DIRM+"Inputs/flowline.dat"
 # Output files for measured velocities along flowline
 file_velocity_out=DIRM+"Inputs/velocity.dat"
 
-# Save this file in MESH directory for future reference
-shutil.copy('helheim_mesh_2d.py',DIRM+'helheim_mesh_2d.py')
-
 ###################################################################################
 # Make box mesh and then use "MshGlacier" to add surface and bedrock topographies #
 ###################################################################################
@@ -85,6 +82,10 @@ if not(os.path.isdir(DIRM)):
   #os.makedirs(DIRR)
   os.makedirs(DIRM)
   os.makedirs(DIRM+"Inputs")
+
+# Save this file in MESH directory for future reference
+shutil.copy('helheim_mesh_2d.py',DIRM+'helheim_mesh_2d.py')
+
 
 # Flowline coordinates
 flowline = mesh.shp_to_flowline(file_flowline_in)
