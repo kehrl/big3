@@ -48,16 +48,16 @@ nmax = 1e3 # maximum number of iteration, need to add to code
 
 # Padding
 # In case the glacier advances, we need to add some extra same in our matrices so that 
-# we can take this into account.
-pad = np.ceil((1.0e4*t/yearinsec)/dx_0) # number of nodes
+# we don't run out of room.
+pad = np.ceil((5.0e4*t/yearinsec)/dx_0) # number of nodes
 
 ###############
 # Model setup #
 ###############
 
 # Set up initial nodes and values for velocity and height. We're using a staggered grid 
-# for numerical stability, so the height nodes will be located halfway between the 
-# the velocity nodes.
+# for numerical stability. We calculate height on the normal grid and velocity/flux on the
+# staggered grid.
 Nnodes = np.ceil((L_0)/dx_0+1)
 norm_nodes_0 = np.linspace(0,L_0,Nnodes) # Nodes
 stag_nodes_0 = norm_nodes_0 + (norm_nodes_0[1]-norm_nodes_0[0])/2 # Staggered nodes
@@ -83,7 +83,8 @@ H_0 = np.interp(norm_nodes_0,flowline[:,0],zs_filtered-zb_filtered) # Initial he
 # coefficient (Beta2) on each time step to account for floating vs. grounding ice and 
 # advance/retreat of the ice front.
 temp = np.linspace(0,1,Nnodes)
-Beta2_0 = 3.0e10*(np.exp(-0.5*temp)-np.exp(-0.5)) 
+Beta2_0 = 5.0e3
+#Beta2_0 = 5.0e3*(np.exp(-0.5*temp)-np.exp(-0.5)) 
 #Beta2_0 = (8.0e9)*np.linspace(1,0,Nnodes)
 del temp
 
@@ -150,6 +151,7 @@ for i in range(0,Nt-1):
   # Get water depth at nodes
   D = -np.interp(norm_nodes[0:Nnodes,i],flowline[:,0],flowline[:,3])
   D[D<0] = 0
+  
   # Bed float has values of -1 (floating ice), +1 (grounded ice), and 0 (grounding line)
   Bed_Float = np.zeros(len(norm_nodes[0:Nnodes,i]))
   Bed_Float[:] = 1 # Grounded ice
@@ -161,7 +163,7 @@ for i in range(0,Nt-1):
   ##################
   
   # Set up boundary condition at bed. We want zero basal friction if the ice is floating.
-  Beta2 = np.interp(norm_nodes[0:Nnodes,i],norm_nodes_0,Beta2_0)
+  Beta2 = Beta2_0*np.ones(Nnodes)#np.interp(norm_nodes[0:Nnodes,i],norm_nodes_0,Beta2_0)
   Beta2[ind[0]]=0
   del ind
   
@@ -197,7 +199,7 @@ for i in range(0,Nt-1):
     # Find values at staggered nodes
     H_stag[0:Nnodes-1,i] = (H[1:Nnodes,i]+H[0:Nnodes-1,i])/2
     nu_stag = (nu[1:]+nu[0:-1])/2
-  
+
     #######################################
     # Interior nodes behind calving front #
     #######################################
@@ -208,7 +210,7 @@ for i in range(0,Nt-1):
     # drag term.
     gamma = np.sign(u_new[1:CF_ind])*(abs(u_new[1:CF_ind]))**(-2.0/3.0)
     Diagonal[1:CF_ind] = -(2.0/dx**2.0)*(H_stag[1:CF_ind,i]*nu_stag[1:CF_ind]+H_stag[0:CF_ind-1,i]*nu_stag[0:CF_ind-1]) - \
-      Beta2[1:CF_ind]-gamma*(H[1:CF_ind,i]/W[1:CF_ind])*(5.0/(2.0*A*W[1:CF_ind]))**(1.0/3.0)     
+      Beta2[1:CF_ind]*gamma*(H[1:CF_ind,i]-rho_w/rho_i*D[1:CF_ind])-gamma*(H[1:CF_ind,i]/W[1:CF_ind])*(5.0/(2.0*A*W[1:CF_ind]))**(1.0/3.0)     
   
     Right[2:CF_ind+1] = (2.0/dx**2.0)*(H_stag[1:CF_ind,i]*nu_stag[1:CF_ind])
   

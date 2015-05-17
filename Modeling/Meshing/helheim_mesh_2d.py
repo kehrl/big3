@@ -83,10 +83,6 @@ if not(os.path.isdir(DIRM)):
   os.makedirs(DIRM)
   os.makedirs(DIRM+"Inputs")
 
-# Save this file in MESH directory for future reference
-shutil.copy('helheim_mesh_2d.py',DIRM+'helheim_mesh_2d.py')
-
-
 # Flowline coordinates
 flowline = mesh.shp_to_flowline(file_flowline_in)
 del file_flowline_in
@@ -135,7 +131,7 @@ for i in range(0,len(ind[0])):
     else:
       ind2 = ind2+1
   flowline[ind[0][i],4] = np.mean([flowline[ind1,4],flowline[ind2,4]])    
-surf_filt_len=float(1000)
+surf_filt_len=float(500)
 cutoff=(1/surf_filt_len)/(1/(np.diff(flowline[1:3,0])*2))
 b,a=signal.butter(4,cutoff,btype='low')
 flowline[:,4]=signal.filtfilt(b,a,flowline[:,4])
@@ -176,7 +172,6 @@ call(["ElmerGrid","2","4",file_mesh_out])
 
 # Get velocity along flowline from velocity profiles
 helheim_velocity.inversion_2D(flowline[:,1],flowline[:,2],flowline[:,0],file_velocity_in,DIRM+"Inputs/")
-
 
 
 #################################
@@ -302,3 +297,7 @@ for i in range(0,R):
   fid.write("{} {} {} {} {}\n".format(flowline[i,0],flowline[i,1],flowline[i,2],flowline[i,3],flowline[i,4]))
 fid.close()
 del fid 
+
+
+# Save this file in MESH directory for future reference
+shutil.copy('helheim_mesh_2d.py',DIRM+'helheim_mesh_2d.py')
