@@ -26,7 +26,11 @@ def cresis(year):
     bed = np.column_stack([x2,y2,zs-H,zs])
   
   else:
-    file=os.path.join(os.getenv("HOME"),"Data/Bed/Cresis/Helheim_2006_2013_Composite/flightlines/Helheim_2006_2013_Composite_Flightlines.txt")
+    print "Using data set Helheim_2008_2012_Composite"
+    # New data set
+    #file=os.path.join(os.getenv("HOME"),"Data/Bed/Cresis/Helheim_2006_2013_Composite/flightlines/Helheim_2006_2013_Composite_Flightlines.txt")
+    # Old data set
+    file=os.path.join(os.getenv("HOME"),"Data/Bed/Cresis/Helheim_2008_2012_Composite/flightlines/Helheim_2008_2012_Composite_Flightlines.txt")
     fid = open(file,"r")
     x=[]
     y=[]
@@ -61,6 +65,8 @@ def cresis(year):
       ind=range(63289,63409)  
     elif year == '2013':
       ind=range(68366,68966)
+    elif year == 'all':
+      ind=range(0,len(x))
     else:
       print "Unrecognized CreSIS profile"
     

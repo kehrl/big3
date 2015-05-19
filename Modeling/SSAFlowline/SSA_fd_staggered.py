@@ -9,7 +9,7 @@ import sys
 ###########
 # Options #
 ###########
-CF_move = 0
+CF_move = 1
 
 ##########
 # Inputs #
@@ -29,7 +29,7 @@ velocity = np.loadtxt(DIR+"velocity.dat",skiprows=1)
 glacierwidth = np.loadtxt(DIR+"width.dat",skiprows=1)
 
 # Choose time step and length of run
-dt = (1.0/6.0)/(365.0)*yearinsec # Years
+dt = (1/24.0)/(365.0)*yearinsec # Years
 t = 5.0*yearinsec # Years
 Nt = int(np.ceil(t/dt)) # number of timesteps
 
@@ -45,7 +45,7 @@ u_inflow = 200.0/yearinsec
 A = 1.7e-24 # Pa-3 s-1
 
 # Calving law parameters
-d_w = 10.0 # water depth in crevasses (m)
+d_w = 20.0 # water depth in crevasses (m)
 
 # Cutoff for iterations
 cutoff = 10.0 # change between iterations in m/yr
@@ -55,6 +55,11 @@ nmax = 1e3 # maximum number of iteration, need to add to code
 # In case the glacier advances, we need to add some extra same in our matrices so that 
 # we don't run out of room.
 pad = np.ceil((5.0e4*t/yearinsec)/dx_0) # number of nodes
+
+# Accumulation rate
+ELA = 600 # equilibrium line altitude in m
+mdot = -150/yearinsec # m across the entire width
+adot = 0/yearinsec # m across the entire width
 
 ###############
 # Model setup #
@@ -80,18 +85,18 @@ u_filtered=signal.filtfilt(b,a,velocity[:,1]) #filtered velocity
 del filt_len,filt_cutoff,b,a
 
 # Interpolate ice thickness and velocity to nodes
-u_0 = np.interp(norm_nodes_0,velocity[:,0],u_filtered)/yearinsec # Initial velocities
+u_0 = np.interp(stag_nodes_0,velocity[:,0],u_filtered)/yearinsec # Initial velocities
 H_0 = np.interp(norm_nodes_0,flowline[:,0],zs_filtered-zb_filtered) # Initial heights
 
 # Decide on a friction coefficient
 # Beta2_0 is the friction coefficient for the first time step. We update the friction 
 # coefficient (Beta2) on each time step to account for floating vs. grounding ice and 
 # advance/retreat of the ice front.
-temp = np.linspace(0,1,Nnodes)
-Beta2_0 = 5.0e3
+#temp = np.linspace(0,1,Nnodes)
+Beta2_0 = 8.0e3
 #Beta2_0 = 5.0e3*(np.exp(-0.5*temp)-np.exp(-0.5)) 
 #Beta2_0 = (8.0e9)*np.linspace(1,0,Nnodes)
-del temp
+#del temp
 
 # Set up matrices for results
 # Since we are using a moving grid, we need to keep track of where the nodes are located
@@ -99,18 +104,17 @@ del temp
 norm_nodes = np.zeros([len(norm_nodes_0)+pad,Nt]) # node locations for velocity, flux
 stag_nodes = np.zeros([len(stag_nodes_0)+pad,Nt]) # node locations for ice thickness change
 
-u = np.zeros([len(norm_nodes_0)+pad,Nt]) # velocity
+u_stag = np.zeros([len(stag_nodes_0)+pad,Nt]) # velocity
 u_new = np.zeros(Nnodes) # variable for velocity iterations
-H_stag = np.zeros([len(stag_nodes_0)+pad,Nt]) # ice thickness on staggered grid
 H = np.zeros([len(norm_nodes_0)+pad,Nt]) # ice thickness on normal nodes
 zs = np.zeros([len(norm_nodes_0)+pad,Nt]) # surface elevation
 L = np.zeros(Nt) # glacier length through time
+GL = np.zeros(Nt)
 
 # Set all variables to NaN
 H[:,:] = 'NaN'
-H_stag[:,:] = 'NaN'
 zs[:,:] = 'NaN'
-u[:,:] = 'NaN'
+u_stag[:,:] = 'NaN'
 
 # Set up values for first time step
 H[0:Nnodes,0] = H_0
@@ -123,7 +127,7 @@ zs[0:Nnodes,0] = np.interp(norm_nodes_0,flowline[:,0],zs_filtered)
 # Run time steps #
 ##################
 
-CF_ind = np.argmin(abs(flowline[:,0]-L_0)) # Index of calving front
+CF_ind = np.argmin(abs(flowline[:,0]-L_0)) # Index of calving front, which is on the staggered grid
 for i in range(0,Nt-1):
   if i % 100 == 0:
     print "Timestep", i, "out of", Nt 
@@ -145,8 +149,8 @@ for i in range(0,Nt-1):
   
   # Interpolate width and surface elevation
   W = np.interp(norm_nodes[0:Nnodes,i],glacierwidth[:,0],width_filtered)
+  W_stag = np.interp(stag_nodes[0:Nnodes,i],glacierwidth[:,0],width_filtered)
   zb = np.interp(norm_nodes[0:Nnodes,i],flowline[:,0],zb_filtered)
-  zs[0:Nnodes,i] = H[0:Nnodes,i]+zb
   
   #######################
   # Flotation criterion #
@@ -163,14 +167,29 @@ for i in range(0,Nt-1):
   ind = np.where(D > (rho_i/rho_sw)*H[0:Nnodes,i])
   Bed_Float[ind[0]] = -1 # Floating
   
+  if np.any(ind[0]):
+    GL_ind = ind[0][0]-1
+    GL[i] = norm_nodes[GL_ind,i]
+    zs[0:GL_ind,i] = H[0:GL_ind,i]+zb[0:GL_ind]
+    zs[GL_ind:,i] = D[GL_ind+1]*(rho_w/rho_i-1)
+    #print "Grounding Line at", GL[i]
+  else:
+    GL[i] = L[i]
+    zs[0:Nnodes,i] = H[0:Nnodes,i]+zb
+
+  
   ##################
   # Basal friction #
   ##################
   
   # Set up boundary condition at bed. We want zero basal friction if the ice is floating.
   Beta2 = Beta2_0*np.ones(Nnodes)#np.interp(norm_nodes[0:Nnodes,i],norm_nodes_0,Beta2_0)
-  Beta2[ind[0]]=0
+  Beta2[Bed_Float==-1]=0
   del ind
+  
+  # Find values at staggered nodes
+  H_stag = (H[1:Nnodes,i]+H[0:Nnodes-1,i])/2
+  D_stag = (D[1:Nnodes]+D[0:Nnodes-1])/2
   
   # Set up variables for velocity iterations
   if i > 0:
@@ -184,7 +203,7 @@ for i in range(0,Nt-1):
   # Count the number of iterations
   n=0
   
-  while (np.max(abs(u_last-u_new))*yearinsec > cutoff) and (n<100):
+  while (np.max(abs(u_last-u_new))*yearinsec > cutoff) and (n < 50):
   
     #######################
     # Effective viscosity #
@@ -200,24 +219,20 @@ for i in range(0,Nt-1):
     Left = np.zeros(Nnodes) # terms on left of diagonal
     Right = np.zeros(Nnodes) # terms on right side of diagonal
     Vector = np.zeros(Nnodes) # terms on right side of matrix problem
-  
-    # Find values at staggered nodes
-    H_stag[0:Nnodes-1,i] = (H[1:Nnodes,i]+H[0:Nnodes-1,i])/2
-    nu_stag = (nu[1:]+nu[0:-1])/2
 
     #######################################
     # Interior nodes behind calving front #
     #######################################
     
-    Left[0:CF_ind-1] = (2.0/dx**2.0)*(H_stag[0:CF_ind-1,i]*nu_stag[0:CF_ind-1]) 
+    Left[0:CF_ind-1] = (2.0/dx**2.0)*(H[1:CF_ind,i]*nu[1:CF_ind]) 
   
     # Gamma uses the velocities (u^(-2/3)) on the last time step to linearize the lateral
     # drag term.
     gamma = np.sign(u_new[1:CF_ind])*(abs(u_new[1:CF_ind]))**(-2.0/3.0)
-    Diagonal[1:CF_ind] = -(2.0/dx**2.0)*(H_stag[1:CF_ind,i]*nu_stag[1:CF_ind]+H_stag[0:CF_ind-1,i]*nu_stag[0:CF_ind-1]) - \
-      Beta2[1:CF_ind]*gamma*(H[1:CF_ind,i]-rho_w/rho_i*D[1:CF_ind])-gamma*(H[1:CF_ind,i]/W[1:CF_ind])*(5.0/(2.0*A*W[1:CF_ind]))**(1.0/3.0)     
+    Diagonal[1:CF_ind] = -(2.0/dx**2.0)*(H[1:CF_ind,i]*nu[1:CF_ind]+H[2:CF_ind+1,i]*nu[2:CF_ind+1]) - \
+      Beta2[1:CF_ind]*gamma*(H_stag[1:CF_ind]-rho_w/rho_i*D_stag[1:CF_ind])-gamma*(H_stag[1:CF_ind]/W_stag[1:CF_ind])*(5.0/(2.0*A*W_stag[1:CF_ind]))**(1.0/3.0)     
   
-    Right[2:CF_ind+1] = (2.0/dx**2.0)*(H_stag[1:CF_ind,i]*nu_stag[1:CF_ind])
+    Right[2:CF_ind+1] = (2.0/dx**2.0)*(H[2:CF_ind+1,i]*nu[2:CF_ind+1])
   
     # Driving stress on right side of matrix problem
     Vector[1:CF_ind] = rho_i*g*H[1:CF_ind,i]*(zs[2:CF_ind+1,i]-zs[1:CF_ind,i])/dx
@@ -258,26 +273,49 @@ for i in range(0,Nt-1):
     print 
     sys.exit("Velocities became nan")
   
-  u[0:Nnodes,i] = u_new
+  u_stag[0:Nnodes,i] = u_new
   
   ##########################
   # Find new calving front #
   ##########################
   
-  R_xx = 2*((1/A)*(u[1:,i]-u[0:-1,i])/dx)**(1.0/3.0)
+  # Only move the terminus if the simulation permits a moving terminus
+  if CF_move==1:
   
-  d_crev = R_xx/(rho_i*g)+(rho_w/rho_i)*d_w
+    R_xx = 2*((1/A)*(abs(u_stag[1:Nnodes,i]-u_stag[0:Nnodes-1,i])/dx))**(1.0/3.0)
   
-  # Find the glacier advance based on the velocity at the terminus.
-  dL=u[Nnodes-1,i]*dt 
-  L[i+1]=L[i]+dL
+    d_crev = R_xx/(rho_i*g)+(rho_w/rho_i)*d_w
+  
+    # Check to see if the calving condition is met
+    ind = np.where(d_crev[0:Nnodes-1] > zs[0:Nnodes-1,i])
+    indices = np.where(Bed_Float[ind[0]]==-1)
+    if np.any(indices): 
+      CF_ind = np.min(ind[0][indices[0]])
+      L[i+1] = norm_nodes[CF_ind,i]
+    
+    else:
+      # Find the glacier advance based on the velocity at the terminus.
+      dL=u_stag[Nnodes-1,i]*dt 
+      L[i+1]=L[i]+dL
+      
+  # Otherwise maintain the same terminus position  
+  else: 
+    L[i+1]=L_0
+  
+  
   
   ###########################
   # Change in ice thickness #
   ###########################
   
+  # Interpolate mass balance
+  Bdot = np.zeros(Nnodes)
+  ELA_ind = np.argmin(abs(zs[0:Nnodes,i]-ELA))
+  Bdot[0:ELA_ind]=adot
+  Bdot[ELA_ind+1:]=mdot
+  
   # Find change in ice thickness
   dH = np.zeros(Nnodes)
-  dH = -(1.0/W[0:-1])*(((u[1:Nnodes,i]*W[1:]*H[1:Nnodes,i])-(u[0:Nnodes-1,i]*W[0:Nnodes-1]*H[0:Nnodes-1,i]))/dx)*dt
+  dH = -(1.0/W[1:Nnodes])*(((u_stag[1:Nnodes,i]*W_stag[1:Nnodes]*H[1:Nnodes,i])-(u_stag[0:Nnodes-1,i]*W_stag[0:Nnodes-1]*H[0:Nnodes-1,i]))/dx)*dt+Bdot[1:Nnodes]*dt
 
   

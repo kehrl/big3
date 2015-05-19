@@ -1,3 +1,5 @@
+# This is some old code that calculates viscosity from Kristin's temperature model results.
+
 import os
 
 # Directories

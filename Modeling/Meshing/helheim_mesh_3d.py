@@ -35,10 +35,10 @@ if not(os.path.isdir(DIRM)):
   os.makedirs(DIRM+"/Inputs")
 
 # Mesh refinement
-lc1=5000 # for entire mesh
+lc1=3000 # for entire mesh
 lc2=500 # for channels close to the grounding line
 lc3=200 # for grounding line
-lc4=1000 # for regions surrounding channels
+lc4=700 # for regions surrounding channels
 #lc1=5000 # for entire mesh
 #lc2=1000 # for channels close to the grounding line
 #lc3=500 # for grounding line
@@ -56,6 +56,7 @@ file_velocity_in = os.path.join(os.getenv("HOME"),"Data/Velocity/TSX/Helheim/tra
 ###########
 # Outputs #
 ###########
+
 #Set output name for gmsh file
 file_2d=os.path.join(DIRM+"Planar")
 file_3d=os.path.join(DIRM+"Elmer")
@@ -95,19 +96,23 @@ refine = mesh.shp_to_xy(DIRX+"refine")
 #############
 # Make mesh #
 #############
+
 # Set up bedrock and surface topographies for Extrude mesh
 x,y,bed=geotiff.read(file_bed_in+".tif",np.min(exterior[0])-5e3,np.max(exterior[0])+5e3,np.min(exterior[1])-5e3,np.max(exterior[1])+5e3)
+
 fid = open(Inputs+"bed.xyz","w")
 for i in range(0,len(x)):
   for j in range(0,len(y)):
     fid.write('{} {} {}\n'.format(x[i],y[j],bed[j,i]))
 fid.close()
+
 x,y,surf=geotiff.read(file_surf_in+".tif",np.min(exterior[0])-5e3,np.max(exterior[0])+5e3,np.min(exterior[1])-5e3,np.max(exterior[1])+5e3)
 fid = open(Inputs+"surf.xyz","w")
 for i in range(0,len(x)):
   for j in range(0,len(y)):
     fid.write('{} {} {}\n'.format(x[i],y[j],surf[j,i]))
 fid.close()
+
 del x,y,bed,surf
   
 # Gmsh .geo file
@@ -121,7 +126,6 @@ call(["ElmerGrid","14","2",file_2d+".msh","-autoclean"])
 
 # Extrude the mesh with ExtrudeMesh
 call(["ExtrudeMesh",file_2d,file_3d,str(levels),"1","1","0","0","0","0",Inputs,"200","2","NaN"])
-#call(["ExtrudeMesh",file_2d,file_3d,"10","1000","1","0","0","0","0"]) 
 
 # Partition mesh for parallel processing
 os.chdir(DIRM)
@@ -141,6 +145,7 @@ helheim_velocity.inversion_3D(file_velocity_in,Inputs)
 # Import mesh boundary, calculate flow parameter at mesh nodes, and use #
 # SIA approximation to get basal sliding speed for the inflow boundary  #
 #########################################################################
+
 # Get mesh nodes
 nodes_file=DIRM+"/elmer/mesh.nodes"
 nodes=np.loadtxt(nodes_file)

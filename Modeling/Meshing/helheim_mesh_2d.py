@@ -9,7 +9,7 @@ import sys
 import numpy as np
 sys.path.append(os.path.join(os.getenv("HOME"),"Code/Util/Modules"))
 sys.path.append(os.path.join(os.getenv("HOME"),"Code/Helheim/Tools"))
-import helheim_velocity
+import helheim_velocity, helheim_bed
 import elmer_mesh as mesh
 import dist
 import shapefactor,flowparameter
@@ -94,9 +94,8 @@ flowline = mesh.xy_to_gmsh_box(flowline,file_terminus,DIRM,file_mesh_out,file_be
 ## The present flowline runs off the Morlighem bed DEM, so we need to set the bed near the 
 ## terminus to the bed elevation measurements from 2001
 ind=np.where(flowline[:,1]>309000)
-bed2001=np.loadtxt(file_bed_in2,skiprows=1)
-bed2001=bed2001[3180:3297,:]
-flowline[ind,3]=np.interp(flowline[ind,1],bed2001[:,0],bed2001[:,7]+130)
+bed2001=helheim_bed.cresis('2001')
+flowline[ind,3]=np.interp(flowline[ind,1],bed2001[:,0],bed2001[:,2]-50)
 
 ## Save variable with rest of bed profile for grounded solver
 fid = open(DIRM+file_mesh_out+"_bed.dat",'w')
@@ -300,4 +299,4 @@ del fid
 
 
 # Save this file in MESH directory for future reference
-shutil.copy('helheim_mesh_2d.py',DIRM+'helheim_mesh_2d.py')
+# shutil.copy('helheim_mesh_2d.py',DIRM+'helheim_mesh_2d.py')
