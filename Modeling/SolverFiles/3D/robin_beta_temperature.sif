@@ -333,8 +333,8 @@ Boundary Condition 1
   Normal-Tangential VeloD = Logical True
   
   Velocity 1 = Real 0.0e0
-  Slip Coefficient 2 = 0.1
-  Slip Coefficient 3 = 0.1
+  Slip Coefficient 2 = 1.0e-10
+  Slip Coefficient 3 = 1.0e-10
 
   Save Line = Logical True
   Save Scalars = Logical True
