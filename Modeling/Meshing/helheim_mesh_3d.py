@@ -20,7 +20,7 @@ import geotiff
 # Inputs #
 ##########
 
-MESHNAME='MorlighemNew'
+MESHNAME='MorlighemNew_WeakenedSideWalls'
 
 # Directories
 DIRS=os.path.join(os.getenv("HOME"),"Code/Helheim/Modeling/SolverFiles/3D")
