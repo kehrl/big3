@@ -7,16 +7,39 @@ import helheim_icefronts
 import coords, geotiff
 import scipy.interpolate, jdcal, dist
 
-def gimp(xpts,ypts):
+def gimp_pts(xpts,ypts,verticaldatum):
   file = os.path.join(os.getenv("HOME"),'Data/Elevation/Gimp/gimpdem3_1.tif')
   [x,y,z]=geotiff.read(file)
   
-  f = scipy.interpolate.RectBivariateSpline(y,x,z)
-  elev = f.ev(ypts,xpts)
+  f = scipy.interpolate.RegularGridInterpolator((y,x),z,method="linear")
+  zs = f(np.column_stack([ypts,xpts]))
+  
+  if verticaldatum == "ellipsoid":
+    elev = zs
+  elif verticaldatum == "geoid":
+    geoidheight = coords.geoidheight(xpts,ypts)
+    elev = zs - geoidheight
+  else:
+    print "Unknown datum, defaulting to height above ellipsoid"
   
   return elev
+  
+def gimp_grid(xmin,xmax,ymin,ymax,verticaldatum):
+  
+  file = os.path.join(os.getenv("HOME"),'Data/Elevation/Gimp/gimpdem3_1.tif')
+  [x,y,zs]=geotiff.read(file,xmin,xmax,ymin,ymax)
+  
+  if verticaldatum == "ellipsoid":
+    elev = zs
+  elif verticaldatum == "geoid":
+    (xgrid,ygrid)=np.meshgrid(x,y)
+    geoidheight = coords.geoidheight(xgrid.flatten(),ygrid.flatten())
+    zg = np.reshape(geoidheight,(len(y),len(x)))
+    elev = zs - zg
+    
+    return x,y,elev
 
-def atm(years):
+def atm(years,datum):
 
   atm = {}
   
