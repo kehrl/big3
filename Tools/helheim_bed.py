@@ -22,7 +22,7 @@ def cresis(year,verticaldatum):
     H=data[:,3]
     x2,y2 = coords.convert(x,y,4326,3413)
     
-    surf=helheim_elevation.atm('2001')
+    surf = helheim_elevation.atm('2001','ellipsoid')
     zs = scipy.interpolate.griddata(surf['20010521'][:,0:2],surf['20010521'][:,2],np.column_stack([x2,y2]),method='nearest')
     zb = zs-H
   
@@ -76,9 +76,7 @@ def cresis(year,verticaldatum):
   
   # Select what reference we want for the elevation  
   if verticaldatum == "geoid":
-    print "working"
     geoidheight = coords.geoidheight(x2,y2)
-    print geoidheight
     zb = zb-geoidheight
   elif verticaldatum == "ellipsoid":
     zb = zb
@@ -93,24 +91,39 @@ def morlighem_pts(xpts,ypts,verticaldatum):
   file = os.path.join(os.getenv("HOME"),"Data/Bed/Morlighem_2014/MCdataset-2015-04-27.tif")
   [x,y,z]=geotiff.read(file)
   
-  f = scipy.interpolate.RegularGridInterpolator((y,x),z)
+  f = scipy.interpolate.RegularGridInterpolator((y,x),z,method="linear")
   bed = f(np.column_stack([ypts,xpts]))
   bed[bed<-2000]='NaN'
   
-  if verticaldatum == "geoid":
+  # Morlighem bed DEM is given as elevation above mean sea level (at geoid). So we need
+  # to correct only if we want the ellipsoid height.
+  if verticaldatum == "ellipsoid":
     geoidheight = coords.geoidheight(xpts,ypts)
-    bed = bed-geoidheight
-  elif verticaldatum == "ellipsoid":
+    bed = bed+geoidheight
+  elif verticaldatum == "geoid":
     bed = bed
   else:
-    print "Unknown vertical datum, defaulting to ellipsoid height"
+    print "Unknown vertical datum, defaulting to geoid height"
       
   return bed
   
-def morlighem_grid(xmin,xmax,ymin,ymax):
+def morlighem_grid(xmin,xmax,ymin,ymax,verticaldatum):
 
   # Load Bed DEM
   file = os.path.join(os.getenv("HOME"),"Data/Bed/Morlighem_2014/MCdataset-2015-04-27.tif")
-  [x,y,z]=geotiff.read(file,xmin,xmax,ymin,ymax)
+  [xb,yb,zb]=geotiff.read(file,xmin,xmax,ymin,ymax)
   
-  return x,y,z
+  # Load Geoid
+  file = os.path.join(os.getenv("HOME"),"Data/Bed/Morlighem_2014/geoid.tif")
+  [xg,yg,zg]=geotiff.read(file,xmin,xmax,ymin,ymax)
+  
+  # Morlighem bed DEM is given as elevation above mean sea level (at geoid). So we need
+  # to correct only if we want the ellipsoid height.
+  if verticaldatum == "ellipsoid":
+    bed = zb+zg
+  elif verticaldatum == "geoid":
+    bed = zb
+  else:
+    print "Unknown vertical datum, defaulting to geoid height"
+  
+  return xb,yb,bed
