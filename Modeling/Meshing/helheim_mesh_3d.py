@@ -48,7 +48,7 @@ partitions="4" # Number of partitions
 
 # Bed and surface
 file_bed = 'morlighem' 
-file_surf_in = 'gimp'
+file_surf = 'gimp'
 
 # Velocity profile for inversion
 file_velocity_in = os.path.join(os.getenv("HOME"),"Data/Velocity/TSX/Helheim/track-27794")
