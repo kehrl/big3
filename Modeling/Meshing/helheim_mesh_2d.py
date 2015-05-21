@@ -9,7 +9,7 @@ import sys
 import numpy as np
 sys.path.append(os.path.join(os.getenv("HOME"),"Code/Util/Modules"))
 sys.path.append(os.path.join(os.getenv("HOME"),"Code/Helheim/Tools"))
-import helheim_velocity, helheim_bed
+import helheim_velocity, helheim_bed, helheim_elevation
 import elmer_mesh as mesh
 import dist
 import shapefactor,flowparameter
@@ -47,14 +47,12 @@ file_rightside_in = os.path.join(os.getenv("HOME"),"Data/ShapeFiles/Glaciers/Flo
 
 # Bed and surface topographies
 ## Bed inputs
-file_bed_in1=os.path.join(os.getenv("HOME"),"Data/Bed/Morlighem_2014/morlighem_bed.tif")
+file_bed = 'morlighem'
 file_bed_in2=os.path.join(os.getenv("HOME"),"Data/Bed/CreSIS/helheim_flightline_05212001_good_nsidc.dat")	
 
 ## Surface inputs
-file_surf_gimp=os.path.join(os.getenv("HOME"),"Data/Elevation/Gimp/gimpdem3_1.tif")
-file_surf_wv=[os.path.join(os.getenv("HOME"),"Data/Elevation/Worldview/Helheim/20120520_1443_102001001BD45E00_102001001C07FB00-DEM_32m_trans.tif"),
-			  os.path.join(os.getenv("HOME"),"Data/Elevation/Worldview/Helheim/20120513_1410_102001001B4C6F00_102001001BD7E800-DEM_32m_trans.tif"),
-			  os.path.join(os.getenv("HOME"),"Data/Elevation/Worldview/Helheim/20120624_1421_102001001B87EF00_102001001B1FB900-DEM_32m_trans.tif")]
+file_surf = 'gimp'
+file_wv_year = '2012' # year for worldview DEMs
 
 ## File to use for terminus position
 file_terminus = os.path.join(os.getenv("HOME"),"Data/ShapeFiles/IceFronts/Helheim/2012-174_TSX.shp")
@@ -88,14 +86,14 @@ flowline = mesh.shp_to_flowline(file_flowline_in)
 del file_flowline_in
 
 # Create geo file for flowline
-flowline = mesh.xy_to_gmsh_box(flowline,file_terminus,DIRM,file_mesh_out,file_bed_in1,file_surf_gimp,lc,lc_d,layers)
+flowline = mesh.xy_to_gmsh_box(flowline,file_terminus,DIRM,file_mesh_out,file_bed,file_surf,lc,lc_d,layers)
 
 # Adjust bed DEM to 2001 bed profile near terminus
 ## The present flowline runs off the Morlighem bed DEM, so we need to set the bed near the 
 ## terminus to the bed elevation measurements from 2001
-ind=np.where(flowline[:,1]>309000)
-bed2001=helheim_bed.cresis('2001')
-flowline[ind,3]=np.interp(flowline[ind,1],bed2001[:,0],bed2001[:,2]-50)
+ind=np.where(flowline[:,0]>83300)
+bed2001=helheim_bed.cresis('2001','geoid')
+flowline[ind,3]=np.interp(flowline[ind,1],bed2001[:,0],bed2001[:,2])
 
 ## Save variable with rest of bed profile for grounded solver
 fid = open(DIRM+file_mesh_out+"_bed.dat",'w')
@@ -105,44 +103,26 @@ for i in range(0,len(flowline[:,0])):
 fid.write('{} {} \n'.format(flowline[i,0]+100,flowline[i,3]))
 fid.close()
 
-# Adjust surface DEM to worldview DEM
-flowline_old = np.array(flowline)
-for file in file_surf_wv:
-  [xs,ys,zs] = geotiff.read(file)
-  zs_dem = interpolate.RectBivariateSpline(ys,xs,zs)
-  zs_interp = zs_dem.ev(flowline[:,2],flowline[:,1])
-  ind=np.where(zs_interp > 100.0)
-  flowline[ind,4]=zs_interp[ind]
-flowline[ind[0][-1]+1:-1,4] = np.mean(flowline[3370:3390,4])
-ind = np.where(abs(np.diff(flowline[:,4])) > 20)
-for i in range(0,len(ind[0])):
-  satisfied1 = 0; satisfied2 = 0
-  ind1=ind[0][i]-1
-  ind2=ind[0][i]+1
-  while not(satisfied1):
-    if ind1 not in ind[0]:
-      satisfied1 = 1
-    else:
-      ind1 = ind1-1
-  while not(satisfied2):
-    if ind2 not in ind[0]:
-      satisfied2 = 1
-    else:
-      ind2 = ind2+1
-  flowline[ind[0][i],4] = np.mean([flowline[ind1,4],flowline[ind2,4]])    
+# Adjust surface DEM to worldview DEM and then smooth it.
+wv_elev,times = helheim_elevation.worldview_pts(flowline[:,1],flowline[:,2],32,file_wv_year,'geoid')
+for i in range(0,len(flowline)):
+  ind = np.where(~(np.isnan(wv_elev[i,:])))
+  if len(ind[0]) > 0:
+    flowline[i,4] = np.mean(wv_elev[i,ind[0]])
+
 surf_filt_len=float(500)
 cutoff=(1/surf_filt_len)/(1/(np.diff(flowline[1:3,0])*2))
 b,a=signal.butter(4,cutoff,btype='low')
 flowline[:,4]=signal.filtfilt(b,a,flowline[:,4])
 
-fid = open(DIRM+file_mesh_out+"_surf.dat",'w')
-fid.write('{} {} \n'.format(flowline[0,0]-100,flowline[0,4]))
-for i in range(0,len(flowline[:,0])):
-  fid.write('{} {} \n'.format(flowline[i,0],flowline[i,4]))
-fid.write('{} {} \n'.format(flowline[i,0]+100,flowline[i,4]))
-fid.close()
+#fid = open(DIRM+file_mesh_out+"_surf.dat",'w')
+#fid.write('{} {} \n'.format(flowline[0,0]-100,flowline[0,4]))
+#for i in range(0,len(flowline[:,0])):
+#  fid.write('{} {} \n'.format(flowline[i,0],flowline[i,4]))
+#fid.write('{} {} \n'.format(flowline[i,0]+100,flowline[i,4]))
+#fid.close()
 
-del lc, lc_d, file_bed_in1, file_bed_in2, file_surf_gimp, bed2001
+del lc, lc_d, file_bed, file_bed_in2, file_surf, bed2001
 
 # Create box mesh for extrusion through MshGlacier
 call(["gmsh", "-2",file_mesh_out+".geo", "-o",file_mesh_out+".msh"])

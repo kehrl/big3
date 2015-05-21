@@ -30,7 +30,7 @@ glacierwidth = np.loadtxt(DIR+"width.dat",skiprows=1)
 
 # Choose time step and length of run
 dt = (1/24.0)/(365.0)*yearinsec # Years
-t = 5.0*yearinsec # Years
+t = 1.0*yearinsec # Years
 Nt = int(np.ceil(t/dt)) # number of timesteps
 
 # Choose node spacing
@@ -48,7 +48,7 @@ A = 1.7e-24 # Pa-3 s-1
 d_w = 20.0 # water depth in crevasses (m)
 
 # Cutoff for iterations
-cutoff = 10.0 # change between iterations in m/yr
+cutoff = 1.0 # change between iterations in m/yr
 nmax = 1e3 # maximum number of iteration, need to add to code
 
 # Padding

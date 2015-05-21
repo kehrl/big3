@@ -24,7 +24,7 @@ import matplotlib
 ##########
 
 # Model Resolution
-RES = 'MorlighemNew_WeakenedSideWalls'
+RES = 'MorlighemNew_2015'
 
 # Directories
 DIRS=os.path.join(os.getenv("HOME"),"Code/Helheim/Modeling/SolverFiles/3D/")

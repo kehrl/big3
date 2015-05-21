@@ -47,7 +47,6 @@ def atm(years,datum):
   DIRs = os.listdir(ATMDIR)
   
   if (not years) or (years=='all'):
-    print "not working"
     for DIR in DIRs:
       if DIR.startswith('2') or DIR.startswith('1'):
         x=[]
@@ -104,9 +103,8 @@ def atm_at_pts(x,y,years):
   atm = atm(years)
   
   return pts
- 
-  
-def worldview(years,resolution):
+   
+def worldview_grid(years,resolution):
 
   worldview = {}
   
@@ -138,7 +136,7 @@ def worldview(years,resolution):
   return worldview
 
 
-def worldview_at_pts(xpts,ypts,resolution,years):
+def worldview_pts(xpts,ypts,resolution,years,verticaldatum):
 
   # Worldview data
   WVDIR = os.path.join(os.getenv("HOME"),'/Users/kehrl/Data/Elevation/Worldview/Helheim/')
@@ -230,5 +228,14 @@ def worldview_at_pts(xpts,ypts,resolution,years):
             ind = np.where(dists > terminus)
             zpts[ind,n] = 'NaN'
     	    n = n+1
-      
+
+  # Choose if elevation should be relative to geoid or ellipsoid
+  if verticaldatum == 'geoid':
+    geoidheight = coords.geoidheight(xpts,ypts)
+    for i in range(0,len(time)):
+      zpts[:,i] = zpts[:,i] - geoidheight
+  elif verticaldatum == 'ellipsoid':
+     zpts = zpts
+  else:
+    print "Unknown datum, defaulting to height above ellipsoid"
   return zpts,time

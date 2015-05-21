@@ -9,7 +9,7 @@ import sys
 sys.path.append(os.path.join(os.getenv("HOME"),"Code/Util/Modules"))
 sys.path.append(os.path.join(os.getenv("HOME"),"Code/Helheim/Tools"))
 import elmer_mesh as mesh
-import helheim_velocity
+import helheim_velocity, helheim_bed, helheim_elevation
 from subprocess import call
 from scipy.interpolate import *
 import numpy as np
@@ -20,7 +20,7 @@ import geotiff
 # Inputs #
 ##########
 
-MESHNAME='MorlighemNew_WeakenedSideWalls'
+MESHNAME='MorlighemNew_2015'
 
 # Directories
 DIRS=os.path.join(os.getenv("HOME"),"Code/Helheim/Modeling/SolverFiles/3D")
@@ -47,8 +47,8 @@ levels=10 #levels of extrusion
 partitions="4" # Number of partitions
 
 # Bed and surface
-file_bed_in=os.path.join(os.getenv("HOME"),"Data/Bed/Morlighem_2014/morlighem_bed") 
-file_surf_in=os.path.join(os.getenv("HOME"),"Data/Elevation/Gimp/gimpdem3_1")
+file_bed = 'morlighem' 
+file_surf_in = 'gimp'
 
 # Velocity profile for inversion
 file_velocity_in = os.path.join(os.getenv("HOME"),"Data/Velocity/TSX/Helheim/track-27794")
@@ -98,15 +98,16 @@ refine = mesh.shp_to_xy(DIRX+"refine")
 #############
 
 # Set up bedrock and surface topographies for Extrude mesh
-x,y,bed=geotiff.read(file_bed_in+".tif",np.min(exterior[0])-5e3,np.max(exterior[0])+5e3,np.min(exterior[1])-5e3,np.max(exterior[1])+5e3)
-
+if file_bed == 'morlighem':
+  x,y,bed = helheim_bed.morlighem_grid(np.min(exterior[0])-5e3,np.max(exterior[0])+5e3,np.min(exterior[1])-5e3,np.max(exterior[1])+5e3,'geoid')
 fid = open(Inputs+"bed.xyz","w")
 for i in range(0,len(x)):
   for j in range(0,len(y)):
     fid.write('{} {} {}\n'.format(x[i],y[j],bed[j,i]))
 fid.close()
 
-x,y,surf=geotiff.read(file_surf_in+".tif",np.min(exterior[0])-5e3,np.max(exterior[0])+5e3,np.min(exterior[1])-5e3,np.max(exterior[1])+5e3)
+if file_surf == 'gimp':
+  x,y,surf = helheim_elevation.gimp_grid(np.min(exterior[0])-5e3,np.max(exterior[0])+5e3,np.min(exterior[1])-5e3,np.max(exterior[1])+5e3,'geoid')
 fid = open(Inputs+"surf.xyz","w")
 for i in range(0,len(x)):
   for j in range(0,len(y)):

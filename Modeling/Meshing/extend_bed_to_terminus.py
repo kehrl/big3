@@ -23,19 +23,12 @@ import elmer_mesh as mesh
 # Directories
 DIRX=os.path.join(os.getenv("HOME"),"Data/ShapeFiles/Glaciers/3D/Helheim/")
 
-# Bed DEM
-file_bed_in=os.path.join(os.getenv("HOME"),"Data/Bed/Morlighem_2014/morlighem_bed") 
-
 # Mesh extent
 exterior = np.array(mesh.shp_to_xy(DIRX+"glacier_extent_normal"))
 exterior_nofront = np.array(mesh.shp_to_xy(DIRX+"glacier_extent_nofront"))
 
-# Load Morlighem bed
-xMor,yMor,bedMor=geotiff.read(file_bed_in+".tif",np.min(exterior[0])-5e3,np.max(exterior[0])+5e3,np.min(exterior[1])-5e3,np.max(exterior[1])+5e3)
-fMor = interpolate.RegularGridInterpolator([yMor,xMor],bedMor, bounds_error=False,fill_value=float('nan'),method='nearest')
-
 # Load CreSIS radar picks
-bed2001 = helheim_bed.cresis('2001')
+bed2001 = helheim_bed.cresis('2001','geoid')
 
 #####################
 # Valley side walls #
@@ -76,7 +69,7 @@ zt = np.zeros([50,len(xN)])
 for i in range(0,len(xN)):
   xt[:,i] = np.linspace(xS[i],xN[i],50)
   yt[:,i] = np.linspace(yS[i],yN[i],50)
-  zt[:,i] = fMor(np.column_stack([yt[:,i],xt[:,i]]))
+  zt[:,i] = helheim_bed.morlighem_pts(xt[:,i],yt[:,i],'geoid')
 zt[zt==-9999]='NaN'
 
 
@@ -85,22 +78,28 @@ plt.imshow(bedMor,extent=[np.min(xMor),np.max(xMor),np.min(yMor),np.max(yMor)],o
 plt.clim([-1.5e3,1.5e3])
 plt.ylim([-2.59e6,-2.565e6])
 plt.xlim([295000,315000])
-for i in range(20,33):
+for i in range(10,30):
   plt.subplot(121)
   plt.plot(xt[:,i],yt[:,i],'k')
+  plt.plot(xtC[:,i],ytC[:,i],'r')
+  plt.plot(exterior[0],exterior[1],'k',linewidth=2)
   plt.subplot(122)
-  if i > 0:
-    plt.plot(yt[:,i-1],zt[:,i-1],'k')
-  plt.plot(yt[:,i],zt[:,i],'r')
+  plt.cla()
+  #if i > 0:
+  #  plt.plot(yt[:,i-1],zt[:,i-1],'k')
+  plt.plot(yt[:,i],zt[:,i],'k',label="Morlighem")
+  plt.plot(ytC[:,i],ztC[:,i],'r',label="CreSIS grid")
+
   mindist = 100
   for j in range(0,len(xt[:,i])):
     dist = np.min(np.sqrt((bed2001[:,0]-xt[j,i])**2+(bed2001[:,1]-yt[j,i])**2))
     if dist < mindist:
       mindist = dist
       ind = j
-  plt.plot(bed2001[ind,1],bed2001[ind,2],'ro')
-  print i
+  plt.plot(bed2001[ind,1],bed2001[ind,2],'bo',label="Cresis 2001")
+  plt.legend()
   plt.waitforbuttonpress()
+
 
 ##########################################
 # Interpolate transverse profile forward #
