@@ -43,7 +43,7 @@ lc4=700 # for regions surrounding channels
 #lc2=1000 # for channels close to the grounding line
 #lc3=500 # for grounding line
 #lc4=2000 # for regions surrounding channels
-levels=10 #levels of extrusion
+levels=12 #levels of extrusion
 partitions="4" # Number of partitions
 
 # Bed and surface
@@ -243,8 +243,8 @@ for i in range(0,len(inds)):
   Amean[i]=np.mean(Anodes[colinds]) 
     
 ## Get surface velocities
-udem=np.loadtxt(Inputs+"UDEM.xy")
-vdem=np.loadtxt(Inputs+"VDEM.xy")
+udem=np.loadtxt(Inputs+"UDEM.xy",skiprows=2)
+vdem=np.loadtxt(Inputs+"VDEM.xy",skiprows=2)
 
 ## Interpolate surface velocities to nodes    
 node_u=np.zeros_like(xnodes)
