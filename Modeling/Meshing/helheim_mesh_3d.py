@@ -20,7 +20,7 @@ import geotiff
 # Inputs #
 ##########
 
-MESHNAME='MorlighemNew_2015'
+MESHNAME='InverseClass'
 
 # Directories
 DIRS=os.path.join(os.getenv("HOME"),"Code/Helheim/Modeling/SolverFiles/3D")
@@ -38,12 +38,12 @@ if not(os.path.isdir(DIRM)):
 lc1=3000 # for entire mesh
 lc2=500 # for channels close to the grounding line
 lc3=200 # for grounding line
-lc4=700 # for regions surrounding channels
+lc4=1000 # for regions surrounding channels
 #lc1=5000 # for entire mesh
 #lc2=1000 # for channels close to the grounding line
 #lc3=500 # for grounding line
 #lc4=2000 # for regions surrounding channels
-levels=12 #levels of extrusion
+levels=8 #levels of extrusion
 partitions="4" # Number of partitions
 
 # Bed and surface

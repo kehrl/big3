@@ -325,22 +325,22 @@ Equation 2
 End
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!Boundary Condition 1
-!  Name = "Side Walls"
-!  Target Boundaries(1) = 4
-! 
-!  Normal-Tangential Velocity = Logical True
-!  Normal-Tangential VeloD = Logical True
-  
-!  Velocity 1 = Real 0.0e0
-!  Slip Coefficient 2 = 0.001
-!  Slip Coefficient 3 = 0.001
-
-!  Save Line = Logical True
-!  Save Scalars = Logical True
-!End
-
 Boundary Condition 1
+  Name = "Side Walls"
+  Target Boundaries(1) = 4
+ 
+  Normal-Tangential Velocity = Logical True
+  Normal-Tangential VeloD = Logical True
+  
+  Velocity 1 = Real 0.0e0
+  Slip Coefficient 2 = 1.0e-3
+  Slip Coefficient 3 = 1.0e-3
+
+  Save Line = Logical True
+  Save Scalars = Logical True
+End
+
+Boundary Condition 2
   Name = "Inflow"
   Target Boundaries(1) = 5
 
@@ -362,10 +362,10 @@ Boundary Condition 1
   Save Scalars = Logical True
 End
 
-Boundary Condition 2
+Boundary Condition 3
   !Name= "bed" mandatory to compute regularistaion term of the cost function (int (dbeta/dx) 2)
   Name = "bed"
-  Target Boundaries(2) = 1 4
+  Target Boundaries(1) = 1
   !Body Id used to solve
   Body ID = Integer 2
 
@@ -385,7 +385,7 @@ Boundary Condition 2
 End
 
 ! Upper Surface
-Boundary Condition 3
+Boundary Condition 4
   !Name= "Surface" mandatory to compute cost function
   Name = "Surface"
   Target Boundaries(1) = 2
@@ -399,7 +399,7 @@ Boundary Condition 3
 End 
 
 
-Boundary Condition 4
+Boundary Condition 5
   Name = "Calving front"
   Target Boundaries(1) = 3
   

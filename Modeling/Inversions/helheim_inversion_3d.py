@@ -24,7 +24,7 @@ import matplotlib
 ##########
 
 # Model Resolution
-RES = 'MorlighemNew_2015'
+RES = 'InverseClass'
 
 # Directories
 DIRS=os.path.join(os.getenv("HOME"),"Code/Helheim/Modeling/SolverFiles/3D/")
@@ -48,8 +48,7 @@ bsurf=4
 runname="beta"
 
 # Regularization parameters (lambda)
-#regpars=['1e11','1.5e11','1e12','1.5e12','1e13','1e14','1e15']
-regpars=['1e10']
+regpars=['1e10','1e8','1e9','1e11','1e12']
 
 # Mesh files for making pretty graphs
 extent = np.genfromtxt(Inputs+"mesh_extent.dat")
@@ -104,7 +103,7 @@ for regpar in regpars:
   cost2 = float(p[2])
   norm = float(p[3]) 
   fid.close()
-  fid_info = open(DIRR+"summary_"+RES+".dat","a")
+  fid_info = open(DIRR+"summary".dat","a")
   fid_info.write('{} {} {} {} {}\n'.format(regpar,nsim,cost1,cost2,norm))
   fid_info.close()
   del fid

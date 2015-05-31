@@ -24,16 +24,16 @@ import scipy.signal as signal
 ##########
 
 # What do you want to do?
-plot_3D=0
+plot_3D=1
 plot_Lcurve_3D=0
 plot_2D=0
-plot_comparison=1
+plot_comparison=0
 
 # 3D
-DIRR_3D=os.path.join(os.getenv("HOME"),"Models/Helheim/Results/3D/High_Normal/Inversion/")
+DIRR_3D=os.path.join(os.getenv("HOME"),"Models/Helheim/Results/3D/MorlighemNew_2015/Inversion/")
 bbed_3D=3
 bsurf_3D=4
-runname="beta"
+runname="beta_1e10"
 
 # Flowline
 DIRR_2D=os.path.join(os.getenv("HOME"),"Models/Helheim/Results/Flowline/Worldview_Advance/Inversion/")
@@ -43,13 +43,13 @@ bbed_2D=1
 bsurf_2D=2
 
 # Mesh boundaries
-DIRX=os.path.join(os.getenv("HOME"),"Data/Shape_files/Glaciers/3D/Helheim/")
-extent = mesh.shp_to_xy(DIRX+"glacier_extent_basin")
+DIRX=os.path.join(os.getenv("HOME"),"Data/ShapeFiles/Glaciers/3D/Helheim/")
+extent = mesh.shp_to_xy(DIRX+"glacier_extent_normal")
 hole1 = mesh.shp_to_xy(DIRX+"glacier_hole1")
 hole2 = mesh.shp_to_xy(DIRX+"glacier_hole2")
 holes = []
-holes.append({'xy': np.array(hole1[0:2])})
-holes.append({'xy': np.array(hole2[0:2])})
+holes.append({'xy': hole1})
+holes.append({'xy': hole2})
 del hole1, hole2
 
 ######
@@ -58,8 +58,8 @@ del hole1, hole2
 try:
   bed_3D
 except:
-  bed_3D = elmer_read.saveline_boundary(DIRR_3D,runname+"_1e10",bbed_3D)
-  surf_3D = elmer_read.saveline_boundary(DIRR_3D,runname+"_1e10",bsurf_3D)
+  bed_3D = elmer_read.saveline_boundary(DIRR_3D,runname,bbed_3D)
+  surf_3D = elmer_read.saveline_boundary(DIRR_3D,runname,bsurf_3D)
 
 if plot_3D:
 
@@ -110,7 +110,7 @@ if plot_3D:
   ax4 = subplot(144)
   imshow(taub_3D[2]*10**6,norm=matplotlib.colors.LogNorm())
   plt.gca().invert_yaxis()
-  plt.clim([0.1,10**6])
+  plt.clim([1,10**6])
   cf = plt.colorbar(orientation='horizontal',fraction=0.3,pad=0.03)#,ax=ax1,shrink=0.4)
   setp( ax4.get_xticklabels(), visible=False)
   setp( ax4.get_yticklabels(), visible=False)
