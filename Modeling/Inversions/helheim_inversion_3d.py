@@ -103,7 +103,7 @@ for regpar in regpars:
   cost2 = float(p[2])
   norm = float(p[3]) 
   fid.close()
-  fid_info = open(DIRR+"summary".dat","a")
+  fid_info = open(DIRR+"summary.dat","a")
   fid_info.write('{} {} {} {} {}\n'.format(regpar,nsim,cost1,cost2,norm))
   fid_info.close()
   del fid
