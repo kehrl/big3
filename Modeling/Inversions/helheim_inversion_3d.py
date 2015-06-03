@@ -48,7 +48,7 @@ bsurf=4
 runname="beta"
 
 # Regularization parameters (lambda)
-regpars=['1e10','1e8','1e9','1e11','1e12']
+regpars=['1e10','1e8','1e9','1e11','1e12','1e7','1e13','1e6','1e14']
 
 # Mesh files for making pretty graphs
 extent = np.genfromtxt(Inputs+"mesh_extent.dat")

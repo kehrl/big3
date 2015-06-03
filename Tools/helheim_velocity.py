@@ -620,10 +620,10 @@ def inversion_3D(file_velocity_in,dir_velocity_out):
   
   
   # Fill in spots in velocity map that are not covered by the individual velocity map 
-  nonnan=np.where(~(np.isnan(vx1)))
+  nonnan=np.where(~(np.isnan(vy1)))
   xgrid1,ygrid1 = np.meshgrid(x1,y1)
   vx_fill = scipy.interpolate.griddata(np.column_stack([ygrid1[nonnan],xgrid1[nonnan]]),vx1[nonnan],(ygridfinal,xgridfinal),method='linear')
-  vy_fill = scipy.interpolate.griddata(np.column_stack([ygrid1[nonnan],xgrid1[nonnan]]),vx1[nonnan],(ygridfinal,xgridfinal),method='linear')
+  vy_fill = scipy.interpolate.griddata(np.column_stack([ygrid1[nonnan],xgrid1[nonnan]]),vy1[nonnan],(ygridfinal,xgridfinal),method='linear')
   v_fill = scipy.interpolate.griddata(np.column_stack([ygrid1[nonnan],xgrid1[nonnan]]),v1[nonnan],(ygridfinal,xgridfinal),method='linear')
 
   nans = np.where(np.isnan(vx_final))
