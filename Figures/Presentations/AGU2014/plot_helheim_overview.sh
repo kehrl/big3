@@ -23,9 +23,9 @@ IMAGE=$HOME/Data/Mosaics/Greenland/mosaic100m.05-06geo.grd
 VEL=VMAG.xy
 COAST=$HOME/Data/ShapeFiles/greenland_coast_polar.txt
 FLOWLINE=flowline.dat
-GLACIER=$HOME/Code/Helheim/Modeling/SolverFiles/3D/Inputs/mesh_extent.dat
-HOLE1=$HOME/Code/Helheim/Modeling/SolverFiles/3D/Inputs/mesh_hole1.dat
-HOLE2=$HOME/Code/Helheim/Modeling/SolverFiles/3D/Inputs/mesh_hole2.dat
+GLACIER=$HOME/Models/Helheim/Meshes/3D/InverseClass/Inputs/mesh_extent.dat
+HOLE1=$HOME/Models/Helheim/Meshes/3D/InverseClass/Inputs/mesh_hole1.dat
+HOLE2=$HOME/Models/Helheim/Meshes/3D/InverseClass/Inputs/mesh_hole2.dat
 
 xyz2grd $VEL -Gvel1.grd $R -I300 -NNaN
 
@@ -71,12 +71,12 @@ psxy $R $J -O -K -W1p -G255/255/255 <<END>> $FILE
 309200 -2561800
 END
 
-psxy $R $J -O -K -W1p,- -L <<END>> $FILE 
-283000 -2586000
-314000 -2586000
-314000 -2553000
-283000 -2553000
-END
+#psxy $R $J -O -K -W1p,- -L <<END>> $FILE 
+#283000 -2586000
+#314000 -2586000
+#314000 -2553000
+#283000 -2553000
+#END
 
 # Plot colored points
 #psxy $R $J -O -K -Sc0.4 -W1p,black -G0/0/255 <<END>> $FILE
@@ -95,7 +95,7 @@ END
 #286903.450133 -2559818.03087
 #END
 
-psxy $R $J -O -K -Sc0.2 -W1p,black -Gred <<END>> $FILE
+psxy $R $J -O -K -Sc0.2 -W1p,black -Gwhite <<END>> $FILE
 305635.040792 -2576526.65039
 END
 

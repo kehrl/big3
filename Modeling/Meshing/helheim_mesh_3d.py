@@ -37,13 +37,13 @@ if not(os.path.isdir(DIRM)):
 # Mesh refinement
 lc1=3000 # for entire mesh
 lc2=500 # for channels close to the grounding line
-lc3=200 # for grounding line
+lc3=250 # for grounding line
 lc4=1000 # for regions surrounding channels
 #lc1=5000 # for entire mesh
 #lc2=1000 # for channels close to the grounding line
 #lc3=500 # for grounding line
 #lc4=2000 # for regions surrounding channels
-levels=8 #levels of extrusion
+levels=6 #levels of extrusion
 partitions="4" # Number of partitions
 
 # Bed and surface

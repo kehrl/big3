@@ -345,18 +345,30 @@ Boundary Condition 2
   Target Boundaries(1) = 5
 
 ! Dirichlet BCs
-  Velocity 1 = Variable Coordinate 3
-    Real procedure "SIA.so" "USIA"
-  Velocity 2 = Variable Coordinate 3
-    Real procedure "SIA.so" "VSIA"
-  Velocity 3 = Real 0.0e0
+ ! Velocity 1 = Variable Coordinate 3
+ !   Real procedure "SIA.so" "USIA"
+ ! Velocity 2 = Variable Coordinate 3
+ !   Real procedure "SIA.so" "VSIA"
+ ! Velocity 3 = Real 0.0e0
 
 !Dirichlet BC => Same Dirichlet
-  VeloD 1 = Variable Coordinate 3
-    Real procedure "SIA.so" "USIA"
-  VeloD 2 = Variable Coordinate 3
-    Real procedure "SIA.so" "VSIA"
-  VeloD 3 = Real 0.0e0
+ ! VeloD 1 = Variable Coordinate 3
+ !   Real procedure "SIA.so" "USIA"
+ ! VeloD 2 = Variable Coordinate 3
+ !   Real procedure "SIA.so" "VSIA"
+ ! VeloD 3 = Real 0.0e0
+ 
+ ! Dirichlet BCs
+  Velocity 1 = Variable Coordinate 1
+    Real procedure "UWA_Bnd.so" "UBnd"
+  Velocity 2 = Variable Coordinate 1
+    Real procedure "UWA_Bnd.so" "VBnd"
+
+!Dirichlet BC => Same Dirichlet
+  VeloD 1 = Variable Coordinate 1
+    Real procedure "UWA_Bnd.so" "UBnd"
+  VeloD 2 = Variable Coordinate 1
+    Real procedure "UWA_Bnd.so" "VBnd"
   
   Save Line = Logical True
   Save Scalars = Logical True
@@ -408,18 +420,16 @@ Boundary Condition 5
 !    Real MATC "-1.0*waterpressure(tx)*1.0E-06"
     
 ! Dirichlet BCs
-  Velocity 1 = Variable Coordinate 3
-    Real procedure "SIA.so" "USIA"
-  Velocity 2 = Variable Coordinate 3
-    Real procedure "SIA.so" "VSIA"
-  Velocity 3 = Real 0.0e0
+  Velocity 1 = Variable Coordinate 1
+    Real procedure "UWA_Bnd.so" "UBnd"
+  Velocity 2 = Variable Coordinate 1
+    Real procedure "UWA_Bnd.so" "VBnd"
 
 !Dirichlet BC => Same Dirichlet
-  VeloD 1 = Variable Coordinate 3
-    Real procedure "SIA.so" "USIA"
-  VeloD 2 = Variable Coordinate 3
-    Real procedure "SIA.so" "VSIA"
-  VeloD 3 = Real 0.0e0
+  VeloD 1 = Variable Coordinate 1
+    Real procedure "UWA_Bnd.so" "UBnd"
+  VeloD 2 = Variable Coordinate 1
+    Real procedure "UWA_Bnd.so" "VBnd"
 
   Save Line = Logical True
   Save Scalars = Logical True

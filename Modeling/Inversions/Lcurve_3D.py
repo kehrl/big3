@@ -28,17 +28,32 @@ for line in lines:
   if p[0] == 'Lambda':
     pass
   else:
-      regpar.append(p[0])
+      regpar.append((p[0]))
       nsim.append(float(p[1]))
       cost_tot.append(float(p[2]))
       cost_sur.append(float(p[3]))
       cost_bed.append(float(p[4]))
-     
-  plt.plot(cost_bed,cost_sur,'ko--')
-  plt.xlabel('$J_{reg}$',fontsize=24)
-  plt.ylabel('$J_o$',fontsize=24)
-  for i in range(0,len(nsim)):
-    plt.text(cost_bed[i]+0.05,cost_sur[i]+0.25e9,regpar[i],fontsize=20) 
-  plt.xticks([0,1,2,3,4],fontsize=16)
-  plt.yticks(fontsize=16)
+
+regpar = np.array(regpar)
+nsim = np.array(nsim)
+cost_tot = np.array(cost_tot)
+cost_bed = np.array(cost_bed)
+cost_sur = np.array(cost_sur)
+
+ind = np.argsort(cost_sur)
+regpar = regpar[ind]
+nsim = nsim[ind]
+cost_tot = cost_tot[ind]
+cost_bed = cost_bed[ind]
+cost_sur = cost_sur[ind]
+
+
+#plt.xlim([0,np.max(cost_sur)])     
+plt.plot(cost_bed,cost_sur,'ko--')
+plt.xlabel('$J_{reg}$',fontsize=24)
+plt.ylabel('$J_o$',fontsize=24)
+for i in range(0,len(nsim)):
+  plt.text(cost_bed[i]+0.05,cost_sur[i]+0.25e9,regpar[i],fontsize=20) 
+  #plt.xticks([0,1,2,3,4],fontsize=16)
+plt.yticks(fontsize=16)
   #subplots_adjust(left=None, bottom=0.15, right=0.98, top=0.95, wspace=-0.1, hspace=None)

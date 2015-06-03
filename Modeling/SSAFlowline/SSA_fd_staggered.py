@@ -11,7 +11,9 @@ import matplotlib.pyplot as plt
 # Options #
 ###########
 
-CF_move = "False"
+# Allow calving
+CF_move = "True"
+#CF_move = "False"
 
 Helheim = "True"
 
@@ -19,6 +21,27 @@ Helheim = "True"
 # Options: Substitution, Newton
 #Method = "Substitution"
 Method = "Newton"
+
+# Sliding law
+# Options: Power, FlotationHeight
+#SlidingLaw = "FlotationHeight" 
+SlidingLaw = "Power"
+
+#############
+# Time step #
+#############
+
+# Choose time step and length of run
+yearinsec = 365.25*24*60*60
+dt = 1.0/(365.0)*yearinsec # Years
+
+# Specify time
+t = 5.0*yearinsec # Years in seconds
+Nt = int(np.ceil(t/dt)) # number of timesteps
+
+# Specify timesteps
+#Nt = 100 # number of time steps
+#t = dt*Nt # total time in seconds
 
 #############
 # Constants #
@@ -29,7 +52,6 @@ rho_i = 917.0 # ice density (kg/m3)
 rho_sw = 1028.0 # sea water density (kg/m3)
 rho_w = 1000.0
 g = 9.8 # gravity (m/s2)
-yearinsec = 365.25*24*60*60
 
 # Flow law exponent
 n = 3.0
@@ -38,24 +60,19 @@ n = 3.0
 A = 1.7e-24 # Pa-3 s-1
 
 # Sliding law exponent
-m = 3.0 # velocity exponent
+m = 1.0 # velocity exponent
 p = 1.0 # water pressure / height above buoyancy exponent
 
 # Calving law parameters
-d_w = 10.0 # water depth in crevasses (m)
-
-# Accumulation rate
-ELA = 600 # equilibrium line altitude in m
-mdot = 0/yearinsec # m across the entire width
-adot = 0/yearinsec # m across the entire width
+d_w = 20.0 # water depth in crevasses (m)
 
 ##################
 # Model Numerics #
 ##################
 
 # Cutoff for nonlinear iterations
-cutoff = 1.0 # change between iterations in m/yr
-iter_max = 1.0e3 # maximum number of iteration, need to add to code
+cutoff = 1.0e-2 # change between iterations in m/yr
+iter_max = 3.0e3 # maximum number of iteration, need to add to code
 
 # Relaxation parameter for method Substitution
 Relax = 0.5
@@ -83,12 +100,17 @@ velocity = np.loadtxt(DIR+"velocity.dat",skiprows=1)
 glacierwidth = np.loadtxt(DIR+"width.dat",skiprows=1)
 
 if Helheim=="True":
+  filt_len = 5.0e3
+  cutoff=(1/filt_len)/(1/(np.diff(flowline[1:3,0])*2))
+  b,a=signal.butter(2,cutoff,btype='low')
   input_x = flowline[:,0]
-  input_u = velocity[:,1]
-  input_zs = flowline[:,4]
-  input_zb = flowline[:,3]
-  input_W = np.interp(input_x,glacierwidth[:,0],glacierwidth[:,1])
+  input_u = signal.filtfilt(b,a,velocity[:,1])
+  input_zs = signal.filtfilt(b,a,flowline[:,4])
+  input_W = signal.filtfilt(b,a,np.interp(input_x,glacierwidth[:,0],glacierwidth[:,1]))
+  input_zb = signal.filtfilt(b,a,flowline[:,3])
   input_H = input_zs - input_zb
+  #input_bdot = 3*(1.0/yearinsec)*(-4.593*1.0e-10*(input_zs**3.0)+(1.442*1.0e-6)*(input_zs**2.0)+4.182*1.0e-4*(input_zs)-2.3)
+  input_bdot = (1.0/yearinsec)*(-1.8*1e-9*input_zs**3.0+4.2*1e-6*input_zs**2+1.3*1.0e-3*input_zs-6.9)
 else:
   input_x = np.linspace(0,L_0+1.0e4,N)
   input_u = np.linspace(500.0,1000,len(input_x))
@@ -97,15 +119,6 @@ else:
   input_H = 700.0*np.ones(len(input_x))
   
 del flowline, velocity, glacierwidth
-
-#############
-# Time step #
-#############
-
-# Choose time step and length of run
-dt = 1.0/(365.0)*yearinsec # Years
-t = 1.0*yearinsec # Years
-Nt = int(np.ceil(t/dt)) # number of timesteps
 
 #############################
 # Inflow Boundary Condition #
@@ -140,11 +153,15 @@ H_0 = np.interp(norm_nodes_0,input_x,input_H) # Initial heights
 # Beta2_0 is the friction coefficient for the first time step. We update the friction 
 # coefficient (Beta2) on each time step to account for floating vs. grounding ice and 
 # advance/retreat of the ice front.
-#temp = np.linspace(0,1,N)
-Beta2_0 = 8.0e3
-#Beta2_0 = 5.0e3*np.interp(norm_nodes_0,input_x,input_W)/np.max(input_W)
-#Beta2_0 = 5.0e3*(np.exp(-0.5*temp)-np.exp(-0.5)) 
-#Beta2_0 = (5.0e3)*np.linspace(1,0,N)
+temp = np.linspace(0,1,N)
+#Beta2_0 = 8.0e4
+#Beta2_0 = 5.0e4*np.ones(N)
+Beta2_0 = 2.5e10*(np.exp(-1.5*temp)-np.exp(-1.5)) # for linear
+#Beta2_0 = 8.0e6*(np.linspace(1,0,N)**(1.0/2.0)) # for linear with flotation height
+#Beta2_0 = 7.0e18*(np.exp(-4*temp)-np.exp(-4)) # for m=3 p=0 
+#Beta2_0 = 4.0e7*np.interp(norm_nodes_0,input_x,input_W)/np.max(input_W)
+#Beta2_0 = 4.0e7*(np.exp(-2*temp)-np.exp(-2)) # best for flotation height 
+#Beta2_0 = 1e-3*np.ones(N)
 #del temp
 
 # Set up matrices for results
@@ -175,11 +192,14 @@ zs[0:N,0] = np.interp(norm_nodes_0,input_x,input_zs)
 ##################
 # Run time steps #
 ##################
-
+test1=[]
+test2=[]
 for i in range(0,Nt-1):
-  if i % 100 == 0:
+  if i % 50 == 0:
     print "Timestep", i, "out of", Nt 
-  
+    print "Grounding line at",GL[i-1]
+    print "Calving front at",L[i-1]
+    
   #########
   # Nodes #
   #########
@@ -232,10 +252,7 @@ for i in range(0,Nt-1):
     GL[i] = stag_nodes[FL_ind_norm-1,i]
     zs[0:FL_ind_norm,i] = H[0:FL_ind_norm,i]+zb[0:FL_ind_norm]
     zs[FL_ind_norm:,i] = H[FL_ind_norm:,i]*(1-rho_i/rho_w)
-    if (i == 0): 
-      print "Grounding line at", GL[i]
-    elif abs(GL[i]-GL[i-1]) > 20:
-      print "Grounding Line moved to", GL[i]
+
   else:
     GL[i] = L[i]
     zs[0:N,i] = H[0:N,i]+zb
@@ -246,7 +263,7 @@ for i in range(0,Nt-1):
   ##################
   
   # Set up boundary condition at bed. We want zero basal friction if the ice is floating.
-  Beta2 = Beta2_0*np.ones(N)#np.interp(norm_nodes[0:N,i],norm_nodes_0,Beta2_0)
+  Beta2 = np.interp(norm_nodes[0:N,i],norm_nodes_0,Beta2_0)
   Beta2[Bed_Float_stag==-1]=0
   
   # Set up variables for velocity iterations
@@ -260,8 +277,8 @@ for i in range(0,Nt-1):
   
   # Count the number of iterations
   iter = 0
-  
-  while np.max(abs(u_last-u_new))*yearinsec > cutoff and (iter < iter_max):
+  solution_norm = 100
+  while np.max(solution_norm) > cutoff and (iter < iter_max):
   
     #######################
     # Effective viscosity #
@@ -290,12 +307,19 @@ for i in range(0,Nt-1):
       # drag term.
     
       gamma_n = (u_new[1:CF_ind])**((1-n)/n)
-      gamma_m = (u_new[1:CF_ind])**((1-m)/m)
+      gamma_m = (u_new[1:CF_ind])**(m-1)
       
-      Diagonal[1:CF_ind] = -(2.0/dx**2.0)*(H[1:CF_ind,i]*nu[1:CF_ind]+H[2:CF_ind+1,i]*nu[2:CF_ind+1]) - \
-          gamma_m*Beta2[1:CF_ind]*(abs(H_stag[1:CF_ind]-(rho_sw/rho_i)*D_stag[1:CF_ind]))**(1.0/p)- \
+      if SlidingLaw == "FlotationHeight":
+        Diagonal[1:CF_ind] = -(2.0/dx**2.0)*(H[1:CF_ind,i]*nu[1:CF_ind]+H[2:CF_ind+1,i]*nu[2:CF_ind+1]) - \
+          gamma_m*Beta2[1:CF_ind]*(abs(H_stag[1:CF_ind]-(rho_sw/rho_i)*D_stag[1:CF_ind]))**(p)- \
           gamma_n*(H_stag[1:CF_ind]/W_stag[1:CF_ind])*(5.0/(2.0*A*W_stag[1:CF_ind]))**(1.0/n)     
-      
+      elif SlidingLaw == "Power":
+         Diagonal[1:CF_ind] = -(2.0/dx**2.0)*(H[1:CF_ind,i]*nu[1:CF_ind]+H[2:CF_ind+1,i]*nu[2:CF_ind+1]) - \
+          gamma_m*Beta2[1:CF_ind]- \
+          gamma_n*(H_stag[1:CF_ind]/W_stag[1:CF_ind])*(5.0/(2.0*A*W_stag[1:CF_ind]))**(1.0/n)     
+      else:
+        sys.exit("Unknown sliding law")
+
       Right[2:CF_ind+1] = (2.0/dx**2.0)*(H[2:CF_ind+1,i]*nu[2:CF_ind+1])
   
       # Driving stress on right side of matrix problem
@@ -329,6 +353,9 @@ for i in range(0,Nt-1):
       u_last = np.array(u_new)
       u_new = Relax*linalg.spsolve(Matrix,Vector)+(1-Relax)*u_last
 
+      # Find difference between iterations to see if solution has converged
+      solution_norm = abs(u_last-u_new)*yearinsec
+
     elif Method == "Newton":
       
       # Set up variables
@@ -349,19 +376,32 @@ for i in range(0,Nt-1):
       ##################
       
       # Left hand side of equation
-      F[1:-1] = (2.0/dx**2.0)*(H[2:N,i]*nu[2:N]*(u_new[2:N]-u_new[1:N-1])-H[1:N-1,i]*nu[1:N-1]*(u_new[1:N-1]-u_new[0:N-2])) - \
-          Beta2[1:N-1]*((H_stag[1:N-1]-(rho_sw/rho_i)*D_stag[1:N-1]))**(1.0/p)*u_new[1:N-1]**(1.0/m) - \
+      if SlidingLaw == "Power":
+        F[1:-1] = (2.0/dx**2.0)*(H[2:N,i]*nu[2:N]*(u_new[2:N]-u_new[1:N-1])-H[1:N-1,i]*nu[1:N-1]*(u_new[1:N-1]-u_new[0:N-2])) - \
+          Beta2[1:N-1]*u_new[1:N-1]**(m) - \
           (H_stag[1:N-1]/W_stag[1:N-1])*((5*u_new[1:N-1])/(2*A*W_stag[1:N-1]))**(1.0/n)- \
           rho_i*g*H_stag[1:N-1]*(zs[2:N,i]-zs[1:N-1,i])/dx
-    
+      elif SlidingLaw == "FlotationHeight":
+        F[1:-1] = (2.0/dx**2.0)*(H[2:N,i]*nu[2:N]*(u_new[2:N]-u_new[1:N-1])-H[1:N-1,i]*nu[1:N-1]*(u_new[1:N-1]-u_new[0:N-2])) - \
+          Beta2[1:N-1]*((H_stag[1:N-1]-(rho_sw/rho_i)*D_stag[1:N-1]))**(p)*u_new[1:N-1]**(m) - \
+          (H_stag[1:N-1]/W_stag[1:N-1])*((5*u_new[1:N-1])/(2*A*W_stag[1:N-1]))**(1.0/n)- \
+          rho_i*g*H_stag[1:N-1]*(zs[2:N,i]-zs[1:N-1,i])/dx
+      else:
+        sys.exit("Unknown sliding law")
+      
       # For u_(i-1/2)
       dFdu_m1[0:CF_ind-1] = (2.0/dx**2.0)*(H[1:CF_ind,i]*nu[1:CF_ind]) 
       
       # For u_(i+1/2)
       gamma_n = (u_new[1:CF_ind])**((1-n)/n)
-      gamma_m = (u_new[1:CF_ind])**((1-m)/m)
-      dFdu_0[1:CF_ind] = -(2.0/dx**2.0)*(H[1:CF_ind,i]*nu[1:CF_ind]+H[2:CF_ind+1,i]*nu[2:CF_ind+1]) - \
-          Beta2[1:N-1]*((H_stag[1:N-1]-rho_sw/rho_i*D_stag[1:N-1]))**(1.0/p)*(1.0/m)*gamma_m - \
+      gamma_m = (u_new[1:CF_ind])**(m-1)
+      if SlidingLaw == "Power":
+        dFdu_0[1:CF_ind] = -(2.0/dx**2.0)*(H[1:CF_ind,i]*nu[1:CF_ind]+H[2:CF_ind+1,i]*nu[2:CF_ind+1]) - \
+          Beta2[1:N-1]*(m)*gamma_m - \
+          H_stag[1:N-1]/W_stag[1:N-1]*((5/(2*A*W_stag[1:N-1]))**(1.0/n))*(1.0/n)*gamma_n
+      elif SlidingLaw == "FlotationHeight":
+        dFdu_0[1:CF_ind] = -(2.0/dx**2.0)*(H[1:CF_ind,i]*nu[1:CF_ind]+H[2:CF_ind+1,i]*nu[2:CF_ind+1]) - \
+          Beta2[1:N-1]*((H_stag[1:N-1]-rho_sw/rho_i*D_stag[1:N-1]))**(p)*(m)*gamma_m - \
           H_stag[1:N-1]/W_stag[1:N-1]*((5/(2*A*W_stag[1:N-1]))**(1.0/n))*(1.0/n)*gamma_n
       
       # For u_(i+3/2)
@@ -383,17 +423,18 @@ for i in range(0,Nt-1):
       Matrix = sparse.spdiags([dFdu_m1,dFdu_0,dFdu_p1],[-1,0,1],N,N)
       
       du = linalg.spsolve(Matrix,-F)
-      u_last = np.array(u_new)
-      u_new = u_last + Relax*du
       
-    
-    # Number of iterations
+      u_last = np.array(u_new)
+      u_new = np.array(u_last + Relax*du)
+
+      solution_norm = np.max(abs(F))
+
     iter = iter+1
     
     # Check to see if we are on last iteration and if so print an error message stating 
     # that the solution never converged.
     if iter == iter_max:
-      print "Nonlinear iteration did not converge for timestep",i,np.max(abs(u_last-u_new))*yearinsec
+      print "Nonlinear iteration did not converge for timestep",i,solution_norm
   
   # If for some reason the velocities become NaN, we want to exit the model.
   if (np.isnan(u_new[0])):
@@ -401,9 +442,6 @@ for i in range(0,Nt-1):
   
   # The velocities have converged, so we save the converged solution.
   u_stag[0:N,i] = u_new
-  
-  #if i == 0:
-  #  sys.exit("blah")
   
   ##########################
   # Find new calving front #
@@ -422,7 +460,7 @@ for i in range(0,Nt-1):
   
     # Check to see if the calving condition is met
     ind = np.where(d_crev[0:N-1] > zs[0:N-1,i])
-    indices = np.where(Bed_Float[ind[0]]==-1)
+    indices = np.where(Bed_Float_norm[ind[0]]==-1)
     if np.any(indices): 
       CF_ind = np.min(ind[0][indices[0]])
       L[i+1] = norm_nodes[CF_ind,i]
@@ -442,13 +480,21 @@ for i in range(0,Nt-1):
   
   # Interpolate mass balance
   Bdot = np.zeros(N)
-  ELA_ind = np.argmin(abs(zs[0:N,i]-ELA))
-  Bdot[0:ELA_ind]=adot
-  Bdot[ELA_ind+1:]=mdot
+  Bdot[0:N] = np.interp(norm_nodes[0:N,i],input_x,input_bdot)
   
   # Find change in ice thickness
   dH = np.zeros(N-1)
   dH = -(1.0/W[1:N])*(((u_stag[1:N,i]*W_stag[1:N]*H[1:N,i])- \
        (u_stag[0:N-1,i]*W_stag[0:N-1]*H[0:N-1,i]))/dx)*dt+Bdot[1:N]*dt
 
+
+# After all timesteps we want to interpolate velocities and heights onto the same grid
+x_final = np.linspace(0,np.max(L),np.max(L)/dx_0)
+u_final = np.zeros([len(x_final),Nt])
+H_final = np.zeros([len(x_final),Nt])
+
+for i in range(0,Nt-1):
+  ind1 = ~np.isnan(u_stag[:,i])
+  u_final[:,i] = np.interp(x_final,stag_nodes[ind1,i],u_stag[ind1,i])
+  H_final[:,i] = np.interp(x_final,norm_nodes[ind1,i],H[ind1,i])
   
