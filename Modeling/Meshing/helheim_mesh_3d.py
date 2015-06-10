@@ -20,7 +20,7 @@ import geotiff
 # Inputs #
 ##########
 
-MESHNAME='InverseClass'
+MESHNAME='HighResolution'
 
 # Directories
 DIRS=os.path.join(os.getenv("HOME"),"Code/Helheim/Modeling/SolverFiles/3D")
@@ -35,15 +35,15 @@ if not(os.path.isdir(DIRM)):
   os.makedirs(DIRM+"/Inputs")
 
 # Mesh refinement
-lc1=3000 # for entire mesh
-lc2=500 # for channels close to the grounding line
-lc3=250 # for grounding line
-lc4=1000 # for regions surrounding channels
+lc1=1000 # for entire mesh
+lc2=250 # for channels close to the grounding line
+lc3=100 # for grounding line
+lc4=500 # for regions surrounding channels
 #lc1=5000 # for entire mesh
 #lc2=1000 # for channels close to the grounding line
 #lc3=500 # for grounding line
 #lc4=2000 # for regions surrounding channels
-levels=6 #levels of extrusion
+levels=12 #levels of extrusion
 partitions="4" # Number of partitions
 
 # Bed and surface
