@@ -42,8 +42,8 @@ layers=10 # Number of extrusions for mesh
 
 # Shapefiles for flowline
 file_flowline_in = os.path.join(os.getenv("HOME"),"Data/ShapeFiles/Glaciers/Flowlines/Helheim/helheim_center_flowline")
-file_leftside_in = os.path.join(os.getenv("HOME"),"Data/ShapeFiles/Glaciers/Flowlines/Helheim/helheim_flowline_side2")
-file_rightside_in = os.path.join(os.getenv("HOME"),"Data/ShapeFiles/Glaciers/Flowlines/Helheim/helheim_flowline_side1")
+file_leftside_in = os.path.join(os.getenv("HOME"),"Data/ShapeFiles/Glaciers/Flowlines/Helheim/helheim_flowline_side2_wall")
+file_rightside_in = os.path.join(os.getenv("HOME"),"Data/ShapeFiles/Glaciers/Flowlines/Helheim/helheim_flowline_side1_wall")
 
 # Bed and surface topographies
 ## Bed inputs
@@ -91,7 +91,7 @@ flowline = mesh.xy_to_gmsh_box(flowline,file_terminus,DIRM,file_mesh_out,file_be
 # Adjust bed DEM to 2001 bed profile near terminus
 ## The present flowline runs off the Morlighem bed DEM, so we need to set the bed near the 
 ## terminus to the bed elevation measurements from 2001
-ind=np.where(flowline[:,0]>83300)
+ind=np.where(flowline[:,0]>75700)#83300)
 bed2001=helheim_bed.cresis('2001','geoid')
 flowline[ind,3]=np.interp(flowline[ind,1],bed2001[:,0],bed2001[:,2])
 

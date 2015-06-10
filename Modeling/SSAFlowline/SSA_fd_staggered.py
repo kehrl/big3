@@ -12,10 +12,10 @@ import matplotlib.pyplot as plt
 ###########
 
 # Allow calving
-CF_move = "True"
-#CF_move = "False"
+#CF_move = "True"
+CF_move = "False"
 
-Helheim = "True"
+Helheim = "False"
 
 # Numerical method
 # Options: Substitution, Newton
@@ -33,11 +33,12 @@ SlidingLaw = "Power"
 
 # Choose time step and length of run
 yearinsec = 365.25*24*60*60
-dt = 1.0/(365.0)*yearinsec # Years
+dt = 10.0/(365.25)*yearinsec # Years
 
 # Specify time
-t = 5.0*yearinsec # Years in seconds
+t = 100*yearinsec # Years in seconds
 Nt = int(np.ceil(t/dt)) # number of timesteps
+tSave = 4 # save results from every _ timestep
 
 # Specify timesteps
 #Nt = 100 # number of time steps
@@ -64,7 +65,7 @@ m = 1.0 # velocity exponent
 p = 1.0 # water pressure / height above buoyancy exponent
 
 # Calving law parameters
-d_w = 20.0 # water depth in crevasses (m)
+d_w = 50.0 # water depth in crevasses (m)
 
 ##################
 # Model Numerics #
@@ -72,10 +73,10 @@ d_w = 20.0 # water depth in crevasses (m)
 
 # Cutoff for nonlinear iterations
 cutoff = 1.0e-2 # change between iterations in m/yr
-iter_max = 3.0e3 # maximum number of iteration, need to add to code
+iter_max = 5.0e3 # maximum number of iteration, need to add to code
 
 # Relaxation parameter for method Substitution
-Relax = 0.5
+Relax = 0.4
 
 ##################
 # Model Geometry #
@@ -86,9 +87,9 @@ dx_0 = 100.0 # desired grid size in meters
 
 # Set initial length of flowband
 if Helheim=="True":
-  L_0 = 85115.0 
+  L_0 = 85000.0 
 else:
-  L_0 = 10000
+  L_0 = 20000.0
 
 # Number of nodes
 N = np.ceil((L_0)/dx_0+1) 
@@ -100,23 +101,32 @@ velocity = np.loadtxt(DIR+"velocity.dat",skiprows=1)
 glacierwidth = np.loadtxt(DIR+"width.dat",skiprows=1)
 
 if Helheim=="True":
-  filt_len = 5.0e3
+  filt_len = 2.0e3
   cutoff=(1/filt_len)/(1/(np.diff(flowline[1:3,0])*2))
   b,a=signal.butter(2,cutoff,btype='low')
   input_x = flowline[:,0]
   input_u = signal.filtfilt(b,a,velocity[:,1])
   input_zs = signal.filtfilt(b,a,flowline[:,4])
+  filt_len = 10.0e3
+  cutoff=(1/filt_len)/(1/(np.diff(flowline[1:3,0])*2))
+  b,a=signal.butter(2,cutoff,btype='low')
   input_W = signal.filtfilt(b,a,np.interp(input_x,glacierwidth[:,0],glacierwidth[:,1]))
+  filt_len = 2.0e3
+  cutoff=(1/filt_len)/(1/(np.diff(flowline[1:3,0])*2))
+  b,a=signal.butter(2,cutoff,btype='low')
   input_zb = signal.filtfilt(b,a,flowline[:,3])
   input_H = input_zs - input_zb
-  #input_bdot = 3*(1.0/yearinsec)*(-4.593*1.0e-10*(input_zs**3.0)+(1.442*1.0e-6)*(input_zs**2.0)+4.182*1.0e-4*(input_zs)-2.3)
-  input_bdot = (1.0/yearinsec)*(-1.8*1e-9*input_zs**3.0+4.2*1e-6*input_zs**2+1.3*1.0e-3*input_zs-6.9)
+  #input_bdot = 25*(1.0/yearinsec)*(-4.593*1.0e-10*(input_zs**3.0)+(1.442*1.0e-6)*(input_zs**2.0)+4.182*1.0e-4*(input_zs)-2.3)
+  input_bdot = 40*(1.0/yearinsec)*(-1.8*1e-9*input_zs**3.0+4.2*1e-6*input_zs**2+1.3*1.0e-3*input_zs-4.9)
 else:
-  input_x = np.linspace(0,L_0+1.0e4,N)
-  input_u = np.linspace(500.0,1000,len(input_x))
+  input_x = np.linspace(0,L_0,N)
+  input_u = np.linspace(200.0,1000.0,len(input_x))
+  input_W = 500000.0e3*np.ones(len(input_x))
   input_zs = 75.0*np.ones(len(input_x))
   input_zb = -2000*np.ones(len(input_x))
-  input_H = 700.0*np.ones(len(input_x))
+  input_H = np.linspace(500,400,N)
+  #700.0*np.ones(len(input_x))
+  input_bdot = np.zeros(N)
   
 del flowline, velocity, glacierwidth
 
@@ -153,16 +163,19 @@ H_0 = np.interp(norm_nodes_0,input_x,input_H) # Initial heights
 # Beta2_0 is the friction coefficient for the first time step. We update the friction 
 # coefficient (Beta2) on each time step to account for floating vs. grounding ice and 
 # advance/retreat of the ice front.
-temp = np.linspace(0,1,N)
-#Beta2_0 = 8.0e4
-#Beta2_0 = 5.0e4*np.ones(N)
-Beta2_0 = 2.5e10*(np.exp(-1.5*temp)-np.exp(-1.5)) # for linear
-#Beta2_0 = 8.0e6*(np.linspace(1,0,N)**(1.0/2.0)) # for linear with flotation height
+#temp = np.linspace(0,1,N)
+if Helheim == "True":
+  temp = np.r_[0:0.85:(0.85/(N-200)),0.85:1.0:0.15/199]
+  #Beta2_0 = 8.0e4
+  #Beta2_0 = 5.0e4*np.ones(N)
+  Beta2_0 = 2.8e10*(np.exp(-1*temp)-np.exp(-1)) # for linear
+#Beta2_0 = 8.0e6*(np.linspace(1,0,N)**(1.0/3.0)) # for linear with flotation height
 #Beta2_0 = 7.0e18*(np.exp(-4*temp)-np.exp(-4)) # for m=3 p=0 
 #Beta2_0 = 4.0e7*np.interp(norm_nodes_0,input_x,input_W)/np.max(input_W)
-#Beta2_0 = 4.0e7*(np.exp(-2*temp)-np.exp(-2)) # best for flotation height 
 #Beta2_0 = 1e-3*np.ones(N)
 #del temp
+else:
+  Beta2_0 = np.zeros(N)
 
 # Set up matrices for results
 # Since we are using a moving grid, we need to keep track of where the nodes are located
@@ -181,6 +194,8 @@ GL = np.zeros(Nt)
 H[:,:] = 'NaN'
 zs[:,:] = 'NaN'
 u_stag[:,:] = 'NaN'
+norm_nodes[:,:] = 'NaN'
+stag_nodes[:,:] = 'NaN'
 
 # Set up values for first time step
 H[0:N,0] = H_0
@@ -214,7 +229,7 @@ for i in range(0,Nt-1):
   # Update ice thickness if we're past the first time step.
   if i > 0:
     H[1:N,i] = np.interp(norm_nodes[1:N,i],norm_nodes[1:len(u_new),i-1],dH+H[1:len(u_new),i-1])
-  
+     
   # Interpolate width and surface elevation
   W = np.interp(norm_nodes[0:N,i],input_x,input_W)
   W_stag = np.zeros(N)
@@ -232,7 +247,9 @@ for i in range(0,Nt-1):
   D[D<0] = 0
   
   # Find values at staggered nodes
-  H_stag = (H[1:N,i]+H[0:N-1,i])/2
+  H_stag = np.zeros(N)
+  H_stag[0:N-1] = (H[1:N,i]+H[0:N-1,i])/2
+  H_stag[N-1] = (H[N,i]+0)/2
   D_stag = (D[1:N]+D[0:N-1])/2
   
   # Bed float has values of -1 (floating ice), +1 (grounded ice), and 0 (grounding line)
@@ -250,8 +267,8 @@ for i in range(0,Nt-1):
     if FL_ind_norm == -1:
       FL_ind_norm = 0
     GL[i] = stag_nodes[FL_ind_norm-1,i]
-    zs[0:FL_ind_norm,i] = H[0:FL_ind_norm,i]+zb[0:FL_ind_norm]
-    zs[FL_ind_norm:,i] = H[FL_ind_norm:,i]*(1-rho_i/rho_w)
+    zs[0:N,i] = H[0:N,i]+zb[0:N]
+    zs[ind_norm,i] = H[ind_norm,i]*(1-rho_i/rho_sw)
 
   else:
     GL[i] = L[i]
@@ -456,20 +473,21 @@ for i in range(0,Nt-1):
     R_xx = 2*((1/A)*(abs(u_stag[1:N,i]-u_stag[0:N-1,i])/dx))**(1.0/3.0)
   
     # Find the crevasse depth
-    d_crev = R_xx/(rho_i*g)+(rho_w/rho_i)*d_w
+    ds_crev = R_xx/(rho_i*g)+(rho_w/rho_i)*d_w
+    #db_crev = rho_i/(rho_sw-rho_i)*(R_xx/(rho_i*g)-H[1:N,i]+rho_sw/rho_i*D[1:N])
   
     # Check to see if the calving condition is met
-    ind = np.where(d_crev[0:N-1] > zs[0:N-1,i])
-    indices = np.where(Bed_Float_norm[ind[0]]==-1)
-    if np.any(indices): 
-      CF_ind = np.min(ind[0][indices[0]])
+    ind = np.where(ds_crev[0:N] > zs[0:N-1,i])
+    if np.any(ind):
+      CF_ind = np.min(ind[0])
       L[i+1] = norm_nodes[CF_ind,i]
     
     else:
       # Find the glacier advance based on the velocity at the terminus.
       dL=u_stag[N-1,i]*dt 
       L[i+1]=L[i]+dL
-      
+    #if i == 720:
+    #  L[i+1] = L[i+1]-1.0e3 
   # Otherwise maintain the same terminus position  
   else: 
     L[i+1]=L_0
@@ -487,14 +505,103 @@ for i in range(0,Nt-1):
   dH = -(1.0/W[1:N])*(((u_stag[1:N,i]*W_stag[1:N]*H[1:N,i])- \
        (u_stag[0:N-1,i]*W_stag[0:N-1]*H[0:N-1,i]))/dx)*dt+Bdot[1:N]*dt
 
-
 # After all timesteps we want to interpolate velocities and heights onto the same grid
 x_final = np.linspace(0,np.max(L),np.max(L)/dx_0)
 u_final = np.zeros([len(x_final),Nt])
 H_final = np.zeros([len(x_final),Nt])
+zs_final = np.zeros([len(x_final),Nt])
 
 for i in range(0,Nt-1):
   ind1 = ~np.isnan(u_stag[:,i])
-  u_final[:,i] = np.interp(x_final,stag_nodes[ind1,i],u_stag[ind1,i])
-  H_final[:,i] = np.interp(x_final,norm_nodes[ind1,i],H[ind1,i])
+  u_final[0:,i] = np.interp(x_final,stag_nodes[ind1,i],u_stag[ind1,i])
+  H_final[0:,i] = np.interp(x_final,norm_nodes[ind1,i],H[ind1,i])
+  zs_final[0:,i] = np.interp(x_final,norm_nodes[ind1,i],zs[ind1,i])
   
+###################
+# Make some plots #
+###################
+
+# Plot model inputs
+fig = plt.figure(figsize=(5,4.5))
+
+plt.subplot(311)
+plt.plot(input_x/1e3,input_zb/1e3,'k--',linewidth=1.5)
+plt.plot(norm_nodes[:,0]/1e3,zs[:,0]/1e3,'k',linewidth=1.5)
+plt.plot([L_0/1e3,L_0/1e3],[np.interp(L_0,input_x,input_zb)/1e3,np.interp(L_0,input_x,input_zs)/1e3],'k',linewidth=1.5)
+#plt.plot(stag_nodes[:,0]/1e3,u_stag[:,0]*yearinsec/1e3,'k',linewidth=1.5,label='Modeled')
+#plt.plot(stag_nodes_0/1e3,u_0_stag*yearinsec/1e3,'r--',linewidth=1.5,label='Measured')
+plt.ylim([-1.2,2.2])
+plt.yticks(np.arange(-1000,2000,500)/1e3,fontsize=12)
+plt.xticks(np.arange(0,90,10))
+plt.ylabel('Elevation \n (km asl)',fontsize=12)
+plt.gca().set_xticklabels([])
+plt.text(2,-.750,'a',fontsize=12,fontweight='bold')
+
+plt.subplot(312)
+plt.plot(norm_nodes_0/1e3,Beta2_0/1e10,'k',linewidth=1.5)
+plt.xticks(np.arange(0,90,10))
+plt.yticks([0,0.5,1.0,1.5],fontsize=12)
+plt.ylabel(r'Basal friction' '\n(10$^{10}$ Pa s m$^{-1}$)',fontsize=12)
+plt.gca().set_xticklabels([])
+plt.text(2,0.15,'b',fontsize=12,fontweight='bold')
+
+plt.subplot(313)
+plt.plot(input_x/1e3,input_W/1e3,'k',linewidth=1.5)
+plt.xticks(np.arange(0,90,10),fontsize=12)
+plt.yticks([0,20,40,60],fontsize=12)
+plt.ylabel('Glacier width\n(km)',fontsize=12)
+plt.xlabel('Distance along flowline (km)',fontsize=12)
+plt.text(2,6,'c',fontsize=12,fontweight='bold')
+
+plt.subplots_adjust(left=0.2, bottom=None, right=None, top=None, wspace=0.05, hspace=0.05)
+
+# Plot modeled and measured velocity
+fig = plt.figure(figsize=(5,4.5))
+plt.plot(stag_nodes[:,0]/1e3,u_stag[:,0]*yearinsec/1e3,'k',label='Modeled',linewidth=1.5)
+plt.plot(input_x/1e3,input_u/1e3,'r--',label='Measured',linewidth=1.5)
+plt.xlabel('Distance along flowline (km)',fontsize=12)
+plt.ylabel('Velocity (km/yr)',fontsize=12)
+plt.legend(loc=2,fontsize=12)
+
+# Make video of model simulation
+plt.figure()
+for i in range(0,Nt):
+  plt.clf()
+  N = np.where(~(np.isnan(norm_nodes[:,i])))[0][-1]
+  plt.plot(input_x/1e3,-input_zb/1e3*(1-rho_i/rho_sw),'k:')
+  plt.plot(input_x/1e3,input_zb/1e3,'k--',linewidth=1.5)
+  plt.plot(norm_nodes[:,i]/1e3,zs[:,i]/1e3,'k',linewidth=1.5)
+  if GL[i] < L[i]:
+    GL_ind = np.argmin(abs(norm_nodes[0:N,i]-GL[i]))
+    plt.plot(norm_nodes[GL_ind:,i]/1e3,(zs[GL_ind:,i]-H[GL_ind:,i])/1e3,'k',linewidth=1.5)
+  plt.plot([norm_nodes[N,i]/1e3,norm_nodes[N,i]/1e3],[zs[N,i]/1e3,(zs[N,i]-H[N,i])/1e3],'k',linewidth=1.5)
+  plt.xlim([65,90])
+  plt.ylim([-1.2,0.8])
+  plt.xlabel('Distance along flowline (km)')
+  plt.ylabel('Elevation (km asl)')
+  #plt.tight_layout([])
+  plt.text(83,0.6,'Year %d' % np.floor(i*dt/yearinsec))
+  plt.text(83,0.5,'Day  %03d' % (np.floor((i*dt/yearinsec*365.25-np.floor(i*dt/yearinsec))/10)*10))
+  plt.savefig('/Users/kehrl/Desktop/junk/fig%04d.png' % (i+1),format="PNG")
+  
+# Make video of model simulation
+plt.figure()
+n=0
+for i in np.arange(0,Nt,2):
+  plt.clf()
+  N = np.where(~(np.isnan(norm_nodes[:,i])))[0][-1]
+  plt.plot(input_x/1e3,H_ana*(1-rho_i/rho_sw),'r',linewidth=1.5)
+  plt.plot(input_x/1e3,H_ana*(1-rho_i/rho_sw)-H_ana,'r',linewidth=1.5)
+  plt.plot([input_x[0],input_x[-1]/1e3],[0,0],'k:')
+  plt.plot(norm_nodes[:,i]/1e3,zs[:,i],'k',linewidth=1.5)
+  plt.plot(norm_nodes[:,i]/1e3,(zs[:,i]-H[:,i]),'k',linewidth=1.5)
+  plt.plot([norm_nodes[N,i]/1e3,norm_nodes[N,i]/1e3],[zs[N,i],(zs[N,i]-H[N,i])],'k',linewidth=1.5)
+  plt.xlabel('Distance along flowline (km)')
+  plt.ylabel('Elevation (m asl)')
+  #plt.tight_layout([])
+  plt.xlim([0,21])
+  plt.text(18,-440,'Year %d' % np.floor(i*dt/yearinsec))
+  #plt.text(18,-480,'Day  %03d' % (np.floor((i*dt/yearinsec*365.25-np.floor(i*dt/yearinsec))/10)*10))
+  plt.savefig('/Users/kehrl/Desktop/junk/fig%04d.png' % (n+1),format="PNG")
+  n=n+1
+    

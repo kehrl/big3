@@ -21,7 +21,7 @@ import matplotlib.colors as colors
 ##########
 
 # Flowline
-MESHNAME = "High"
+MESHNAME = "MorlighemNew"
 DIRM = os.path.join(os.getenv("HOME"),"Models/Helheim/Meshes/Flowline/"+MESHNAME+"/")
 flowline = np.loadtxt(DIRM+"Inputs/flowline.dat",skiprows=1)
 del MESHNAME, DIRM
@@ -385,7 +385,7 @@ cb=plt.colorbar(orientation="horizontal",fraction=0.07)
 cb.set_ticks([3,4,5,6,7,8,9])
 cb.set_ticklabels(['3','4','5','6','7','8','9'])
 ax.xaxis.set_minor_locator(AutoMinorLocator(2))
-cb.set_label('Glaciern velocity (km/yr)',fontsize=24)
+cb.set_label('Glacier velocity (km/yr)',fontsize=24)
 plt.ylabel('Distance along flowline (km)',fontsize=24)
 ax.tick_params('both', length=20, width=2, which='major')
 ax.tick_params('both', length=10, width=1, which='minor')
