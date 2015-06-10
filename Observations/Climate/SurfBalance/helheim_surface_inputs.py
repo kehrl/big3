@@ -3,58 +3,47 @@
 import os
 import sys
 import numpy as np
-sys.path.append(os.path.join(os.getenv("HOME"),"Dropbox/Code/Modules"))
-from subprocess import call
+sys.path.append(os.path.join(os.getenv("HOME"),"Code/Modules"))
+import netCDF4
+import coords
 
 ##########
 # Inputs #
 ##########
 
-# Jason Box 2004 (polar mm5)
-file_lat_in=os.path.join(os.getenv("HOME"),"Data/Surface_balance/Greenland/Box_smb_2004/latitude_101x55_24km.asc")
-file_long_in=os.path.join(os.getenv("HOME"),"Data/Surface_balance/Greenland/Box_smb_2004/longitude_101x55_24km.asc")
-file_smb_in=os.path.join(os.getenv("HOME"),"Data/Surface_balance/Greenland/Box_smb_2004/2000_smb_101x55_24km.asc")
+# RACMO data
+data = netCDF4.Dataset(os.path.join(os.getenv("HOME"),"Data/Climate/SurfaceBalance/Greenland/RACMO/daily_smb_2006-10.nc"))
+
+# Glacier extent
+DIRM = os.path.join(os.getenv("HOME"),"Models/Helheim/Meshes/3D/InverseClass/Inputs/")
+extent = np.loadtxt(DIRM+"mesh_extent.dat")
 
 #############
 # Load data #
 #############
 
-fid = open(file_lat_in,"r")
-lines=fid.readlines()
-lat=[]
-for line in lines:
-  lat.append(float(line))
-fid.close()
+# Load RACMO data
+lat = np.array(data.variables['lat'][:])
+lon = np.array(data.variables['lon'][:])
+smb = np.array(data.variables['smb'][:])
+time = np.array(data.variables['time'][:])
+avesmb = np.mean(smb,0)
 
-fid = open(file_long_in,"r")
-lines=fid.readlines()
-long=[]
-for line in lines:
-  long.append(float(line))
-fid.close()
+# Convert lat,lon to epsg 3413
+xrac,yrac = coords.convert(lon,lat,4326,3413)
 
-fid = open(file_smb_in,"r")
-lines=fid.readlines()
-smb=[]
-for line in lines:
-  p=line.split()
-  for i in range(0,len(p)):
-    smb.append(p[i])
+# Find domain of interest
+xmin = np.min(extent[:,0]-1e4)
+xmax = np.max(extent[:,0]+1e4)
+ymin = np.min(extent[:,1]-1e4)
+ymax = np.max(extent[:,1]+1e4)
 
-fid = open('temp_latlong.dat',"w")    
-for i in range(0,len(lat)):
-  fid.write('{} {}\n'.format(long[i],lat[i]))
-fid.close()
+xind = np.where((xrac >= xmin) & (xrac <= xmax))
+xrac = xrac[xind]
+yrac = yrac[xind]
+avesmb = avesmb[xind]
 
-os.system("gdaltransform -s_srs EPSG:4326 -t_srs EPSG:3413 < temp_latlong.dat > temp_xy.dat")
-os.system("rm temp_latlong.dat")
-
-fid = open('temp_xy.dat',"r")
-lines=fid.readlines()
-x=[]
-y=[]
-for line in lines:
-  p=line.split()
-  x.append(p[0])
-  y.append(p[1])
-fid.close()
+yind = np.where((yrac >= ymin) & (yrac <= ymax))
+xrac = xrac[yind]
+yrac = yrac[yind]
+avesmb = avesmb[yind]

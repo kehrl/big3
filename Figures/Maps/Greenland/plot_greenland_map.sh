@@ -3,7 +3,7 @@ gmtset FONT_LABEL 11
 gmtset FONT_ANNOT_PRIMARY 14
 gmtset MAP_FRAME_TYPE plain
 
-COAST=$HOME/Data/Shape_files/Coastlines/greenland_coast_wgs84.txt
+COAST=$HOME/Data/ShapeFiles/Coastlines/greenland_coast_wgs84.txt
 
 R=-R-76.5/-9.5/58.5/84.5
 J=-JM2i
