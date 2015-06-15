@@ -9,7 +9,7 @@ import glob
 # Inputs #
 ##########
 
-MESHNAME='MorlighemNew_CorrectIceFront' 
+MESHNAME='MorlighemNew_SmoothedVelocity' 
 
 # Directories
 DIRS=os.path.join(os.getenv("HOME"),"Code/Helheim/Modeling/SolverFiles/Flowline/")

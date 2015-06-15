@@ -24,7 +24,7 @@ import matplotlib
 ##########
 
 # Model Resolution
-RES = 'InverseClass'
+RES = 'HighResolution'
 
 # Directories
 DIRS=os.path.join(os.getenv("HOME"),"Code/Helheim/Modeling/SolverFiles/3D/")
@@ -48,7 +48,8 @@ bsurf=4
 runname="beta"
 
 # Regularization parameters (lambda)
-regpars=['1e10','1e8','1e9','1e11','1e12','1e7','1e13','1e6','1e14']
+#regpars=['1e10','1e8','1e9','1e11','1e12','1e7','1e13','1e6','1e14']
+regpars=['1e10']
 
 # Mesh files for making pretty graphs
 extent = np.genfromtxt(Inputs+"mesh_extent.dat")
