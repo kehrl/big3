@@ -8,7 +8,6 @@ import sys
 import shutil
 import numpy as np
 sys.path.append(os.path.join(os.getenv("HOME"),"Code/Util/Modules"))
-import velocity_flowline
 from subprocess import call
 import math
 import matplotlib.pyplot as plt
