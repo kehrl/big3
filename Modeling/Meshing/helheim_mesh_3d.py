@@ -35,15 +35,15 @@ if not(os.path.isdir(DIRM)):
   os.makedirs(DIRM+"/Inputs")
 
 # Mesh refinement
-lc1=1000 # for entire mesh
-lc2=250 # for channels close to the grounding line
-lc3=100 # for grounding line
-lc4=500 # for regions surrounding channels
+lc1=2000 # for entire mesh
+lc2=500 # for channels close to the grounding line
+lc3=250 # for grounding line
+lc4=700 # for regions surrounding channels
 #lc1=5000 # for entire mesh
 #lc2=1000 # for channels close to the grounding line
 #lc3=500 # for grounding line
 #lc4=2000 # for regions surrounding channels
-levels=12 #levels of extrusion
+levels=10 #levels of extrusion
 partitions="4" # Number of partitions
 
 # Bed and surface
