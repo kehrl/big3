@@ -1,3 +1,12 @@
+# This script contains all elevation products for Helheim, so that we are consistent
+# between scripts. 
+
+# Functions:
+# gimp_pts(xpts,ypts,verticaldatum): gimp elevations at xpts,ypts
+# gimp_grid(xmin,xmax,ymin,ymax,verticaldatum): gimp elevations in the grid specified by
+#	xmin,xmax,ymin,ymax
+# atm(year,verticaldatum): atm data for chosen year or "all" years
+
 import os
 import sys
 import numpy as np
@@ -39,8 +48,9 @@ def gimp_grid(xmin,xmax,ymin,ymax,verticaldatum):
     
     return x,y,elev
 
-def atm(years,datum):
-
+def atm(years,verticaldatum):
+  import coords
+  
   atm = {}
   
   ATMDIR = os.path.join(os.getenv("HOME"),'Data/Elevation/ATM/Helheim/')
@@ -56,14 +66,16 @@ def atm(years,datum):
         files = os.listdir(ATMDIR+DIR)
         for file in files:
           if (file.endswith('nadir5seg')) or (file.endswith('nadir3seg')):
-            data=np.loadtxt(file)
-            xfile = data[:,2]
-            yfile = data[:,1]
-            zfile = data[:,3]
-            x=np.hstack([x,xfile])
-            y=np.hstack([y,yfile])
-            z=np.hstack([z,zfile])
-      
+            data = np.loadtxt(file)
+          elif (file.endswith('nadir3seg_50pt.csv')):
+            data = np.loadtxt(file,skiprows=10)
+          xfile = data[:,2]
+          yfile = data[:,1]
+          zfile = data[:,3]
+          x=np.hstack([x,xfile])
+          y=np.hstack([y,yfile])
+          z=np.hstack([z,zfile])
+        print "Loading ", DIR, "..."
         x2,y2 = coords.convert(x-360,y,4326,3413)
         if DIR[0:4] in atm.keys():
           print "Already data from that year, consider changing how you have labeled the directories"
@@ -95,6 +107,15 @@ def atm(years,datum):
           print "Already data from that year, consider changing how you have labeled the directories"
         else:
           atm[DIR] = np.column_stack([x2,y2,z])
+  
+  if verticaldatum=='geoid':
+    for key in atm.keys():
+      geoidheight = coords.geoidheight(atm[key][:,0],atm[key][:,1])
+      atm[key][:,2] = atm[key][:,2] - geoidheight
+  elif verticaldatum=='ellipsoid':
+    atm = atm
+  else: 
+    print "Don't recognize that vertical datum, defaulting to ellipsoid"
     
   return atm
 
@@ -104,7 +125,17 @@ def atm_at_pts(x,y,years):
   
   return pts
    
-def worldview_grid(years,resolution):
+def worldview_grid(years,resolution,verticaldatum):
+
+  # Inputs
+  # years: year that you want data or "all" for all years 
+  # resolution: options are 2 or 32
+  # verticaldatum: ellipsoid or geoid
+  
+  # Output: dictionary including all available data for the chosen years, with the keys 
+  #  indicates the dates of each grid
+
+  import coords
 
   worldview = {}
   
@@ -132,9 +163,21 @@ def worldview_grid(years,resolution):
         if DIR.startswith(date) and DIR.endswith('_tr4x_align'):
           print "Loading data from "+DIR+"\n"
           worldview[date] = geotiff.read(DIR+"/"+DIR[0:56]+"-trans_reference-DEM.tif")
+  
+  if verticaldatum == 'geoid':
+     for key in worldview.keys():
+       nx = len(worldview[key][0])
+       ny = len(worldview[key][1])
+       x_grid,y_grid = np.meshgrid(worldview[key][0],worldview[key][1])
+       geoidheight = coords.geoidheight(x_grid.flatten(),y_grid.flatten())
+       worldview[key][2][:,:] = worldview[key][2] - np.reshape(geoidheight,(ny,nx))
+  elif verticaldatum == 'ellipsoid':
+    worldview = worldview
+  else:
+    print "Unknown datum, defaulting to ellipsoid"
+  
     
   return worldview
-
 
 def worldview_pts(xpts,ypts,resolution,years,verticaldatum):
 

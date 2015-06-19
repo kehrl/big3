@@ -14,7 +14,7 @@ import geotiff
 def cresis(year,verticaldatum):
 
   if year == '2001':
-    file=os.path.join(os.getenv("HOME"),"Data/Bed/Cresis/helheim_flightline_05212001_good_wgs84.dat")
+    file=os.path.join(os.getenv("HOME"),"Data/Bed/Cresis/Helheim/helheim_flightline_05212001_good_wgs84.dat")
     data=np.loadtxt(file,skiprows=1)
     ind=range(3180,3297)
     y=data[:,0]
@@ -29,7 +29,7 @@ def cresis(year,verticaldatum):
   else:
     print "Using data set Helheim_2008_2012_Composite"
     # New data set
-    file=os.path.join(os.getenv("HOME"),"Data/Bed/Cresis/Helheim_2006_2014_Composite/flightlines/Helheim_2006_2014_Composite_Flightlines.txt")
+    file=os.path.join(os.getenv("HOME"),"Data/Bed/Cresis/Helheim/Helheim_2006_2014_Composite/flightlines/Helheim_2006_2014_Composite_Flightlines.txt")
     # Old data set
     #file=os.path.join(os.getenv("HOME"),"Data/Bed/Cresis/Helheim_2008_2012_Composite/flightlines/Helheim_2008_2012_Composite_Flightlines.txt")
     fid = open(file,"r")

@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import matplotlib, geotiff
 from matplotlib.ticker import AutoMinorLocator
 import shapefile
+import scipy.signal as signal
 import jdcal
 import pylab
 from shapely.geometry import LineString
@@ -28,7 +29,7 @@ del MESHNAME, DIRM
 
 # Locations for velocities
 Lagrangian = 1
-dists_eul = [0,5,10,20,30] # kilometers
+dists_eul = [0,5,10,20,29] # kilometers
 dists_lag = np.array([1.0,5.0,10.0,20.0,30.0])
 terminus = 82 # location of terminus in flowline (km)
 
@@ -40,10 +41,10 @@ image = geotiff.readrgb(os.path.join(os.getenv("HOME"),"Data/Imagery/Landsat/Hel
 ################
 
 time1 = 2000 #start time for plot
-time2 = 2015 # end time for plot
+time2 = 2015.2 # end time for plot
 seasonal = 1 # plot seasonal bars, to highlight seasonal trends
 normalizedvelocity = 0 # divide by average velocity
-terminusbed = 0
+terminusbed = 1
 
 ############################
 # Get velocities at points # 
@@ -100,7 +101,7 @@ del indt
 # Get bed #
 ###########
 
-bed2001 = helheim_bed.cresis('2001')
+bed2001 = helheim_bed.cresis('2001','geoid')
 bed2001dist = np.interp(bed2001[:,0],flowline[:,1],flowline[:,0])
 
 ############################################
@@ -121,14 +122,16 @@ coloptions=['b','c','g','y','r']
 if normalizedvelocity:
   for i in (range(0,len(veleul_val[0,:]))):
     meanvel = np.mean(veleul_val[~(np.isnan(veleul_val[:,i])),i])
-    plt.plot(veleul_time[~(np.isnan(veleul_val[:,i]))],(veleul_val[~(np.isnan(veleul_val[:,i])),i])/meanvel,'o-',color=coloptions[i],label=str(-dists[i])+' km',linewidth=2,markersize=5)
+    plt.plot(veleul_time[~(np.isnan(veleul_val[:,i]))],(veleul_val[~(np.isnan(veleul_val[:,i])),i])/meanvel,'o-',color=coloptions[i],label=str(-dists_eul[i])+' km',linewidth=2,markersize=5)
   #plt.ylim([0.7,1.4])
   #plt.yticks([0.8,1.0,1.2,1.4])
   plt.ylabel('Change from mean velocity',fontsize=12)
 else:
   for i in (range(0,len(veleul_val[0,:]))):
-    meanvel = np.mean(veleul_val[~(np.isnan(veleul_val[:,i])),i])
-    plt.plot(veleul_time[~(np.isnan(veleul_val[:,i]))],(veleul_val[~(np.isnan(veleul_val[:,i])),i]-veleul_val[0,i])/1e3,'o-',color=coloptions[i],label=str(-dists[i])+' km',linewidth=2,markersize=5)
+    nonnan = (np.where(~(np.isnan(veleul_val[:,i]))))[0] 
+    meanvel = np.mean(veleul_val[nonnan,i])
+    plt.plot(veleul_time[nonnan],(veleul_val[nonnan,i]-veleul_val[nonnan[0],i])/1e3,'o-',color=coloptions[i],label=str(-dists_eul[i])+' km',linewidth=2,markersize=5)
+    del nonnan
   #plt.ylim([-0.1,4.2])
   #plt.yticks([0,1,2,3,4],fontsize=10) 
   plt.ylabel('Relative eulerian velocity \n (km/yr)',fontsize=12)
@@ -144,7 +147,7 @@ plt.legend(loc=2,fontsize=10)
 ax.tick_params('both', length=20, width=2, which='major')
 ax.tick_params('both', length=10, width=1, which='minor')
 if seasonal:
-  xTickPos = np.linspace(time1-0.25,time2-0.25,(time2-time1)*2+1)
+  xTickPos = np.linspace(np.floor(time1)-0.25,np.floor(time2)-0.25,(np.floor(time2)-np.floor(time1))*2+1)
   xTickPos = xTickPos[:-1]
   ax.bar(xTickPos, [max(plt.ylim())-min(plt.ylim())] * len(xTickPos), (xTickPos[1]-xTickPos[0]), bottom=min(plt.ylim()), color=['0.9','w'],linewidth=0)
 
@@ -167,10 +170,10 @@ plt.ylabel('Terminus position \n (km)',fontsize=12)
 #ax.text(2001.1,3.0,'Advance',fontsize=36,fontweight='bold')
 ax.tick_params('both', length=20, width=2, which='major')
 ax.tick_params('both', length=10, width=1, which='minor')
-if seasonal == 1:
-  xTickPos = np.linspace(time1-0.25,time2-0.25,(time2-time1)*2+1)
+if seasonal:
+  xTickPos = np.linspace(np.floor(time1)-0.25,np.floor(time2)-0.25,(np.floor(time2)-np.floor(time1))*2+1)
   xTickPos = xTickPos[:-1]
-  ax.bar(xTickPos, [max(plt.ylim())-min(plt.ylim())] * len(xTickPos), (xTickPos[1]-xTickPos[0]),bottom=min(plt.ylim()), color=['0.9','w'],linewidth=0)
+  ax.bar(xTickPos, [max(plt.ylim())-min(plt.ylim())] * len(xTickPos), (xTickPos[1]-xTickPos[0]), bottom=min(plt.ylim()), color=['0.9','w'],linewidth=0)
 if terminusbed == 1:
   ax.set_xticklabels([])
 
@@ -193,7 +196,7 @@ if terminusbed == 1:
   ax.yaxis.set_minor_locator(AutoMinorLocator(2))
   plt.yticks([-700,-600,-500])
   if seasonal:
-    xTickPos = np.linspace(time1-0.25,time2-0.25,(time2-time1)*2+1)
+    xTickPos = np.linspace(np.floor(time1)-0.25,np.floor(time2)-0.25,(np.floor(time2)-np.floor(time1))*2+1)
     xTickPos = xTickPos[:-1]
     ax.bar(xTickPos, [max(plt.ylim())-min(plt.ylim())] * len(xTickPos), (xTickPos[1]-xTickPos[0]), bottom=min(plt.ylim()), color=['0.9','w'],linewidth=0)
 
@@ -215,7 +218,7 @@ riftx,rifty,riftt = helheim_icefronts.load_all(time1,time2,'rift')
 plt.plot(termx,termy,color='0.75')
 plt.plot(riftx,rifty,color='r')
 plt.plot(flowline[:,1],flowline[:,2],'k',linewidth=1.5)
-plt.plot(bed[:,0],bed[:,1],'k--',linewidth=1.5)
+plt.plot(bed2001[:,0],bed2001[:,1],'k--',linewidth=1.5)
 plt.title('Terminus positions from '+str(time1)+' to '+str(time2))
 for i in range(0,len(coloptions)):
   plt.plot(velocitypoints[i,0],velocitypoints[i,1],'o',color=coloptions[i],markersize=10)

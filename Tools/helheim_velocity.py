@@ -559,23 +559,27 @@ def divergence_at_eulpoints(xpt,ypt):
   
 #########################################################################################
 
-def inversion_3D(file_velocity_in,dir_velocity_out):
+def inversion_3D(x,y,file_velocity_in,dir_velocity_out):
 
-  # This code outputs velocity measurements for Elmer to use during inversions. It combines 
-  # "file_velocity_in" with a Greenland velocity map to create a continuous product.
-
-  # Large velocity map
+  # Inputs:
+  # x : list of x coordinates for grid interpolation
+  # y : list of y coordinates for grid interpolation
+  # file_velocity_in : velocity file for interpolation
+  # dir_velocity_out : directory for outputting the velocity
+  
+  # Outputs:
+  # u : velocity in x-dir on grid defined by x,y
+  # y : velocity in y-dir on grid defined by x,y
+  
+  # Large velocity map to fill in gaps in smaller velocity map
   file_velocity_in_global = os.path.join(os.getenv("HOME"),"Data/Velocity/Random/Greenland/track-07to10")
   x1,y1,v1,vx1,vy1,ex1,ey1,time=geodat.readvelocity(file_velocity_in_global+"/mosaicOffsets")
 
-  # Individual velocity map
-  x2,y2,v2,vx2,vy2,ex2,ey2,time=geodat.readvelocity(file_velocity_in+"/mosaicOffsets")
-
-  # Chop larger velocity maps to desired size
-  xmin = np.argmin(abs(x1-200000))
-  xmax = np.argmin(abs(x1-320000))+1
-  ymin = np.argmin(abs(y1--2620000))
-  ymax = np.argmin(abs(y1--2510000))+1
+  # The large velocity map has some gaps. So we need to make the map smaller and fill in the gaps
+  xmin = np.argmin(abs(x1-(np.min(x)-10e3)))
+  xmax = np.argmin(abs(x1-(np.max(x)+10e3)))
+  ymin = np.argmin(abs(y1-(np.min(y)-10e3)))
+  ymax = np.argmin(abs(y1-(np.max(y)+10e3)))
 
   x1 = x1[xmin:xmax]
   y1 = y1[ymin:ymax]
@@ -584,76 +588,65 @@ def inversion_3D(file_velocity_in,dir_velocity_out):
   vy1 = vy1[ymin:ymax,xmin:xmax]
   ex1 = ex1[ymin:ymax,xmin:xmax]
   ey1 = ey1[ymin:ymax,xmin:xmax]
-  
-  xmin = np.argmin(abs(x2-200000))
-  xmax = np.argmin(abs(x2-320000))+1
-  ymin = np.argmin(abs(y2--2620000))
-  ymax = np.argmin(abs(y2--2510000))+1
 
-  x2 = x2[xmin:xmax]
-  y2 = y2[ymin:ymax]
-  v2 = v2[ymin:ymax,xmin:xmax]
-  vx2 = vx2[ymin:ymax,xmin:xmax]
-  vy2 = vy2[ymin:ymax,xmin:xmax]
-  ex2 = ex2[ymin:ymax,xmin:xmax]
-  ey2 = ey2[ymin:ymax,xmin:xmax]
+  # Individual velocity map
+  x2,y2,v2,vx2,vy2,ex2,ey2,time=geodat.readvelocity(file_velocity_in+"/mosaicOffsets")
 
-  # Add individual velocity map to final product
-  xfinal = np.arange(np.min(x1),np.max(x1)+x2[1]-x2[0],x2[1]-x2[0])
-  yfinal = np.arange(np.min(y1),np.max(y1)+y2[1]-y2[0],y2[1]-y2[0])
-  xgridfinal,ygridfinal = np.meshgrid(xfinal,yfinal)
-  vx_final = np.zeros_like(xgridfinal)
-  vy_final = np.zeros_like(xgridfinal)
-  v_final = np.zeros_like(xgridfinal)
-  vx_final[:,:] = 'NaN'
-  vy_final[:,:] = 'NaN'
-  v_final[:,:] = 'NaN'
-  
-  xind1 = np.argmin(abs(xfinal-np.min(x2)))
-  xind2 = np.argmin(abs(xfinal-np.max(x2)))+1
-  yind1 = np.argmin(abs(yfinal-np.min(y2)))
-  yind2 = np.argmin(abs(yfinal-np.max(y2)))+1
-  
-  vx_final[yind1:yind2,xind1:xind2] = vx2
-  vy_final[yind1:yind2,xind1:xind2] = vy2
-  v_final[yind1:yind2,xind1:xind2] = v2
-  
-  
+  # Grid points for interpolation
+  xgrid,ygrid = np.meshgrid(x,y)
+
+  # Create functions for interpolation
+  fu2 = scipy.interpolate.RegularGridInterpolator([y2,x2],vx2,method='linear',bounds_error=False)
+  fv2 = scipy.interpolate.RegularGridInterpolator([y2,x2],vy2,method='linear',bounds_error=False)
+
+  # Interpolate velocities from individual velocity map onto grid
+  vx = fu2((ygrid,xgrid))
+  vy = fv2((ygrid,xgrid))
+
   # Fill in spots in velocity map that are not covered by the individual velocity map 
-  nonnan=np.where(~(np.isnan(vy1)))
+  nans = np.where(np.isnan(vx))
+  nonnan = np.where(~(np.isnan(vx1)))
   xgrid1,ygrid1 = np.meshgrid(x1,y1)
-  vx_fill = scipy.interpolate.griddata(np.column_stack([ygrid1[nonnan],xgrid1[nonnan]]),vx1[nonnan],(ygridfinal,xgridfinal),method='linear')
-  vy_fill = scipy.interpolate.griddata(np.column_stack([ygrid1[nonnan],xgrid1[nonnan]]),vy1[nonnan],(ygridfinal,xgridfinal),method='linear')
-  v_fill = scipy.interpolate.griddata(np.column_stack([ygrid1[nonnan],xgrid1[nonnan]]),v1[nonnan],(ygridfinal,xgridfinal),method='linear')
+  vx[nans] = scipy.interpolate.griddata(np.column_stack([ygrid1[nonnan],xgrid1[nonnan]]),vx1[nonnan],(ygrid[nans],xgrid[nans]),method='linear')
+  vy[nans] = scipy.interpolate.griddata(np.column_stack([ygrid1[nonnan],xgrid1[nonnan]]),vy1[nonnan],(ygrid[nans],xgrid[nans]),method='linear')
 
-  nans = np.where(np.isnan(vx_final))
-  vx_final[nans]=vx_fill[nans]
-  vy_final[nans]=vy_fill[nans]
-  v_final[nans]=v_fill[nans]
-
-  # Write out velocities to files
-  fid = open(dir_velocity_out+"/UDEM.xy","w")
-  fid.write('{}\n{}\n'.format(len(xfinal),len(yfinal)))
-  for i in range(0,len(xfinal)):
-    for j in range(0,len(yfinal)):
-      fid.write('{} {} {}\n'.format(xfinal[i],yfinal[j],vx_final[j,i]))
-  fid.close()
   
-  fid = open(dir_velocity_out+"/VDEM.xy","w")
-  fid.write('{}\n{}\n'.format(len(xfinal),len(yfinal)))
-  for i in range(0,len(xfinal)):
-    for j in range(0,len(yfinal)):
-      fid.write('{} {} {}\n'.format(xfinal[i],yfinal[j],vy_final[j,i]))
-  fid.close()
+  # Calculate velocity magnitude
+  vmag = np.sqrt(vx**2+vy**2)
+  
+  # Put the value for no data back in for interpolation in Elmer
+  nans = np.where(np.isnan(vx))
+  #vx[nans] = -2.0e9
+  #vy[nans] = -2.0e9
+  #vmag[nans] = -2.0e9
+  
+  #################################
+  # Write out velocities to files #
+  #################################
+  
+  # File for velocity in x-dir
+  fidu = open(dir_velocity_out+"/UDEM.xy","w")
+  fidu.write('{}\n{}\n'.format(len(x),len(y)))
+  
+  # File for velocity in y-dir
+  fidv = open(dir_velocity_out+"/VDEM.xy","w")
+  fidv.write('{}\n{}\n'.format(len(x),len(y)))
+  
+  # File for velocity magnitude
+  fidmag = open(dir_velocity_out+"/VMAG.xy","w")
+  fidmag.write('{}\n{}\n'.format(len(x),len(y)))
+  
+  for i in range(0,len(x)):
+    for j in range(0,len(y)):
+      fidu.write('{} {} {}\n'.format(x[i],y[j],vx[j,i]))
+      fidv.write('{} {} {}\n'.format(x[i],y[j],vy[j,i]))
+      fidmag.write('{} {} {}\n'.format(x[i],y[j],vmag[j,i]))
+  
+  fidv.close()
+  fidu.close()
+  fidmag.close()
 
-  fid = open(dir_velocity_out+"/VMAG.xy","w")
-  fid.write('{}\n{}\n'.format(len(xfinal),len(yfinal)))
-  for i in range(0,len(xfinal)):
-    for j in range(0,len(yfinal)):
-      fid.write('{} {} {}\n'.format(xfinal[i],yfinal[j],v_final[j,i]))
-  fid.close()
-
-  return 1
+  return vx,vy
 
 def inversion_2D(x,y,d,file_velocity_in,dir_velocity_out):
   import os
