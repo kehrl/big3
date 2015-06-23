@@ -26,9 +26,9 @@ glacier = args[1][:] # Options: Kanger, Helheim
 # Set extent for cropping based on glacier #
 ############################################
 if glacier == 'Helheim':
-  extent=['218000 310000 -2599000 -2511000']
+  extent='300000 -2597000 320000 -2560000'
 elif glacier == 'Kanger':
-  extent=['477000 516000 -2308000 -2269000']
+  extent='477000 -2308000 516000 -2269000'
 else:
   sys.exit("Unknown glacier")
 
@@ -95,8 +95,9 @@ for file in files:
       gdal_merge.main()
       os.system('gdal_translate -co PHOTOMETRIC=RGB temp1.tif temp2.tif')
       os.system('otbcli_BundleToPerfectSensor -inp '+file+'_B8.tif  -inxs temp2.tif -out temp3.tif uint16')
-      os.system('gdalwarp temp3.tif '+filename+' -t_srs EPSG:3413'+' -te '+extent)
+      os.system('gdalwarp temp3.tif temp4.tif -t_srs EPSG:3413'+' -te '+extent)
+      os.system('gdal_translate -ot Byte -scale 0 6535 0 255 -a_nodata "0 0 0" temp4.tif '+filename)
       os.remove('temp1.tif')
       os.remove('temp2.tif')
       os.remove('temp3.tif')
-
+      os.remove('temp4.tif')
