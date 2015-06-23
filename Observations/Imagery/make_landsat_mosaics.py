@@ -1,22 +1,28 @@
+# This code takes the original Landsat TIF files and creates 
+# RGB files. Right now it does not pansharpen, because the images
+# become really large. The input is the glacier name, e.g.,
+#  
+# make_landsat_mosaics.py Kanger
+#
+# LMK, UW, 6/20/2015
+
 import os
 import sys
 import shutil
 import numpy as np
 sys.path.append(os.path.join(os.getenv("HOME"),"Code/Util/Modules"))
 sys.path.append("/usr/local/bin/")
-import velocity_flowline
 from subprocess import call
 import math
 import gdal_merge
-#import otbApplication
-
 from geodat import *
-
 import glob
-import elmer_read
+
+# Get arguments
+args = sys.argv
 
 DIR=os.path.join(os.getenv("HOME"),"Data/Imagery/Landsat/")
-glacier='Helheim'
+glacier = args[0][:] # Options: Kanger, Helheim
 
 ###############
 # Landsat 4-5 #
