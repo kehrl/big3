@@ -80,9 +80,9 @@ for file in files:
       sys.argv[1:] = ['-separate',file+"_B4.tif",file+"_B3.tif",file+"_B2.tif",'-o','temp1.tif']
       gdal_merge.main()
       os.system('gdal_translate -co PHOTOMETRIC=RGB temp1.tif temp2.tif')
-      os.system('otbcli_BundleToPerfectSensor -inp '+file+'_B8.tif  -inxs temp2.tif -out temp3.tif uint16')
-      os.system('gdalwarp temp3.tif '+filename+' -t_srs EPSG:3413')
+      #os.system('otbcli_BundleToPerfectSensor -inp '+file+'_B8.tif  -inxs temp1.tif -out temp2.tif uint16')
+      os.system('gdalwarp temp2.tif '+filename+' -t_srs EPSG:3413')
       os.remove('temp1.tif')
       os.remove('temp2.tif')
-      os.remove('temp3.tif')
+      #os.remove('temp3.tif')
 
