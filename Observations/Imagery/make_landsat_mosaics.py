@@ -1,8 +1,6 @@
 # This code takes the original Landsat TIF files and creates 
-# RGB files. Right now it does not pansharpen, because the images
-# become really large. The input is the glacier name, e.g.,
-#  
-# make_landsat_mosaics.py Kanger
+# RGB files. The output is cropped to keep the file size small. 
+# The code requires the glacier name (Kanger, Helheim) as input.
 #
 # LMK, UW, 6/20/2015
 
@@ -23,6 +21,16 @@ args = sys.argv
 
 DIR=os.path.join(os.getenv("HOME"),"Data/Imagery/Landsat/")
 glacier = args[0][:] # Options: Kanger, Helheim
+
+############################################
+# Set extent for cropping based on glacier #
+############################################
+if glacier == 'Helheim':
+  extent=['218000 310000 -2599000 -2511000']
+elif glacier == 'Kanger':
+  extent=['477000 516000 -2308000 -2269000']
+else:
+  sys.exit("Unknown glacier")
 
 ###############
 # Landsat 4-5 #
@@ -54,11 +62,11 @@ for file in files:
     sys.argv[1:] = ['-separate',file+"_B3.tif",file+"_B2.tif",file+"_B1.tif",'-o','temp1.tif']
     gdal_merge.main()
     os.system('gdal_translate -co PHOTOMETRIC=RGB temp1.tif temp2.tif')
-    #os.system('otbcli_BundleToPerfectSensor -inp '+file+'_B8.tif  -inxs temp2.tif -out temp3.tif uint16')
-    os.system('gdalwarp temp2.tif '+filename+' -t_srs EPSG:3413')
+    os.system('otbcli_BundleToPerfectSensor -inp '+file+'_B8.tif  -inxs temp2.tif -out temp3.tif uint16')
+    os.system('gdalwarp temp3.tif '+filename+' -t_srs EPSG:3413'+' -te '+extent)
     os.remove('temp1.tif')
     os.remove('temp2.tif')
-    #os.remove('temp3.tif')
+    os.remove('temp3.tif')
   
 #############
 # Landsat 8 #
@@ -86,9 +94,9 @@ for file in files:
       sys.argv[1:] = ['-separate',file+"_B4.tif",file+"_B3.tif",file+"_B2.tif",'-o','temp1.tif']
       gdal_merge.main()
       os.system('gdal_translate -co PHOTOMETRIC=RGB temp1.tif temp2.tif')
-      #os.system('otbcli_BundleToPerfectSensor -inp '+file+'_B8.tif  -inxs temp1.tif -out temp2.tif uint16')
-      os.system('gdalwarp temp2.tif '+filename+' -t_srs EPSG:3413')
+      os.system('otbcli_BundleToPerfectSensor -inp '+file+'_B8.tif  -inxs temp2.tif -out temp3.tif uint16')
+      os.system('gdalwarp temp3.tif '+filename+' -t_srs EPSG:3413'+' -te '+extent)
       os.remove('temp1.tif')
       os.remove('temp2.tif')
-      #os.remove('temp3.tif')
+      os.remove('temp3.tif')
 
