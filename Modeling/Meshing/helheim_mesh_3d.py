@@ -7,7 +7,7 @@ import os
 import shutil
 import sys
 sys.path.append(os.path.join(os.getenv("HOME"),"Code/Util/Modules"))
-sys.path.append(os.path.join(os.getenv("HOME"),"Code/Helheim/Tools"))
+sys.path.append(os.path.join(os.getenv("HOME"),"Code/BigThreeGlaciers/Tools"))
 import elmer_mesh as mesh
 import elmer_inversion
 import helheim_velocity, helheim_bed, helheim_elevation
