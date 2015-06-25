@@ -53,11 +53,13 @@ for file in files:
       month = str(line[25:27])
       day = str(line[28:30])
     if line.startswith("    SCENE_CENTER_TIME"):
+      test = str(line)
       if str(line[0])==" \"":
         hour = str(line[25:27])
         min = str(line[28:30])
         sec = str(line[31:33])
       else:
+        print "blah"
         hour = str(line[24:26])
         min = str(line[27:29])
         sec = str(line[30:32])
