@@ -27,6 +27,5 @@ def load(glacier):
   dists = np.linspace(0,np.max(d),np.max(d)/100)
   x = np.interp(dists,d[:,0],flowline[:,0])
   y = np.interp(dists,d[:,0],flowline[:,1])
-  del d,flowline
 
   return x,y,dists

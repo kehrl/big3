@@ -9,7 +9,7 @@ import sys
 import numpy as np
 sys.path.append(os.path.join(os.getenv("HOME"),"Code/Util/Modules"))
 sys.path.append(os.path.join(os.getenv("HOME"),"Code/Helheim/Tools"))
-import helheim_velocity, helheim_bed, helheim_elevation
+import velocity, helheim_bed, helheim_elevation
 import elmer_mesh as mesh
 import dist
 import shapefactor,flowparameter
@@ -82,7 +82,7 @@ if not(os.path.isdir(DIRM)):
   os.makedirs(DIRM+"Inputs")
 
 # Flowline coordinates
-flowline = mesh.shp_to_flowline(file_flowline_in)
+flowline = mesh.shp_to_xy(file_flowline_in)
 del file_flowline_in
 
 # Create geo file for flowline
@@ -150,8 +150,7 @@ call(["ElmerGrid","2","4",file_mesh_out])
 ###################################################
 
 # Get velocity along flowline from velocity profiles
-helheim_velocity.inversion_2D(flowline[:,1],flowline[:,2],flowline[:,0],file_velocity_in,DIRM+"Inputs/")
-
+velocity.inversion_2D(flowline[:,1],flowline[:,2],flowline[:,0],file_velocity_in,DIRM+"Inputs/",glacier)
 
 #################################
 # Print out temperature profile #

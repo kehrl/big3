@@ -122,7 +122,7 @@ call(["ElmerGrid","2","4","elmer"])
 ##########################################
 
 # Output files for velocities in x,y directions (u,v)
-u,v = helheim_velocity.inversion_3D(x,y,file_velocity_in,Inputs)
+u,v = velocity.inversion_3D(x,y,file_velocity_in,Inputs,glacier)
 
 #########################################################################
 # Import mesh boundary, calculate flow parameter at mesh nodes, and use #
