@@ -114,7 +114,7 @@ def atm(years,verticaldatum):
     
   return atm
 
-def atm_at_pts(x,y,years,maxdist,verticaldatum):
+def atm_at_pts(xpts,ypts,years,maxdist,verticaldatum):
   
   # Get ATM data
   data = atm(years,verticaldatum)
@@ -128,13 +128,13 @@ def atm_at_pts(x,y,years,maxdist,verticaldatum):
     z = np.zeros(R); z[:] = 'NaN'
     d = np.zeros(R); d[:] = 'NaN'
     for i in range(0,R):
-      ind = np.argmin((x[i]-data[key][:,0])**2 + (y[i]-data[key][:,1])**2)
+      ind = np.argmin((xpts[i]-data[key][:,0])**2 + (ypts[i]-data[key][:,1])**2)
       xatm = data[key][ind,0]
       yatm = data[key][ind,1]
       d[i] = dist.between_pts(x[i],y[i],xatm,yatm)
       if d[i] < maxdist:
         z[i] = data[key][ind,2]
-    pts[key] = np.column_stack([x,y,z,d])
+    pts[key] = np.column_stack([xpts,ypts,z,d])
   
   return pts
    
