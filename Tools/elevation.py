@@ -123,7 +123,7 @@ def atm_at_pts(xpts,ypts,years,maxdist,verticaldatum):
   pts = {}
   
   keys = data.keys()
-  R = len(x)
+  R = len(xpts)
   for key in keys:
     z = np.zeros(R); z[:] = 'NaN'
     d = np.zeros(R); d[:] = 'NaN'
@@ -131,7 +131,7 @@ def atm_at_pts(xpts,ypts,years,maxdist,verticaldatum):
       ind = np.argmin((xpts[i]-data[key][:,0])**2 + (ypts[i]-data[key][:,1])**2)
       xatm = data[key][ind,0]
       yatm = data[key][ind,1]
-      d[i] = dist.between_pts(x[i],y[i],xatm,yatm)
+      d[i] = dist.between_pts(xpts[i],ypts[i],xatm,yatm)
       if d[i] < maxdist:
         z[i] = data[key][ind,2]
     pts[key] = np.column_stack([xpts,ypts,z,d])
