@@ -87,8 +87,8 @@ for regpar in regpars:
   fid2 = open('robin_beta_temp.sif', 'w')
   lines=fid1.readlines()
   for line in lines:
-    line=line.replace('$Lambda=1e10', '$Lambda={}'.format(regpar))
-    line=line.replace('Mesh_Input','{}'.format("../../../../../Models/Helheim/Meshes/Flowline/"+MESHNAME))
+    line=line.replace('$Lambda=1e10', '$Lambda={0}'.format(regpar))
+    line=line.replace('Mesh_Input','{0}'.format("../../../../../Models/Helheim/Meshes/Flowline/"+MESHNAME))
     fid2.write(line)
   fid1.close()
   fid2.close()
@@ -110,7 +110,7 @@ for regpar in regpars:
   norm = float(p[3]) 
   fid.close()
   fid_info = open(DIRR+"summary.dat","a")
-  fid_info.write('{} {} {} {} {}\n'.format(regpar,nsim,cost1,cost2,norm))
+  fid_info.write('{0} {1} {2} {3} {4}\n'.format(regpar,nsim,cost1,cost2,norm))
   fid_info.close()
   del fid
   
