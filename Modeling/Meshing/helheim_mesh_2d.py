@@ -126,13 +126,13 @@ flowline[:,4]=signal.filtfilt(b,a,flowline[:,4])
 
 del lc, lc_d, file_bed, file_bed_in2, file_surf, bed2001
 
+os.chdir(DIRM)
 # Create box mesh for extrusion through MshGlacier
 call(["gmsh", "-2",file_mesh_out+".geo", "-o",file_mesh_out+".msh"])
 
 call(["ElmerGrid","14","2",file_mesh_out+".msh"])
 
 # Now we can call MshGlacier
-os.chdir(DIRM)
 call(["MshGlacier"])
 
 ##################
