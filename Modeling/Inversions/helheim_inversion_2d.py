@@ -22,15 +22,18 @@ import elmer_read
 
 MESHNAME='MorlighemNew_SmoothedVelocity'
 
+glacier = 'Helheim'
+
 # Regularization parameters (lambda)
 #regpars=['1e11','1.5e11','1e12','1.5e12','1e13','1e14','1e15']
 regpars=['1e3','1e4','1e5','1e6','1e7','1e8','1e9','1e10','1e11','1e12','1e13','1e14','1e15','1e16']
 #regpars=['1e12']
 
 # Directories
-DIRS=os.path.join(os.getenv("HOME"),"Code/Helheim/Modeling/SolverFiles/Flowline/")
-DIRM=os.path.join(os.getenv("HOME"),"Models/Helheim/Meshes/Flowline/"+MESHNAME+"/")
-DIRR=os.path.join(os.getenv("HOME"),"Models/Helheim/Results/Flowline/"+MESHNAME+"/Inversion/")
+DIRS=os.path.join(os.getenv("HOME"),"Code/BigThreeGlaciers/Modeling/SolverFiles/Flowline/")
+DIRM=os.path.join(os.getenv("HOME"),"Models/"+glacier+"/Meshes/Flowline/"+MESHNAME+"/")
+DIRR=os.path.join(os.getenv("HOME"),"Models/"+glacier+"/Results/Flowline/"+MESHNAME+"/Inversion/")
+DIRELMERLIB = os.path.join(os.getenv("HOME"),"Code/BigThreeGlaciers/Modeling/Elmerlib/")
 
 # Flowline
 file_flowline_in=DIRM+"Inputs/flowline.dat"
@@ -40,14 +43,33 @@ runname = 'beta'
 bbed=1
 bsurf=2
 
-############################################################
-# Run inversion solver file for different values of lambda #
-############################################################
+#####################
+# Set up model runs #
+#####################
+
 # Copy model inputs into the solver file directory
 input_files=os.listdir(DIRM+"Inputs/")
 for file in input_files:
   shutil.copy(DIRM+"Inputs/"+file,DIRS+"Inputs/")
 del input_files
+
+# Check that fortran files are compiled
+readfiles = glob.glob(DIRELMERLIB+"Flowline/"+"*.f90")
+
+with open(DIRELMERLIB+"Flowline.f90", "wb") as outfile:
+  for f in readfiles:
+    with open(f, "rb") as infile:
+      outfile.write(infile.read())
+      outfile.write("\n")
+outfile.close()
+
+os.chdir(DIRELMERLIB)
+call(["elmerf90","-o","Flowline.so","Flowline.f90"])
+del DIRELMERLIB
+
+############################################################
+# Run inversion solver file for different values of lambda #
+############################################################
 
 if not(os.path.isdir(DIRR)):
   os.makedirs(DIRR)
