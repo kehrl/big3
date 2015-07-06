@@ -3,16 +3,17 @@
 
 # Functions:
 # gimp_pts(xpts,ypts,verticaldatum): gimp elevations at xpts,ypts
-# gimp_grid(xmin,xmax,ymin,ymax,verticaldatum): gimp elevations in the grid specified by
+# gimp_grid(xmin,xmax,ymin,ymax,glacier,verticaldatum): gimp elevations in the grid specified by
 #	xmin,xmax,ymin,ymax
-# atm(year,verticaldatum): atm data for chosen year or "all" years
+# atm(year,verticaldatum): ATM data for chosen year or "all" years
+# atm(xpts,ypts,years,maxdist,verticaldatum): get ATM data at specific points given by xpts, ypts
 
 import os
 import sys
 import numpy as np
 sys.path.append(os.path.join(os.getenv("HOME"),"Code/Util/Modules"))
 sys.path.append(os.path.join(os.getenv("HOME"),"Code/BigThreeGlaciers/Tools"))
-import helheim_icefronts
+import icefronts
 import coords, geotiff
 import scipy.interpolate, jdcal, dist
 
@@ -192,7 +193,7 @@ def worldview_grid(years,resolution,verticaldatum):
     
   return worldview
 
-def worldview_pts(xpts,ypts,resolution,years,verticaldatum):
+def worldview_pts(xpts,ypts,glacier,resolution,years,verticaldatum):
 
   # Worldview data
   WVDIR = os.path.join(os.getenv("HOME"),'/Users/kehrl/Data/Elevation/Worldview/Helheim/')
@@ -201,7 +202,7 @@ def worldview_pts(xpts,ypts,resolution,years,verticaldatum):
   
   # Load ice front positions so we can toss data in front of terminus
   dists = dist.transect(xpts,ypts)
-  term_values, term_time = helheim_icefronts.distance_along_flowline(xpts,ypts,dists,'icefront')
+  term_values, term_time = icefronts.distance_along_flowline(xpts,ypts,dists,'icefront',glacier)
   
   dates=[]
   for DIR in DIRs:

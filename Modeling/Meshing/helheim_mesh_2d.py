@@ -8,8 +8,8 @@ import os
 import sys
 import numpy as np
 sys.path.append(os.path.join(os.getenv("HOME"),"Code/Util/Modules"))
-sys.path.append(os.path.join(os.getenv("HOME"),"Code/Helheim/Tools"))
-import velocity, helheim_bed, helheim_elevation
+sys.path.append(os.path.join(os.getenv("HOME"),"Code/BigThreeGlaciers/Tools"))
+import velocity, bed, elevation
 import elmer_mesh as mesh
 import dist
 import shapefactor,flowparameter
@@ -26,6 +26,8 @@ import geotiff
 ##########
 # Inputs #
 ##########
+
+glacier = 'Helheim'
 
 MESHNAME='MorlighemNew_SmoothedVelocity'
 file_mesh_out="Elmer"
@@ -86,13 +88,13 @@ flowline = mesh.shp_to_xy(file_flowline_in)
 del file_flowline_in
 
 # Create geo file for flowline
-flowline = mesh.xy_to_gmsh_box(flowline,file_terminus,DIRM,file_mesh_out,file_bed,file_surf,lc,lc_d,layers)
+flowline = mesh.xy_to_gmsh_box(glacier,flowline,file_terminus,DIRM,file_mesh_out,file_bed,file_surf,lc,lc_d,layers)
 
 # Adjust bed DEM to 2001 bed profile near terminus
 ## The present flowline runs off the Morlighem bed DEM, so we need to set the bed near the 
 ## terminus to the bed elevation measurements from 2001
-ind=np.where(flowline[:,0]>75700)#83300)
-bed2001=helheim_bed.cresis('2001','geoid')
+ind = np.where(flowline[:,0]>75700)#83300)
+bed2001 = bed.cresis('2001',glacier,'geoid')
 flowline[ind,3]=np.interp(flowline[ind,1],bed2001[:,0],bed2001[:,2])
 
 ## Save variable with rest of bed profile for grounded solver
@@ -104,7 +106,7 @@ fid.write('{} {} \n'.format(flowline[i,0]+100,flowline[i,3]))
 fid.close()
 
 # Adjust surface DEM to worldview DEM and then smooth it.
-wv_elev,times = helheim_elevation.worldview_pts(flowline[:,1],flowline[:,2],32,file_wv_year,'geoid')
+wv_elev,times = elevation.worldview_pts(flowline[:,1],flowline[:,2],glacier,32,file_wv_year,'geoid')
 for i in range(0,len(flowline)):
   ind = np.where(~(np.isnan(wv_elev[i,:])))
   if len(ind[0]) > 0:
@@ -150,7 +152,7 @@ call(["ElmerGrid","2","4",file_mesh_out])
 ###################################################
 
 # Get velocity along flowline from velocity profiles
-velocity.inversion_2D(flowline[:,1],flowline[:,2],flowline[:,0],file_velocity_in,DIRM+"Inputs/",glacier)
+velocity.inversion_2D(flowline[:,1],flowline[:,2],flowline[:,0],glacier,file_velocity_in,DIRM+"Inputs/")
 
 #################################
 # Print out temperature profile #

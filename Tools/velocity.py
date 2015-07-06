@@ -690,7 +690,7 @@ def inversion_3D(x,y,file_velocity_in,dir_velocity_out):
 
   return vx,vy
 
-def inversion_2D(x,y,d,file_velocity_in,dir_velocity_out):
+def inversion_2D(x,y,d,glacier,file_velocity_in,dir_velocity_out):
   import os
   import sys
   import numpy as np

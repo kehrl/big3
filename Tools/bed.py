@@ -113,7 +113,7 @@ def cresis(year,glacier,verticaldatum):
     
   return np.column_stack([x2[ind],y2[ind],zb[ind]])
 
-def morlighem_pts(xpts,ypts,verticaldatum):
+def morlighem_pts(xpts,ypts,glacier,verticaldatum):
   
   # Load bed DEM
   file = os.path.join(os.getenv("HOME"),"Data/Bed/Morlighem_2014/MCdataset-2015-04-27.tif")

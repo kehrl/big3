@@ -4,7 +4,7 @@ import os
 import sys
 sys.path.append(os.path.join(os.getenv("HOME"),"Code/Util/Modules/"))
 sys.path.append(os.path.join(os.getenv("HOME"),"Code/BigThreeGlaciers/Tools/"))
-import glacier
+import glacier_flowline
 import numpy as np
 import matplotlib.pyplot as plt
 import icebridge
@@ -20,16 +20,15 @@ def movingaverage(interval, window_size):
 # Inputs #
 ##########
 
-Glacier = 'Helheim'
+glacier = 'Helheim'
 
-x,y,dists = 
+x,y,dists = glacier_flowline.load(glacier)
 
 ################
 # Get ATM data #
 ################
 
- = helheim_elevation.atm(years)
-
+atm_data = elevation.atm_at_pts(x,y,'all',500,'geoid')
 
 ######################
 # Get Worldview Data #
