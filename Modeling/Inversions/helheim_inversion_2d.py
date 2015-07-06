@@ -10,7 +10,6 @@ import numpy as np
 sys.path.append(os.path.join(os.getenv("HOME"),"Code/Util/Modules"))
 from subprocess import call
 import math
-import matplotlib.pyplot as plt
 from geodat import *
 import scipy.interpolate as interpolate
 import glob
