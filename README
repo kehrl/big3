@@ -1,7 +1,10 @@
-# Helheim Project
-# This repository includes all my code for Helheim Glacier.
-
+# Big Three Glaciers
+# This repository includes all my code for Helheim and Kangerdlugssuaq glaciers. 
+# It has different subdirectories for observations and numerical modeling. This README
+# will be updated with further details in future versions.
+#
+# LMK, UW 06/12/2015
+#
 # Dependencies:
-## Matlab
-## Python
-## Elmersolver parallel version
+## Python (numpy, scipy, shapely)
+## Elmersolver parallel version (with mumps, hypre)

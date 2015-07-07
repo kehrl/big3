@@ -1,28 +1,39 @@
-# This script contains all elevation products for Helheim, so that we are consistent
+# This script contains all elevation products for Helheim and Kanger, so that we are consistent
 # between scripts. 
 
 # Functions:
 # gimp_pts(xpts,ypts,verticaldatum): gimp elevations at xpts,ypts
-# gimp_grid(xmin,xmax,ymin,ymax,verticaldatum): gimp elevations in the grid specified by
+# gimp_grid(xmin,xmax,ymin,ymax,glacier,verticaldatum): gimp elevations in the grid specified by
 #	xmin,xmax,ymin,ymax
-# atm(year,verticaldatum): atm data for chosen year or "all" years
+# atm(year,verticaldatum): ATM data for chosen year or "all" years
+# atm(xpts,ypts,years,maxdist,verticaldatum): get ATM data at specific points given by xpts, ypts
 
 import os
 import sys
 import numpy as np
 sys.path.append(os.path.join(os.getenv("HOME"),"Code/Util/Modules"))
-sys.path.append(os.path.join(os.getenv("HOME"),"Code/Helheim/Tools"))
-import helheim_icefronts
+sys.path.append(os.path.join(os.getenv("HOME"),"Code/BigThreeGlaciers/Tools"))
+import icefronts
 import coords, geotiff
 import scipy.interpolate, jdcal, dist
 
-def gimp_pts(xpts,ypts,verticaldatum):
-  file = os.path.join(os.getenv("HOME"),'Data/Elevation/Gimp/gimpdem3_1.tif')
+def gimp_pts(xpts,ypts,glacier,verticaldatum):
+  
+  if glacier == 'Helheim':
+    file = os.path.join(os.getenv("HOME"),'Data/Elevation/Gimp/gimpdem3_1.tif')
+  elif glacier == 'Kanger':
+    file = os.path.join(os.getenv("HOME"),'Data/Elevation/Gimp/gimpdem4_2.tif')
+  else: 
+    sys.exit("Unknown glacier.")
+  
+  # Read GIMP DEM
   [x,y,z]=geotiff.read(file)
   
+  # Interpolate DEM to points
   f = scipy.interpolate.RegularGridInterpolator((y,x),z,method="linear")
   zs = f(np.column_stack([ypts,xpts]))
   
+  # Choose vertical datum
   if verticaldatum == "ellipsoid":
     elev = zs
   elif verticaldatum == "geoid":
@@ -33,9 +44,16 @@ def gimp_pts(xpts,ypts,verticaldatum):
   
   return elev
   
-def gimp_grid(xmin,xmax,ymin,ymax,verticaldatum):
+def gimp_grid(xmin,xmax,ymin,ymax,glacier,verticaldatum):
   
-  file = os.path.join(os.getenv("HOME"),'Data/Elevation/Gimp/gimpdem3_1.tif')
+  if glacier == 'Helheim':
+    file = os.path.join(os.getenv("HOME"),'Data/Elevation/Gimp/gimpdem3_1.tif')
+  elif glacier == 'Kanger':
+    file = os.path.join(os.getenv("HOME"),'Data/Elevation/Gimp/gimpdem4_2.tif')
+  else: 
+    sys.exit("Unknown glacier.")
+    
+  # Get GIMP DEM
   [x,y,zs]=geotiff.read(file,xmin,xmax,ymin,ymax)
   
   if verticaldatum == "ellipsoid":
@@ -51,63 +69,41 @@ def gimp_grid(xmin,xmax,ymin,ymax,verticaldatum):
 def atm(years,verticaldatum):
   import coords
   
-  atm = {}
-  
-  ATMDIR = os.path.join(os.getenv("HOME"),'Data/Elevation/ATM/Helheim/')
+  # Directory for ATM
+  ATMDIR = os.path.join(os.getenv("HOME"),'Data/Elevation/ATM/HelheimKanger/')
   DIRs = os.listdir(ATMDIR)
   
-  if (not years) or (years=='all'):
-    for DIR in DIRs:
-      if DIR.startswith('2') or DIR.startswith('1'):
-        x=[]
-        y=[]
-        z=[]
-        os.chdir(ATMDIR+DIR)
-        files = os.listdir(ATMDIR+DIR)
-        for file in files:
-          if (file.endswith('nadir5seg')) or (file.endswith('nadir3seg')):
-            data = np.loadtxt(file)
-          elif (file.endswith('nadir3seg_50pt.csv')):
-            data = np.loadtxt(file,skiprows=10)
+  atm = {}
+  
+  # Load only desired data
+    
+  for DIR in DIRs:
+    if (DIR.startswith('2') or DIR.startswith('1')) and ((years == 'all') or (DIR[0:4] in years)):
+      print "Loading",DIR,"..."
+      x=[]
+      y=[]
+      z=[]
+      os.chdir(ATMDIR+DIR)
+      files = os.listdir(ATMDIR+DIR)
+      for file in files:
+        if 'nadir' in file and not(file.endswith('.xml')):
+          try:
+            data=np.loadtxt(file,comments='#')
+          except:
+            data=np.loadtxt(file,comments='#',delimiter=',')
           xfile = data[:,2]
           yfile = data[:,1]
           zfile = data[:,3]
-          x=np.hstack([x,xfile])
-          y=np.hstack([y,yfile])
-          z=np.hstack([z,zfile])
-        print "Loading ", DIR, "..."
-        x2,y2 = coords.convert(x-360,y,4326,3413)
-        if DIR[0:4] in atm.keys():
-          print "Already data from that year, consider changing how you have labeled the directories"
-        else:
-          atm[DIR] = np.column_stack([x2,y2,z])
-  else:
-    for DIR in DIRs:
-      if DIR.startswith(years):
-        x=[]
-        y=[]
-        z=[]
-        os.chdir(ATMDIR+DIR)
-        files = os.listdir(ATMDIR+DIR)
-        for file in files:
-          if 'nadir' in file:
-            try:
-              data=np.loadtxt(file,comments='#')
-            except:
-              data=np.loadtxt(file,comments='#',delimiter=',')
-              
-            xfile = data[:,2]
-            yfile = data[:,1]
-            zfile = data[:,3]
-            x=np.hstack([x,xfile])
-            y=np.hstack([y,yfile])
-            z=np.hstack([z,zfile])
-        x2,y2 = coords.convert(x-360,y,4326,3413)
-        if DIR[0:4] in atm.keys():
-          print "Already data from that year, consider changing how you have labeled the directories"
-        else:
-          atm[DIR] = np.column_stack([x2,y2,z])
+          x = np.hstack([x,xfile])
+          y = np.hstack([y,yfile])
+          z = np.hstack([z,zfile])
+      x2,y2 = coords.convert(x-360,y,4326,3413)
+      if DIR[0:4] in atm.keys():
+        print "Already data from that year, consider changing how you have labeled the directories"
+      else:
+        atm[DIR] = np.column_stack([x2,y2,z])
   
+  # Choose vertical datum
   if verticaldatum=='geoid':
     for key in atm.keys():
       geoidheight = coords.geoidheight(atm[key][:,0],atm[key][:,1])
@@ -119,9 +115,27 @@ def atm(years,verticaldatum):
     
   return atm
 
-def atm_at_pts(x,y,years):
-
-  atm = atm(years)
+def atm_at_pts(xpts,ypts,years,maxdist,verticaldatum):
+  
+  # Get ATM data
+  data = atm(years,verticaldatum)
+  
+  # Set up output as dictionary
+  pts = {}
+  
+  keys = data.keys()
+  R = len(xpts)
+  for key in keys:
+    z = np.zeros(R); z[:] = 'NaN'
+    d = np.zeros(R); d[:] = 'NaN'
+    for i in range(0,R):
+      ind = np.argmin((xpts[i]-data[key][:,0])**2 + (ypts[i]-data[key][:,1])**2)
+      xatm = data[key][ind,0]
+      yatm = data[key][ind,1]
+      d[i] = dist.between_pts(xpts[i],ypts[i],xatm,yatm)
+      if d[i] < maxdist:
+        z[i] = data[key][ind,2]
+    pts[key] = np.column_stack([xpts,ypts,z,d])
   
   return pts
    
@@ -179,7 +193,7 @@ def worldview_grid(years,resolution,verticaldatum):
     
   return worldview
 
-def worldview_pts(xpts,ypts,resolution,years,verticaldatum):
+def worldview_pts(xpts,ypts,glacier,resolution,years,verticaldatum):
 
   # Worldview data
   WVDIR = os.path.join(os.getenv("HOME"),'/Users/kehrl/Data/Elevation/Worldview/Helheim/')
@@ -188,7 +202,7 @@ def worldview_pts(xpts,ypts,resolution,years,verticaldatum):
   
   # Load ice front positions so we can toss data in front of terminus
   dists = dist.transect(xpts,ypts)
-  term_values, term_time = helheim_icefronts.distance_along_flowline(xpts,ypts,dists,'icefront')
+  term_values, term_time = icefronts.distance_along_flowline(xpts,ypts,dists,'icefront',glacier)
   
   dates=[]
   for DIR in DIRs:

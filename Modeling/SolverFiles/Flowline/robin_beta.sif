@@ -164,14 +164,14 @@ Solver 3
   flow model = Stokes
   
   Linear System Solver = Direct
-  Linear System Direct Method = mumps
+  Linear System Direct Method = MUMPS
   mumps percentage increase working space = integer 60
-  ! Linear System Solver = Iterative
-  ! Linear System Iterative Method = GMRES
-  ! Linear System GMRES Restart = 100
-  ! Linear System Preconditioning= ILU2
-  ! Linear System Convergence Tolerance= 1.0e-08
-  ! Linear System Max Iterations = 1000
+  !Linear System Solver = Iterative
+  !Linear System Iterative Method = GMRES
+  !Linear System GMRES Restart = 100
+  !Linear System Preconditioning= ILU2
+  !Linear System Convergence Tolerance= 1.0e-08
+  !Linear System Max Iterations = 1000
 
 !
   Nonlinear System Max Iterations = Integer 1000
@@ -217,9 +217,9 @@ Solver 4
 
   procedure = "FlowSolve" "FlowSolver"
 
-  !Linear System Solver = Direct
-  !Linear System Direct Method =  mumps
-  !Mumps percentage increase working space = integer 60
+  ! Linear System Solver = Direct
+  ! Linear System Direct Method =  mumps
+  ! Mumps percentage increase working space = integer 60
   Linear System Solver = Iterative
   Linear System Iterative Method = GMRES
   Linear System GMRES Restart = 100
@@ -343,8 +343,14 @@ Solver 10
   
   Flow Solver Name = String "Flow Solution"
   Stress Variable Name = String "Stress"
-  Linear System Solver = Direct         
-  Linear System Direct Method = mumps
+  ! Linear System Solver = Direct         
+  ! Linear System Direct Method = mumps
+  Linear System Solver = Iterative
+  Linear System Iterative Method = GMRES
+  Linear System GMRES Restart = 100
+  Linear System Preconditioning= ILU2
+  Linear System Convergence Tolerance= 1.0e-08
+  Linear System Max Iterations = 1000
 End
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

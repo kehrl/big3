@@ -15,11 +15,11 @@ import sys
 import scipy.interpolate
 import numpy as np
 sys.path.append(os.path.join(os.getenv("HOME"),"Code/Util/Modules"))
-sys.path.append(os.path.join(os.getenv("HOME"),"Code/Helheim/Tools"))
-import geodat, helheim_icefronts
+sys.path.append(os.path.join(os.getenv("HOME"),"Code/BigThreeGlaciers/Tools"))
+import geodat, icefronts
 
 #########################################################################################
-def velocity_at_eulpoints(xpt,ypt):
+def velocity_at_eulpoints(xpt,ypt,glacier):
 
   # Finds velocity at nearest gridcell to xpt, ypt for all velocity maps. Output is 
   # velocity at xpt, ypt through time.
@@ -29,8 +29,9 @@ def velocity_at_eulpoints(xpt,ypt):
   except:
     n = 0
 
-  DIR_TSX = os.path.join(os.getenv("HOME"),"Data/Velocity/TSX/Helheim/")
-  DIR_RADARSAT = os.path.join(os.getenv("HOME"),"Data/Velocity/RADARSAT/Helheim/")
+  
+  DIR_TSX = os.path.join(os.getenv("HOME"),"Data/Velocity/TSX/"+glacier+"/")
+  DIR_RADARSAT = os.path.join(os.getenv("HOME"),"Data/Velocity/RADARSAT/"+glacier+"/")
 
   #################
   # LOAD TSX Data #
@@ -128,20 +129,20 @@ def velocity_at_eulpoints(xpt,ypt):
   return vpt_all,tpt_all, ept_all
   
 #########################################################################################
-def velocity_along_flowline(xf,yf,dists):      
+def velocity_along_flowline(xf,yf,dists,glacier):      
   
   # Find velocity along flowline with coordinates xf, yf. The variable "dists" (distance 
   # along flowline) is used to determine which points to throw out in front if the ice front.
   # The output is velocity along the flowline through time.
   
-  DIR_TSX = os.path.join(os.getenv("HOME"),"Data/Velocity/TSX/Helheim/")
-  DIR_RADARSAT = os.path.join(os.getenv("HOME"),"Data/Velocity/RADARSAT/Helheim/")
+  DIR_TSX = os.path.join(os.getenv("HOME"),"Data/Velocity/TSX/"+glacier+"/")
+  DIR_RADARSAT = os.path.join(os.getenv("HOME"),"Data/Velocity/RADARSAT/"+glacier+"/")
   
   ###############################################################################
   # Load terminus profiles so we can cutoff velocities in front of the terminus #
   ###############################################################################
 
-  term_values, term_time = helheim_icefronts.distance_along_flowline(xf,yf,dists,'icefront')
+  term_values, term_time = icefronts.distance_along_flowline(xf,yf,dists,'icefront',glacier)
 
   #################
   # LOAD TSX Data #
@@ -233,8 +234,7 @@ def velocity_along_flowline(xf,yf,dists):
   time_radarsat = times
   velocities_radarsat = velocities
   term_radarsat = termini
-  
-  print np.shape(velocities_tsx), np.shape(velocities_radarsat)    	  
+      	  
   tpt_all = np.row_stack([time_radarsat,time_tsx])
   term_all = np.row_stack([term_radarsat,term_tsx])
   vpt_all = np.row_stack([velocities_radarsat,velocities_tsx]).T
@@ -403,6 +403,48 @@ def velocity_at_lagpoints(xf,yf,dists,pts):
   dists_all = dists_all[sortind[:,0],:]
       	  
   return vpt_all,tpt_all, ept_all, dists_all, xpt_all, ypt_all 
+
+#########################################################################################
+def variability(x,y,time1,time2,glacier):
+
+  DIR_TSX = os.path.join(os.getenv("HOME"),"Data/Velocity/TSX/"+glacier+"/")
+  DIR_RADARSAT = os.path.join(os.getenv("HOME"),"Data/Velocity/RADARSAT/"+glacier+"/")
+
+  #################
+  # LOAD TSX Data #
+  #################
+
+  DIRS=os.listdir(DIR_TSX)
+  tpt=[]
+  
+  # Get number of velocity files
+  m=0
+  for DIR in DIRS:
+    if DIR.startswith('track'):
+      m = m+1
+
+  vpt=np.zeros([m,n])
+  tpt=np.zeros([m,1])
+  ept=np.zeros([m,n])
+  count=0
+  for j in range(0,len(DIRS)):
+    DIR=DIRS[j]
+    if DIR.startswith('track'):
+      infile=DIR_TSX+DIR
+      x1,y1,v1,vx1,vy1,ex1,ey1,time=geodat.readvelocity(infile+"/mosaicOffsets")
+      tpt[count]=time
+      
+      x2,y2
+        
+      count = count + 1
+  
+  # Sort arrays by time
+  tpt_tsx = tpt
+  ept_tsx = ept
+  vpt_tsx = vpt
+ 
+
+  return x,y,meanvel,change,numpts
 
 #########################################################################################
 def divergence_at_eulpoints(xpt,ypt):
@@ -648,7 +690,7 @@ def inversion_3D(x,y,file_velocity_in,dir_velocity_out):
 
   return vx,vy
 
-def inversion_2D(x,y,d,file_velocity_in,dir_velocity_out):
+def inversion_2D(x,y,d,glacier,file_velocity_in,dir_velocity_out):
   import os
   import sys
   import numpy as np

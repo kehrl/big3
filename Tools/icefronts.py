@@ -9,19 +9,22 @@ import jdcal
 from shapely.geometry import LineString
 import numpy as np
 
-def distance_along_flowline(x,y,dists,type):
+def distance_along_flowline(x,y,dists,type,glacier):
 
   if type is 'icefront':
-    DIRI=os.path.join(os.getenv("HOME"),"Data/ShapeFiles/IceFronts/Helheim/")
+    DIRI=os.path.join(os.getenv("HOME"),"Data/ShapeFiles/IceFronts/"+glacier+"/")
   elif type is 'rift':
-    DIRI=os.path.join(os.getenv("HOME"),"Data/ShapeFiles/Rifts/Helheim/")
+    DIRI=os.path.join(os.getenv("HOME"),"Data/ShapeFiles/Rifts/"+glacier+"/")
 
   files = os.listdir(DIRI)
 
   terminus_val = []
   terminus_time = []
-
-  lineflow = LineString(np.row_stack([np.column_stack([x,y]),[315715,-2577820]]))
+  if glacier == "Helheim":
+    lineflow = LineString(np.row_stack([np.column_stack([x,y]),[315715,-2577820]]))
+  else:
+    lineflow = LineString(np.column_stack([x,y]))
+    
   n = 0
   for file in files:
     if file.endswith('.shp') and (not "moon" in file):
@@ -30,7 +33,7 @@ def distance_along_flowline(x,y,dists,type):
       shapes = sf.shapes()
       termpts = np.array(shapes[0].points[:])
       lineterm = LineString(termpts)
-    
+
       # Find intersection
       intersect = (lineflow.intersection(lineterm))
       if not(intersect.is_empty):
@@ -65,12 +68,12 @@ def distance_along_flowline(x,y,dists,type):
   
   return terminus_val, terminus_time
 
-def load_all(time1,time2,type):
+def load_all(time1,time2,type,glacier):
   
   if type is 'icefront':
-    DIRI=os.path.join(os.getenv("HOME"),"Data/ShapeFiles/IceFronts/Helheim/")
+    DIRI=os.path.join(os.getenv("HOME"),"Data/ShapeFiles/IceFronts/"+glacier+"/")
   elif type is 'rift':
-    DIRI=os.path.join(os.getenv("HOME"),"Data/ShapeFiles/Rifts/Helheim/")
+    DIRI=os.path.join(os.getenv("HOME"),"Data/ShapeFiles/Rifts/"+glacier+"/")
 
   files = os.listdir(DIRI)
 
@@ -97,9 +100,8 @@ def load_all(time1,time2,type):
 
   n = len(shapefiles)
 
-
-  termx = np.zeros([150,n])
-  termy = np.zeros([150,n])
+  termx = np.zeros([300,n])
+  termy = np.zeros([300,n])
   termx[:,:]= 'NaN'
   termy[:,:]= 'NaN'
   for i in range(0,n):
