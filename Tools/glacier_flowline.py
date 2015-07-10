@@ -24,8 +24,10 @@ def load(glacier):
   d = dist.transect(flowline[:,0],flowline[:,1])
 
   # Set uniform spacing between nodes along flowline
-  dists = np.linspace(0,np.max(d),np.max(d)/100)
-  x = np.interp(dists,d[:,0],flowline[:,0])
-  y = np.interp(dists,d[:,0],flowline[:,1])
+  dists_old = np.linspace(0,np.max(d),np.max(d)/10)
+  x = np.interp(dists_old,d,flowline[:,0])
+  y = np.interp(dists_old,d,flowline[:,1])
+  
+  dists = dist.transect(x,y)
 
   return x,y,dists
