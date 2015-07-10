@@ -55,8 +55,8 @@ x,y,dists = glacier_flowline.load(glacier)
 # Get ice fronts #
 ##################
 
-terminus_val, terminus_time = icefronts.distance_along_flowline(x,y,dists,'icefront',glacier)
-rift_val, rift_time = icefronts.distance_along_flowline(x,y,dists,'rift',glacier)
+terminus_val, terminus_time = icefronts.distance_along_flowline(x,y,dists,glacier,type='icefront')
+rift_val, rift_time = icefronts.distance_along_flowline(x,y,dists,glacier,type='rift')
 
 # Chop to desired time interval
 indt = np.where((terminus_time > time1) & (terminus_time < time2))
