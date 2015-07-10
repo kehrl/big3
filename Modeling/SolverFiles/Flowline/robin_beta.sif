@@ -165,13 +165,7 @@ Solver 3
   
   Linear System Solver = Direct
   Linear System Direct Method = MUMPS
-  mumps percentage increase working space = integer 60
-  !Linear System Solver = Iterative
-  !Linear System Iterative Method = GMRES
-  !Linear System GMRES Restart = 100
-  !Linear System Preconditioning= ILU2
-  !Linear System Convergence Tolerance= 1.0e-08
-  !Linear System Max Iterations = 1000
+  Mumps Percentage Increase Working Space = Integer 60
 
 !
   Nonlinear System Max Iterations = Integer 1000
