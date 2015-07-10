@@ -9,7 +9,7 @@ import jdcal
 from shapely.geometry import LineString
 import numpy as np
 
-def distance_along_flowline(x,y,dists,type,glacier):
+def distance_along_flowline(x,y,dists,glacier,type='icefront'):
 
   if type is 'icefront':
     DIRI=os.path.join(os.getenv("HOME"),"Data/ShapeFiles/IceFronts/"+glacier+"/")

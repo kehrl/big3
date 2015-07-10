@@ -1,12 +1,12 @@
 #Various scripts for processing and pulling Helheim velocity data:
-
-## velocity_at_eulpoints(xpt,ypt): get velocity magnitude timeseries at an Eulerian point
-## divergence_at_eulpoints(xpt,ypt): get divx,divy at Eulerian points through time
-## velocity_at_lagpoints(x,y,dists,pts): get velocity timeseries at a Lagrangian point
-## velocity_along_flowline(x,y): get velocity timeseries along flowline
-## inversion_3D(file_velocity_in, dir_velocity_out): output velocity data for ElmerSolver
-## inversion_2D(x,y,dist,file_velocity_in, dir_velocity_out): output velocity along flowline for ElmerSolver
-
+#
+# velocity_at_eulpoints(xpt,ypt): get velocity magnitude timeseries at an Eulerian point
+# divergence_at_eulpoints(xpt,ypt): get divx,divy at Eulerian points through time
+# velocity_at_lagpoints(x,y,dists,pts): get velocity timeseries at a Lagrangian point
+# velocity_along_flowline(x,y): get velocity timeseries along flowline
+# inversion_3D(file_velocity_in, dir_velocity_out): output velocity data for ElmerSolver
+# inversion_2D(x,y,dist,file_velocity_in, dir_velocity_out): output velocity along flowline for ElmerSolver
+#
 #LMK, UW, 04/01/2014
 
 import os
@@ -16,7 +16,7 @@ import scipy.interpolate
 import numpy as np
 sys.path.append(os.path.join(os.getenv("HOME"),"Code/Util/Modules"))
 sys.path.append(os.path.join(os.getenv("HOME"),"Code/BigThreeGlaciers/Tools"))
-import geodat, icefronts
+import geodat, icefronts, dist
 
 #########################################################################################
 def velocity_at_eulpoints(xpt,ypt,glacier):
@@ -29,7 +29,6 @@ def velocity_at_eulpoints(xpt,ypt,glacier):
   except:
     n = 0
 
-  
   DIR_TSX = os.path.join(os.getenv("HOME"),"Data/Velocity/TSX/"+glacier+"/")
   DIR_RADARSAT = os.path.join(os.getenv("HOME"),"Data/Velocity/RADARSAT/"+glacier+"/")
 
@@ -129,7 +128,7 @@ def velocity_at_eulpoints(xpt,ypt,glacier):
   return vpt_all,tpt_all, ept_all
   
 #########################################################################################
-def velocity_along_flowline(xf,yf,dists,glacier):      
+def velocity_along_flowline(xf,yf,glacier,cutoff='terminus'):      
   
   # Find velocity along flowline with coordinates xf, yf. The variable "dists" (distance 
   # along flowline) is used to determine which points to throw out in front if the ice front.
@@ -142,7 +141,8 @@ def velocity_along_flowline(xf,yf,dists,glacier):
   # Load terminus profiles so we can cutoff velocities in front of the terminus #
   ###############################################################################
 
-  term_values, term_time = icefronts.distance_along_flowline(xf,yf,dists,'icefront',glacier)
+  dists = dist.transect(xf,yf)
+  term_values, term_time = icefronts.distance_along_flowline(xf,yf,dists,glacier,'icefront')
 
   #################
   # LOAD TSX Data #
@@ -175,12 +175,14 @@ def velocity_along_flowline(xf,yf,dists,glacier):
       fv = scipy.interpolate.RegularGridInterpolator([y,x],v,method='nearest',bounds_error=False)
       
       # Find flowline coordinates behind terminus
-      terminus = np.interp(time,term_time,term_values)
-      ind = np.where(dists > terminus)
-        
+      
+      terminus = np.interp(time,term_time,term_values)  
       coords = np.array([yf,xf]).T
       velocities[count,:] = fv(coords)
-      velocities[count,ind] = 'nan'
+      
+      if cutoff == 'terminus':
+        ind = np.where(dists > terminus)
+        velocities[count,ind] = 'nan'
       
       termini[count]=terminus
       
@@ -220,13 +222,14 @@ def velocity_along_flowline(xf,yf,dists,glacier):
       
       # Find flowline coordinates behind terminus
       terminus = np.interp(time,term_time,term_values)
-      ind = np.where(dists > terminus)
-
+      
       coords = np.array([yf,xf]).T
-      
       velocities[count,:] = fv(coords)
-      velocities[count,ind] = 'nan'
       
+      if cutoff == 'terminus':
+        velocities[count,ind] = 'nan'
+        ind = np.where(dists > terminus)
+        
       termini[count]=terminus
 
       count = count + 1
@@ -245,22 +248,28 @@ def velocity_along_flowline(xf,yf,dists,glacier):
   term_sort = term_all[sortind[:,0]]
   vpt_sort = vpt_all[:,sortind[:,0]]  	  
     	  
+  # Print warning if removing points in front of ice front
+  if cutoff == 'terminus':
+    print "Cleaning up DEM points by removing points in front of ice front."
+    print "You can change this setting by setting `cutoff = 'none'.'"    	  
+    	  
   return vpt_sort,tpt_sort,term_sort
 
 
 ##########################################################################################
-def velocity_at_lagpoints(xf,yf,dists,pts):
+def velocity_at_lagpoints(xf,yf,pts,glacier):
   
   # Find velocity at lagrangian points with distance "pts" behind the glacier terminus.
   # Output is velocity through time.
   
-  DIR_TSX = os.path.join(os.getenv("HOME"),"Data/Velocity/TSX/Helheim/")
-  DIR_RADARSAT = os.path.join(os.getenv("HOME"),"Data/Velocity/RADARSAT/Helheim/")
+  DIR_TSX = os.path.join(os.getenv("HOME"),"Data/Velocity/TSX/"+glacier+"/")
+  DIR_RADARSAT = os.path.join(os.getenv("HOME"),"Data/Velocity/RADARSAT/"+glacier+"/")
   
   ###############################################################################
   # Load terminus profiles so we can calculate lagrangian points #
   ###############################################################################
-  term_values, term_time = helheim_icefronts.distance_along_flowline(xf,yf,dists,'icefront')
+  dists = dist.transect(xf,yf)
+  term_values, term_time = icefronts.distance_along_flowline(xf,yf,dists,glacier,'icefront')
 
   #################
   # LOAD TSX Data #
