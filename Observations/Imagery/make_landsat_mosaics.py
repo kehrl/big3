@@ -43,10 +43,11 @@ files = os.listdir(DIR+glacier+"/OriginalData/L4-5")
 files = os.listdir(DIR+glacier+"/OriginalData/L7")
 
 for file in files:
-  DIRFILE=DIR+glacier+"/OriginalData/L7/"+file+"/"
-  os.chdir(DIRFILE)
-  metafile = open(DIRFILE+file+"_MTL.txt","r")
-  lines = metafile.readlines()
+  if file.startswith("L"):
+    DIRFILE=DIR+glacier+"/OriginalData/L7/"+file+"/"
+    os.chdir(DIRFILE)
+    metafile = open(DIRFILE+file+"_MTL.txt","r")
+    lines = metafile.readlines()
     for line in lines:
       if line.startswith("    DATE_ACQUIRED"):
         year = str(line[20:24])
