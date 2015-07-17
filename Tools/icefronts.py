@@ -4,8 +4,10 @@
 # load_all: load all shapefiles into a big data array
 
 import os
+import sys
+sys.path.append(os.path.join(os.getenv("HOME"),"Code/Util/Modules"))
 import shapefile
-import jdcal
+import fracyear
 from shapely.geometry import LineString
 import numpy as np
 
@@ -28,7 +30,6 @@ def distance_along_flowline(x,y,dists,glacier,type='icefront'):
   n = 0
   for file in files:
     if file.endswith('.shp') and (not "moon" in file):
-      # Load shapefile
       sf = shapefile.Reader(DIRI+file)
       shapes = sf.shapes()
       termpts = np.array(shapes[0].points[:])
@@ -46,18 +47,9 @@ def distance_along_flowline(x,y,dists,glacier,type='icefront'):
     
         # Time of that terminus position
         if ("TSX" in file) or ("moon" in file):
-          year = float(file[0:4])
-          day = float(file[5:8])
-          day1 = jdcal.gcal2jd(year,1,1) # Get length of year
-          day2 = jdcal.gcal2jd(year+1,1,1)
-          terminus_time.append( year + day/(day2[1]+day2[0]-day1[0]-day1[1]))
+          terminus_time.append(fracyear.doy_to_fracyear(float(file[0:4]),float(file[5:8])))
         elif ("ASTER" in file) or ("Landsat" in file):
-          year = float(file[0:4])
-          day = jdcal.gcal2jd(year,float(file[5:7]),float(file[8:10]))
-          day2 = jdcal.gcal2jd(year,12,31)
-          day1 = jdcal.gcal2jd(year-1,12,31)
-          doy = day[1]+day[0]-day1[1]-day1[0]
-          terminus_time.append( year + doy/(day2[1]+day2[0]-day1[0]-day1[1]))
+          terminus_time.append(fracyear.date_to_fracyear(float(file[0:4]),float(file[5:7]),float(file[8:10])))
 
   terminus_time = np.array(terminus_time)
   terminus_val = np.array(terminus_val)
@@ -67,6 +59,19 @@ def distance_along_flowline(x,y,dists,glacier,type='icefront'):
   terminus_val = terminus_val[sortind]
   
   return terminus_val, terminus_time
+
+def position(x,y,dists,glacier,year,month,day):
+
+  # Get all terminus positions
+  terminus_val,terminus_time = distance_along_flowline(x,y,dists,glacier,type='icefront')
+
+  # Get fractional year
+  time = fracyear.date_to_fracyear(float(year),float(month),float(day))
+  
+  # Interpolate terminus position for the time
+  terminus = np.interp(time,terminus_time,terminus_val)
+
+  return terminus
 
 def load_all(time1,time2,type,glacier):
   
@@ -81,19 +86,11 @@ def load_all(time1,time2,type,glacier):
   termt = []
   for file in files:
     if file.endswith('.shp') and (not "moon" in file):
+      # Time of that terminus position
       if ("TSX" in file) or ("moon" in file):
-        year = float(file[0:4])
-        day = float(file[5:8])
-        day1 = jdcal.gcal2jd(year,1,1) # Get length of year
-        day2 = jdcal.gcal2jd(year+1,1,1)
-        time = ( year + day/(day2[1]+day2[0]-day1[0]-day1[1]))
+        time = fracyear.doy_to_fracyear(float(file[0:4]),float(file[5:8]))
       elif ("ASTER" in file) or ("Landsat" in file):
-        year = float(file[0:4])
-        day = jdcal.gcal2jd(year,float(file[5:7]),float(file[8:10]))
-        day2 = jdcal.gcal2jd(year,12,31)
-        day1 = jdcal.gcal2jd(year-1,12,31)
-        doy = day[1]+day[0]-day1[1]-day1[0]
-        time = ( year + doy/(day2[1]+day2[0]-day1[0]-day1[1]))
+        time = fracyear.date_to_fracyear(float(file[0:4]),float(file[5:7]),float(file[8:10]))
       if (time > time1) and (time < time2):
         termt.append(time)
         shapefiles.append(file)
@@ -113,5 +110,4 @@ def load_all(time1,time2,type,glacier):
     termx[0:len(termpts[:,0]),i] = termpts[:,0]
     termy[0:len(termpts[:,0]),i] = termpts[:,1]
       
-
   return termx, termy, termt
