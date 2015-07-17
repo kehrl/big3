@@ -13,9 +13,10 @@ import sys
 import numpy as np
 sys.path.append(os.path.join(os.getenv("HOME"),"Code/Util/Modules"))
 sys.path.append(os.path.join(os.getenv("HOME"),"Code/BigThreeGlaciers/Tools"))
-import icefronts
+import icefronts, glacier_flowline
 import coords, geotiff
-import scipy.interpolate, jdcal, dist
+import scipy.interpolate, dist, fracyear
+import scipy.signal as signal
 
 def gimp_at_pts(xpts,ypts,glacier,verticaldatum):
   
@@ -88,7 +89,6 @@ def atm(years,verticaldatum):
       os.chdir(ATMDIR+DIR)
       files = os.listdir(ATMDIR+DIR)
       for file in files:
-        print file
         if 'nadir' in file and not(file.endswith('.xml')):
           try:
             data=np.loadtxt(file,comments='#')
@@ -118,7 +118,7 @@ def atm(years,verticaldatum):
     
   return atm
 
-def atm_along_flowline(xpts,ypts,glacier,years='all',cutoff='none',maxdist=500,verticaldatum='geoid'):
+def atm_along_flowline(xpts,ypts,glacier,years='all',cutoff='none',maxdist=200,verticaldatum='geoid'):
   
   # Get ATM data
   data = atm(years,verticaldatum)
@@ -146,12 +146,7 @@ def atm_along_flowline(xpts,ypts,glacier,years='all',cutoff='none',maxdist=500,v
         
     if cutoff == 'terminus':
       # Get fractional year
-      year = float(date[0:4])
-      day = jdcal.gcal2jd(year,float(date[4:6]),float(date[6:8]))
-      day2 = jdcal.gcal2jd(year,12,31)
-      day1 = jdcal.gcal2jd(year-1,12,31)
-      doy = day[1]+day[0]-day1[1]-day1[0]
-      time = ( year + doy/(day2[1]+day2[0]-day1[0]-day1[1])) 
+      time = fracyear.date_to_fracyear(float(date[0:4]),float(date[4:6]),float(date[6:8]))
     
       # Get terminus position when ATM was collected
       termpos = np.interp(time,term_time,term_values)
@@ -167,12 +162,30 @@ def atm_along_flowline(xpts,ypts,glacier,years='all',cutoff='none',maxdist=500,v
     print "You can change this setting by setting `cutoff = 'none'.'"
 	    
   return pts
+  
+def atm_at_pts(xpts,ypts,glacier,years='all',maxdist=200,verticaldatum='geoid'):
+
+  # Get ATM data
+  atm = atm_along_flowline(xpts,ypts,glacier,years,'none',maxdist,verticaldatum)
+  
+  # Get dates
+  dates = np.sort(atm.keys())
+  time = np.zeros(len(dates))
+  zpts = np.zeros([len(dates),len(xpts)])
+  
+  # Load date and data
+  for i in range(0,len(dates)):
+    date = dates[i]
+    time[i] = fracyear.date_to_fracyear(float(date[0:4]),float(date[4:6]),float(date[6:8]))
+    zpts[i,:] = atm[date][:,2]
+
+  return zpts,time
    
 def worldview_grid(years,glacier,verticaldatum):
 
   # Inputs
   # years: year that you want data or "all" for all years 
-  # resolution: options are 2 or 32
+  # glacier: Kanger or Helheim
   # verticaldatum: ellipsoid or geoid
   
   # Output: dictionary including all available data for the chosen years, with the keys 
@@ -183,32 +196,50 @@ def worldview_grid(years,glacier,verticaldatum):
   WVDIR = os.path.join(os.getenv("HOME"),'/Users/kehrl/Data/Elevation/Worldview/HelheimKanger/')
   DIRs = os.listdir(WVDIR)
   
-  os.chdir(WVDIR)
-  
   # Find dates where we have data in the desired region
   dates=[]
   for DIR in DIRs:
-    if (DIR[0:8] not in dates) and DIR.startswith('2'):
-      xmin,xmax,ymin,ymax = geotiff.extent(DIR)
-      if (np.max(x) > xmin) and (np.min(x) < xmax) and (np.max(y) > ymin) and (np.min(y) > ymax):
-        if not(years) or (years=='all'):
-          dates.append(DIR[0:8])
-        else: 
-          if len(years) == 4:
-            if DIR[0:4] in years:
-              dates.append(DIR[0:8])
-          else:
-            if DIR[0:8] in years:
-              dates.append(DIR[0:8])
+    if (DIR[0:8] not in dates) and DIR.startswith('2') and DIR.endswith('.tif'):
+      if not(years) or (years=='all'):
+        dates.append(DIR[0:8])
+      else:
+        if len(years) == 4:
+          if DIR[0:4] in years:
+            dates.append(DIR[0:8])
+        else:
+          if DIR[0:8] in years:
+            dates.append(DIR[0:8])
  
+  extras = ['a','b','c','d','e','f']
+  # Load data
   for date in dates:
     for DIR in DIRs:
-      if DIR.startswith(date) and DIR.endswith('_32m_trans.tif'): 
-        print "Loading data from "+DIR+"\n"
-        x,y,zs = geotiff.read(DIR) 
+      if DIR.startswith(date) and DIR.endswith('_32m.tif'): 
+        x,y,zs = geotiff.read(WVDIR+DIR) 
         zs[zs==0] = 'NaN'
-        worldview[date]=x,y,zs
+        if date+extras[0] in worldview.keys():
+          n=0
+          for key in worldview.keys():
+            if key[0:8] == date:
+              n=n+1
+          worldview[date+extras[n]]=x,y,zs
+          
+        elif date in worldview.keys():
+          # In case we've already added that date, we need to add
+          # the data to another key.
+          xold,yold,zold = worldview[date]
+          
+          # Delete key
+          worldview.pop(date, None)
+          
+          # Add new keys
+          worldview[date+extras[0]] = xold,yold,zold
+          worldview[date+extras[1]] = x,y,zs
+        
+        else:
+          worldview[date]=x,y,zs
   
+  # Set elevation relative to vertical datum
   if verticaldatum == 'geoid':
      for key in worldview.keys():
        nx = len(worldview[key][0])
@@ -221,16 +252,13 @@ def worldview_grid(years,glacier,verticaldatum):
   else:
     print "Unknown datum, defaulting to ellipsoid"
   
-    
   return worldview
 
-def worldview_along_flowline(xpts,ypts,glacier,years='all',cutoff='terminus',verticaldatum='geoid'):
+def worldview_along_flowline(xpts,ypts,glacier,years='all',cutoff='terminus',verticaldatum='geoid',filt_len='none'):
 
   # Worldview data
   WVDIR = os.path.join(os.getenv("HOME"),"/Users/kehrl/Data/Elevation/Worldview/HelheimKanger/")
   DIRs = os.listdir(WVDIR)
-  
-  os.chdir(WVDIR)
   
   # Set up output dictionary
   pts = {}
@@ -245,7 +273,7 @@ def worldview_along_flowline(xpts,ypts,glacier,years='all',cutoff='terminus',ver
   dates=[]
   for DIR in DIRs:
     if (DIR[0:8] not in dates) and DIR.startswith('2') and DIR.endswith('.tif'):
-      xmin,xmax,ymin,ymax = geotiff.extent(DIR)
+      xmin,xmax,ymin,ymax = geotiff.extent(WVDIR+DIR)
       within = np.where((xpts > xmin) & (xpts < xmax) & (ypts > ymin) & (ypts < ymax))[0]
       if len(within) > 0:
         if not(years) or (years=='all'):
@@ -262,7 +290,7 @@ def worldview_along_flowline(xpts,ypts,glacier,years='all',cutoff='terminus',ver
     for DIR in DIRs:
       if DIR.startswith(date) and DIR.endswith('_32m.tif'): 
         #print "Loading data from "+DIR+"\n"
-        x,y,z = geotiff.read(DIR)
+        x,y,z = geotiff.read(WVDIR+DIR)
         z[z == 0] ='NaN'
 
         dem = scipy.interpolate.RegularGridInterpolator([y,x],z)
@@ -275,16 +303,12 @@ def worldview_along_flowline(xpts,ypts,glacier,years='all',cutoff='terminus',ver
           zpts[ind] = dem(np.column_stack([ypts[ind],xpts[ind]]))
           
           # Get fractional year
-          year = float(date[0:4])
-          day = jdcal.gcal2jd(year,float(date[4:6]),float(date[6:8]))
-          day2 = jdcal.gcal2jd(year,12,31)
-          day1 = jdcal.gcal2jd(year-1,12,31)
-          doy = day[1]+day[0]-day1[1]-day1[0]
-          time = ( year + doy/(day2[1]+day2[0]-day1[0]-day1[1])) 
+          time = fracyear.date_to_fracyear(float(date[0:4]),float(date[4:6]),float(date[6:8]))
+
           
           if cutoff == 'terminus':
             # Get terminus position at time of worldview image
-            termpos = np.interp(time,term_time,term_values[:,0])
+            termpos = np.interp(time,term_time,term_values)
             ind = np.where(dists > termpos)[0]
             zpts[ind] = 'NaN' 
           
@@ -312,6 +336,15 @@ def worldview_along_flowline(xpts,ypts,glacier,years='all',cutoff='terminus',ver
   else:
     print "Unknown datum, defaulting to height above ellipsoid"
   
+  # Filter if desired
+  if filt_len != 'none':
+    cutoff=(1/filt_len)/(1/((dists[1]-dists[0])*2))
+    b,a=signal.butter(4,cutoff,btype='low')
+    for key in pts.keys():
+      nonnan = np.where(~(np.isnan(pts[key][:,2])))[0]
+      if len(nonnan) > 20:
+        pts[key][nonnan,2]=signal.filtfilt(b,a,pts[key][nonnan,2])
+  
   return pts
 
 def worldview_at_pts(xpts,ypts,glacier,years='all',verticaldatum='geoid'):
@@ -324,12 +357,7 @@ def worldview_at_pts(xpts,ypts,glacier,years='all',verticaldatum='geoid'):
   
   for i in range(0,len(dates)):
     date = dates[i]
-    year = float(date[0:4])
-    day = jdcal.gcal2jd(year,float(date[4:6]),float(date[6:8]))
-    day2 = jdcal.gcal2jd(year,12,31)
-    day1 = jdcal.gcal2jd(year-1,12,31)
-    doy = day[1]+day[0]-day1[1]-day1[0]
-    time[i] = ( year + doy/(day2[1]+day2[0]-day1[0]-day1[1]))  
+    time[i] = fracyear.date_to_fracyear(float(date[0:4]),float(date[4:6]),float(date[6:8]))
     zpts[i,:] = wv[date][:,2]
 
   return zpts,time
@@ -343,12 +371,22 @@ def dem_continuous(xmin,xmax,ymin,ymax,glacier,date,verticaldatum):
   zs = np.zeros_like(zg)
   zs = np.array(zg)
   
-  # Load worldview DEMs 
-  if date == '20120624' and glacier == 'Helheim':
-    dates = ['20120624','20120513','20120520']
-    dates_backup = ['20110319','20110615']
-    wv = worldview_grid(dates,glacier,verticaldatum)
-    wv_backup = worldview_grid(dates_backup,glacier,verticaldatum)
+  # Select dates for worldview images 
+  if glacier == 'Helheim':
+    if date == '20120624':
+      dates = ['20120624','20120513','20120520']
+      dates_backup = ['20110319','20110615']
+  elif glacier == 'Kanger':
+    if date == '20110712':
+      dates = ['20110712','20110808','20110823']
+      dates_backup = ['20110824']
+  
+  # Load worldview images and update dates file in case there are multiple 
+  # DEMs for a single date
+  wv = worldview_grid(dates,glacier,verticaldatum)
+  wv_backup = worldview_grid(dates_backup,glacier,verticaldatum)  
+  dates = wv.keys()
+  dates_backup = wv_backup.keys()
   
   # Interpolate worldview DEMs onto gimp DEM
   xgrid,ygrid = np.meshgrid(xg,yg)
@@ -390,7 +428,7 @@ def dem_continuous(xmin,xmax,ymin,ymax,glacier,date,verticaldatum):
   # Find extent of primary worldview images  
   xmin_wv = np.min([np.min(wv[date][0]) for date in dates])
   xmax_wv = np.max([np.max(wv[date][0]) for date in dates])
-  ymin_wv = np.max([np.min(wv[date][1]) for date in dates])
+  ymin_wv = np.min([np.min(wv[date][1]) for date in dates])
   ymax_wv = np.max([np.max(wv[date][1]) for date in dates])
   
   xind1 = np.argmin(abs(xg-xmin_wv))
@@ -406,7 +444,24 @@ def dem_continuous(xmin,xmax,ymin,ymax,glacier,date,verticaldatum):
         zs[j,i] = np.mean(zwv_on_grid[j,i,nonnan])
       elif len(np.where(~(np.isnan(zwv_on_grid_backup[j,i,:])))[0]) > 0:
         nonnan = np.where(~(np.isnan(zwv_on_grid_backup[j,i,:])))[0]
-        zs[j,i] = zwv_on_grid_backup[j,i,nonnan]
-        print zg[j,i], zs[j,i]
+        zs[j,i] = np.mean(zwv_on_grid_backup[j,i,nonnan])
   
   return xg,yg,zs
+  
+def dem_continuous_flowline(xf,yf,glacier,date,verticaldatum='geoid'):
+
+  # Get grid dimensions for dem_continuous
+  xmin = np.min(xf)-10.0e3
+  xmax = np.max(xf)+10.0e3
+  ymin = np.min(yf)-10.0e3
+  ymax = np.max(yf)+10.0e3
+  
+  # Get grid for that date 
+  xg,yg,zgrid = dem_continuous(xmin,xmax,ymin,ymax,glacier,date,verticaldatum)
+  
+  # Interpolate grid onto flowline
+  dem = scipy.interpolate.RegularGridInterpolator([yg,xg],zgrid)
+   
+  zflow = dem((yf,xf)) 
+   
+  return zflow
