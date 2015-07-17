@@ -18,13 +18,13 @@ import elmer_read
 # Inputs #
 ##########
 
-MESHNAME='MorlighemNew_SmoothedVelocity'
+MESHNAME='DEM20120624H'
 
 glacier = 'Helheim'
 
 # Regularization parameters (lambda)
-#regpars=['1e11','1.5e11','1e12','1.5e12','1e13','1e14','1e15']
-regpars=["1e10"]
+regpars=['1e7','1e8','5e8','1e9','5e9','1e10','5e10','1e11','5e11','1e12','5e12','1e13','1e14','1e15']
+#regpars=["1e10"]
 #regpars=['1e12']
 
 # Directories
@@ -73,7 +73,7 @@ if not(os.path.isdir(DIRR)):
   os.makedirs(DIRR)
 
 fid = open(DIRS+"ELMERSOLVER_STARTINFO","w")
-fid.write('robin_beta_temp.sif')
+fid.write('temp.sif')
 fid.close()
 
 fid_info = open(DIRR+"summary.dat","a")
@@ -84,7 +84,7 @@ for regpar in regpars:
   n=n+1
   os.chdir(DIRS)
   fid1 = open('robin_beta.sif', 'r')
-  fid2 = open('robin_beta_temp.sif', 'w')
+  fid2 = open('temp.sif', 'w')
   lines=fid1.readlines()
   for line in lines:
     line=line.replace('$Lambda=1e10', '$Lambda={0}'.format(regpar))
