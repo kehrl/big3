@@ -13,11 +13,14 @@ import geotiff
 
 def cresis(year,glacier,verticaldatum):
 
-  if (glacier == 'Helheim') and (year == '2001'):
-
-    file = os.path.join(os.getenv("HOME"),"Data/Bed/Cresis/Helheim/helheim_20010521_good_wgs84.csv")
-    ind = range(3180,3297)
-    
+  if (year == '2001'):
+    if glacier == 'Helheim':
+      file = os.path.join(os.getenv("HOME"),"Data/Bed/Cresis/Helheim/helheim_20010521_good_wgs84.csv")
+      ind = range(3180,3297)
+    elif glacier == 'Kanger':
+      file = os.path.join(os.getenv("HOME"),"Data/Bed/Cresis/Kanger/Data_20010520_01.csv")
+      ind=range(4387,4475)
+      
     data=np.loadtxt(file,skiprows=1,delimiter=',')
     y=data[:,0]
     x=data[:,1]
@@ -25,7 +28,11 @@ def cresis(year,glacier,verticaldatum):
     x2,y2 = coords.convert(x,y,4326,3413)
     
     surf = elevation.atm('2001','ellipsoid')
-    zs = scipy.interpolate.griddata(surf['20010521'][:,0:2],surf['20010521'][:,2],np.column_stack([x2,y2]),method='nearest')
+    if glacier == 'Helheim':
+      zs = scipy.interpolate.griddata(surf['20010521'][:,0:2],surf['20010521'][:,2],np.column_stack([x2,y2]),method='nearest')
+    elif glacier == 'Kanger':
+      zs = scipy.interpolate.griddata(surf['20010520'][:,0:2],surf['20010520'][:,2],np.column_stack([x2,y2]),method='nearest')
+    
     zb = zs-H
   
   else:
