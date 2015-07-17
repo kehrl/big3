@@ -29,14 +29,15 @@ import geotiff
 
 glacier = 'Helheim'
 
-MESHNAME='16July2015'
+MESHNAME='DEM20120624H'
 file_mesh_out="Elmer"
 
 DIRS=os.path.join(os.getenv("HOME"),"Code/BigThreeGlaciers/Modeling/SolverFiles/Flowline/")
 DIRM=os.path.join(os.getenv("HOME"),"Models/"+glacier+"/Meshes/Flowline/"+MESHNAME+"/")
 DIRR=os.path.join(os.getenv("HOME"),"Models/"+glacier+"/Results/Flowline/"+MESHNAME+"/")
 
-lc=[50,100,200] # characteristic length scales for meshing
+lc=[20,100,300] # characteristic length scales for meshing
+#lc=[50,100,200] # characteristic length scales for meshing
 lc_d=[0,10000,30000] # transition points between different mesh sizes
 filt_len = 250.0 # length along flowline for filtering widths
 partitions="4" # Number of partitions
@@ -118,7 +119,7 @@ call(["ElmerGrid","2","4",file_mesh_out])
 ###################################################
 
 # Get velocity along flowline from velocity profiles
-velocity.inversion_2D(flowline[:,1],flowline[:,2],flowline[:,0],glacier,file_velocity_in,DIRM+"Inputs/")
+velocity.inversion_2D(flowline[:,1],flowline[:,2],flowline[:,0],glacier,file_velocity_in,DIRM+"Inputs/",filt_len)
 
 #################################
 # Print out temperature profile #
@@ -212,7 +213,7 @@ del fid
 ####################################################################################
 
 # Calculate width
-width = shapefactor.glacierwidth(flowline,file_rightside_in,file_leftside_in,filt_len)
+width = shapefactor.glacierwidth(flowline,file_rightside_in,file_leftside_in,filt_len*10.0)
 width = np.interp(flowlinenodes[:,0],flowline[:,0],width)
 thick = np.interp(flowlinenodes[:,0],flowline[:,0],flowline[:,4]-flowline[:,3])
 

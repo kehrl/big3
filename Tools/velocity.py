@@ -561,7 +561,7 @@ def inversion_3D(x,y,file_velocity_in,dir_velocity_out):
 
   return vx,vy
 
-def inversion_2D(x,y,d,glacier,file_velocity_in,dir_velocity_out):
+def inversion_2D(x,y,d,glacier,file_velocity_in,dir_velocity_out,filt_len='none'):
   import os
   import sys
   import numpy as np
@@ -590,10 +590,13 @@ def inversion_2D(x,y,d,glacier,file_velocity_in,dir_velocity_out):
   nonnan = np.where(~(np.isnan(vcomb)))
   vnonnan = np.interp(d,d[nonnan],vcomb[nonnan])
   
-  filt_len=5.0e3
-  cutoff=(1/filt_len)/(1/(np.diff(d[1:3])*2))
-  b,a=signal.butter(4,cutoff,btype='low')
-  filtered=signal.filtfilt(b,a,vnonnan)
+  # Filter velocities
+  if filt_len != 'none':
+    cutoff=(1/filt_len)/(1/(np.diff(d[1:3])*2))
+    b,a=signal.butter(4,cutoff,btype='low')
+    filtered=signal.filtfilt(b,a,vnonnan)
+  else:
+    filtered = np.array(vcomb)
 
   # Write out the velocity data
   fid = open(dir_velocity_out+"velocity.dat",'w')
