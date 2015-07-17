@@ -19,123 +19,92 @@ sys.path.append(os.path.join(os.getenv("HOME"),"Code/BigThreeGlaciers/Tools"))
 import geodat, icefronts, dist
 
 #########################################################################################
-def velocity_at_eulpoints(xpt,ypt,glacier):
+def velocity_at_eulpoints(xpt,ypt,glacier,data='all'):
 
   # Finds velocity at nearest gridcell to xpt, ypt for all velocity maps. Output is 
   # velocity at xpt, ypt through time.
 
+  # Select data type
+  if data == 'all':
+    data = ['TSX','RADARSAT']
+  elif data == 'RADARSAT':
+    data = ['RADARSAT']
+  elif data == 'TSX':
+    data = ['TSX']
+  else:
+    print "Unknown data type"
+
+  ###################
+  # LOAD velocities #
+  ###################
+  
+  # Find velocity files to be imported
+  files = []
+  for type in data:
+    if type == 'RADARSAT':
+      DIRTOP = os.path.join(os.getenv("HOME"),"Data/Velocity/RADARSAT/Greenland/")
+    elif type == 'TSX':
+      DIRTOP = os.path.join(os.getenv("HOME"),"Data/Velocity/TSX/"+glacier+"/")
+    
+    DIRs=os.listdir(DIRTOP)
+    for DIR in DIRs:
+      if DIR.startswith('track') or DIR.startswith('winter'):
+        files.append(DIRTOP+DIR)
+  
+  # Load velocities
+  m = len(files)
   try:
     n = len(xpt)
   except:
-    n = 0
-
-  DIR_TSX = os.path.join(os.getenv("HOME"),"Data/Velocity/TSX/"+glacier+"/")
-  DIR_RADARSAT = os.path.join(os.getenv("HOME"),"Data/Velocity/RADARSAT/"+glacier+"/")
-
-  #################
-  # LOAD TSX Data #
-  #################
-
-  DIRS=os.listdir(DIR_TSX)
-  tpt=[]
+    n = 1
   
-  # Get number of velocity files
-  m=0
-  for DIR in DIRS:
-    if DIR.startswith('track'):
-      m = m+1
-
-  vpt=np.zeros([m,n])
-  tpt=np.zeros([m,1])
-  ept=np.zeros([m,n])
+  velocities = np.zeros([m,n])
+  velocities[:,:] = 'nan'
+  error = np.zeros([m,n])
+  error[:,:] = 'nan'
+  times=np.zeros([m])
+  termini=np.zeros([m])
   count=0
-  for j in range(0,len(DIRS)):
-    DIR=DIRS[j]
-    if DIR.startswith('track'):
-      infile=DIR_TSX+DIR
-      x,y,v,vx,vy,ex,ey,time=geodat.readvelocity(infile+"/mosaicOffsets")
-      tpt[count]=time
+  for file in files:
+    x,y,v,vx,vy,ex,ey,time=geodat.readvelocity(file+"/mosaicOffsets")
+    if 'winter' in file:
+      time = float('20'+file[-2:])
+    times[count]=time
       
-      for i in range(0,n):
-        try:
-          xind = (abs(x-xpt[i])).argmin()
-          yind = (abs(y-ypt[i])).argmin()
-        except:
-      	  xind = (abs(x-xpt)).argmin()
-          yind = (abs(y-ypt)).argmin()
-
-        vpt[count,i] = v[yind,xind]
-        ept[count,i] = math.sqrt(ex[yind,xind]**2+ey[yind,xind]**2)
-        #print (abs(x-xpt)).min()
-        
-      count = count + 1
-  
-  # Sort arrays by time
-  tpt_tsx = tpt
-  ept_tsx = ept
-  vpt_tsx = vpt
-  
-  ######################
-  # Load RADARSAT data #
-  ######################
-  DIRS=os.listdir(DIR_RADARSAT)
-  
-  # Get number of velocity files
-  m=0
-  for DIR in DIRS:
-    if DIR.startswith('winter'):
-      m = m+1
-
-  vpt=np.zeros([m,n])
-  ept=np.zeros([m,n])
-  tpt=np.zeros([m,1])
-  count=0
-  for j in range(0,len(DIRS)):
-    DIR=DIRS[j]
-    if DIR.startswith('winter'):
-      infile=DIR_RADARSAT+DIR
-      x,y,v,vx,vy,ex,ey,time=geodat.readvelocity(infile+"/mosaicOffsets")
-      tpt[count]=time
+    # Set up grid for interpolation
+    fv = scipy.interpolate.RegularGridInterpolator([y,x],v,method='linear',bounds_error=False)
+    fex = scipy.interpolate.RegularGridInterpolator([y,x],ex,method='linear',bounds_error=False)
+    fey = scipy.interpolate.RegularGridInterpolator([y,x],ey,method='linear',bounds_error=False)
       
-      for i in range(0,n):
-        try:
-          xind = (abs(x-xpt[i])).argmin()
-          yind = (abs(y-ypt[i])).argmin()
-      	except:
-      	  xind = (abs(x-xpt)).argmin()
-          yind = (abs(y-ypt)).argmin()
-        
-        vpt[count,i] = v[yind,xind]
-        ept[count,i] = math.sqrt(ex[yind,xind]**2+ey[yind,xind]**2)
-        #print (abs(x-xpt)).min()
-        
-      count = count + 1
-  
-  tpt_radarsat = tpt
-  vpt_radarsat = vpt
-  ept_radarsat = ept
-  
-  tpt_all = np.row_stack([tpt_radarsat,tpt_tsx])
-  vpt_all = np.row_stack([vpt_radarsat,vpt_tsx])
-  ept_all = np.row_stack([ept_radarsat,ept_tsx])
-  
+    # Find velocities 
+    velocities[count,:] = fv(np.array([ypt,xpt]).T) 
+    error[count,:] = np.sqrt(fex(np.array([ypt,xpt]).T)**2+fey(np.array([ypt,xpt]).T)**2)        
+    
+    count = count + 1
+    
   # Sort arrays by time  
-  sortind=np.argsort(tpt_all,0)
-  tpt_all = tpt_all[sortind[:,0]]
-  vpt_all = vpt_all[sortind[:,0],:]
-  ept_all = ept_all[sortind[:,0],:]
+  sortind=np.argsort(times,0)
+  tpt_sort = times[sortind]
+  vpt_sort = velocities[sortind,:]
+  ept_sort = error[sortind,:]
       	  
-  return vpt_all,tpt_all, ept_all
+  return vpt_sort,tpt_sort,ept_sort
   
 #########################################################################################
-def velocity_along_flowline(xf,yf,glacier,cutoff='terminus'):      
+def velocity_along_flowline(xf,yf,glacier,cutoff='terminus',data='all'):      
   
   # Find velocity along flowline with coordinates xf, yf. The variable "dists" (distance 
   # along flowline) is used to determine which points to throw out in front if the ice front.
   # The output is velocity along the flowline through time.
   
-  DIR_TSX = os.path.join(os.getenv("HOME"),"Data/Velocity/TSX/"+glacier+"/")
-  DIR_RADARSAT = os.path.join(os.getenv("HOME"),"Data/Velocity/RADARSAT/"+glacier+"/")
+  if data == 'all':
+    data = ['TSX','RADARSAT']
+  elif data == 'RADARSAT':
+    data = ['RADARSAT']
+  elif data == 'TSX':
+    data = ['TSX']
+  else:
+    print "Unknown data type"
   
   ###############################################################################
   # Load terminus profiles so we can cutoff velocities in front of the terminus #
@@ -143,273 +112,165 @@ def velocity_along_flowline(xf,yf,glacier,cutoff='terminus'):
 
   dists = dist.transect(xf,yf)
   term_values, term_time = icefronts.distance_along_flowline(xf,yf,dists,glacier,'icefront')
-
-  #################
-  # LOAD TSX Data #
-  #################
-
-  DIRS=os.listdir(DIR_TSX)
-  tpt=[]
   
-  # Get number of velocity files
+  ###################
+  # Load velocities #
+  ###################
+  
+  # Find velocity files to be imported
+  files = []
+  for type in data:
+    if type == 'RADARSAT':
+      DIRTOP = os.path.join(os.getenv("HOME"),"Data/Velocity/RADARSAT/Greenland/")
+    elif type == 'TSX':
+      DIRTOP = os.path.join(os.getenv("HOME"),"Data/Velocity/TSX/"+glacier+"/")
+    
+    DIRs=os.listdir(DIRTOP)
+    for DIR in DIRs:
+      if DIR.startswith('track') or DIR.startswith('winter'):
+        files.append(DIRTOP+DIR)
+  
+  # Load velocities
+  m = len(files)
   n = len(xf)
-  m=0
-  for DIR in DIRS:
-    if DIR.startswith('track'):
-      m = m+1
-
+  
   velocities=np.zeros([m,n])
   velocities[:,:] = 'nan'
-  times=np.zeros([m,1])
-  termini=np.zeros([m,1])
+  times=np.zeros(m)
+  termini=np.zeros(m)
   count=0
-  for j in range(0,len(DIRS)):
-    DIR=DIRS[j]
-    if DIR.startswith('track'):
-      errors = np.zeros([m])
-      infile=DIR_TSX+DIR
-      x,y,v,vx,vy,ex,ey,time=geodat.readvelocity(infile+"/mosaicOffsets")
-      times[count]=time
+  for file in files:
+    x,y,v,vx,vy,ex,ey,time=geodat.readvelocity(file+"/mosaicOffsets")
+    if 'winter' in file:
+      time = float('20'+file[-2:])
+    times[count]=time
       
-      # Set up grid for interpolation
-      fv = scipy.interpolate.RegularGridInterpolator([y,x],v,method='nearest',bounds_error=False)
+    # Set up grid for interpolation
+    fv = scipy.interpolate.RegularGridInterpolator([y,x],v,method='linear',bounds_error=False)
+     
+    # Find velocities
+    velocities[count,:] = fv(np.array([yf,xf]).T) 
       
-      # Find flowline coordinates behind terminus
+    # Find flowline coordinates behind terminus 
+    terminus = np.interp(time,term_time,term_values)  
       
-      terminus = np.interp(time,term_time,term_values)  
-      coords = np.array([yf,xf]).T
-      velocities[count,:] = fv(coords)
+    if cutoff == 'terminus':
+      ind = np.where(dists > terminus)
+      velocities[count,ind] = 'nan'
       
-      if cutoff == 'terminus':
-        ind = np.where(dists > terminus)
-        velocities[count,ind] = 'nan'
+    termini[count]=terminus
       
-      termini[count]=terminus
-      
-      count = count + 1
-  
-  # Sort arrays by time
-  time_tsx = times
-  velocities_tsx = velocities
-  term_tsx = termini
-  del velocities, time, termini
-  
-  ######################
-  # Load RADARSAT data #
-  ######################
-  DIRS=os.listdir(DIR_RADARSAT)
-  
-  # Get number of velocity files
-  m=0
-  for DIR in DIRS:
-    if DIR.startswith('winter'):
-      m = m+1  
-
-  velocities=np.zeros([m,n])
-  velocities[:,:] = 'nan'
-  times=np.zeros([m,1])
-  termini = np.zeros([m,1])
-  count=0
-  for j in range(0,len(DIRS)):
-    DIR=DIRS[j]
-    if DIR.startswith('winter'):
-      infile=DIR_RADARSAT+DIR
-      x,y,v,vx,vy,ex,ey,time=geodat.readvelocity(infile+"/mosaicOffsets")
-      times[count]=time
-      
-      # Set up grid for interpolation
-      fv = scipy.interpolate.RegularGridInterpolator([y,x],v,method='nearest',bounds_error=False)
-      
-      # Find flowline coordinates behind terminus
-      terminus = np.interp(time,term_time,term_values)
-      
-      coords = np.array([yf,xf]).T
-      velocities[count,:] = fv(coords)
-      
-      if cutoff == 'terminus':
-        velocities[count,ind] = 'nan'
-        ind = np.where(dists > terminus)
-        
-      termini[count]=terminus
-
-      count = count + 1
-  
-  time_radarsat = times
-  velocities_radarsat = velocities
-  term_radarsat = termini
-      	  
-  tpt_all = np.row_stack([time_radarsat,time_tsx])
-  term_all = np.row_stack([term_radarsat,term_tsx])
-  vpt_all = np.row_stack([velocities_radarsat,velocities_tsx]).T
-  
+    count = count + 1
+    
   # Sort arrays by time  
-  sortind=np.argsort(tpt_all,0)
-  tpt_sort = tpt_all[sortind[:,0]]
-  term_sort = term_all[sortind[:,0]]
-  vpt_sort = vpt_all[:,sortind[:,0]]  	  
+  sortind=np.argsort(times,0)
+  tpt_sort = times[sortind]
+  term_sort = termini[sortind]
+  vpt_sort = velocities[sortind,:].T  	  
     	  
   # Print warning if removing points in front of ice front
   if cutoff == 'terminus':
-    print "Cleaning up DEM points by removing points in front of ice front."
+    print "Cleaning up velocity points by removing points in front of ice front."
     print "You can change this setting by setting `cutoff = 'none'.'"    	  
     	  
   return vpt_sort,tpt_sort,term_sort
 
 
 ##########################################################################################
-def velocity_at_lagpoints(xf,yf,pts,glacier):
+def velocity_at_lagpoints(xf,yf,pts,glacier,data='all'):
   
-  # Find velocity at lagrangian points with distance "pts" behind the glacier terminus.
+  # Find velocity at lagrangian points with distance "pts" behind (or in front) of the 
+  # glacier terminus.
   # Output is velocity through time.
   
-  DIR_TSX = os.path.join(os.getenv("HOME"),"Data/Velocity/TSX/"+glacier+"/")
-  DIR_RADARSAT = os.path.join(os.getenv("HOME"),"Data/Velocity/RADARSAT/"+glacier+"/")
+  # Select data type
+  if data == 'all':
+    data = ['TSX','RADARSAT']
+  elif data == 'RADARSAT':
+    data = ['RADARSAT']
+  elif data == 'TSX':
+    data = ['TSX']
+  else:
+    print "Unknown data type"
+
+  ###########################
+  # Load terminus positions #
+  ###########################
   
-  ###############################################################################
-  # Load terminus profiles so we can calculate lagrangian points #
-  ###############################################################################
   dists = dist.transect(xf,yf)
   term_values, term_time = icefronts.distance_along_flowline(xf,yf,dists,glacier,'icefront')
-
-  #################
-  # LOAD TSX Data #
-  #################
-
-  DIRS=os.listdir(DIR_TSX)
-  tpt=[]
   
-  # Get number of velocity files
-  n = len(xf)
-  m=0
-  for DIR in DIRS:
-    if DIR.startswith('track'):
-      m = m+1
-
-  velocities=np.zeros([m,len(pts)])
+  ###################
+  # LOAD velocities #
+  ###################
+  
+  # Find velocity files to be imported
+  files = []
+  for type in data:
+    if type == 'RADARSAT':
+      DIRTOP = os.path.join(os.getenv("HOME"),"Data/Velocity/RADARSAT/Greenland/")
+    elif type == 'TSX':
+      DIRTOP = os.path.join(os.getenv("HOME"),"Data/Velocity/TSX/"+glacier+"/")
+    
+    DIRs=os.listdir(DIRTOP)
+    for DIR in DIRs:
+      if DIR.startswith('track') or DIR.startswith('winter'):
+        files.append(DIRTOP+DIR)
+  
+  # Load velocities
+  m = len(files)
+  try:
+    n = len(pts)
+  except:
+    n = 1
+  
+  velocities = np.zeros([m,n])
   velocities[:,:] = 'nan'
-  times=np.zeros([m,1])
-  positions = np.zeros([m,len(pts)])
+  positions = np.zeros([m,n])
   positions[:,:] = 'nan'
-  xpts_all = np.zeros([m,len(pts)])
-  xpts_all[:,:] = 'NaN'
-  ypts_all = np.zeros([m,len(pts)])
-  ypts_all[:,:] = 'NaN'
-  error=np.zeros([m,len(pts)])
+  xpts_all = np.zeros([m,n])
+  ypts_all = np.zeros([m,n])
+  error = np.zeros([m,n])
+  error[:,:] = 'nan'
+  times=np.zeros([m])
+  termini=np.zeros([m])
   count=0
-  for j in range(0,len(DIRS)):
-    DIR=DIRS[j]
-    if DIR.startswith('track'):
-      errors = np.zeros([m])
-      infile=DIR_TSX+DIR
-      x,y,v,vx,vy,ex,ey,time=geodat.readvelocity(infile+"/mosaicOffsets")
-      times[count]=time
+  for file in files:
+    x,y,v,vx,vy,ex,ey,time=geodat.readvelocity(file+"/mosaicOffsets")
+    if 'winter' in file:
+      time = float('20'+file[-2:])
+    times[count]=time
       
-      # Set up grid for interpolation
-      fv = scipy.interpolate.RegularGridInterpolator([y,x],v,method='nearest',bounds_error=False)
-      fex = scipy.interpolate.RegularGridInterpolator([y,x],ex,method='nearest',bounds_error=False)
-      fey = scipy.interpolate.RegularGridInterpolator([y,x],ey,method='nearest',bounds_error=False)
-          
-      # Use terminus position to determine what points along the flowline we should be estimating velocities
-      terminus = np.interp(time,term_time,term_values)
-      flowdists = terminus-pts
+    # Set up grid for interpolation
+    fv = scipy.interpolate.RegularGridInterpolator([y,x],v,method='linear',bounds_error=False)
+    fex = scipy.interpolate.RegularGridInterpolator([y,x],ex,method='linear',bounds_error=False)
+    fey = scipy.interpolate.RegularGridInterpolator([y,x],ey,method='linear',bounds_error=False)
       
-      xpts = np.interp(flowdists,dists,xf)
-      ypts = np.interp(flowdists,dists,yf)
+    # Find terminus position
+    terminus = np.interp(time,term_time,term_values)
+    flowdists = terminus+pts
       
-      ind = np.where((xpts > np.min(x)) & (xpts < np.max(x)) & (ypts < np.max(y)) & (ypts > np.min(y)))
-      velocities[count,ind[0]] = fv(np.column_stack([ypts[ind[0]],xpts[ind]]))
-      positions[count,:] = flowdists
-      xpts_all[count,:] = xpts
-      ypts_all[count,:] = ypts
-      for i in range(0,len(ind[0])):
-        error[count,ind[0][i]]=math.sqrt(fex(np.column_stack([ypts[ind[0][i]],xpts[ind[0][i]]]))**2+fey(np.column_stack([ypts[ind[0][i]],xpts[ind[0][i]]]))**2)
-      
-      count = count + 1
-  
-  # Sort arrays by time
-  time_tsx = times
-  velocities_tsx = velocities
-  error_tsx = error
-  pos_tsx = positions
-  xpt_tsx = xpts_all
-  ypt_tsx = ypts_all
-  del velocities, time, positions, xpts_all, error, ypts_all
-  
-  ######################
-  # Load RADARSAT data #
-  ######################
-  DIRS=os.listdir(DIR_RADARSAT)
-  
-  # Get number of velocity files
-  m=0
-  for DIR in DIRS:
-    if DIR.startswith('winter'):
-      m = m+1
+    xpts = np.interp(flowdists,dists,xf)
+    ypts = np.interp(flowdists,dists,yf)
+    
+    # Find velocities 
+    velocities[count,:] = fv(np.array([ypts,xpts]).T)  
+    error[count,:] = np.sqrt(fex(np.array([ypts,xpts]).T)**2+fey(np.array([ypts,xpts]).T)**2)
+     
+    positions[count,:] = flowdists
+    xpts_all[count,:] = xpts
+    ypts_all[count,:] = ypts
 
-  velocities=np.zeros([m,len(pts)])
-  times=np.zeros([m,1])
-  error=np.zeros([m,len(pts)])
-  positions = np.zeros([m,len(pts)])
-  positions[:,:] = 'nan'
-  xpts_all = np.zeros([m,len(pts)])
-  xpts_all[:,:] = 'nan'
-  ypts_all = np.zeros([m,len(pts)])
-  ypts_all[:,:] = 'nan'
-  count=0
-  for j in range(0,len(DIRS)):
-    DIR=DIRS[j]
-    if DIR.startswith('winter'):
-      infile=DIR_RADARSAT+DIR
-      x,y,v,vx,vy,ex,ey,time=geodat.readvelocity(infile+"/mosaicOffsets")
-      times[count]=time
-      
-      # Set up grid for interpolation
-      fv = scipy.interpolate.RegularGridInterpolator([y,x],v,method='nearest',bounds_error=False)
-      fex = scipy.interpolate.RegularGridInterpolator([y,x],ex,method='nearest',bounds_error=False)
-      fey = scipy.interpolate.RegularGridInterpolator([y,x],ey,method='nearest',bounds_error=False)
-      
-      # Use terminus position to determine what points along the flowline we should be estimating velocities
-      terminus = np.interp(time,term_time,term_values)
-      flowdists = terminus - pts
-      
-      xpts = np.interp(flowdists,dists,xf)
-      ypts = np.interp(flowdists,dists,yf)
-      
-      ind = np.where((xpts > np.min(x)) & (xpts < np.max(x)) & (ypts < np.max(y)) & (ypts > np.min(y)))
-      velocities[count,ind[0]] = fv(np.column_stack([ypts[ind[0]],xpts[ind]]))
-      positions[count,:] = flowdists
-      xpts_all[count,:] = xpts
-      ypts_all[count,:] = ypts
-      
-      for i in range(0,len(ind[0])):
-        error[count,ind[0][i]]=math.sqrt(fex(np.column_stack([ypts[ind[0][i]],xpts[ind[0][i]]]))**2+fey(np.column_stack([ypts[ind[0][i]],xpts[ind[0][i]]]))**2)
-      
-      count = count + 1
-  
-  time_radarsat = times
-  velocities_radarsat = velocities
-  error_radarsat = error
-  pos_radarsat = positions
-  xpt_radarsat = xpts_all
-  ypt_radarsat = ypts_all
-
-  del positions,error,times,velocities,xpts_all,ypts_all
-
-  tpt_all = np.row_stack([time_radarsat,time_tsx])
-  vpt_all = np.row_stack([velocities_radarsat,velocities_tsx])
-  ept_all = np.row_stack([error_radarsat,error_tsx])
-  dists_all = np.row_stack([pos_radarsat,pos_tsx])
-  ypt_all = np.row_stack([ypt_radarsat,ypt_tsx])
-  xpt_all = np.row_stack([xpt_radarsat,xpt_tsx])
+    count = count + 1
   
   # Sort arrays by time  
-  sortind=np.argsort(tpt_all,0)
-  tpt_all = tpt_all[sortind[:,0]]
-  vpt_all = vpt_all[sortind[:,0],:]
-  ept_all = ept_all[sortind[:,0],:]
-  xpt_all = xpt_all[sortind[:,0],:]
-  ypt_all = ypt_all[sortind[:,0],:]
-  dists_all = dists_all[sortind[:,0],:]
+  sortind=np.argsort(times,0)
+  tpt_all = times[sortind]
+  vpt_all = velocities[sortind,:]
+  ept_all = error[sortind,:]
+  xpt_all = xpts_all[sortind,:]
+  ypt_all = ypts_all[sortind,:]
+  dists_all = positions[sortind,:]
       	  
   return vpt_all,tpt_all, ept_all, dists_all, xpt_all, ypt_all 
 
@@ -417,18 +278,18 @@ def velocity_at_lagpoints(xf,yf,pts,glacier):
 def variability(x,y,time1,time2,glacier):
 
   DIR_TSX = os.path.join(os.getenv("HOME"),"Data/Velocity/TSX/"+glacier+"/")
-  DIR_RADARSAT = os.path.join(os.getenv("HOME"),"Data/Velocity/RADARSAT/"+glacier+"/")
+  DIR_RADARSAT = os.path.join(os.getenv("HOME"),"Data/Velocity/RADARSAT/Greenland/")
 
   #################
   # LOAD TSX Data #
   #################
 
-  DIRS=os.listdir(DIR_TSX)
+  DIRs=os.listdir(DIR_TSX)
   tpt=[]
   
   # Get number of velocity files
   m=0
-  for DIR in DIRS:
+  for DIR in DIRs:
     if DIR.startswith('track'):
       m = m+1
 
@@ -436,8 +297,8 @@ def variability(x,y,time1,time2,glacier):
   tpt=np.zeros([m,1])
   ept=np.zeros([m,n])
   count=0
-  for j in range(0,len(DIRS)):
-    DIR=DIRS[j]
+  for j in range(0,len(DIRs)):
+    DIR=DIRs[j]
     if DIR.startswith('track'):
       infile=DIR_TSX+DIR
       x1,y1,v1,vx1,vy1,ex1,ey1,time=geodat.readvelocity(infile+"/mosaicOffsets")
@@ -466,19 +327,19 @@ def divergence_at_eulpoints(xpt,ypt):
   except:
     n = 0
 
-  DIR_TSX = os.path.join(os.getenv("HOME"),"Data/Velocity/TSX/Helheim/")
-  DIR_RADARSAT = os.path.join(os.getenv("HOME"),"Data/Velocity/RADARSAT/Helheim/")
+  DIR_TSX = os.path.join(os.getenv("HOME"),"Data/Velocity/TSX/"+glacier+"/")
+  DIR_RADARSAT = os.path.join(os.getenv("HOME"),"Data/Velocity/RADARSAT/Greenland/")
 
   #################
   # LOAD TSX Data #
   #################
 
-  DIRS=os.listdir(DIR_TSX)
+  DIRs=os.listdir(DIR_TSX)
   tpt=[]
   
   # Get number of velocity files
   m=0
-  for DIR in DIRS:
+  for DIR in DIRs:
     if DIR.startswith('track'):
       m = m+1
 
@@ -489,8 +350,8 @@ def divergence_at_eulpoints(xpt,ypt):
   vypt=np.zeros([m,n])
   tpt=np.zeros([m,1])
   count=0
-  for j in range(0,len(DIRS)):
-    DIR=DIRS[j]
+  for j in range(0,len(DIRs)):
+    DIR=DIRs[j]
     if DIR.startswith('track'):
       infile=DIR_TSX+DIR
       x,y,v,vx,vy,ex,ey,time=geodat.readvelocity(infile+"/mosaicOffsets")
@@ -534,11 +395,11 @@ def divergence_at_eulpoints(xpt,ypt):
   ######################
   # Load RADARSAT data #
   ######################
-  DIRS=os.listdir(DIR_RADARSAT)
+  DIRs=os.listdir(DIR_RADARSAT)
   
   # Get number of velocity files
   m=0
-  for DIR in DIRS:
+  for DIR in DIRs:
     if DIR.startswith('winter'):
       m = m+1
 
@@ -549,12 +410,13 @@ def divergence_at_eulpoints(xpt,ypt):
   vypt=np.zeros([m,n])
   tpt=np.zeros([m,1])
   count=0
-  for j in range(0,len(DIRS)):
-    DIR=DIRS[j]
+  for j in range(0,len(DIRs)):
+    DIR=DIRs[j]
     if DIR.startswith('winter'):
+      print "Loading ",dir
       infile=DIR_RADARSAT+DIR
       x,y,v,vx,vy,ex,ey,time=geodat.readvelocity(infile+"/mosaicOffsets")
-      tpt[count]=time
+      tpt[count] = float('20'+DIR[9:])
       
       for i in range(0,n):
         try:
