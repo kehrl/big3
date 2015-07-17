@@ -123,6 +123,7 @@ Body Force 1
   Lateral Friction Exponent = Real $(1.0/n)
   Flow Solver Name = String Flow Solution
   
+  ! Account for lateral convergence
   Pressure Load = Variable Coordinate 1
     Real Procedure "Flowline.so" "LateralConvergence"
 End
