@@ -29,18 +29,18 @@ import geotiff
 
 glacier = 'Helheim'
 
-MESHNAME='MorlighemNew_SmoothedVelocity'
+MESHNAME='16July2015'
 file_mesh_out="Elmer"
 
-DIRS=os.path.join(os.getenv("HOME"),"Code/Helheim/Modeling/SolverFiles/Flowline/")
-DIRM=os.path.join(os.getenv("HOME"),"Models/Helheim/Meshes/Flowline/"+MESHNAME+"/")
-DIRR=os.path.join(os.getenv("HOME"),"Models/Helheim/Results/Flowline/"+MESHNAME+"/")
+DIRS=os.path.join(os.getenv("HOME"),"Code/BigThreeGlaciers/Modeling/SolverFiles/Flowline/")
+DIRM=os.path.join(os.getenv("HOME"),"Models/"+glacier+"/Meshes/Flowline/"+MESHNAME+"/")
+DIRR=os.path.join(os.getenv("HOME"),"Models/"+glacier+"/Results/Flowline/"+MESHNAME+"/")
 
-lc=[50,100,500] # characteristic length scales for meshing
-lc_d=[0,10000,40000] # transition points between different mesh sizes
-width_filt_len = 2000.0 # length along flowline for filtering widths
+lc=[50,100,200] # characteristic length scales for meshing
+lc_d=[0,10000,30000] # transition points between different mesh sizes
+filt_len = 250.0 # length along flowline for filtering widths
 partitions="4" # Number of partitions
-layers=10 # Number of extrusions for mesh
+layers=5 # Number of extrusions for mesh
 
 # Shapefiles for flowline
 file_flowline_in = os.path.join(os.getenv("HOME"),"Data/ShapeFiles/Glaciers/Flowlines/Helheim/helheim_center_flowline")
@@ -52,12 +52,8 @@ file_rightside_in = os.path.join(os.getenv("HOME"),"Data/ShapeFiles/Glaciers/Flo
 file_bed = 'morlighem'
 file_bed_in2=os.path.join(os.getenv("HOME"),"Data/Bed/CreSIS/helheim_flightline_05212001_good_nsidc.dat")	
 
-## Surface inputs
-file_surf = 'gimp'
-file_wv_year = '2012' # year for worldview DEMs
-
-## File to use for terminus position
-file_terminus = os.path.join(os.getenv("HOME"),"Data/ShapeFiles/IceFronts/Helheim/2012-174_TSX.shp")
+## Date for DEM
+date = '20120624' # date for terminus DEM
 
 ## Velocity for inversion
 file_velocity_in=os.path.join(os.getenv("HOME"),"Data/Velocity/TSX/Helheim/track-27794/mosaicOffsets")
@@ -73,9 +69,9 @@ file_flowline_out = DIRM+"Inputs/flowline.dat"
 # Output files for measured velocities along flowline
 file_velocity_out=DIRM+"Inputs/velocity.dat"
 
-###################################################################################
-# Make box mesh and then use "MshGlacier" to add surface and bedrock topographies #
-###################################################################################
+#################
+# Make box mesh #
+#################
 
 # Make mesh directories
 if not(os.path.isdir(DIRM)):
@@ -88,43 +84,11 @@ flowline = mesh.shp_to_xy(file_flowline_in)
 del file_flowline_in
 
 # Create geo file for flowline
-flowline = mesh.xy_to_gmsh_box(glacier,flowline,file_terminus,DIRM,file_mesh_out,file_bed,file_surf,lc,lc_d,layers)
+flowline = mesh.xy_to_gmsh_box(glacier,flowline,DIRM,file_mesh_out,date,lc,lc_d,layers,filt_len)
 
-# Adjust bed DEM to 2001 bed profile near terminus
-## The present flowline runs off the Morlighem bed DEM, so we need to set the bed near the 
-## terminus to the bed elevation measurements from 2001
-ind = np.where(flowline[:,0]>75700)#83300)
-bed2001 = bed.cresis('2001',glacier,'geoid')
-flowline[ind,3]=np.interp(flowline[ind,1],bed2001[:,0],bed2001[:,2])
-
-## Save variable with rest of bed profile for grounded solver
-fid = open(DIRM+file_mesh_out+"_bed.dat",'w')
-fid.write('{} {} \n'.format(flowline[0,0]-100,flowline[0,3]))
-for i in range(0,len(flowline[:,0])):
-  fid.write('{} {} \n'.format(flowline[i,0],flowline[i,3]))
-fid.write('{} {} \n'.format(flowline[i,0]+100,flowline[i,3]))
-fid.close()
-
-# Adjust surface DEM to worldview DEM and then smooth it.
-wv_elev,times = elevation.worldview_pts(flowline[:,1],flowline[:,2],glacier,32,file_wv_year,'geoid')
-for i in range(0,len(flowline)):
-  ind = np.where(~(np.isnan(wv_elev[i,:])))
-  if len(ind[0]) > 0:
-    flowline[i,4] = np.mean(wv_elev[i,ind[0]])
-
-surf_filt_len=float(500)
-cutoff=(1/surf_filt_len)/(1/(np.diff(flowline[1:3,0])*2))
-b,a=signal.butter(4,cutoff,btype='low')
-flowline[:,4]=signal.filtfilt(b,a,flowline[:,4])
-
-#fid = open(DIRM+file_mesh_out+"_surf.dat",'w')
-#fid.write('{} {} \n'.format(flowline[0,0]-100,flowline[0,4]))
-#for i in range(0,len(flowline[:,0])):
-#  fid.write('{} {} \n'.format(flowline[i,0],flowline[i,4]))
-#fid.write('{} {} \n'.format(flowline[i,0]+100,flowline[i,4]))
-#fid.close()
-
-del lc, lc_d, file_bed, file_bed_in2, file_surf, bed2001
+##################################
+# Use MshGlacier to extrude mesh #
+##################################
 
 os.chdir(DIRM)
 # Create box mesh for extrusion through MshGlacier
@@ -138,6 +102,7 @@ call(["MshGlacier"])
 ##################
 # Partition Mesh #
 ##################
+
 print "\n## Partitioning mesh into ", partitions, "parts"
 os.chdir(DIRM)
 call(["ElmerGrid","2","2",file_mesh_out,"dir","-metis",partitions,"0"])
@@ -145,6 +110,7 @@ call(["ElmerGrid","2","2",file_mesh_out,"dir","-metis",partitions,"0"])
 ##########################################
 # Update the Gmsh file for visualization #
 ##########################################
+
 call(["ElmerGrid","2","4",file_mesh_out])
 
 ###################################################
@@ -157,6 +123,7 @@ velocity.inversion_2D(flowline[:,1],flowline[:,2],flowline[:,0],glacier,file_vel
 #################################
 # Print out temperature profile #
 #################################
+
 # Get modeled temperatures from Kristin's work
 kristin_file=os.path.join(os.getenv("HOME"),"Data/Climate/IceTemperature/Helheim/helheim_TA.xyz")
 tempdata=np.genfromtxt(kristin_file,delimiter=',')
@@ -212,7 +179,6 @@ del dist1,dist2,xdata,ydata,surf,bed,height,ndata,T,A
 #####################################
 # Print out bedrock for elmersolver #
 #####################################
-print "\n## Printing out bedrock from mesh file for grounded solver ##"
 
 meshnode=np.genfromtxt(DIRM+file_mesh_out+"/mesh.nodes")
 
@@ -246,12 +212,11 @@ del fid
 ####################################################################################
 
 # Calculate width
-width = shapefactor.glacierwidth(flowline,file_rightside_in,file_leftside_in,width_filt_len)
+width = shapefactor.glacierwidth(flowline,file_rightside_in,file_leftside_in,filt_len)
 width = np.interp(flowlinenodes[:,0],flowline[:,0],width)
 thick = np.interp(flowlinenodes[:,0],flowline[:,0],flowline[:,4]-flowline[:,3])
 
-# Calculate shape factor
-# f = shapefactor.trapezoid(width,thick)
+# Calculate dw/dx for mass input due to convergence
 dwdx = shapefactor.dwdx(flowlinenodes[:,0],width)
 
 # Write out width and dw/dx for elmersolver 
@@ -269,6 +234,7 @@ del thick, dwdx, R
 #########################################################
 # Finally export coordinates of flowline for future use #
 #########################################################
+
 print "\n ## Saving flowline coordinates ##"
 R = len(flowline[:,0])
 fid = open(file_flowline_out,'w')
@@ -278,6 +244,6 @@ for i in range(0,R):
 fid.close()
 del fid 
 
-
 # Save this file in MESH directory for future reference
-# shutil.copy('helheim_mesh_2d.py',DIRM+'helheim_mesh_2d.py')
+os.chdir(os.path.join(os.getenv("HOME"),"Code/BigThreeGlaciers/Modeling/Meshing/"))
+shutil.copy('helheim_mesh_2d.py',DIRM+'helheim_mesh_2d_'+MESHNAME+'.py')
