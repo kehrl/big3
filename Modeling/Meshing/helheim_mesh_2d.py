@@ -41,7 +41,7 @@ lc=[20,100,300] # characteristic length scales for meshing
 lc_d=[0,10000,30000] # transition points between different mesh sizes
 filt_len = 250.0 # length along flowline for filtering widths
 partitions="4" # Number of partitions
-layers=5 # Number of extrusions for mesh
+layers=12 # Number of extrusions for mesh
 
 # Shapefiles for flowline
 file_flowline_in = os.path.join(os.getenv("HOME"),"Data/ShapeFiles/Glaciers/Flowlines/Helheim/helheim_center_flowline")
