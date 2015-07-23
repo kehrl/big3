@@ -1,13 +1,20 @@
 check keywords warn
 
-$name = "flowline2"
+! Output name
+$name="robin_beta"
 
-$yearinsec = 365.25*24*60*60
-$rhoi = 917.0/(1.0e6*yearinsec^2)   
-$rhow = 1025.0/(1.0e6*yearinsec^2) 
-$gravity = -9.81*yearinsec^2
-$n=3
+! Regularization parameter 
+$Lambda=1e15
 
+! Reference Slip Coefficient used to construct surface velocities
+$ function betaSquare(tx) {\
+  yearinsec = 365.25*24*60*60;\
+  beta=1.0e6;\
+  _betaSquare=beta*beta/(1.0e06*yearinsec);\
+}
+
+
+! Water pressure at ice front
 $ function waterpressure(Z) {\
   rhow = 1025.0;\
   waterline = 0.0;\
@@ -20,83 +27,76 @@ $ function waterpressure(Z) {\
   }\
 }
 
+! Constants
+$yearinsec = 365.25*24*60*60
+$rhoi = 917.0/(1.0e6*yearinsec^2) ! MPa - a - m
+$rhow = 1025.0/(1.0e6*yearinsec^2) ! MPa - a - m
+$gravity = -9.81*yearinsec^2
+$n=3
+
 Header
-  Mesh DB "../../../../../Models/Helheim/Meshes/Flowline/MorlighemNew_SmoothedVelocity" "Elmer"
+  Mesh DB "../../../../../Models/Helheim/Meshes/Flowline/DEM20120624H" "Elmer"
 End
 
-Constants
-  Water Density = Real $rhow 
-End
 
-!---------------------------------------------------
-!---------------- SIMULATION -----------------------
-!---------------------------------------------------
-
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 Simulation
-  Coordinate System  = Cartesian 2D
-  Simulation Type = Transient
+  Coordinate System = Cartesian 2D
+  Simulation Type = Steady State
 
-  Timestepping Method = "BDF"
-  BDF Order = 1
-  Timestep Intervals = 365
-  Output Intervals = 1        
-  Timestep Sizes = $(1/365)       
-  
-  Steady State Max Iterations = 5
+  Output Intervals = 1
+
+  Steady State Max Iterations = 1000
   Steady State Min Iterations = 1
 
+  Initialize Dirichlet Conditions = Logical False
+
   Max output level = 3
-  Output File = File "$name".result"
-  
-  Restart File = "flowline1.result"
-  Restart Position = 0
 End
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-!---------------------------------------------------
-!---------------- BODIES ---------------------------
-!---------------------------------------------------
-
-!! Glacier
+! Main ice body
 Body 1
-  Name = "ice"
   Equation = 1
   Body Force = 1
   Material = 1
   Initial Condition = 1
 End
 
-!! Surface
+! Bedrock
 Body 2
-  Name = "surface"
   Equation = 2
-  Body Force = 2
+  Body Force = 1
   Material = 1
-  Initial Condition = 2
+  Initial Condition = 1
 End
 
-!---------------------------------------------------
-!---------------- INITIAL CONDITIONS ---------------
-!---------------------------------------------------
-
-!! Glacier
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 Initial Condition 1
   Depth = Real 0.0
-  Pressure = Real 0.0e0
-  Velocity 1 = Real 0
-  Velocity 2 = Real 0.0e0
+  BetaS = Variable Coordinate 1,
+     REAL MATC "betaSquare(tx)"
+  MuS = Variable Coordinate 2,
+    Real Procedure "Flowline.so" "Viscosity"
+ 
+! Initial guess for (square root) slip coeff.
+  Beta = REAL $ 1.0e3/sqrt(1.0e06*yearinsec)
+
+  Pressure = Real 0.0
+  Velocity 1 = Real 0.0
+  Velocity 2 = Real 0.0
+
+  VeloD 1 = Real 0.0
+  VeloD 2 = Real 0.0
+  VeloD 3 = Real 0.0
+
+! Surface velocities (data)
+  Vsurfini 1 = Variable Coordinate 1
+     Real procedure "Flowline.so" "USF_Init"
 End
 
-!! Surface
-Initial Condition 2
-  Zs Top = Variable Coordinate 2
-    Real Procedure "ElmerIceUSF" "ZsTopIni"
-End
 
-!---------------------------------------------------
-!---------------- BODY FORCES ----------------------
-!---------------------------------------------------
-
-!! Glacier
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 Body Force 1
   ! Shape factor
   !Flow BodyForce 1 = Variable Coordinate 1
@@ -105,7 +105,7 @@ Body Force 1
   !   Real Procedure "ElmerIceUSF" "ShapeFactorGravity_y"
   !Shape Gravity 1 = Real  0.0                                 
   !Shape Gravity 2 = Real $gravity      
-
+  
   !Shape Factor = Variable Coordinate 1
   !  Real
   !    Include "Inputs/shapefactor.dat"
@@ -118,46 +118,28 @@ Body Force 1
      Real Procedure "ElmerIceUSF" "LateralFriction_y"
   Lateral Friction Gravity 1 = Real 0.0    
   Lateral Friction Gravity 2 = Real $gravity    
-
-
   Lateral Friction Coefficient = Variable Coordinate 1
     Real Procedure "Flowline.so" "LateralFrictionCoefficient"
   Lateral Friction Exponent = Real $(1.0/n)
   Flow Solver Name = String Flow Solution
   
+  ! Account for lateral convergence
   Pressure Load = Variable Coordinate 1
     Real Procedure "Flowline.so" "LateralConvergence"
 End
 
-!! Surface
-Body Force 2
-  Zs Top Accumulation Flux 1 = Real 0.0e0
-  Zs Top Accumulation Flux 2 = Real 0.0e0
-End
 
-!---------------------------------------------------
-!---------------- MATERIALS ------------------------
-!---------------------------------------------------
-
-!! ice material properties in MPa - m - a system 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!! ice material properties in MPa - m - a system
 Material 1
-  Density = Real $rhoi     
-  
-  Viscosity = Variable Coordinate 2,
-    Real Procedure "Flowline.so" "Viscosity"
+  Density = Real $rhoi
   Viscosity Model = String "power law"
-  Viscosity Exponent = Real $1.0/3.0
+
+  Viscosity = Equals MuS
+
+  Viscosity Exponent = Real $1.0e00/3.0e00
   Critical Shear Rate = Real 1.0e-10
-
-  Cauchy = Logical True
-  
-  Sea level = Real 0.0
-  
 End
-
-!---------------------------------------------------
-!---------------- SOLVERS --------------------------
-!---------------------------------------------------
 
 Solver 1
   Procedure = "SaveData" "SaveMaterials"
@@ -172,78 +154,181 @@ Solver 2
    Variable DOFs = 2 
    Procedure = "ElmerIceSolvers" "ComputeNormalSolver"
    Optimize Bandwidth = Logical False 
-   ComputeAll = Logical True
+   ComputeAll = Logical False
 End
 
+!!!! Navier-Stokes Solution
 Solver 3
-  !Exec Solver = "Never"
-  Equation = "Navier-Stokes"
-  Variable = Flow Solution[Velocity:2 Pressure:1]
-  Stabilize = Logical True
-  Flow Model = Stokes
+ Equation = "Navier-Stokes"
+  
+  Stabilize = logical True
+  flow model = Stokes
+  
   Linear System Solver = Direct
   Linear System Direct Method = MUMPS
-  Nonlinear System Max Iterations = 100
-  Nonlinear System Convergence Tolerance  = 1.0e-6
-  Nonlinear System Newton After Iterations = 100
-  Nonlinear System Newton After Tolerance = 1.0e-06
-  Nonlinear System Relaxation Factor = 1.00
+  Mumps Percentage Increase Working Space = Integer 60
+
+!
+  Nonlinear System Max Iterations = Integer 1000
+  Nonlinear System Convergence Tolerance = Real 1.0e-7
+  Nonlinear System Newton After Iterations = Integer 10
+  Nonlinear System Newton After Tolerance = Real 1.0e-03
+  Nonlinear System Relaxation Factor = Real 1.0
+
   Nonlinear System Reset Newton = Logical True
-  Steady State Convergence Tolerance = Real 1.0e-3
+
+  Steady State Convergence Tolerance = Real 1.0e-12
+  
   Calculate Loads = Logical True
   Calculate Weights = Logical True
-  
-  Update Exported Variables = Logical True
-  Nonlinear Update Exported Variables = Logical True
+
+! Define some usefull Variables
+  Exported Variable 1 = BetaS
+  Exported Variable 1 DOFS = 1
+  Exported Variable 2 = MuS
+  Exported Variable 2 DOFS = 1
+
+! square root of the slip coef
+  Exported Variable 3 = Beta
+  Exported Variable 3 DOFS = Integer 1
+! derivative of the cost fn wr to beta
+  Exported Variable 4 = DJDBeta
+  Exported Variable 4 DOFS = Integer 1
+! value of the cost function
+  Exported Variable 5 = CostValue
+  Exported Variable 5 DOFS = Integer 1
+
+  Exported Variable 6 = VsurfIni
+  Exported Variable 6 DOFS = Integer 2
+
 End
 
+!!!! Navier-Stokes = Dirichlet Problem
 Solver 4
-  Equation = "Free Surface Top"
-  Variable = "Zs Top"
+  Equation = "NS-Dirichlet"
 
-  Variable DOFS =  1
-  Exported Variable 1 = "Zs Top Residual"
-  Exported Variable 1 DOFs = 1
-  Exported Variable 2 = "ZsTopIni"
-  Exported Variable 2 DOFs = 1
+  Variable = VeloD
+  Variable Dofs = 3
 
-  Procedure =  "FreeSurfaceSolver" "FreeSurfaceSolver"
+  procedure = "FlowSolve" "FlowSolver"
 
-  Linear System Solver = Iterative
-  Linear System Max Iterations = 1500
-  Linear System Iterative Method = BiCGStab
-  Linear System Preconditioning = ILU0
-  Linear System Convergence Tolerance = Real 1.0e-9
+  Linear System Solver = Direct
+  Linear System Direct Method =  mumps
+  Mumps percentage increase working space = integer 60
+  !Linear System Solver = Iterative
+  !Linear System Iterative Method = GMRES
+  !Linear System GMRES Restart = 100
+  Linear System Preconditioning= ILU0
+  Linear System Convergence Tolerance= 1.0e-08
+  Linear System Max Iterations = 1000
   Linear System Abort Not Converged = False
-  Linear System Residual Output = 1
 
-  Linear System Use Hypre = Logical False
 
-  Nonlinear System Max Iterations = 100
-  Nonlinear System Convergence Tolerance  = 1.0e-6
-  Nonlinear System Relaxation Factor = 1.00
+  Nonlinear System Max Iterations = Integer 100
+  Nonlinear System Convergence Tolerance = Real 1.0e-7
+  Nonlinear System Newton After Iterations = Integer 10
+  Nonlinear System Newton After Tolerance = Real 1.0e-03
+  Nonlinear System Relaxation Factor = Real 1.0
 
-  Steady State Convergence Tolerance = 1.0e-03
+  Nonlinear System Reset Newton = Logical True
 
-  Stabilization Method = Stabilized
-  Apply Dirichlet = Logical True
+  Steady State Convergence Tolerance = Real 1.0e-12
 End
 
+!!! Compute Cost function
 Solver 5
-  Equation = "Mesh Update"
-  Exec Solver = "After Timestep"
 
-  Linear System Solver = Iterative
-  Linear System Iterative Method = BiCGStab
-  Linear System Max Iterations  = 500
-  Linear System Preconditioning = ILU1
-  Linear System Convergence Tolerance = 1.0e-06
+  Equation = "Cost"
 
-  Nonlinear System Max Iterations = 1
-  Nonlinear System Convergence Tolerance = 1.0e-06
+!! Solver need to be associated => Define dumy variable
+  Variable = -nooutput "CostV"
+  Variable DOFs = 1
+
+  procedure = "ElmerIceSolvers" "CostSolver_Robin"
+
+
+  Cost Variable Name = String "CostValue" ! Name of Cost Variable
+
+  Neumann Solution Name = String "Flow Solution"
+  Dirichlet Solution Name = String "VeloD"
+
+  Optimized Variable Name = String "Beta" ! Name of Beta for Regularization
+  Lambda = Real $Lambda 	
+
+  ! save the cost as a function of iterations
+  Cost Filename = File "cost_robin_beta.dat" 
+end
+
+!!!!! Compute Derivative of Cost function / Beta
+Solver 6
+  Equation = "DJDBeta"
+
+!! Solver need to be associated => Define dumy variable
+  Variable = -nooutput "DJDB"
+  Variable DOFs = 1
+
+  procedure = "ElmerIceSolvers" "DJDBeta_Robin"
+  
+  Neumann Solution Name = String "Flow Solution"
+  Dirichlet Solution Name = String "VeloD"
+  Optimized Variable Name = String "Beta" ! Name of Beta variable
+  Gradient Variable Name = String "DJDBeta" ! Name of gradient variable
+  PowerFormulation = Logical False
+  Beta2Formulation = Logical True ! SlipCoef define as Beta^2
+
+  Lambda = Real $Lambda 
+end
+
+!!!!! Optimization procedure
+Solver 7
+  Equation = "Optimize_m1qn3"
+
+!! Solver need to be associated => Define dumy variable
+  Variable = -nooutput "UB"
+  Variable DOFs = 1
+
+  procedure = "ElmerIceSolvers" "Optimize_m1qn3Parallel"
+
+  Cost Variable Name = String "CostValue"
+  Optimized Variable Name = String "Beta"
+  Gradient Variable Name = String "DJDBeta"
+  Gradient Norm File = String "GradientNormAdjoint_$name".dat"
+
+
+! M1QN3 Parameters
+  M1QN3 dxmin = Real 1.0e-10
+  M1QN3 epsg = Real 1.e-6
+  M1QN3 niter = Integer 200
+  M1QN3 nsim = Integer 200
+  M1QN3 impres = Integer 5
+  M1QN3 DIS Mode = Logical False
+  M1QN3 df1 = Real 0.5
+  M1QN3 normtype = String "dfn"
+  M1QN3 OutputFile = File "M1QN3_$name".out"
+  M1QN3 ndz = Integer 20
+
+end
+
+Solver 8
+  Equation = "ResultOutput"
+
+  Procedure = File "ResultOutputSolve" "ResultOutputSolver"
+
+  Output File Name = File "$name""
+  Vtu Format = logical true
+  Binary Output = True
+  Single Precision = True
+
 End
 
-Solver 6
+Solver 9
+  Equation = SaveLine
+  Procedure = "SaveData" "SaveLine"
+  Exec Solver = String "After all"
+  Filename = "elmer/beta.dat"
+End
+
+Solver 10
   Equation = String "StressSolver"
   Procedure = "ElmerIceSolvers" "ComputeDevStress"          
   Variable = -nooutput "Sij"
@@ -253,140 +338,79 @@ Solver 6
   
   Flow Solver Name = String "Flow Solution"
   Stress Variable Name = String "Stress"
-  Linear System Solver = Direct         
-  Linear System Direct Method = MUMPS
+  ! Linear System Solver = Direct         
+  ! Linear System Direct Method = mumps
+  Linear System Solver = Iterative
+  Linear System Iterative Method = GMRES
+  Linear System GMRES Restart = 100
+  Linear System Preconditioning= ILU2
+  Linear System Convergence Tolerance= 1.0e-08
+  Linear System Max Iterations = 1000
 End
 
-Solver 7
-  Equation = "Eij"          
-  Variable = -nooutput "Eij"     
-  Variable DOFs = 1
-
-  Exported Variable 1 = StrainRate[Exx:1 Eyy:1 Ezz:1 Exy:1 Eii:1]
-  Exported Variable 1 DOFs = 5
-
-  Procedure = "ElmerIceSolvers" "ComputeStrainRate"
-  Flow Solver Name = String "Flow Solution"
-  StrainRate Variable Name = String "StrainRate"
-
-  Linear System Solver = Direct         
-  Linear System Direct Method = mumps
-End 
-
-Solver 8
- Exec Solver = "After TimeStep"
- Exec Interval = 1
- Equation = "result output"
- Procedure = "ResultOutputSolve" "ResultOutputSolver"
- Output File Name = File "$name"."
- Output Format = String "vtu"
-End
-
-Solver 9
-  Equation = SaveLine
-  Procedure = "SaveData" "SaveLine"
-  Exec Solver = String "After timestep"
-  Filename = "Elmer/"$name".dat"
-End
-
-
-!---------------------------------------------------
-!---------------- EQUATIONS ------------------------
-!---------------------------------------------------
-
-!! Glacier
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 Equation 1
-  Flow Solution Name = String "Flow Solution"
-  Active Solvers(8) = 1 2 3 5 6 7 8 9
+  Active Solvers (7)= 1 2 3 4 5 8 10
+  NS Convect= False
 End
 
-!! Surface
-Equation 2 
-  Active Solvers(1) = 4
-  Flow Solution Name = String "Flow Solution"
-  Convection = String Computed
+Equation 2
+ Active Solvers (3)= 6 7 9
 End
 
-!---------------------------------------------------
-!---------------- BOUNDARY CONDITIONS --------------
-!---------------------------------------------------
-
-!! BC  Bedrock + Shelf
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 Boundary Condition 1
-  Name = "Bed"
-  Target Boundaries(1) = 1  
+  !Name= "bed" mandatory to compute regularistaion term of the cost function (int (dbeta/dx) 2)
+  Name = "bed"
+  Target Boundaries(1) = 1
+  Body ID = Integer 2
   Shape Bedrock = Logical True
-
-  Flow Force BC = Logical True
-  Normal-Tangential Velocity = Logical True
-  
-  Velocity 1 = Real 0.0e0
-  
-  !! Linear
-  ! Slip Coefficient 2 = Variable Coordinate 1
-  !   Real Procedure "Flowline.so" "Slip_Linear"
-  
-  !! Weertman   
-  Slip Coefficient 2 =  Variable Coordinate 1
-    Real Procedure "ElmerIceUSF" "Sliding_Weertman"   
-  Weertman Friction Coefficient = Variable Coordinate 1
-    Real
-      Include "Inputs/beta_weertman.dat"
-    End 
-  Weertman Exponent = Real $(1.0/3.0)
-  Weertman Linear Velocity = Real 0.00001   
-
-  Mesh Update 1 = Real 0.0e0
-  Mesh Update 2 = Real 0.0e0
-
   Save Line = Logical True
+
+  Compute Normal = Logical True
+  Normal-Tangential Velocity = Logical True
+  Normal-Tangential VeloD = Logical True
+  Flow Force BC = Logical True
+
+  Velocity 1 = Real 0.0e0
+  VeloD 1 = Real 0.0e0
+
+  Slip Coefficient 2 = Variable Beta
+     REAL MATC "tx*tx"
+
 End
 
-
-!! BC  Free surface Top
+! Upper Surface
 Boundary Condition 2
+  !Name= "Surface" mandatory to compute cost function
   Name = "Surface"
   Target Boundaries(1) = 3
-  Body ID = 2
   Shape Surface = Logical True
-  
-  Mesh Update 1 = Real 0.0e0
-  Mesh Update 2 = Variable Zs Top
-     Real Procedure "ElmerIceUSF" "ZsTopMzsIni"
-  
   Save Line = Logical True
-End
 
-!! Upper glacier
+  ! Dirichlet problem applied observed velocities
+  VeloD 1 = Equals Vsurfini 1
+End 
+
 Boundary Condition 3
-  Name = "back"
+  Name = "Inflow"
   Target Boundaries(1) = 4
-  
+
+! Dirichlet BCs
   Velocity 1 = Variable Coordinate 2
-     Real Procedure "Flowline.so" "Inflow"
+    Real procedure "Flowline.so" "Inflow"
 
-  Mesh Update 1 = Real 0.0e0
-  Mesh Update 2 = Real 0.0e0
-
-  Save Line = Logical True
+!Dirichlet BC => Same Dirichlet
+  VeloD 1 = Variable Coordinate 2
+    Real procedure "Flowline.so" "Inflow"
 End
 
 Boundary Condition 4
   Name = "Calving front"
   Target Boundaries(1) = 2
-  Flow Force BC = Logical True  
+  Flow Force BC = Logical True
   
   External Pressure = Variable Coordinate 2 !we are in MPa units
     Real MATC "-1.0*waterpressure(tx)*1.0E-06"
     
-  Mesh Update 1 = Real 0.0e0
-
-  Save Line = Logical True
 End
-
-!Boundary Condition 5
-!  Name = "Nodal Mass Source"
-!  Target Coordinates(1,2) = 54400.0 500.0
-!  !Pressure Load = Real 5.0e10
-!  Flow Solution 3 Load = Real 5.0e10
-!End
