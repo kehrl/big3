@@ -36,7 +36,7 @@ DIRS=os.path.join(os.getenv("HOME"),"Code/BigThreeGlaciers/Modeling/SolverFiles/
 DIRM=os.path.join(os.getenv("HOME"),"Models/"+glacier+"/Meshes/Flowline/"+MESHNAME+"/")
 DIRR=os.path.join(os.getenv("HOME"),"Models/"+glacier+"/Results/Flowline/"+MESHNAME+"/")
 
-lc=[20,100,300] # characteristic length scales for meshing
+lc=[50,100,500] # characteristic length scales for meshing
 #lc=[50,100,200] # characteristic length scales for meshing
 lc_d=[0,10000,30000] # transition points between different mesh sizes
 filt_len = 250.0 # length along flowline for filtering widths
@@ -119,7 +119,7 @@ call(["ElmerGrid","2","4",file_mesh_out])
 ###################################################
 
 # Get velocity along flowline from velocity profiles
-velocity.inversion_2D(flowline[:,1],flowline[:,2],flowline[:,0],glacier,file_velocity_in,DIRM+"Inputs/",filt_len)
+velocity.inversion_2D(flowline[:,1],flowline[:,2],flowline[:,0],glacier,file_velocity_in,DIRM+"Inputs/",filt_len*10.0)
 
 #################################
 # Print out temperature profile #
