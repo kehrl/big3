@@ -362,7 +362,7 @@ def worldview_at_pts(xpts,ypts,glacier,years='all',verticaldatum='geoid'):
 
   return zpts,time
 
-def dem_continuous(xmin,xmax,ymin,ymax,glacier,date,verticaldatum):
+def dem_continuous(xmin,xmax,ymin,ymax,glacier,date,verticaldatum,fillin='none'):
 
   # Load gimp DEM
   xg,yg,zg = gimp_grid(xmin,xmax,ymin,ymax,glacier,verticaldatum)
@@ -376,6 +376,11 @@ def dem_continuous(xmin,xmax,ymin,ymax,glacier,date,verticaldatum):
     if date == '20120624':
       dates = ['20120624','20120513','20120520']
       dates_backup = ['20110319','20110615']
+    elif date == '20110319':
+      dates = ['20110319','20110615']
+      dates_backup = ['20110628']
+    elif date == '20110628':
+      dates = ['20110628','20110615']
   elif glacier == 'Kanger':
     if date == '20110712':
       dates = ['20110712','20110808','20110823']
@@ -408,22 +413,24 @@ def dem_continuous(xmin,xmax,ymin,ymax,glacier,date,verticaldatum):
     zwv_on_grid[:,:,n] = np.reshape(zwv_flattened,(len(yg),len(xg)))
     n = n+1
   
-  zwv_on_grid_backup = np.zeros([len(yg),len(xg),len(dates_backup)])
-  n = 0  
-  for date in dates_backup:
-    # Get data
-    xwv = wv_backup[date][0]
-    ywv = wv_backup[date][1]
-    zwv = wv_backup[date][2]
-    zwv[zwv == 0] = 'NaN'
+  # We only use the backup DEMS if "fillin" is not set to none.
+  if fillin != 'none':
+    zwv_on_grid_backup = np.zeros([len(yg),len(xg),len(dates_backup)])
+    n = 0  
+    for date in dates_backup:
+      # Get data
+      xwv = wv_backup[date][0]
+      ywv = wv_backup[date][1]
+      zwv = wv_backup[date][2]
+      zwv[zwv == 0] = 'NaN'
     
-    # Interpolate
-    zwv_dem = scipy.interpolate.RegularGridInterpolator([ywv,xwv],zwv,bounds_error = False)
-    zwv_flattened = zwv_dem(np.column_stack([ygrid.flatten(),xgrid.flatten()]))
+      # Interpolate
+      zwv_dem = scipy.interpolate.RegularGridInterpolator([ywv,xwv],zwv,bounds_error = False)
+      zwv_flattened = zwv_dem(np.column_stack([ygrid.flatten(),xgrid.flatten()]))
     
-    # Reshape to grid
-    zwv_on_grid_backup[:,:,n] = np.reshape(zwv_flattened,(len(yg),len(xg)))
-    n = n+1  
+      # Reshape to grid
+      zwv_on_grid_backup[:,:,n] = np.reshape(zwv_flattened,(len(yg),len(xg)))
+      n = n+1  
     
   # Find extent of primary worldview images  
   xmin_wv = np.min([np.min(wv[date][0]) for date in dates])
@@ -442,13 +449,13 @@ def dem_continuous(xmin,xmax,ymin,ymax,glacier,date,verticaldatum):
       nonnan = np.where(~(np.isnan(zwv_on_grid[j,i,:])))[0]
       if len(nonnan) > 0:
         zs[j,i] = np.mean(zwv_on_grid[j,i,nonnan])
-      elif len(np.where(~(np.isnan(zwv_on_grid_backup[j,i,:])))[0]) > 0:
+      elif (len(np.where(~(np.isnan(zwv_on_grid_backup[j,i,:])))[0])) > 0 and (fillin != 'none'):
         nonnan = np.where(~(np.isnan(zwv_on_grid_backup[j,i,:])))[0]
         zs[j,i] = np.mean(zwv_on_grid_backup[j,i,nonnan])
   
   return xg,yg,zs
   
-def dem_continuous_flowline(xf,yf,glacier,date,verticaldatum='geoid'):
+def dem_continuous_flowline(xf,yf,glacier,date,verticaldatum='geoid',fillin='none'):
 
   # Get grid dimensions for dem_continuous
   xmin = np.min(xf)-10.0e3
@@ -457,7 +464,7 @@ def dem_continuous_flowline(xf,yf,glacier,date,verticaldatum='geoid'):
   ymax = np.max(yf)+10.0e3
   
   # Get grid for that date 
-  xg,yg,zgrid = dem_continuous(xmin,xmax,ymin,ymax,glacier,date,verticaldatum)
+  xg,yg,zgrid = dem_continuous(xmin,xmax,ymin,ymax,glacier,date,verticaldatum,fillin='none')
   
   # Interpolate grid onto flowline
   dem = scipy.interpolate.RegularGridInterpolator([yg,xg],zgrid)

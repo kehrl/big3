@@ -11,7 +11,7 @@ import coords, elevation
 import scipy.interpolate
 import geotiff
 
-def cresis(year,glacier,verticaldatum):
+def cresis(year,glacier,verticaldatum='geoid'):
 
   if (year == '2001'):
     if glacier == 'Helheim':
@@ -21,7 +21,7 @@ def cresis(year,glacier,verticaldatum):
       file = os.path.join(os.getenv("HOME"),"Data/Bed/Cresis/Kanger/Data_20010520_01.csv")
       ind=range(4387,4475)
       
-    data=np.loadtxt(file,skiprows=1,delimiter=',')
+    data = np.loadtxt(file,skiprows=1,delimiter=',')
     y=data[:,0]
     x=data[:,1]
     H=data[:,3]
@@ -37,10 +37,10 @@ def cresis(year,glacier,verticaldatum):
   
   else:
     if glacier == 'Helheim':
-      print "Using data set Helheim_2008_2014_Composite"
+      print "Using data set Helheim_2006_2014_Composite"
       file=os.path.join(os.getenv("HOME"),"Data/Bed/Cresis/Helheim/Helheim_2006_2014_Composite/flightlines/Helheim_2006_2014_Composite_Flightlines.txt")
     elif glacier == 'Kanger':
-      print "Using data set Kanger_2008_2014_Composite"
+      print "Using data set Kanger_2006_2014_Composite"
       file=os.path.join(os.getenv("HOME"),"Data/Bed/Cresis/Kanger/Kangerdlugssuaq_2006_2014_Composite/flightlines/Kangerdlugssuaq_2006_2014_Composite_Flightlines.txt")
 
     else: 
@@ -52,6 +52,7 @@ def cresis(year,glacier,verticaldatum):
     zs=[]
     zb=[]
     years=[]
+    type=[]
     lines = fid.readlines()
     for line in lines[1:-1]:
       fields = line.split()
@@ -63,6 +64,7 @@ def cresis(year,glacier,verticaldatum):
       y.append(float(fields[4]))
       zb.append(float(fields[1]))
       zs.append(float(fields[0]))
+      type.append(fields[3])
     years=np.array(years)
     x=np.array(x)
     y=np.array(y)
@@ -91,7 +93,10 @@ def cresis(year,glacier,verticaldatum):
       elif year == '2014':
         ind = range(77100,77285)
       elif year == 'all':
-        ind=range(0,len(x))
+        ind = []
+        for i in range(0,len(type)):
+          if 'ICESat' not in type[i]:
+            ind.append(i)
     elif glacier == 'Kanger':
       if year == '2008':
         ind = range(23600,23853)
@@ -105,6 +110,11 @@ def cresis(year,glacier,verticaldatum):
         ind = np.arange(39370,39210,-1)
       elif year == '2014':
         ind = range(40445,40517)
+      elif year == 'all':
+        ind = []
+        for i in range(0,len(type)):
+          if 'ICESat' not in type[i]:
+            ind.append(i)
     else:
       print "Unrecognized CreSIS profile"
   
@@ -120,15 +130,68 @@ def cresis(year,glacier,verticaldatum):
     
   return np.column_stack([x2[ind],y2[ind],zb[ind]])
 
-def morlighem_pts(xpts,ypts,glacier,verticaldatum):
+def cresis_grid(glacier,verticaldatum='geoid'):
+
+  # Read the ASCII grid. Why they use ASCII grids, no one knows. Ugh.
+  if glacier == 'Helheim':
+    print "Using data set Helheim_2006_2014_Composite"
+    file = os.path.join(os.getenv("HOME"),"Data/Bed/Cresis/Helheim/Helheim_2006_2014_Composite/grids/helheim_2006_2014_composite_bottom.txt")
+  elif glacier == 'Kanger':
+    print "Using data set Kanger_2006_2014_Composite"
+    file = os.path.join(os.getenv("HOME"),"Data/Bed/Cresis/Kanger/Kangerdlugssuaq_2006_2014_Composite/grids/kangerdlugssuaq_2006_2014_composite_bottom.txt")
+
+  # Get file info
+  fid = open(file)
+  ny = int(fid.readline().split()[-1])
+  nx = int(fid.readline().split()[-1])
+  xllcorner = float(fid.readline().split()[-1])
+  yllcorner = float(fid.readline().split()[-1])
+  cellsize = float(fid.readline().split()[-1])
+  nodata = float(fid.readline().split()[-1])
+  fid.close()
+  del fid
+  
+  # Set up x,y
+  x = np.linspace(xllcorner+cellsize/2,xllcorner+cellsize*(nx-1),nx)
+  y = np.linspace(yllcorner+cellsize/2,yllcorner+cellsize*(ny-1),ny)
+  
+  # Get data
+  grid = np.flipud(np.loadtxt(file,skiprows=6))
+  grid[grid==nodata] = 'NaN'
+  
+  if verticaldatum == 'geoid':
+    x_grid,y_grid = np.meshgrid(x,y)
+    geoidheight = coords.geoidheight(x_grid.flatten(),y_grid.flatten())
+    grid = grid - np.reshape(geoidheight,(ny,nx))
+  elif verticaldatum == 'ellipsoid':
+    grid = grid
+  else:
+    print "Unknown datum, defaulting to ellipsoid"
+
+  return x,y,grid
+
+def cresis_grid_pts(xpts,ypts,glacier,verticaldatum='geoid'):
+
+  # Get Cresis grid
+  x,y,z = cresis_grid(glacier,verticaldatum)
+
+  # Create interpolation function
+  f = scipy.interpolate.RegularGridInterpolator((y,x),z,method='linear',bounds_error=False)
+  
+  # Get points
+  bed = f(np.column_stack([ypts,xpts]))
+
+  return bed
+
+def morlighem_pts(xpts,ypts,glacier,verticaldatum='geoid'):
   
   # Load bed DEM
   file = os.path.join(os.getenv("HOME"),"Data/Bed/Morlighem_2014/MCdataset-2015-04-27.tif")
   [x,y,z]=geotiff.read(file)
+  z[z==-9999] = 'NaN'
   
-  f = scipy.interpolate.RegularGridInterpolator((y,x),z,method="linear")
+  f = scipy.interpolate.RegularGridInterpolator((y,x),z,method='linear',bounds_error=False)
   bed = f(np.column_stack([ypts,xpts]))
-  bed[bed<-2000]='NaN'
   
   # Morlighem bed DEM is given as elevation above mean sea level (at geoid). So we need
   # to correct only if we want the ellipsoid height.
@@ -147,6 +210,7 @@ def morlighem_grid(xmin,xmax,ymin,ymax,verticaldatum):
   # Load Bed DEM
   file = os.path.join(os.getenv("HOME"),"Data/Bed/Morlighem_2014/MCdataset-2015-04-27.tif")
   [xb,yb,zb]=geotiff.read(file,xmin,xmax,ymin,ymax)
+  zb[zb==-9999] = 'NaN'
   
   # Load Geoid
   file = os.path.join(os.getenv("HOME"),"Data/Bed/Morlighem_2014/geoid.tif")

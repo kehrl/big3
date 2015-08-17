@@ -65,12 +65,12 @@ for file in files:
   filename=DIR+glacier+"/TIF/"+year+month+day+hour+min+sec+"_"+file+".tif"
   if not(os.path.isfile(filename)):
     print filename
-    sys.argv[1:] = ['-separate',file+"_B3.tif",file+"_B2.tif",file+"_B1.tif",'-o','temp1.tif']
+    sys.argv[1:] = ['-init','255','-ot','Byte',file+"_B3.tif",file+"_B2.tif",file+"_B2.tif",'-o','temp1.tif']
     gdal_merge.main()
-    os.system('gdal_translate -co PHOTOMETRIC=RGB temp1.tif temp2.tif')
-    os.system('otbcli_BundleToPerfectSensor -inp '+file+'_B8.tif  -inxs temp2.tif -out temp3.tif')
+    os.system('otbcli_BundleToPerfectSensor -inp '+file+'_B8.tif  -inxs temp1.tif -out temp2.tif')
+    os.system('gdal_translate -ot Byte -co PHOTOMETRIC=RGB temp2.tif temp3.tif')
     os.system('gdalwarp temp3.tif temp4.tif -t_srs EPSG:3413'+' -te '+extent)
-    os.system('gdal_translate -scale 0 60035 0 255 temp4.tif '+filename)
+    os.system('gdal_translate -ot Byte temp4.tif '+filename)
     for fname in os.listdir('.'):
       if fname.startswith("temp"):
         os.remove(os.path.join(fname))

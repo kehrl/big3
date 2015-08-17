@@ -66,7 +66,7 @@ def velocity_at_eulpoints(xpt,ypt,glacier,data='all'):
   termini=np.zeros([m])
   count=0
   for file in files:
-    x,y,v,vx,vy,ex,ey,time=geodat.readvelocity(file+"/mosaicOffsets")
+    x,y,v,vx,vy,ex,ey,time,interval = geodat.readvelocity(file+"/mosaicOffsets")
     if 'winter' in file:
       time = float('20'+file[-2:])
     times[count]=time
@@ -75,10 +75,12 @@ def velocity_at_eulpoints(xpt,ypt,glacier,data='all'):
     fv = scipy.interpolate.RegularGridInterpolator([y,x],v,method='linear',bounds_error=False)
     fex = scipy.interpolate.RegularGridInterpolator([y,x],ex,method='linear',bounds_error=False)
     fey = scipy.interpolate.RegularGridInterpolator([y,x],ey,method='linear',bounds_error=False)
+    fvx = scipy.interpolate.RegularGridInterpolator([y,x],vx,method='linear',bounds_error=False)
+    fvy = scipy.interpolate.RegularGridInterpolator([y,x],vy,method='linear',bounds_error=False)
       
     # Find velocities 
     velocities[count,:] = fv(np.array([ypt,xpt]).T) 
-    error[count,:] = np.sqrt(fex(np.array([ypt,xpt]).T)**2+fey(np.array([ypt,xpt]).T)**2)        
+    error[count,:] = velocities[count,:]*(fex(np.array([ypt,xpt]).T)/fvx(np.array([ypt,xpt]).T)+fey(np.array([ypt,xpt]).T)/fvy(np.array([ypt,xpt]).T))        
     
     count = count + 1
     
@@ -140,7 +142,7 @@ def velocity_along_flowline(xf,yf,glacier,cutoff='terminus',data='all'):
   termini=np.zeros(m)
   count=0
   for file in files:
-    x,y,v,vx,vy,ex,ey,time=geodat.readvelocity(file+"/mosaicOffsets")
+    x,y,v,vx,vy,ex,ey,time,interval = geodat.readvelocity(file+"/mosaicOffsets")
     if 'winter' in file:
       time = float('20'+file[-2:])
     times[count]=time
@@ -232,14 +234,16 @@ def velocity_at_lagpoints(xf,yf,pts,glacier,data='all'):
   ypts_all = np.zeros([m,n])
   error = np.zeros([m,n])
   error[:,:] = 'nan'
-  times=np.zeros([m])
-  termini=np.zeros([m])
+  times = np.zeros([m])
+  intervals = np.zeros([m])
+  termini = np.zeros([m])
   count=0
   for file in files:
-    x,y,v,vx,vy,ex,ey,time=geodat.readvelocity(file+"/mosaicOffsets")
+    x,y,v,vx,vy,ex,ey,time,interval = geodat.readvelocity(file+"/mosaicOffsets")
     if 'winter' in file:
       time = float('20'+file[-2:])
     times[count]=time
+    intervals[count] = interval
       
     # Set up grid for interpolation
     fv = scipy.interpolate.RegularGridInterpolator([y,x],v,method='linear',bounds_error=False)
@@ -265,14 +269,36 @@ def velocity_at_lagpoints(xf,yf,pts,glacier,data='all'):
   
   # Sort arrays by time  
   sortind=np.argsort(times,0)
-  tpt_all = times[sortind]
+  tpt_all = np.column_stack([times[sortind],intervals[sortind]])
   vpt_all = velocities[sortind,:]
   ept_all = error[sortind,:]
   xpt_all = xpts_all[sortind,:]
   ypt_all = ypts_all[sortind,:]
   dists_all = positions[sortind,:]
       	  
-  return vpt_all,tpt_all, ept_all, dists_all, xpt_all, ypt_all 
+  return vpt_all, tpt_all, ept_all, dists_all, xpt_all, ypt_all 
+
+#########################################################################################
+def tsx_near_time(time,glacier):
+
+  DIR_TSX = os.path.join(os.getenv("HOME"),"Data/Velocity/TSX/"+glacier+"/")
+
+  DIRs=os.listdir(DIR_TSX)
+  tpt=[]
+  
+  best_track = []
+  min_diff = 1.0
+  for DIR in DIRs:
+    if DIR.startswith('track'):
+      tsx_time,interval = geodat.readtime(DIR_TSX+DIR+"/mosaicOffsets")
+      if abs(tsx_time-time) < min_diff:
+        min_diff = abs(tsx_time-time)
+        best_track = DIR
+
+  # Return the closest velocity profile
+  x,y,v,vx,vy,ex,ey,time,interval = geodat.readvelocity(DIR_TSX+best_track+"/mosaicOffsets")
+  return x,y,v,time
+
 
 #########################################################################################
 def variability(x,y,time1,time2,glacier):
@@ -301,7 +327,7 @@ def variability(x,y,time1,time2,glacier):
     DIR=DIRs[j]
     if DIR.startswith('track'):
       infile=DIR_TSX+DIR
-      x1,y1,v1,vx1,vy1,ex1,ey1,time=geodat.readvelocity(infile+"/mosaicOffsets")
+      x1,y1,v1,vx1,vy1,ex1,ey1,time,interval = geodat.readvelocity(infile+"/mosaicOffsets")
       tpt[count]=time
       
       x2,y2
@@ -354,7 +380,7 @@ def divergence_at_eulpoints(xpt,ypt):
     DIR=DIRs[j]
     if DIR.startswith('track'):
       infile=DIR_TSX+DIR
-      x,y,v,vx,vy,ex,ey,time=geodat.readvelocity(infile+"/mosaicOffsets")
+      x,y,v,vx,vy,ex,ey,time,interval = geodat.readvelocity(infile+"/mosaicOffsets")
       tpt[count]=time
       
       for i in range(0,n):
@@ -415,7 +441,7 @@ def divergence_at_eulpoints(xpt,ypt):
     if DIR.startswith('winter'):
       print "Loading ",dir
       infile=DIR_RADARSAT+DIR
-      x,y,v,vx,vy,ex,ey,time=geodat.readvelocity(infile+"/mosaicOffsets")
+      x,y,v,vx,vy,ex,ey,time,interval = geodat.readvelocity(infile+"/mosaicOffsets")
       tpt[count] = float('20'+DIR[9:])
       
       for i in range(0,n):
@@ -486,7 +512,7 @@ def inversion_3D(x,y,file_velocity_in,dir_velocity_out):
   
   # Large velocity map to fill in gaps in smaller velocity map
   file_velocity_in_global = os.path.join(os.getenv("HOME"),"Data/Velocity/Random/Greenland/track-07to10")
-  x1,y1,v1,vx1,vy1,ex1,ey1,time=geodat.readvelocity(file_velocity_in_global+"/mosaicOffsets")
+  x1,y1,v1,vx1,vy1,ex1,ey1,time,interval = geodat.readvelocity(file_velocity_in_global+"/mosaicOffsets")
 
   # The large velocity map has some gaps. So we need to make the map smaller and fill in the gaps
   xmin = np.argmin(abs(x1-(np.min(x)-10e3)))
@@ -503,7 +529,7 @@ def inversion_3D(x,y,file_velocity_in,dir_velocity_out):
   ey1 = ey1[ymin:ymax,xmin:xmax]
 
   # Individual velocity map
-  x2,y2,v2,vx2,vy2,ex2,ey2,time=geodat.readvelocity(file_velocity_in+"/mosaicOffsets")
+  x2,y2,v2,vx2,vy2,ex2,ey2,time,interval = geodat.readvelocity(file_velocity_in+"/mosaicOffsets")
 
   # Grid points for interpolation
   xgrid,ygrid = np.meshgrid(x,y)
@@ -572,12 +598,12 @@ def inversion_2D(x,y,d,glacier,file_velocity_in,dir_velocity_out,filt_len='none'
   
   # Large velocity map, in case the small map isn't big enough
   file_velocity_large = os.path.join(os.getenv("HOME"),"Data/Velocity/Random/Greenland/track-07to10/mosaicOffsets")
-  x2,y2,v2,vx2,vy2,ex2,ey2,time2=geodat.readvelocity(file_velocity_large)
+  x2,y2,v2,vx2,vy2,ex2,ey2,time2,interval2 = geodat.readvelocity(file_velocity_large)
   f2 = scipy.interpolate.RegularGridInterpolator([y2,x2],v2)
   vint2=f2(np.column_stack([y,x]),method='linear')
   
   # Individual velocity map
-  x1,y1,v1,vx1,vy1,ex1,ey1,time1=geodat.readvelocity(file_velocity_in)
+  x1,y1,v1,vx1,vy1,ex1,ey1,time1,interval1 = geodat.readvelocity(file_velocity_in)
   f1 = scipy.interpolate.RegularGridInterpolator([y1,x1],v1,bounds_error=False)
   vint1=f1(np.column_stack([y,x]),method='linear') 
 
