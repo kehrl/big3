@@ -8,7 +8,6 @@ import shutil
 import sys
 import numpy as np
 sys.path.append(os.path.join(os.getenv("HOME"),"Code/Util/Modules"))
-from geodat import *
 from subprocess import call
 import math
 import glob
