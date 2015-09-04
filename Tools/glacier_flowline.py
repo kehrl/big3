@@ -70,17 +70,3 @@ def load(glacier):
   zb_filt = signal.filtfilt(b,a,zb)
 
   return x,y,zb_filt,dists
-
-def flotation_height(zb,rho_i=917.0,rho_sw=1024.0):
-
-  # Set up output
-  float = np.zeros(len(zb))
-  float[:] = 'NaN'
-  
-  # Find places where bed is below sea level
-  ind = np.where(zb < 0)[0]
-  
-  # Find flotation height
-  float[ind] = (1-rho_sw/rho_i)*zb[ind]
-
-  return float
