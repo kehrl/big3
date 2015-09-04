@@ -17,6 +17,7 @@ import icefronts, glacier_flowline
 import coords, geotiff
 import scipy.interpolate, dist, fracyear
 import scipy.signal as signal
+import shapely.geometry
 
 def gimp_at_pts(xpts,ypts,glacier,verticaldatum):
   
@@ -86,14 +87,13 @@ def atm(years,verticaldatum):
       x=[]
       y=[]
       z=[]
-      os.chdir(ATMDIR+DIR)
       files = os.listdir(ATMDIR+DIR)
       for file in files:
         if 'nadir' in file and not(file.endswith('.xml')):
           try:
-            data=np.loadtxt(file,comments='#')
+            data=np.loadtxt(ATM+DIR+file,comments='#')
           except:
-            data=np.loadtxt(file,comments='#',delimiter=',')
+            data=np.loadtxt(ATMDIR+DIR+file,comments='#',delimiter=',')
           xfile = data[:,2]
           yfile = data[:,1]
           zfile = data[:,3]
@@ -114,7 +114,7 @@ def atm(years,verticaldatum):
   elif verticaldatum=='ellipsoid':
     atm = atm
   else: 
-    print "Don't recognize that vertical datum, defaulting to ellipsoid"
+    print "Don't recognize that vertical datum, defaulting to geoid"
     
   return atm
 
@@ -181,83 +181,96 @@ def atm_at_pts(xpts,ypts,glacier,years='all',maxdist=200,verticaldatum='geoid'):
 
   return zpts,time
    
-def worldview_grid(years,glacier,verticaldatum):
+def worldview_grid(glacier,xmin=0,xmax=0,ymin=0,ymax=0,resolution=32,years='all',verticaldatum='geoid'):
 
   # Inputs
+  # xmin,xmax,ymin,ymax: extent for output grids
   # years: year that you want data or "all" for all years 
   # glacier: Kanger or Helheim
   # verticaldatum: ellipsoid or geoid
   
-  # Output: dictionary including all available data for the chosen years, with the keys 
-  #  indicates the dates of each grid
+  # Output: 
+  # x,y,zs_nonnan,time_nonnan: numpy array of surface elevations on the grid x,y for times_nonnan
 
-  worldview = {}
-  
-  WVDIR = os.path.join(os.getenv("HOME"),'/Users/kehrl/Data/Elevation/Worldview/HelheimKanger/')
+  # Set up output grid
+  dx = dy = float(resolution)
+  nx = np.ceil((xmax-xmin)/dx)+1
+  x = np.linspace(xmin,(nx-1)*dx+xmin,nx)
+  ny = np.ceil((ymax-ymin)/dx)+1
+  y = np.linspace(ymin,(ny-1)*dy+ymin,ny)
+  xgrid,ygrid = np.meshgrid(x,y)
+    
+  WVDIR = os.path.join(os.getenv("HOME"),'/Users/kehrl/Data/Elevation/Worldview/'+glacier+'/')
   DIRs = os.listdir(WVDIR)
   
   # Find dates where we have data in the desired region
   dates=[]
+  glacier = shapely.geometry.Polygon([(xmin,ymin),(xmin,ymax),(xmax,ymax),(xmax,ymin)])
   for DIR in DIRs:
-    if (DIR[0:8] not in dates) and DIR.startswith('2') and DIR.endswith('.tif'):
-      if not(years) or (years=='all'):
-        dates.append(DIR[0:8])
-      else:
-        if len(years) == 4:
-          if DIR[0:4] in years:
-            dates.append(DIR[0:8])
+    if (DIR[0:8] not in dates) and DIR.startswith('2') and (DIR.endswith('_32m.tif') or DIR.endswith('32m_trans.tif')):
+      wvxmin,wvxmax,wvymin,wvymax = geotiff.extent(WVDIR+DIR)
+      wv_extent = shapely.geometry.Polygon([(wvxmin,wvymin),(wvxmin,wvymax),(wvxmax,wvymax),(wvxmax,wvymin)])
+      if glacier.intersects(wv_extent):
+        if not(years) or (years=='all'):
+          dates.append(DIR[0:8])
         else:
-          if DIR[0:8] in years:
-            dates.append(DIR[0:8])
+          if len(years) == 4:
+            if DIR[0:4] in years:
+              dates.append(DIR[0:8])
+          else:
+            if DIR[0:8] in years:
+              dates.append(DIR[0:8])
  
-  extras = ['a','b','c','d','e','f']
   # Load data
-  for date in dates:
+  time = np.zeros(len(dates))
+  zs = np.zeros([ny,nx,len(time)])
+  for i in range(0,len(dates)):
+    date = dates[i]
+    n = 1 # Count number of files for that date
+    time[i] = fracyear.date_to_fracyear(int(date[0:4]),int(date[4:6]),float(date[6:8]))
     for DIR in DIRs:
-      if DIR.startswith(date) and DIR.endswith('_32m.tif'): 
-        x,y,zs = geotiff.read(WVDIR+DIR) 
-        zs[zs==0] = 'NaN'
-        if date+extras[0] in worldview.keys():
-          n=0
-          for key in worldview.keys():
-            if key[0:8] == date:
-              n=n+1
-          worldview[date+extras[n]]=x,y,zs
-          
-        elif date in worldview.keys():
-          # In case we've already added that date, we need to add
-          # the data to another key.
-          xold,yold,zold = worldview[date]
-          
-          # Delete key
-          worldview.pop(date, None)
-          
-          # Add new keys
-          worldview[date+extras[0]] = xold,yold,zold
-          worldview[date+extras[1]] = x,y,zs
+      if DIR.startswith(date) and (DIR.endswith('_32m.tif') or DIR.endswith('32m_trans.tif')): 
+        # Read file
+        xwv,ywv,zwv = geotiff.read(WVDIR+DIR) 
+        zwv[zwv==0] = 'NaN'
         
+        # Interpolate onto output grid
+        zwv_dem = scipy.interpolate.RegularGridInterpolator([ywv,xwv],zwv,bounds_error = False,method='linear',fill_value=float('nan'))
+        zwv_flattened = zwv_dem(np.column_stack([ygrid.flatten(),xgrid.flatten()]))
+    
+        # Reshape to grid
+        zwv_on_grid = np.reshape(zwv_flattened,(len(y),len(x)))
+        zwv_on_grid[zwv_on_grid=='NaN']=0
+        
+        if n > 1: # there is more than one file for that date, so we need to treat it differently
+          zs[:,:,i] = (zs[:,:,i]*(n-1)+zwv_on_grid)/n
         else:
-          worldview[date]=x,y,zs
+          zs[:,:,i] = zwv_on_grid
+          n = n+1
+          
+    zs[zs==0] = 'NaN' 
   
   # Set elevation relative to vertical datum
+  geoidheight = coords.geoidheight(xgrid.flatten(),ygrid.flatten())
+  geoidheight = np.reshape(geoidheight,(ny,nx))
   if verticaldatum == 'geoid':
-     for key in worldview.keys():
-       nx = len(worldview[key][0])
-       ny = len(worldview[key][1])
-       x_grid,y_grid = np.meshgrid(worldview[key][0],worldview[key][1])
-       geoidheight = coords.geoidheight(x_grid.flatten(),y_grid.flatten())
-       worldview[key][2][:,:] = worldview[key][2] - np.reshape(geoidheight,(ny,nx))
-  elif verticaldatum == 'ellipsoid':
-    worldview = worldview
-  else:
-    print "Unknown datum, defaulting to ellipsoid"
-  
-  return worldview
+    for i in range(0,len(time)):
+      zs[:,:,i] = zs[:,:,i] - geoidheight
+      
+  # It's possible we still pulled a DEM full of NaNs in the desired region. If so, let's chuck those.
+  nonnan=[]
+  for i in range(0,len(time)):
+    if len(np.where(~(np.isnan(zs[:,:,i])))[0]) > 5:
+      nonnan.append(i)
+  zs_nonnan = zs[:,:,nonnan]
+  time_nonnan = time[nonnan]    
+      
+  return x,y,zs_nonnan,time_nonnan
 
 def worldview_along_flowline(xpts,ypts,glacier,years='all',cutoff='terminus',verticaldatum='geoid',filt_len='none'):
 
   # Worldview data
-  WVDIR = os.path.join(os.getenv("HOME"),"/Users/kehrl/Data/Elevation/Worldview/HelheimKanger/")
+  WVDIR = os.path.join(os.getenv("HOME"),"/Users/kehrl/Data/Elevation/Worldview/"+glacier+"/")
   DIRs = os.listdir(WVDIR)
   
   # Set up output dictionary
@@ -288,7 +301,7 @@ def worldview_along_flowline(xpts,ypts,glacier,years='all',cutoff='terminus',ver
 
   for date in dates:
     for DIR in DIRs:
-      if DIR.startswith(date) and DIR.endswith('_32m.tif'): 
+      if DIR.startswith(date) and (DIR.endswith('_32m.tif') or DIR.endswith('32m_trans.tif')): 
         #print "Loading data from "+DIR+"\n"
         x,y,z = geotiff.read(WVDIR+DIR)
         z[z == 0] ='NaN'
@@ -305,7 +318,6 @@ def worldview_along_flowline(xpts,ypts,glacier,years='all',cutoff='terminus',ver
           # Get fractional year
           time = fracyear.date_to_fracyear(float(date[0:4]),float(date[4:6]),float(date[6:8]))
 
-          
           if cutoff == 'terminus':
             # Get terminus position at time of worldview image
             termpos = np.interp(time,term_time,term_values)
@@ -362,7 +374,7 @@ def worldview_at_pts(xpts,ypts,glacier,years='all',verticaldatum='geoid'):
 
   return zpts,time
 
-def dem_continuous(xmin,xmax,ymin,ymax,glacier,date,verticaldatum,fillin='none'):
+def dem_continuous(xmin,xmax,ymin,ymax,glacier,date,verticaldatum='geoid',fillin='none'):
 
   # Load gimp DEM
   xg,yg,zg = gimp_grid(xmin,xmax,ymin,ymax,glacier,verticaldatum)
@@ -381,6 +393,7 @@ def dem_continuous(xmin,xmax,ymin,ymax,glacier,date,verticaldatum,fillin='none')
       dates_backup = ['20110628']
     elif date == '20110628':
       dates = ['20110628','20110615']
+      dates_backup = ['20110319']
   elif glacier == 'Kanger':
     if date == '20110712':
       dates = ['20110712','20110808','20110823']
@@ -388,70 +401,18 @@ def dem_continuous(xmin,xmax,ymin,ymax,glacier,date,verticaldatum,fillin='none')
   
   # Load worldview images and update dates file in case there are multiple 
   # DEMs for a single date
-  wv = worldview_grid(dates,glacier,verticaldatum)
-  wv_backup = worldview_grid(dates_backup,glacier,verticaldatum)  
-  dates = wv.keys()
-  dates_backup = wv_backup.keys()
-  
-  # Interpolate worldview DEMs onto gimp DEM
-  xgrid,ygrid = np.meshgrid(xg,yg)
-  
-  zwv_on_grid = np.zeros([len(yg),len(xg),len(dates)])
-  n = 0
-  for date in dates:
-    # Get data
-    xwv = wv[date][0]
-    ywv = wv[date][1]
-    zwv = wv[date][2]
-    zwv[zwv == 0] = 'NaN'
+  xwv,ywv,zwv,timewv = worldview_grid(glacier,np.min(xg),np.max(xg),np.min(yg),np.max(yg),resolution=xg[1]-xg[0],years=dates,verticaldatum=verticaldatum)
+  xwvb,ywvb,zwvb,timewvb = worldview_grid(glacier,np.min(xg),np.max(xg),np.min(yg),np.max(yg),resolution=xg[1]-xg[0],years=dates_backup,verticaldatum=verticaldatum)  
     
-    # Interpolate
-    zwv_dem = scipy.interpolate.RegularGridInterpolator([ywv,xwv],zwv,bounds_error = False)
-    zwv_flattened = zwv_dem(np.column_stack([ygrid.flatten(),xgrid.flatten()]))
-    
-    # Reshape to grid
-    zwv_on_grid[:,:,n] = np.reshape(zwv_flattened,(len(yg),len(xg)))
-    n = n+1
-  
-  # We only use the backup DEMS if "fillin" is not set to none.
-  if fillin != 'none':
-    zwv_on_grid_backup = np.zeros([len(yg),len(xg),len(dates_backup)])
-    n = 0  
-    for date in dates_backup:
-      # Get data
-      xwv = wv_backup[date][0]
-      ywv = wv_backup[date][1]
-      zwv = wv_backup[date][2]
-      zwv[zwv == 0] = 'NaN'
-    
-      # Interpolate
-      zwv_dem = scipy.interpolate.RegularGridInterpolator([ywv,xwv],zwv,bounds_error = False)
-      zwv_flattened = zwv_dem(np.column_stack([ygrid.flatten(),xgrid.flatten()]))
-    
-      # Reshape to grid
-      zwv_on_grid_backup[:,:,n] = np.reshape(zwv_flattened,(len(yg),len(xg)))
-      n = n+1  
-    
-  # Find extent of primary worldview images  
-  xmin_wv = np.min([np.min(wv[date][0]) for date in dates])
-  xmax_wv = np.max([np.max(wv[date][0]) for date in dates])
-  ymin_wv = np.min([np.min(wv[date][1]) for date in dates])
-  ymax_wv = np.max([np.max(wv[date][1]) for date in dates])
-  
-  xind1 = np.argmin(abs(xg-xmin_wv))
-  xind2 = np.argmin(abs(xg-xmax_wv))
-  yind1 = np.argmin(abs(yg-ymin_wv))
-  yind2 = np.argmin(abs(yg-ymax_wv))
-  
   # Use worldview DEM
-  for i in range(xind1,xind2):
-    for j in range(yind1,yind2):
-      nonnan = np.where(~(np.isnan(zwv_on_grid[j,i,:])))[0]
+  for i in range(0,len(xg)):
+    for j in range(0,len(yg)):
+      nonnan = np.where(~(np.isnan(zwv[j,i,:])))[0]
       if len(nonnan) > 0:
-        zs[j,i] = np.mean(zwv_on_grid[j,i,nonnan])
-      elif (len(np.where(~(np.isnan(zwv_on_grid_backup[j,i,:])))[0])) > 0 and (fillin != 'none'):
-        nonnan = np.where(~(np.isnan(zwv_on_grid_backup[j,i,:])))[0]
-        zs[j,i] = np.mean(zwv_on_grid_backup[j,i,nonnan])
+        zs[j,i] = np.mean(zwv[j,i,nonnan])
+      elif (len(np.where(~(np.isnan(zwvb[j,i,:])))[0])) > 0 and (fillin != 'none'):
+        nonnan = np.where(~(np.isnan(zwvb[j,i,:])))[0]
+        zs[j,i] = np.mean(zwvb[j,i,nonnan])
   
   return xg,yg,zs
   
@@ -464,7 +425,7 @@ def dem_continuous_flowline(xf,yf,glacier,date,verticaldatum='geoid',fillin='non
   ymax = np.max(yf)+10.0e3
   
   # Get grid for that date 
-  xg,yg,zgrid = dem_continuous(xmin,xmax,ymin,ymax,glacier,date,verticaldatum,fillin='none')
+  xg,yg,zgrid = dem_continuous(xmin,xmax,ymin,ymax,glacier,date,verticaldatum,fillin)
   
   # Interpolate grid onto flowline
   dem = scipy.interpolate.RegularGridInterpolator([yg,xg],zgrid)
