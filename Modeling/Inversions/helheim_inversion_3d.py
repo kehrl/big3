@@ -15,8 +15,6 @@ import numpy as np
 import elmer_read 
 import elmer_mesh as mesh
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib
 
 ##########
 # Inputs #
@@ -145,75 +143,4 @@ fid.write('{0}\n'.format(len(bed['node'])))
 for i in range(0,len(bed['node'])):
   coeff=(bed['beta'][i]**2)*(bed['vel'][i]**(2.0/3.0))
   fid.write('{0} {1} {2:.4f} {3}\n'.format(bed['coord1'][i],bed['coord2'][i],bed['coord3'][i],coeff))
-fid.close()
-
-###########################################################
-# Make figures of basal shear stress and velocity anomaly #
-###########################################################
-# Plot basal shear stress
-taub_3D=elmer_read.grid3d(bed,'taub',holes,extent)
-velmod_3D=elmer_read.grid3d(surf,'vel',holes,extent)
-velmes_3D=elmer_read.grid3d(surf,'velmes',holes,extent)
-
-limits=[min(taub_3D[0]),max(taub_3D[0]),max(taub_3D[1]),min(taub_3D[1])]
-plotnames=['basin','terminus']
-plotlimits=np.array([[min(taub_3D[0]),max(taub_3D[0]),min(taub_3D[1]),max(taub_3D[1])],
-            [287000,310000,-2585000,-2558000]])
-
-for i in range(0,len(plotlimits)):
-  plt.clf()
-  plt.figure(figsize=(12,12))
-  ax1 = plt.subplot(221)
-  plt.imshow(velmes_3D[2]/1000,extent=limits)
-  plt.gca().invert_yaxis()
-  plt.clim([0,8])
-  cf = plt.colorbar(orientation='horizontal',fraction=0.3,pad=0.03)#,ax=ax1,shrink=0.4)
-  plt.setp( ax1.get_xticklabels(), visible=False)
-  plt.setp( ax1.get_yticklabels(), visible=False)
-  plt.title('Measured velocity')
-  cf.set_ticks([0,2,4,6])
-  cf.set_label('km yr$^{-1}$')
-  plt.ylim([plotlimits[i,2],plotlimits[i,3]])
-  plt.xlim(plotlimits[i,0],plotlimits[i,1])
-
-  ax2 = plt.subplot(222)
-  plt.imshow(velmod_3D[2]/1000,extent=limits)
-  plt.gca().invert_yaxis()
-  plt.clim([0,8])
-  cf = plt.colorbar(orientation='horizontal',fraction=0.3,pad=0.03)#,ax=ax1,shrink=0.4)
-  plt.setp( ax2.get_xticklabels(), visible=False)
-  plt.setp( ax2.get_yticklabels(), visible=False)
-  plt.title('Modelled velocity')
-  cf.set_ticks([-1,0,1])
-  cf.set_label('km yr$^{-1}$')
-  #cf.ax.tick_params(labelsize=20)
-  plt.xlim(plotlimits[i,0],plotlimits[i,1])
-  plt.ylim([plotlimits[i,2],plotlimits[i,3]]) 
-
-  ax3 = plt.subplot(223)
-  plt.imshow((velmod_3D[2]-velmes_3D[2])/1000,cmap='RdBu_r',extent=limits)
-  plt.gca().invert_yaxis()
-  plt.clim([-1,1])
-  cf = plt.colorbar(orientation='horizontal',fraction=0.3,pad=0.03)#,ax=ax1,shrink=0.4)
-  plt.setp( ax3.get_xticklabels(), visible=False)
-  plt.setp( ax3.get_yticklabels(), visible=False)
-  plt.title('Velocity anomaly')
-  cf.set_label('km yr$^{-1}$')
-  cf.set_ticks([-1,0,1])
-  plt.xlim(plotlimits[i,0],plotlimits[i,1])
-  plt.ylim([plotlimits[i,2],plotlimits[i,3]])
-
-  ax4 = plt.subplot(224)
-  plt.imshow(taub_3D[2]*10**6,norm=matplotlib.colors.LogNorm(),extent=limits)
-  plt.gca().invert_yaxis()
-  plt.clim([0.1,10**6])
-  cf = plt.colorbar(orientation='horizontal',fraction=0.3,pad=0.03)#,ax=ax1,shrink=0.4)
-  plt.setp( ax4.get_xticklabels(), visible=False)
-  plt.setp( ax4.get_yticklabels(), visible=False)
-  plt.title('Basal shear stress')
-  cf.set_ticks([1e1,1e3,1e6])
-  cf.set_label('Pa')
-  plt.xlim(plotlimits[i,0],plotlimits[i,1])
-  plt.ylim([plotlimits[i,2],plotlimits[i,3]])
-  plt.savefig(DIRR+"results_"+plotnames[i]+".jpg")
-   
+fid.close()   
