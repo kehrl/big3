@@ -16,13 +16,65 @@ import scipy.interpolate
 import numpy as np
 sys.path.append(os.path.join(os.getenv("HOME"),"Code/Util/Modules"))
 sys.path.append(os.path.join(os.getenv("HOME"),"Code/BigThreeGlaciers/Tools"))
-import geodat, icefronts, dist
+import geodat, icefronts, dist, geotiff, fracyear
 
 #########################################################################################
-def velocity_at_eulpoints(xpt,ypt,glacier,data='all'):
+def convert_binary_to_geotiff(glacier):
+
+  # I'm getting tired of unpacking Ian's binary velocity files every time I need to use them,
+  # so I've set up a script to convert all of them to geotiff. Then the "geodat" module 
+  # checks to see if there are geotiffs before unpacking the binary files.
+  
+  DIRTOP_TSX = os.path.join(os.getenv("HOME"),"Data/Velocity/TSX/"+glacier+"/")
+  DIRTOP_RADARSAT = os.path.join(os.getenv("HOME"),"Data/Velocity/RADARSAT/Greenland/")
+  
+  # TSX files
+  files = os.listdir(DIRTOP_TSX)
+  for file in files:
+    if file.startswith('track'):
+      print file
+      # Load binary data
+      x,y,v,vx,vy,ex,ey,time,interval = geodat.readbinary(DIRTOP_TSX+file+"/mosaicOffsets")
+      year,month,day = fracyear.fracyear_to_date(time)
+    
+      # Set up date label for geotiff file
+      date = "%04d%02d%02d" % (year,month,day)
+    
+      # Save as geotiff
+      geotiff.write_from_grid(x,y,np.flipud(v),float('NaN'),DIRTOP_TSX+"TIF/"+file+"_"+date+"_v.tif")
+      geotiff.write_from_grid(x,y,np.flipud(vx),float('NaN'),DIRTOP_TSX+"TIF/"+file+"_"+date+"_vx.tif")
+      geotiff.write_from_grid(x,y,np.flipud(vy),float('NaN'),DIRTOP_TSX+"TIF/"+file+"_"+date+"_vy.tif")
+      geotiff.write_from_grid(x,y,np.flipud(ex),float('NaN'),DIRTOP_TSX+"TIF/"+file+"_"+date+"_ex.tif")
+      geotiff.write_from_grid(x,y,np.flipud(ey),float('NaN'),DIRTOP_TSX+"TIF/"+file+"_"+date+"_ey.tif")
+  
+  # RADARSAT files    
+  files = os.listdir(DIRTOP_RADARSAT)
+  for file in files:
+    if file.startswith('winter'):
+      print file
+      # Load binary data
+      x,y,v,vx,vy,ex,ey,time,interval = geodat.readbinary(DIRTOP_RADARSAT+file+"/mosaicOffsets")
+    
+      # Save as geotiff
+      geotiff.write_from_grid(x,y,np.flipud(v),float('NaN'),DIRTOP_RADARSAT+"TIF/"+file+"_v.tif")
+      geotiff.write_from_grid(x,y,np.flipud(vx),float('NaN'),DIRTOP_RADARSAT+"TIF/"+file+"_vx.tif")
+      geotiff.write_from_grid(x,y,np.flipud(vy),float('NaN'),DIRTOP_RADARSAT+"TIF/"+file+"_vy.tif")
+      geotiff.write_from_grid(x,y,np.flipud(ex),float('NaN'),DIRTOP_RADARSAT+"TIF/"+file+"_ex.tif")
+      geotiff.write_from_grid(x,y,np.flipud(ey),float('NaN'),DIRTOP_RADARSAT+"TIF/"+file+"_ey.tif")
+      
+  return 1
+    
+#########################################################################################
+def velocity_at_eulpoints(xpt,ypt,glacier,data='all',xy_velocities='False'):
 
   # Finds velocity at nearest gridcell to xpt, ypt for all velocity maps. Output is 
   # velocity at xpt, ypt through time.
+
+  # Inputs:
+  # xpt, ypt: coordinates of flowline
+  # glacier: glacier name
+  # data: TSX, Radarsat, or all data
+  # xy_velocities: True or False; do you want the x,y velocities too?
 
   # Select data type
   if data == 'all':
@@ -35,11 +87,12 @@ def velocity_at_eulpoints(xpt,ypt,glacier,data='all'):
     print "Unknown data type"
 
   ###################
-  # LOAD velocities #
+  # Load velocities #
   ###################
   
   # Find velocity files to be imported
   files = []
+  dirs = []
   for type in data:
     if type == 'RADARSAT':
       DIRTOP = os.path.join(os.getenv("HOME"),"Data/Velocity/RADARSAT/Greenland/")
@@ -49,7 +102,8 @@ def velocity_at_eulpoints(xpt,ypt,glacier,data='all'):
     DIRs=os.listdir(DIRTOP)
     for DIR in DIRs:
       if DIR.startswith('track') or DIR.startswith('winter'):
-        files.append(DIRTOP+DIR)
+        files.append(DIR)
+        dirs.append(DIRTOP)
   
   # Load velocities
   m = len(files)
@@ -58,17 +112,23 @@ def velocity_at_eulpoints(xpt,ypt,glacier,data='all'):
   except:
     n = 1
   
+  # Set up variables
   velocities = np.zeros([m,n])
   velocities[:,:] = 'nan'
+  velocities_x = np.zeros([m,n])
+  velocities_x[:,:] = 'nan'
+  velocities_y = np.zeros([m,n])
+  velocities_y[:,:] = 'nan'
   error = np.zeros([m,n])
   error[:,:] = 'nan'
   times=np.zeros([m])
   termini=np.zeros([m])
   count=0
-  for file in files:
-    x,y,v,vx,vy,ex,ey,time,interval = geodat.readvelocity(file+"/mosaicOffsets")
-    if 'winter' in file:
-      time = float('20'+file[-2:])
+  
+  for i in range(0,len(files)):
+    x,y,v,vx,vy,ex,ey,time,interval = geodat.readvelocity(''.join(dirs[i]),''.join(files[i]),"mosaicOffsets")
+    if 'winter' in files[i]:
+      time = float('20'+files[i][-2:])
     times[count]=time
       
     # Set up grid for interpolation
@@ -80,6 +140,8 @@ def velocity_at_eulpoints(xpt,ypt,glacier,data='all'):
       
     # Find velocities 
     velocities[count,:] = fv(np.array([ypt,xpt]).T) 
+    velocities_x[count,:] = fvx(np.array([ypt,xpt]).T)
+    velocities_y[count,:] = fvy(np.array([ypt,xpt]).T)
     error[count,:] = velocities[count,:]*(fex(np.array([ypt,xpt]).T)/fvx(np.array([ypt,xpt]).T)+fey(np.array([ypt,xpt]).T)/fvy(np.array([ypt,xpt]).T))        
     
     count = count + 1
@@ -89,8 +151,13 @@ def velocity_at_eulpoints(xpt,ypt,glacier,data='all'):
   tpt_sort = times[sortind]
   vpt_sort = velocities[sortind,:]
   ept_sort = error[sortind,:]
-      	  
-  return vpt_sort,tpt_sort,ept_sort
+  vxpt_sort = velocities_x[sortind,:]
+  vypt_sort = velocities_y[sortind,:]
+  
+  if xy_velocities == 'True':
+    return vpt_sort,tpt_sort,ept_sort,vxpt_sort,vypt_sort
+  else:  	  
+    return vpt_sort,tpt_sort,ept_sort
   
 #########################################################################################
 def velocity_along_flowline(xf,yf,glacier,cutoff='terminus',data='all'):      
@@ -121,6 +188,7 @@ def velocity_along_flowline(xf,yf,glacier,cutoff='terminus',data='all'):
   
   # Find velocity files to be imported
   files = []
+  dirs = []
   for type in data:
     if type == 'RADARSAT':
       DIRTOP = os.path.join(os.getenv("HOME"),"Data/Velocity/RADARSAT/Greenland/")
@@ -130,7 +198,8 @@ def velocity_along_flowline(xf,yf,glacier,cutoff='terminus',data='all'):
     DIRs=os.listdir(DIRTOP)
     for DIR in DIRs:
       if DIR.startswith('track') or DIR.startswith('winter'):
-        files.append(DIRTOP+DIR)
+        files.append(DIR)
+        dirs.append(DIRTOP)
   
   # Load velocities
   m = len(files)
@@ -141,10 +210,10 @@ def velocity_along_flowline(xf,yf,glacier,cutoff='terminus',data='all'):
   times=np.zeros(m)
   termini=np.zeros(m)
   count=0
-  for file in files:
-    x,y,v,vx,vy,ex,ey,time,interval = geodat.readvelocity(file+"/mosaicOffsets")
-    if 'winter' in file:
-      time = float('20'+file[-2:])
+  for i in range(0,len(files)):
+    x,y,v,vx,vy,ex,ey,time,interval = geodat.readvelocity(''.join(dirs[i]),''.join(files[i]),"mosaicOffsets")
+    if 'winter' in files[i]:
+      time = float('20'+files[i][-2:])
     times[count]=time
       
     # Set up grid for interpolation
@@ -208,6 +277,7 @@ def velocity_at_lagpoints(xf,yf,pts,glacier,data='all'):
   
   # Find velocity files to be imported
   files = []
+  dirs = []
   for type in data:
     if type == 'RADARSAT':
       DIRTOP = os.path.join(os.getenv("HOME"),"Data/Velocity/RADARSAT/Greenland/")
@@ -217,7 +287,8 @@ def velocity_at_lagpoints(xf,yf,pts,glacier,data='all'):
     DIRs=os.listdir(DIRTOP)
     for DIR in DIRs:
       if DIR.startswith('track') or DIR.startswith('winter'):
-        files.append(DIRTOP+DIR)
+        files.append(DIR)
+        dirs.append(DIRTOP)
   
   # Load velocities
   m = len(files)
@@ -238,10 +309,10 @@ def velocity_at_lagpoints(xf,yf,pts,glacier,data='all'):
   intervals = np.zeros([m])
   termini = np.zeros([m])
   count=0
-  for file in files:
-    x,y,v,vx,vy,ex,ey,time,interval = geodat.readvelocity(file+"/mosaicOffsets")
-    if 'winter' in file:
-      time = float('20'+file[-2:])
+  for i in range(0,len(files)):
+    x,y,v,vx,vy,ex,ey,time,interval = geodat.readvelocity(''.join(dirs[i]),''.join(files[i]),"mosaicOffsets")
+    if 'winter' in files[i]:
+      time = float('20'+files[i][-2:])
     times[count]=time
     intervals[count] = interval
       
@@ -296,7 +367,7 @@ def tsx_near_time(time,glacier):
         best_track = DIR
 
   # Return the closest velocity profile
-  x,y,v,vx,vy,ex,ey,time,interval = geodat.readvelocity(DIR_TSX+best_track+"/mosaicOffsets")
+  x,y,v,vx,vy,ex,ey,time,interval = geodat.readvelocity(DIR_TSX,best_track,"/mosaicOffsets")
   return x,y,v,time
 
 
@@ -327,7 +398,7 @@ def variability(x,y,time1,time2,glacier):
     DIR=DIRs[j]
     if DIR.startswith('track'):
       infile=DIR_TSX+DIR
-      x1,y1,v1,vx1,vy1,ex1,ey1,time,interval = geodat.readvelocity(infile+"/mosaicOffsets")
+      x1,y1,v1,vx1,vy1,ex1,ey1,time,interval = geodat.readvelocity(DIR_TSX,DIR,"mosaicOffsets")
       tpt[count]=time
       
       x2,y2
@@ -379,8 +450,7 @@ def divergence_at_eulpoints(xpt,ypt):
   for j in range(0,len(DIRs)):
     DIR=DIRs[j]
     if DIR.startswith('track'):
-      infile=DIR_TSX+DIR
-      x,y,v,vx,vy,ex,ey,time,interval = geodat.readvelocity(infile+"/mosaicOffsets")
+      x,y,v,vx,vy,ex,ey,time,interval = geodat.readvelocity(DIR_TSX,DIR,"mosaicOffsets")
       tpt[count]=time
       
       for i in range(0,n):
@@ -441,7 +511,7 @@ def divergence_at_eulpoints(xpt,ypt):
     if DIR.startswith('winter'):
       print "Loading ",dir
       infile=DIR_RADARSAT+DIR
-      x,y,v,vx,vy,ex,ey,time,interval = geodat.readvelocity(infile+"/mosaicOffsets")
+      x,y,v,vx,vy,ex,ey,time,interval = geodat.readvelocity(DIR_RADARSAT,DIR,"mosaicOffsets")
       tpt[count] = float('20'+DIR[9:])
       
       for i in range(0,n):
@@ -512,7 +582,7 @@ def inversion_3D(x,y,file_velocity_in,dir_velocity_out):
   
   # Large velocity map to fill in gaps in smaller velocity map
   file_velocity_in_global = os.path.join(os.getenv("HOME"),"Data/Velocity/Random/Greenland/track-07to10")
-  x1,y1,v1,vx1,vy1,ex1,ey1,time,interval = geodat.readvelocity(file_velocity_in_global+"/mosaicOffsets")
+  x1,y1,v1,vx1,vy1,ex1,ey1,time,interval = geodat.readbinary(file_velocity_in_global+"/mosaicOffsets")
 
   # The large velocity map has some gaps. So we need to make the map smaller and fill in the gaps
   xmin = np.argmin(abs(x1-(np.min(x)-10e3)))
@@ -529,7 +599,7 @@ def inversion_3D(x,y,file_velocity_in,dir_velocity_out):
   ey1 = ey1[ymin:ymax,xmin:xmax]
 
   # Individual velocity map
-  x2,y2,v2,vx2,vy2,ex2,ey2,time,interval = geodat.readvelocity(file_velocity_in+"/mosaicOffsets")
+  x2,y2,v2,vx2,vy2,ex2,ey2,time,interval = geodat.readbinary(file_velocity_in+"/mosaicOffsets")
 
   # Grid points for interpolation
   xgrid,ygrid = np.meshgrid(x,y)
@@ -598,12 +668,12 @@ def inversion_2D(x,y,d,glacier,file_velocity_in,dir_velocity_out,filt_len='none'
   
   # Large velocity map, in case the small map isn't big enough
   file_velocity_large = os.path.join(os.getenv("HOME"),"Data/Velocity/Random/Greenland/track-07to10/mosaicOffsets")
-  x2,y2,v2,vx2,vy2,ex2,ey2,time2,interval2 = geodat.readvelocity(file_velocity_large)
+  x2,y2,v2,vx2,vy2,ex2,ey2,time2,interval2 = geodat.readbinary(file_velocity_large)
   f2 = scipy.interpolate.RegularGridInterpolator([y2,x2],v2)
   vint2=f2(np.column_stack([y,x]),method='linear')
   
   # Individual velocity map
-  x1,y1,v1,vx1,vy1,ex1,ey1,time1,interval1 = geodat.readvelocity(file_velocity_in)
+  x1,y1,v1,vx1,vy1,ex1,ey1,time1,interval1 = geodat.readbinary(file_velocity_in)
   f1 = scipy.interpolate.RegularGridInterpolator([y1,x1],v1,bounds_error=False)
   vint1=f1(np.column_stack([y,x]),method='linear') 
 
