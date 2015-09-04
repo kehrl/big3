@@ -1,3 +1,11 @@
+# This module calculates flotation height and height above flotation according to different bed products.
+#
+# height(zb,rho,rho_sw): flotation height for bed elevations zb 
+# extent(xs,ys,zs,ztime,glacier,rho_i,rho_sw,bedsource,verticaldatum): calculates height above flotation 
+#	through time according to bed elevations from cresis and surface elevations from worldview grids
+#
+# LMK, UW, 9/2/2015
+
 import os
 import sys
 sys.path.append(os.path.join(os.getenv("HOME"),"Code/Util/Modules/"))
