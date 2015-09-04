@@ -13,12 +13,15 @@ import numpy as np
 from subprocess import call
 import glob
 
-def cleanup(glacier):
+def cleanup(glacier,type='icefront'):
 
   # QGIS stupidly doesn't cleanup the shapefiles after you edit/delete features,
   # so we have to do it manually.
   
-  DIRI=os.path.join(os.getenv("HOME"),"Data/ShapeFiles/IceFronts/"+glacier+"/")
+  if type is 'icefront':
+    DIRI=os.path.join(os.getenv("HOME"),"Data/ShapeFiles/IceFronts/"+glacier+"/")
+  elif type is 'rift':
+    DIRI=os.path.join(os.getenv("HOME"),"Data/ShapeFiles/Rifts/"+glacier+"/")
 
   files = os.listdir(DIRI)
   os.chdir(DIRI)
@@ -69,7 +72,6 @@ def distance_along_flowline(x,y,dists,glacier,type='icefront'):
             if len(intersection) > 0:
               print "More than one position along the flowline where the ice front intersects."
               print file
-              print intersection[0],intersect.x,len(shapes)
             else:
               intersection = np.array([intersect.x,intersect.y])
 
