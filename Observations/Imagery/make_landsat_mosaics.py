@@ -70,10 +70,10 @@ for file in files:
     os.system('gdal_translate -co PHOTOMETRIC=RGB temp1.tif temp2.tif')
     os.system('otbcli_BundleToPerfectSensor -inp '+file+'_B8.tif  -inxs temp2.tif -out temp3.tif')
     os.system('gdalwarp temp3.tif temp4.tif -t_srs EPSG:3413'+' -te '+extent)
-    os.system('gdal_translate temp4.tif '+filename)
-    #for fname in os.listdir('.'):
-    #  if fname.startswith("temp"):
-    #    os.remove(os.path.join(fname))
+    os.system('gdal_translate -ot Byte temp4.tif '+filename)
+    for fname in os.listdir('.'):
+      if fname.startswith("temp"):
+        os.remove(os.path.join(fname))
   
 #############
 # Landsat 8 #
