@@ -65,7 +65,7 @@ for file in files:
   filename=DIR+glacier+"/TIF/"+year+month+day+hour+min+sec+"_"+file+".tif"
   if not(os.path.isfile(filename)):
     print filename
-    sys.argv[1:] = ['-separate',file+"_B4.tif",file+"_B3.tif",file+"_B2.tif",'-o','temp1.tif']
+    sys.argv[1:] = ['-separate',file+"_B3.tif",file+"_B2.tif",file+"_B1.tif",'-o','temp1.tif']
     gdal_merge.main()
     os.system('gdal_translate -co PHOTOMETRIC=RGB temp1.tif temp2.tif')
     os.system('otbcli_BundleToPerfectSensor -inp '+file+'_B8.tif  -inxs temp2.tif -out temp3.tif')
