@@ -116,7 +116,7 @@ del interped
 # Get thinning rates inferred from flux gates #
 ###############################################
 
-dH_time,dH = fluxgate.fluxgate_thinning(glacier,"fluxgate1",bedsource='morlighem')
+dH_time,dH = fluxgate.fluxgate_thinning(glacier,"fluxgate3",bedsource='morlighem')
 
 ###############
 # Plot images #
@@ -242,7 +242,7 @@ if plot_overview == 1:
       plt.bar(float(calvingstyle[i,0])-0.03,8.0,width=0.03,color=[1,0.6,0.6],edgecolor='none',bottom=-4)
   plt.legend(loc=2,fontsize=8,numpoints=1,handlelength=0.4,labelspacing=0.1)
   nonnan = np.where(~(np.isnan(terminus_val)))[0]
-  plt.plot(terminus_time[nonnan],terminus_val[nonnan]/1e3,'ko',linewidth=1,markersize=3)
+  plt.plot(terminus_time[nonnan],terminus_val[nonnan]/1e3,'ko',linewidth=1,markersize=2)
   x_formatter = matplotlib.ticker.ScalarFormatter(useOffset=False)
   ax.xaxis.set_major_formatter(x_formatter)
   ax.xaxis.set_minor_locator(AutoMinorLocator(2))

@@ -206,7 +206,7 @@ def calving(glacier):
       elif p[1] == 'TSX':
         time.append(fracyear.doy_to_fracyear(float(p[0][0:4]),float(p[0][5:8])))
       else:
-        print "Not working"
+        print "Not working, check ", p[0]
   
   # Make them arrays
   time = np.array(time)
