@@ -142,14 +142,18 @@ def load_all(time1,time2,type,glacier):
   termy = np.zeros([300,n])
   termx[:,:]= 'NaN'
   termy[:,:]= 'NaN'
+  numpoints = 0
   for i in range(0,n):
     file = shapefiles[i]
     # Load shapefile
     sf = shapefile.Reader(DIRI+file)
     shapes = sf.shapes()
-    termpts = np.array(shapes[0].points[:])
-    termx[0:len(termpts[:,0]),i] = termpts[:,0]
-    termy[0:len(termpts[:,0]),i] = termpts[:,1]
+    for shape in shapes:
+      termpts = np.array(shape.points[:])
+      if len(termpts[:,0]) > 0:
+        termx[numpoints:numpoints+len(termpts[:,0]),i] = termpts[:,0]
+        termy[numpoints:numpoints+len(termpts[:,0]),i] = termpts[:,1]
+        numpoints = numpoints+len(termpts[:,0])
       
   return termx, termy, termt
 
@@ -159,8 +163,6 @@ def near_time(time,glacier):
 
   files = os.listdir(DIRI)
 
-  best_x = []
-  best_y =[]
   best_time = []
   min_diff = 1.0
   for file in files:
@@ -171,15 +173,22 @@ def near_time(time,glacier):
       elif ("ASTER" in file) or ("Landsat" in file):
         icetime = fracyear.date_to_fracyear(float(file[0:4]),float(file[5:7]),float(file[8:10]))
       if abs(icetime-time) < min_diff:
+        best_x = []
+        best_y =[]
         min_diff = abs(icetime-time)
         sf = shapefile.Reader(DIRI+file)
         shapes = sf.shapes()
-        termpts = np.array(shapes[0].points[:])
-        best_x = termpts[:,0]
-        best_y = termpts[:,1]
+        for shape in shapes:
+          try:
+            termpts = np.array(shapes[0].points[:])
+            best_x.append(termpts[:,0])
+            best_y.append(termpts[:,1])
+          except:
+            print "no points in shape"
         best_time = icetime
 
-
+  best_x = np.array(best_x).T
+  best_y = np.array(best_y).T
   return best_x,best_y,best_time
 
 
