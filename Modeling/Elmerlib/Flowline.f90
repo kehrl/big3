@@ -53,7 +53,7 @@ Function Inflow (Model, nodenumber, dumy) RESULT(vel)
    
 
     thick=zs-zb
-    ub=60
+    ub=200
     vel = ub + (1.0_dp - ((zs - y) / (thick))**4) * (us-ub)
 
    	Return 

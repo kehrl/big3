@@ -38,7 +38,7 @@ DIRR=os.path.join(os.getenv("HOME"),"Models/"+glacier+"/Results/Flowline/"+MESHN
 
 lc=[50,100,500] # characteristic length scales for meshing
 #lc=[50,100,200] # characteristic length scales for meshing
-lc_d=[0,10000,30000] # transition points between different mesh sizes
+lc_d=[0,10000,40000] # transition points between different mesh sizes
 filt_len = 250.0 # length along flowline for filtering widths
 partitions="4" # Number of partitions
 layers=12 # Number of extrusions for mesh

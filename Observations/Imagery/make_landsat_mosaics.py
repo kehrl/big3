@@ -43,6 +43,7 @@ files = os.listdir(DIR+glacier+"/OriginalData/L4-5")
 files = os.listdir(DIR+glacier+"/OriginalData/L7")
 
 for file in files:
+  print file
   if file.startswith("L"):
     DIRFILE=DIR+glacier+"/OriginalData/L7/"+file+"/"
     os.chdir(DIRFILE)
