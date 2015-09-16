@@ -21,8 +21,9 @@ import matplotlib.colors as colors
 # Inputs #
 ##########
 
-# Glacier
-glacier = "Helheim" # Options: Helheim, Kanger
+# Get arguments
+args = sys.argv
+glacier = args[1][:] # Options: Kanger, Helheim
 
 # Locations for velocities
 dists_eul = -1.0*np.array([2.0,5.0,10.0,20.0,30.0]) # kilometers
@@ -41,7 +42,7 @@ elif glacier == "Kanger":
 ################
 
 time1 = 2008.5 #start time for plot
-time2 = 2015.5 # end time for plot
+time2 = 2015.75 # end time for plot
 seasonal = 1 # plot seasonal bars, to highlight seasonal trends
 normalized = 0
 lagrangian = 0
@@ -116,7 +117,7 @@ del interped
 # Get thinning rates inferred from flux gates #
 ###############################################
 
-dH_time,dH = fluxgate.fluxgate_thinning(glacier,"fluxgate3",bedsource='morlighem')
+dH_time,dH = fluxgate.fluxgate_thinning(glacier,"fluxgate1",bedsource='morlighem')
 
 ###############
 # Plot images #
@@ -184,7 +185,7 @@ if plot_images == 1:
     plt.yticks([])
     
     ax = plt.subplot(gs[1,i])
-    xvel,yvel,vvel,vtime = velocity.tsx_near_time(images_time[i][3],glacier)
+    xvel,yvel,uvel,yvel,vvel,vtime = velocity.tsx_near_time(images_time[i][3],glacier)
     year,month,day = fracyear.fracyear_to_date(vtime)
     xfront,yfront,ftime = icefronts.near_time(images_time[i][3],glacier)
     im = plt.imshow(vvel/1e3,extent=[np.min(xvel),np.max(xvel),np.min(yvel),np.max(yvel)],origin='lower')
@@ -240,7 +241,7 @@ if plot_overview == 1:
       plt.bar(float(calvingstyle[i,0])-0.03,8.0,width=0.03,color=[1,0.6,0.6],edgecolor='none',label='Nontabular',bottom=-4)
     elif i != 0:
       plt.bar(float(calvingstyle[i,0])-0.03,8.0,width=0.03,color=[1,0.6,0.6],edgecolor='none',bottom=-4)
-  plt.legend(loc=2,fontsize=8,numpoints=1,handlelength=0.4,labelspacing=0.1)
+  plt.legend(loc=2,fontsize=8,numpoints=1,handlelength=0.4,labelspacing=0.05,ncol=3,columnspacing=0.7,handletextpad=0.2)
   nonnan = np.where(~(np.isnan(terminus_val)))[0]
   plt.plot(terminus_time[nonnan],terminus_val[nonnan]/1e3,'ko',linewidth=1,markersize=2)
   x_formatter = matplotlib.ticker.ScalarFormatter(useOffset=False)
@@ -280,7 +281,7 @@ if plot_overview == 1:
   ax.xaxis.set_major_formatter(x_formatter)
   ax.xaxis.set_minor_locator(AutoMinorLocator(2))
   ax.yaxis.set_minor_locator(AutoMinorLocator(2))
-  plt.legend(loc=2,fontsize=8,numpoints=1,handlelength=0.4,labelspacing=0.1)
+  plt.legend(loc=2,fontsize=8,numpoints=1,handlelength=0.4,labelspacing=0.1,ncol=2,columnspacing=0.5)
   matplotlib.rc('font',family="Arial",)
   ax.tick_params('both', length=8, width=1.5, which='major')
   ax.tick_params('both', length=4, width=1, which='minor')
@@ -388,13 +389,6 @@ if plot_overview == 1:
   plt.xlim([min(velocitypoints[:,0])-5.0e3,max(velocitypoints[:,0])+5.0e3])
   plt.ylim([min(velocitypoints[:,1])-5.0e3,max(velocitypoints[:,1])+5.0e3])
   ax = plt.gca()
-
-  termx,termy,termt = icefronts.load_all(time1,time2,'icefront',glacier)
-  riftx,rifty,riftt = icefronts.load_all(time1,time2,'rift',glacier)
-  for i in range(0,len(termx[0,:])):
-    value = scalarMap.to_rgba(termt[i]-np.floor(termt[i]))
-    plt.plot(termx[:,i],termy[:,i],color='0.75')
-  plt.plot(x,y,'k',linewidth=1.5)
   for i in range(0,len(velocitypoints)):
     plt.plot(velocitypoints[i,0],velocitypoints[i,1],'o',color=coloptions[i],markersize=7)
   ax.set_xticklabels([])
@@ -571,8 +565,16 @@ if plot_bed == 1:
     ax1.legend(loc=2,fontsize=9,ncol=2,labelspacing=0.1,columnspacing=0.2,handletextpad=0.05)
 
   # Plot terminus positions 
-  ax2.plot(terminus_val/1e3,terminus_time,'.-',color='0.6')
-  ax2.plot(rift_val/1e3,rift_time,'.',color='r')
+  ax2.plot(terminus_val/1e3,terminus_time,'.-',color='0.6',markersize=7)
+  ind = np.where(calvingstyle[:,1] == 'Tabular')[0]
+  for i in ind:
+    termpos = terminus_val[np.argmin(abs(float(calvingstyle[i,0])-terminus_time))]
+    ax2.plot(termpos/1e3,float(calvingstyle[i,0]),'.',color=[0.6,0.6,1],markersize=7,lw=0)
+  ind = np.where(calvingstyle[:,1] == 'Domino')[0]
+  for i in ind:
+    termpos = terminus_val[np.argmin(abs(float(calvingstyle[i,0])-terminus_time))]
+    ax2.plot(termpos/1e3,float(calvingstyle[i,0]),'.',color=[1,0.6,0.6],markersize=7,lw=0)
+
   ax2.set_ylabel('Time',fontsize=9,color='0.6')
   for tl in ax2.get_yticklabels():
     tl.set_color('0.6')
@@ -606,5 +608,5 @@ if plot_bed == 1:
   ax.set_xticklabels([])
   ax.set_yticklabels([])
 
-  plt.savefig(os.path.join(os.getenv("HOME"),'Bigtmp/'+glacier+'_bed_map.pdf'),FORMAT='PDF')
+  plt.savefig(os.path.join(os.getenv("HOME"),'Bigtmp/'+glacier+'_bed_vel_map.pdf'),FORMAT='PDF')
   plt.close()
