@@ -91,9 +91,9 @@ def atm(years,verticaldatum):
       for file in files:
         if 'nadir' in file and not(file.endswith('.xml')):
           try:
-            data=np.loadtxt(ATM+DIR+file,comments='#')
+            data=np.loadtxt(ATMDIR+DIR+'/'+file,comments='#')
           except:
-            data=np.loadtxt(ATMDIR+DIR+file,comments='#',delimiter=',')
+            data=np.loadtxt(ATMDIR+DIR+'/'+file,comments='#',delimiter=',')
           xfile = data[:,2]
           yfile = data[:,1]
           zfile = data[:,3]
