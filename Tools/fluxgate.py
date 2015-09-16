@@ -17,15 +17,13 @@ import numpy as np
 import scipy.interpolate
 from matplotlib import path
 
-def fluxgate_thinning(glacier,fluxgate_filename,bedsource='morlighem'):
+def fluxgate_thinning(glacier,fluxgate_filename,bedsource='morlighem',dl=20.0):
 
   # Inputs:
   # glacier: glacier name
   # fluxgate_filename: fluxgate filename, minus the "_in" or "_out" which defines the extent of the box
   # bedsource: should be use CreSIS radar transects or morlighem bed DEM to define the bed elevation?
-  
-  # Size of blocks for integrating ice flux across fluxgate
-  dl = 50.0 
+  # dl: size of blocks for integrating ice flux across fluxgate
 
   # Get Shapefiles for flux gates and for glacier extent (so we can calculate surface area accurately)
   DIR = os.path.join(os.getenv("HOME"),"Data/ShapeFiles/FluxGates/"+glacier+"/")
@@ -143,7 +141,7 @@ def fluxgate_thinning(glacier,fluxgate_filename,bedsource='morlighem'):
   for i in range(0,len(vperp_in[:,0])):
     # Find places where we have no surface velocities
     nans = np.where(np.isnan(vperp_in[i,:]))[0]
-    if len(nans) < 50:
+    if len(nans) < 2000/dl:
       # If the number of locations without surface velocities is small, let's use the known 
       # surface velocities to interpolate.
       nonnans = np.where(~(np.isnan(vperp_in[i,:])))[0]
@@ -155,8 +153,7 @@ def fluxgate_thinning(glacier,fluxgate_filename,bedsource='morlighem'):
       
       # We don't want negative fluxes so let's toss them out.
       Q_in[i,zs_in < zb_in] = 0
-      Q_in_max[i,zs_in < zb_in] = 0
-      
+      Q_in_max[i,zs_in < zb_in] = 0   
 
   # Get flux through downstream gate
   xperp = (-y_out[1]+y_out[0])/np.sqrt((-y_out[1]+y_out[0])**2+(x_out[1]-x_out[0])**2)
@@ -171,7 +168,7 @@ def fluxgate_thinning(glacier,fluxgate_filename,bedsource='morlighem'):
   for i in range(0,len(vperp_out[:,0])):
     # Find places where we have no surface velocities
     nans = np.where(np.isnan(vperp_out[i,:]))[0]
-    if len(nans) < 50:
+    if len(nans) < 2000/dl:
       # If the number of locations without surface velocities is small, let's use the known 
       # surface velocities to interpolate.
       nonnans = np.where(~(np.isnan(vperp_out[i,:])))[0]
