@@ -11,7 +11,7 @@ import coords, elevation
 import scipy.interpolate
 import geotiff
 
-def cresis(year,glacier,verticaldatum='geoid'):
+def cresis(year,glacier,verticaldatum='geoid',cleanup='True'):
 
   if (year == '2001'):
     if glacier == 'Helheim':
@@ -30,8 +30,10 @@ def cresis(year,glacier,verticaldatum='geoid'):
     surf = elevation.atm('2001','ellipsoid')
     if glacier == 'Helheim':
       zs = scipy.interpolate.griddata(surf['20010521'][:,0:2],surf['20010521'][:,2],np.column_stack([x2,y2]),method='nearest')
+      dates = np.ones(len(x2))*20010521
     elif glacier == 'Kanger':
       zs = scipy.interpolate.griddata(surf['20010520'][:,0:2],surf['20010520'][:,2],np.column_stack([x2,y2]),method='nearest')
+      dates = np.ones(len(x2))*20010520
     
     zb = zs-H
   
@@ -53,6 +55,7 @@ def cresis(year,glacier,verticaldatum='geoid'):
     zb=[]
     years=[]
     type=[]
+    dates = []
     lines = fid.readlines()
     for line in lines[1:-1]:
       fields = line.split()
@@ -65,15 +68,21 @@ def cresis(year,glacier,verticaldatum='geoid'):
       zb.append(float(fields[1]))
       zs.append(float(fields[0]))
       type.append(fields[3])
+      dates.append(float(fields[8]))
     years=np.array(years)
     x=np.array(x)
     y=np.array(y)
     zb=np.array(zb)
     zs=np.array(zs)
+    dates=np.array(dates)
     
     x2,y2 = coords.convert(x,y,4326,3413)
     
     if glacier == 'Helheim':
+      badind = np.r_[range(22406,22513),range(26969,27020),range(29300,29336),range(30253,30408),range(33224,33440),range(33552,33620),range(37452,37531),\
+      		range(37640,37675),range(37819,37836),range(44127,44207),range(46942,47030),range(53595,53663),\
+      		range(53713,53793),range(53974,53987),range(56646,56726),range(64006,64013),range(61237,61529),range(61745,62000),range(68541,68810),\
+      		range(69202,69475),range(75645,75904),range(77285,77538),range(77728,77970)] 
       if year == '2006a':
         ind = range(22285,22413)
       elif year == '2006b':
@@ -95,7 +104,7 @@ def cresis(year,glacier,verticaldatum='geoid'):
       elif year == 'all':
         ind = []
         for i in range(0,len(type)):
-          if 'ICESat' not in type[i]:
+          if ("ICESat" not in type[i]) and (i not in badind):
             ind.append(i)
     elif glacier == 'Kanger':
       if year == '2008':
@@ -128,7 +137,7 @@ def cresis(year,glacier,verticaldatum='geoid'):
   else:
     print "Unknown vertical datum, defaulting to ellipsoid height"
     
-  return np.column_stack([x2[ind],y2[ind],zb[ind]])
+  return np.column_stack([x2[ind],y2[ind],zb[ind],dates[ind]])
 
 def cresis_grid(glacier,verticaldatum='geoid'):
 
