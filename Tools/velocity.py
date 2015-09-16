@@ -368,7 +368,7 @@ def tsx_near_time(time,glacier):
 
   # Return the closest velocity profile
   x,y,v,vx,vy,ex,ey,time,interval = geodat.readvelocity(DIR_TSX,best_track,"/mosaicOffsets")
-  return x,y,v,time
+  return x,y,vx,vy,v,time
 
 
 #########################################################################################
