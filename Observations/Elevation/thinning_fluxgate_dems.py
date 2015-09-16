@@ -15,7 +15,7 @@ import matplotlib.cm as cmx
 import matplotlib
 import geotiff
 
-glacier = 'Kanger' 
+glacier = 'Helheim' 
 
 if glacier == 'Helheim':
   xmin = 285000.0
@@ -119,15 +119,15 @@ ax = plt.gca()
 plt.xlim([xmin,xmax])
 plt.ylim([ymin,ymax])
 path = matplotlib.path.Path(np.column_stack([x_gate1,y_gate1]))
-patch = matplotlib.patches.PathPatch(path,facecolor='b',edgecolor='k',alpha=0.4,lw=0)
+patch = matplotlib.patches.PathPatch(path,facecolor='g',edgecolor='k',alpha=0.4,lw=0)
 ax.add_patch(patch)
 plt.plot(x_gate1,y_gate1,'k',linewidth=1)
 path = matplotlib.path.Path(np.column_stack([x_gate2,y_gate2]))
-patch = matplotlib.patches.PathPatch(path,facecolor='g',edgecolor='k',alpha=0.4,lw=0)
+patch = matplotlib.patches.PathPatch(path,facecolor='r',edgecolor='k',alpha=0.4,lw=0)
 ax.add_patch(patch)
 plt.plot(x_gate2,y_gate2,'k',linewidth=1)
 path = matplotlib.path.Path(np.column_stack([x_gate3,y_gate3]))
-patch = matplotlib.patches.PathPatch(path,facecolor='r',edgecolor='k',alpha=0.4,lw=0)
+patch = matplotlib.patches.PathPatch(path,facecolor='b',edgecolor='k',alpha=0.4,lw=0)
 ax.add_patch(patch)
 plt.plot(x_gate3,y_gate3,'k',linewidth=1)
 plt.xticks([])
