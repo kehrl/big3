@@ -13,7 +13,7 @@ import sys
 import numpy as np
 sys.path.append(os.path.join(os.getenv("HOME"),"Code/Util/Modules"))
 sys.path.append(os.path.join(os.getenv("HOME"),"Code/BigThreeGlaciers/Tools"))
-import icefronts, glacier_flowline
+import icefronts, glacier_flowline, coords
 import coords, geotiff
 import scipy.interpolate, dist, fracyear
 import scipy.signal as signal
@@ -21,6 +21,20 @@ import shapely.geometry
 
 def gimp_at_pts(xpts,ypts,glacier,verticaldatum):
   
+  '''
+  elev = gimp_at_pts(xpts,ypts,glacier,verticaldatum)
+  Find GIMP surface elevation at points xpts,ypts.
+  
+  Inputs:
+  xpts,ypts: points where you want interpolation
+  glacier: glacier name
+  verticaldatum: ellipsoid or geoid
+  
+  Outputs:
+  elev: 1-d numpy array of GIMP surface elevations at xpts, ypts
+  '''
+  
+  # Choose gimp surface DEM based on glacier name
   if glacier == 'Helheim':
     file = os.path.join(os.getenv("HOME"),'Data/Elevation/Gimp/gimpdem3_1.tif')
   elif glacier == 'Kanger':
@@ -48,6 +62,21 @@ def gimp_at_pts(xpts,ypts,glacier,verticaldatum):
   
 def gimp_grid(xmin,xmax,ymin,ymax,glacier,verticaldatum):
   
+  '''
+  x,y,elev = gimp_grid(xmin,xmax,ymin,ymax,glacier,verticaldatum)
+  
+  Find GIMP surface elevation in grid defined by xmin,xmax,ymin,ymax.
+  
+  Inputs:
+  xmin,xmax,ymin,ymax: extent of grid (grid spacing will be the same as the original GIMP product)
+  glacier: glacier name
+  verticaldatum: ellipsoid or geoid
+  
+  Outputs:
+  x,y: arrays of x and y coordinates for grid
+  elev: grid of GIMP surface elevations 
+  '''
+  
   if glacier == 'Helheim':
     file = os.path.join(os.getenv("HOME"),'Data/Elevation/Gimp/gimpdem3_1.tif')
   elif glacier == 'Kanger':
@@ -71,7 +100,20 @@ def gimp_grid(xmin,xmax,ymin,ymax,glacier,verticaldatum):
   return x,y,elev
 
 def atm(years,verticaldatum):
-  import coords
+
+  '''
+  atm = atm(years,verticaldatum)
+  
+  Get ATM data for particular years.
+  
+  Inputs:
+  years: years that you want ATM data
+  verticaldatum: ellipsoid or geoid
+  
+  Outputs:
+  atm: dictionary of ATM surface elevations for years; column 1 is x coordinate, column 2 
+  		is y coordinate, column 3 is surface elevation according to the chosen vertical datum 
+  '''
   
   # Directory for ATM
   ATMDIR = os.path.join(os.getenv("HOME"),'Data/Elevation/ATM/HelheimKanger/')
@@ -120,6 +162,25 @@ def atm(years,verticaldatum):
 
 def atm_along_flowline(xpts,ypts,glacier,years='all',cutoff='none',maxdist=200,verticaldatum='geoid'):
   
+  '''
+  pts = atm_along_flowline(xpts,ypts,glacier,years='all',cutoff='none',maxdist=200,verticaldatum='geoid')
+  
+  Get atm surface elevations along a flowline. Select points that are within "maxdist" of the flowline.
+  
+  Inputs:
+  xpts,ypts: coordinates of flowline
+  glacier: glacier name
+  years: years that you want data
+  cutoff: cutoff surface elevations in front of glacier terminus (options: 'none' or 'terminus')
+  maxdist: maximum distance between ATM point and flowline point to include in output
+  verticaldatum: ellipsoid or geoid
+  
+  Outputs:
+  pts: dictionary of ATM points along flowline, maybe this should be changed? or you should 
+  just use "atm_at_pts" which returns an array of surface elevations at the chosen points?
+  
+  '''
+  
   # Get ATM data
   data = atm(years,verticaldatum)
   
@@ -165,6 +226,23 @@ def atm_along_flowline(xpts,ypts,glacier,years='all',cutoff='none',maxdist=200,v
   
 def atm_at_pts(xpts,ypts,glacier,years='all',maxdist=200,verticaldatum='geoid'):
 
+  '''
+  zpts,time = atm_at_pts(xpts,ypts,glacier,years='all',maxdist=200,verticaldatum='geoid')
+  
+  Find ATM surface elevations at xpts,ypts.
+  
+  Inputs:
+  xpts,ypts: desired coordinates for ATM surface elevations
+  glacier: glacier name
+  years: years that you want data
+  maxdist: maximum allowable distance between point and ATM data
+  verticaldatum: ellipsoid or geoid
+  
+  Outputs:
+  zpts: array of surface elevations at xpts,ypts
+  time: time for each array
+  '''
+
   # Get ATM data
   atm = atm_along_flowline(xpts,ypts,glacier,years,'none',maxdist,verticaldatum)
   
@@ -183,15 +261,21 @@ def atm_at_pts(xpts,ypts,glacier,years='all',maxdist=200,verticaldatum='geoid'):
    
 def worldview_grid(glacier,xmin=0,xmax=0,ymin=0,ymax=0,resolution=32,years='all',verticaldatum='geoid'):
 
-  # Inputs
-  # xmin,xmax,ymin,ymax: extent for output grids
-  # years: year that you want data or "all" for all years 
-  # glacier: Kanger or Helheim
-  # verticaldatum: ellipsoid or geoid
+  '''
+  x,y,zs_nonnan,time_nonnan=worldview_grid(glacier,xmin=0,xmax=0,ymin=0,ymax=0,resolution=32,years='all',verticaldatum='geoid')
   
-  # Output: 
-  # x,y,zs_nonnan,time_nonnan: numpy array of surface elevations on the grid x,y for times_nonnan
-
+  Output an array of worldview grids.
+  
+  Inputs
+  xmin,xmax,ymin,ymax: extent for output grids
+  years: year that you want data or "all" for all years 
+  glacier: Kanger or Helheim
+  verticaldatum: ellipsoid or geoid
+  
+  Output: 
+  x,y,zs_nonnan,time_nonnan: numpy array of surface elevations on the grid x,y for times_nonnan
+  '''
+  
   # Set up output grid
   dx = dy = float(resolution)
   nx = np.ceil((xmax-xmin)/dx)+1
@@ -268,6 +352,13 @@ def worldview_grid(glacier,xmin=0,xmax=0,ymin=0,ymax=0,resolution=32,years='all'
   return x,y,zs_nonnan,time_nonnan
 
 def worldview_along_flowline(xpts,ypts,glacier,years='all',cutoff='terminus',verticaldatum='geoid',filt_len='none'):
+
+  '''
+  pts = worldview_along_flowline(xpts,ypts,glacier,years='all',cutoff='terminus',verticaldatum='geoid',filt_len='none')
+  
+  Outputs worldview surface elevations along a flowline defined by xpts,ypts. Same as "atm_along_flowline" except
+  for worldview data. See that function for more information.
+  '''
 
   # Worldview data
   WVDIR = os.path.join(os.getenv("HOME"),"/Users/kehrl/Data/Elevation/Worldview/"+glacier+"/")
@@ -361,6 +452,22 @@ def worldview_along_flowline(xpts,ypts,glacier,years='all',cutoff='terminus',ver
 
 def worldview_at_pts(xpts,ypts,glacier,years='all',verticaldatum='geoid'):
 
+  '''
+  zpts,time = worldview_at_pts(xpts,ypts,glacier,years='all',verticaldatum='geoid')
+  
+  Interpolates worldview surface elevations to points xpts,ypts.
+  
+  Inputs:
+  xpts,ypts: points where we want surface elevations
+  glacier: glacier name
+  years: years that we want data
+  verticaldatum: geoid or ellipsoid
+  
+  Outputs:
+  zpts: array of surface elevations for points xpts,ypts
+  time: time of the arrays
+  '''
+
   wv = worldview_along_flowline(xpts,ypts,glacier,years,'none',verticaldatum)
   
   dates = np.sort(wv.keys())
@@ -376,6 +483,24 @@ def worldview_at_pts(xpts,ypts,glacier,years='all',verticaldatum='geoid'):
 
 def dem_continuous(xmin,xmax,ymin,ymax,glacier,date,verticaldatum='geoid',fillin='none'):
 
+  '''
+  xg,yg,zs = dem_continuous(xmin,xmax,ymin,ymax,glacier,date,verticaldatum='geoid',fillin='none')
+  
+  The worldview DEMs do not cover the entire glacier extent, so this function combines individual
+  DEMs to produce a continuous DEM for different time periods.
+  
+  Inputs:
+  xmin,xmax,ymin,ymax: desired output grid size
+  glacier: glacier name
+  date: date for terminus DEM (see function for options)
+  verticaldatum: geoid or elliipsoid
+  fillin: fill in no data locations
+  
+  Outputs:
+  xg,yg: x and y coordinates for output grid
+  zg: continuous surface DEM 
+  '''
+  
   # Load gimp DEM
   xg,yg,zg = gimp_grid(xmin,xmax,ymin,ymax,glacier,verticaldatum)
   
@@ -418,6 +543,13 @@ def dem_continuous(xmin,xmax,ymin,ymax,glacier,date,verticaldatum='geoid',fillin
   
 def dem_continuous_flowline(xf,yf,glacier,date,verticaldatum='geoid',fillin='none'):
 
+  '''
+  zflow = dem_continuous_flowline(xf,yf,glacier,date,verticaldatum='geoid',fillin='none')
+
+  Same as "dem_continuous", except output the coordinates along a flowline rather than as a 
+  grid. See "dem_continuous" for more information.
+
+  '''
   # Get grid dimensions for dem_continuous
   xmin = np.min(xf)-10.0e3
   xmax = np.max(xf)+10.0e3
