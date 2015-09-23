@@ -1,4 +1,5 @@
-# This code plots an L-curve for the three dimensional model. 
+# This code plots an L-curve for the three dimensional model or flowline model. 
+# Inputs is : lcurve.py Flowline DEM20120624 
 #
 # LMK, UW, 5/30/2015
 
@@ -9,8 +10,9 @@ from pylab import *
 
 args = sys.argv
 
-DIR = os.path.join(os.getenv("HOME"),"Models/Helheim/Results/3D/")
-RES = args[1]
+ver = args[1]
+RES = args[2]
+DIR = os.path.join(os.getenv("HOME"),"Models/Helheim/Results/"+ver+"/")
 DIRR = DIR+RES+"/Inversion/"
 
 if not(os.path.isdir(DIRR)):
@@ -59,7 +61,7 @@ for i in np.arange(1,len(nsim)-4,1):
   if (i==0) or (strings[i][0]=='1'):
     plt.text(cost_bed[i],cost_sur[i]+cost_sur[i]*0.05,strings[i],fontsize=12) 
 plt.text(cost_bed[-1]-cost_bed[-1]*0.5,cost_sur[-1]-cost_sur[-1]*0.15,strings[-1],fontsize=12) 
-plt.yticks([1e10,5e10,1e11],fontsize=10)
+#plt.yticks([1e10,5e10,1e11],fontsize=10)
 plt.xticks(fontsize=10)
 plt.gca().set_xscale('log')
 plt.gca().set_yscale('log')
@@ -70,4 +72,4 @@ plt.gca().xaxis.set_major_formatter(FormatStrFormatter("%.0E"))
 plt.gca().yaxis.set_major_formatter(FormatStrFormatter("%.0E"))
 plt.subplots_adjust(left=0.18, bottom=None, right=None, top=None, wspace=0.0, hspace=0.0)
 plt.gca()
-plt.ylim([1e10,1e11+1e10])
+#plt.ylim([1e10,1e11+1e10])
