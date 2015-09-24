@@ -15,8 +15,14 @@ import glob
 
 def cleanup(glacier,type='icefront'):
 
-  # QGIS stupidly doesn't cleanup the shapefiles after you edit/delete features,
-  # so we have to do it manually.
+  '''
+  cleanup(glacier,type='icefront')
+  
+  QGIS stupidly doesn't cleanup the shapefiles after you edit/delete features,
+  so we have to do it manually. Basically I save a temporary shapefile and then save it
+  again with its original name. Saving the file automatically cleans the file. There is no 
+  output.
+  '''
   
   if type is 'icefront':
     DIRI=os.path.join(os.getenv("HOME"),"Data/ShapeFiles/IceFronts/"+glacier+"/")
@@ -39,8 +45,25 @@ def cleanup(glacier,type='icefront'):
       for tempfile in tempfiles:
         os.remove(tempfile)
 
+  return "success"
+
 def distance_along_flowline(x,y,dists,glacier,type='icefront'):
 
+  '''
+  terminus_val,terminus_time=distance_along_flowline(x,y,dists,glacier,type='icefront')
+  
+  Find terminus position (or rift position) along a flowline.
+  
+  Inputs:
+  x,y,dists: x and y coordinates for flowline, and distance along the flowline
+  glacier: glacier name
+  type: icefront or rift positions
+  
+  Outputs:
+  terminus_val: distance of terminus along flowline
+  terminus_time: time for each terminus_val
+  '''
+  
   if type is 'icefront':
     DIRI=os.path.join(os.getenv("HOME"),"Data/ShapeFiles/IceFronts/"+glacier+"/")
   elif type is 'rift':
@@ -101,20 +124,49 @@ def distance_along_flowline(x,y,dists,glacier,type='icefront'):
   
   return terminus_val, terminus_time
 
-def position(x,y,dists,glacier,year,month,day):
+def position(x,y,dists,glacier,time):
+
+  '''
+  terminus = position(x,y,dists,glacier,time)
+  
+  Get the terminus position along the flowline for time "time."
+  
+  Inputs:
+  x,y,dists: x,y coordinates and their distance along the flowline
+  glacier: glacier name
+  time: time when want the terminus position
+  
+  Outputs:
+  terminus: distance of terminus position along flowline (using linear interpolation from
+  		the nearby picked terminus positions)
+  '''
 
   # Get all terminus positions
   terminus_val,terminus_time = distance_along_flowline(x,y,dists,glacier,type='icefront')
-
-  # Get fractional year
-  time = fracyear.date_to_fracyear(float(year),float(month),float(day))
+  
+  if len(time) > 1:
+    time = fracyear.date_to_fracyear(time[0],time[1],time[2])
   
   # Interpolate terminus position for the time
   terminus = np.interp(time,terminus_time,terminus_val)
 
   return terminus
 
-def load_all(time1,time2,type,glacier):
+def load_all(time1,time2,glacier,type='icefront'):
+  
+  '''
+  termx,termy,termt = load_all(time1,time2,type,glacier)
+  
+  Load all terminus positions for the chosen glacier.
+  
+  Inputs:
+  time1,time2: load terminus positions from time1 to time2
+  glacier: glacier name
+  type: icefront or rift
+  
+  Outputs:
+  termx,termy: array of x,y coordinates of terminus positions for times in termt
+  '''
   
   if type is 'icefront':
     DIRI=os.path.join(os.getenv("HOME"),"Data/ShapeFiles/IceFronts/"+glacier+"/")
@@ -159,6 +211,17 @@ def load_all(time1,time2,type,glacier):
 
 def near_time(time,glacier):
 
+  '''
+  best_x,best_y,best_time=near_time(time,glacier)
+  
+  Inputs:
+  time: time when we want terminus position
+  glacier: glacier name
+  
+  Outputs:
+  best_x,best_y: x,y coordinates for terminus position that is closest in time to "time"
+  '''
+
   DIRI=os.path.join(os.getenv("HOME"),"Data/ShapeFiles/IceFronts/"+glacier+"/")
 
   files = os.listdir(DIRI)
@@ -173,26 +236,36 @@ def near_time(time,glacier):
       elif ("ASTER" in file) or ("Landsat" in file):
         icetime = fracyear.date_to_fracyear(float(file[0:4]),float(file[5:7]),float(file[8:10]))
       if abs(icetime-time) < min_diff:
-        best_x = []
-        best_y =[]
+        best_x = np.zeros(0)
+        best_y = np.zeros(0)
         min_diff = abs(icetime-time)
         sf = shapefile.Reader(DIRI+file)
         shapes = sf.shapes()
         for shape in shapes:
           try:
-            termpts = np.array(shapes[0].points[:])
-            best_x.append(termpts[:,0])
-            best_y.append(termpts[:,1])
+            termpts = np.array(shape.points[:])
+            best_x = np.r_[best_x,termpts[:,0]]
+            best_y = np.r_[best_y,termpts[:,1]]
           except:
             print "no points in shape"
         best_time = icetime
 
-  best_x = np.array(best_x).T
-  best_y = np.array(best_y).T
   return best_x,best_y,best_time
 
 
 def calving(glacier):
+  
+  '''
+  behavior=calving(glacier)
+  
+  Load files that state the type of "calving" for each satellite image. 
+  
+  Inputs:
+  glacier: glacier name
+  
+  Outputs:
+  behavior: a column array of time, calvingstyle, satellite, file date
+  '''
   
   DIR=os.path.join(os.getenv("HOME"),"Data/CalvingStyle/"+glacier+"/")
 
