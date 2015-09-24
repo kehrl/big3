@@ -9,7 +9,7 @@ import elmer_mesh
 import matplotlib.path as path
 import numpy as np
 
-def load(glacier,xmin,xmax,ymin,ymax,dx):
+def load(glacier,xmin,xmax,ymin,ymax,dx,ice=0):
 
   # Directory for holes for mask
   DIR = os.path.join(os.getenv("HOME"),'Data/Shapefiles/IceMasks/'+glacier+'/')
@@ -21,7 +21,10 @@ def load(glacier,xmin,xmax,ymin,ymax,dx):
   ny = np.ceil((ymax-ymin)/dx)+1
   y = np.linspace(ymin,ymin+dx*ny,ny)
   
-  mask = np.zeros([ny,nx])
+  if ice == 1:
+    mask = np.ones([ny,nx])
+  else: 
+    mask = np.zeros([ny,nx])
   xgrid,ygrid = np.meshgrid(x,y)
   
   xflatten = xgrid.flatten()
@@ -35,7 +38,10 @@ def load(glacier,xmin,xmax,ymin,ymax,dx):
       holepath = path.Path(hole[:,0:2])
       cond = holepath.contains_points(points)
       ind = np.where(cond==True)[0]
-      maskflatten[ind]=1
+      if ice == 1:
+        maskflatten[ind]=0
+      else: 
+        maskflatten[ind]=1
           
   mask = np.reshape(maskflatten,[ny,nx])    
 
