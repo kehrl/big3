@@ -11,7 +11,25 @@ import coords, elevation
 import scipy.interpolate
 import geotiff
 
-def cresis(year,glacier,verticaldatum='geoid',cleanup='True'):
+def cresis(year,glacier,verticaldatum='geoid',cleanup=True):
+
+  '''
+  cresis = cresis(year,glacier,verticaldatum='geoid',cleanup=True)
+  
+  Loads CreSIS data. You can either select a year to load (look at options below) or 
+  load all years (year='all'). If you load all years, there is an option to cleanup the data
+  using the option cleanup=True.
+  
+  Inputs:
+  year: load selected years or 'all' years (see options below)
+  glacier: glacier name
+  verticaldatum: ellipsoid or geoid
+  cleanup: True or False
+  
+  Outputs:
+  cresis: four column array of x,y,zb, and date for radar picks
+  
+  '''
 
   if (year == '2001'):
     if glacier == 'Helheim':
@@ -79,10 +97,14 @@ def cresis(year,glacier,verticaldatum='geoid',cleanup='True'):
     x2,y2 = coords.convert(x,y,4326,3413)
     
     if glacier == 'Helheim':
-      badind = np.r_[range(22406,22513),range(26969,27020),range(29300,29336),range(30253,30408),range(33224,33440),range(33552,33620),range(37452,37531),\
+      # Radar picks to toss, if cleanup is set to true
+      if cleanup==True:
+        badind = np.r_[range(22406,22513),range(26969,27020),range(29300,29336),range(30253,30408),range(33224,33440),range(33552,33620),range(37452,37531),\
       		range(37640,37675),range(37819,37836),range(44127,44207),range(46942,47030),range(53595,53663),\
       		range(53713,53793),range(53974,53987),range(56646,56726),range(64006,64013),range(61237,61529),range(61745,62000),range(68541,68810),\
       		range(69202,69475),range(75645,75904),range(77285,77538),range(77728,77970)] 
+      else: 
+        badind = []
       if year == '2006a':
         ind = range(22285,22413)
       elif year == '2006b':
@@ -139,7 +161,24 @@ def cresis(year,glacier,verticaldatum='geoid',cleanup='True'):
     
   return np.column_stack([x2[ind],y2[ind],zb[ind],dates[ind]])
 
+#########################################################################################
+
 def cresis_grid(glacier,verticaldatum='geoid'):
+
+  '''
+  x,y,grid = cresis_grid(glacier,verticaldatum='geoid')
+
+  Load gridded CreSIS product for "glacier". The gridded products aren't great, so you 
+  probably don't actually want to use this function.
+  
+  Inputs:
+  glacier: glacier name
+  verticaldatum: ellipsoid or geoid
+  
+  Outputs:
+  x,y: coordinates for grid
+  grid: bed elevation grid
+  '''
 
   # Read the ASCII grid. Why they use ASCII grids, no one knows. Ugh.
   if glacier == 'Helheim':
@@ -175,59 +214,102 @@ def cresis_grid(glacier,verticaldatum='geoid'):
   elif verticaldatum == 'ellipsoid':
     grid = grid
   else:
-    print "Unknown datum, defaulting to ellipsoid"
+    print "Unknown datum, defaulting to geoid"
 
   return x,y,grid
 
-def cresis_grid_pts(xpts,ypts,glacier,verticaldatum='geoid'):
+#########################################################################################
+
+def cresis_grid_pts(xpts,ypts,glacier,verticaldatum='geoid',method='linear'):
+
+  '''
+  bed = cresis_grid_pts(xpts,ypts,glacier,verticaldatum='geoid')
+  
+  Get the CreSIS gridded product at specific points.
+  
+  Inputs: 
+  xpts,ypts: points where you want bed elevation
+  glacier: glacier name
+  verticaldatum: geoid or ellipsoid
+  method: interpolation method (same options as RegularGridInterpolator)
+  
+  Outputs:
+  bed: bed elevations at xpts,ypts
+  '''
 
   # Get Cresis grid
   x,y,z = cresis_grid(glacier,verticaldatum)
 
   # Create interpolation function
-  f = scipy.interpolate.RegularGridInterpolator((y,x),z,method='linear',bounds_error=False)
+  f = scipy.interpolate.RegularGridInterpolator((y,x),z,method=method,bounds_error=False)
   
   # Get points
   bed = f(np.column_stack([ypts,xpts]))
 
   return bed
 
-def morlighem_pts(xpts,ypts,glacier,verticaldatum='geoid'):
+#########################################################################################
+
+def morlighem_pts(xpts,ypts,glacier,verticaldatum='geoid',method='linear'):
+  
+  '''
+  bed = morlighem_pts(xpts,ypts,glacier,verticaldatum='geoid')
+  
+  Interpolate morlighem gridded bed to select x,y points.
+  
+  Inputs:
+  xpts,ypts: locations where you want bed elevation
+  glacier: glacier name
+  verticaldatum: ellipsoid or geoid
+  method: interpolation method (same options as RegularGridInterpolator)
+  
+  Outputs:
+  bed: interpolated bed elevations at xpts,ypts
+  '''
+  
+  # Set dimensions of grid to load morlighem bed
+  xmin = np.min(xpts)-2.0e3
+  xmax = np.max(xpts)+2.0e3
+  ymin = np.min(ypts)-2.0e3
+  ymax = np.min(ypts)+2.0e3
   
   # Load bed DEM
-  file = os.path.join(os.getenv("HOME"),"Data/Bed/Morlighem_2014/MCdataset-2015-04-27.tif")
-  [x,y,z]=geotiff.read(file)
-  z[z==-9999] = 'NaN'
+  x,y,z = morlighem_grid(xmin,xmax,ymin,ymax,verticaldatum=verticaldatum)
   
-  f = scipy.interpolate.RegularGridInterpolator((y,x),z,method='linear',bounds_error=False)
+  f = scipy.interpolate.RegularGridInterpolator((y,x),z,method=method,bounds_error=False)
   bed = f(np.column_stack([ypts,xpts]))
-  
-  # Morlighem bed DEM is given as elevation above mean sea level (at geoid). So we need
-  # to correct only if we want the ellipsoid height.
-  if verticaldatum == "ellipsoid":
-    geoidheight = coords.geoidheight(xpts,ypts)
-    bed = bed+geoidheight
-  elif verticaldatum == "geoid":
-    bed = bed
-  else:
-    print "Unknown vertical datum, defaulting to geoid height"
       
   return bed
+
+#########################################################################################
   
-def morlighem_grid(xmin,xmax,ymin,ymax,verticaldatum):
+def morlighem_grid(xmin=-np.inf,xmax=np.inf,ymin=-np.inf,ymax=np.Inf,verticaldatum='geoid'):
+
+  '''
+  xb,yb,bed = morlighem_grid(xmin,xmax,ymin,ymax,verticaldatum='geoid')
+  
+  Export morlighem gridded bed.
+  
+  Inputs:
+  xmin,xmax,ymin,ymax: extent of desired grid
+  verticaldatum: geoid or ellipsoid
+  
+  Outputs:
+  xb,yb: coordinates for grid
+  bed: gridded bed
+  '''
 
   # Load Bed DEM
   file = os.path.join(os.getenv("HOME"),"Data/Bed/Morlighem_2014/MCdataset-2015-04-27.tif")
   [xb,yb,zb]=geotiff.read(file,xmin,xmax,ymin,ymax)
   zb[zb==-9999] = 'NaN'
   
-  # Load Geoid
-  file = os.path.join(os.getenv("HOME"),"Data/Bed/Morlighem_2014/geoid.tif")
-  [xg,yg,zg]=geotiff.read(file,xmin,xmax,ymin,ymax)
-  
   # Morlighem bed DEM is given as elevation above mean sea level (at geoid). So we need
   # to correct only if we want the ellipsoid height.
   if verticaldatum == "ellipsoid":
+    # Load Geoid 
+    file = os.path.join(os.getenv("HOME"),"Data/Bed/Morlighem_2014/geoid.tif")
+    [xg,yg,zg]=geotiff.read(file,xmin,xmax,ymin,ymax)
     bed = zb+zg
   elif verticaldatum == "geoid":
     bed = zb
@@ -235,3 +317,95 @@ def morlighem_grid(xmin,xmax,ymin,ymax,verticaldatum):
     print "Unknown vertical datum, defaulting to geoid height"
   
   return xb,yb,bed
+
+#########################################################################################
+  
+def smith_grid(glacier,xmin=-np.Inf,xmax=np.Inf,ymin=-np.Inf,ymax=np.Inf,grid='unstructured',model='aniso',smoothing=1,verticaldatum='geoid'):
+
+  '''
+  xpts,ypts,zpts = smith_grid(glacier,xmin=-np.Inf,xmax=np.Inf,ymin=-np.Inf,ymax=np.Inf,
+  					grid='unstructured',model='aniso',smoothing=1,verticaldatum='geoid')
+
+  Output Ben Smith's bed, either as an unstructured mesh (grid='unstructured') or as a
+  structured grid (grid='structured').
+  
+  Inputs:
+  glacier: glacier name
+  xmin,xmax,ymin,ymax: coordinates for grid
+  grid: unstructured or structured grid
+  model: anisotropic or isotropic bed interpolation
+  smoothing: smoothing level (1-8)
+  verticaldatum: geoid or ellipsoid
+  
+  Outputs:
+  xpts,ypts,zpts: either unstructured points or a grid, depending on your choice
+  '''
+
+  # Load Ben Smith's interpolated bed. The input data set is in EPSG 3413, relative to WGS84
+  # ellipsoid.
+  if model == 'iso':
+    file = os.path.join(os.getenv("HOME"),"Data/Bed/Smith_2015/"+glacier+"/iso_models.txt")
+  else:
+    file = os.path.join(os.getenv("HOME"),"Data/Bed/Smith_2015/"+glacier+"/aniso_models.txt")
+
+  # Load data
+  data = np.loadtxt(file)
+  x = data[:,0]
+  y = data[:,1]
+  z = data[:,1+smoothing]
+  
+  # Find points that fall within the desired spatial extent
+  ind = np.where((x >= xmin) & (x <= xmax) & (y >= ymin) & (y <= ymax))[0]
+  xpts = x[ind]
+  ypts = y[ind]
+  zpts = z[ind]
+  
+  if verticaldatum == 'geoid':
+    geoidheight = coords.geoidheight(xpts,ypts)
+    zpts = zpts - geoidheight
+  elif verticaldatum == 'ellipsoid':
+    zpts = zpts
+  else:
+    print "Unknown datum, defaulting to geoid"
+  
+  return xpts,ypts,zpts
+
+#########################################################################################
+
+def smith_at_pts(xpts,ypts,glacier,model='aniso',smoothing=1,verticaldatum='geoid',method='linear'):
+
+  '''
+  zbed_interp = smith_at_pts(xpts,ypts,glacier,model='aniso',smoothing=1,verticaldatum='geoid',method='linear')
+  
+  Interpolate Ben Smith's interpolated bed elevations to point locations.
+  
+  Inputs:
+  xpts,ypts: points where you want bed elevation
+  glacier: glacier name
+  model: anisotropic ('aniso') or isotropic ('iso') interpolation
+  smoothing: 1 to 8
+  verticaldatum: geoid or ellipsoid
+  method: linear or nearest
+  
+  Outputs:
+  zbed_interp: interpolated beds at xpts,ypts
+  '''
+
+  # Load smith bed, but don't correct the vertical datum yet
+  xbed,ybed,zbed = smith_grid(glacier,grid='unstructured',model=model,smoothing=smoothing,verticaldatum='ellipsoid')
+
+  # Interpolate smith bed to points
+  zbed_interp = scipy.interpolate.griddata((xbed,ybed),zbed,(xpts,ypts),method=method)
+
+  # Now fix the vertical datum. We didn't fix it in the call to "smith_grid" because we would 
+  # have had to calculate the geoid height at more points. This saves a bit of time.
+  if verticaldatum == 'geoid':
+    geoidheight = coords.geoidheight(xpts,ypts)
+    zbed_interp = zbed_interp - geoidheight
+  elif verticaldatum == 'ellipsoid':
+    zbed_interp = zbed_interp
+  else:
+    print "Unknown datum, defaulting to geoid"
+
+
+  return zbed_interp
