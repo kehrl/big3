@@ -7,7 +7,7 @@ import os
 
 glacier = "Helheim"
 TOPDIR = "/Volumes/insar4/ian/TSX/Helheim/DEM/fromDana/"
-OUTDIR =  os.path.join(os.getenv("HOME"),"Data/Elevation/TDX/"+glacier+"/")
+OUTDIR =  os.path.join(os.getenv("HOME"),"bigtmp/shean_tdx")
 
 
 # Get list of directories
@@ -33,7 +33,7 @@ for track in tracklist:
   for file in files:
     if track in file:
       filestomosaic = filestomosaic+' '+OUTDIR+file
-      fileout = file[0:22]+file[25:]
+      fileout = file[0:21]+file[25:]
   os.system('gdalwarp -co TILED=YES -co COMPRESS=LZW -co BIGTIFF=IF_SAFER -r cubic'+filestomosaic+' '+OUTDIR+fileout)
 
 # Use Shean's demtools mask_raster.sh to burn mask out bad sections before aligning the DEM.
