@@ -9,7 +9,7 @@
 
 import os
 import sys
-sys.path.append(os.path.join(os.getenv("HOME"),"Code/Util/Modules"))
+sys.path.append(os.path.join(os.getenv("CODE_HOME"),"Util/Modules"))
 import shapefile
 import fracyear, dist, bed, elevation, velocity, elmer_mesh, coords
 import shapely.geometry
@@ -17,7 +17,7 @@ import numpy as np
 import scipy.interpolate
 from matplotlib import path
 
-def fluxgate_thinning(glacier,fluxgate_filename,bedsource='morlighem',dl=20.0):
+def fluxgate_thinning(glacier,fluxgate_filename,bedsource='smith',dl=20.0):
 
   # Inputs:
   # glacier: glacier name
@@ -26,7 +26,7 @@ def fluxgate_thinning(glacier,fluxgate_filename,bedsource='morlighem',dl=20.0):
   # dl: size of blocks for integrating ice flux across fluxgate
 
   # Get Shapefiles for flux gates and for glacier extent (so we can calculate surface area accurately)
-  DIR = os.path.join(os.getenv("HOME"),"Data/ShapeFiles/FluxGates/"+glacier+"/")
+  DIR = os.path.join(os.getenv("DATA_HOME"),"ShapeFiles/FluxGates/"+glacier+"/")
   gate_in_sf = shapefile.Reader(DIR+fluxgate_filename+"_in")
   gate_out_sf = shapefile.Reader(DIR+fluxgate_filename+"_out")
    
@@ -62,11 +62,15 @@ def fluxgate_thinning(glacier,fluxgate_filename,bedsource='morlighem',dl=20.0):
   # Get bed elevation along flux gates
   if bedsource == 'morlighem':
     print "Using Morlighem bed DEM, should maybe be changed to CreSIS radar transects"
-    zb_in = bed.morlighem_pts(x_in,y_in,glacier,verticaldatum='geoid')
-    zb_out = bed.morlighem_pts(x_out,y_out,glacier,verticaldatum='geoid')
+    zb_in = bed.morlighem_pts(x_in,y_in,glacier,verticaldatum='ellipsoid')
+    zb_out = bed.morlighem_pts(x_out,y_out,glacier,verticaldatum='ellipsoid')
+  elif bedsource == 'smith':
+    print "Using Smith bed DEM"
+    zb_in = bed.smith_at_pts(x_in,y_in,glacier,verticaldatum='ellipsoid')
+    zb_out = bed.smith_at_pts(x_out,y_out,glacier,verticaldatum='ellipsoid')
   else:
     print "Using CreSIS radar products"
-    cresis_all = bed.cresis('all',glacier,verticaldatum='geoid')
+    cresis_all = bed.cresis('all',glacier,verticaldatum='ellipsoid')
 
     # Find radar pick indices for upstream flux gate
     zb_in = np.zeros_like(x_in)
@@ -110,11 +114,11 @@ def fluxgate_thinning(glacier,fluxgate_filename,bedsource='morlighem',dl=20.0):
   # we're getting the correct cross sectional area, but for now let's just use a single 
   # surface elevation profile
   if glacier == 'Helheim':
-    zs_in = elevation.dem_continuous_flowline(x_in,y_in,glacier,'20120624',verticaldatum='geoid',fillin='true')
-    zs_out = elevation.dem_continuous_flowline(x_out,y_out,glacier,'20120624',verticaldatum='geoid',fillin='true')
+    zs_in = elevation.dem_continuous_flowline(x_in,y_in,glacier,'20120624',verticaldatum='ellipsoid',fillin='true')
+    zs_out = elevation.dem_continuous_flowline(x_out,y_out,glacier,'20120624',verticaldatum='ellipsoid',fillin='true')
   elif glacier == 'Kanger':
-    zs_in = elevation.dem_continuous_flowline(x_in,y_in,glacier,'20110712',verticaldatum='geoid',fillin='true')
-    zs_out = elevation.dem_continuous_flowline(x_out,y_out,glacier,'20110712',verticaldatum='geoid',fillin='true')
+    zs_in = elevation.dem_continuous_flowline(x_in,y_in,glacier,'20110712',verticaldatum='ellipsoid',fillin='true')
+    zs_out = elevation.dem_continuous_flowline(x_out,y_out,glacier,'20110712',verticaldatum='ellipsoid',fillin='true')
   
   # Get velocities
   vpt_in,tpt_in,ept_in,vxpt_in,vypt_in = velocity.velocity_at_eulpoints(x_in,y_in,glacier,data='all',xy_velocities='True')
@@ -249,15 +253,15 @@ def fluxbox_geometry(glacier,fluxgate_filename):
   # extent.
 
   # Get Shapefiles for flux gates and for glacier extent (so we can calculate surface area accurately)
-  DIR = os.path.join(os.getenv("HOME"),"Data/ShapeFiles/FluxGates/"+glacier+"/")
+  DIR = os.path.join(os.getenv("DATA_HOME"),"ShapeFiles/FluxGates/"+glacier+"/")
   gate_in_sf = shapefile.Reader(DIR+fluxgate_filename+"_in")
   gate_out_sf = shapefile.Reader(DIR+fluxgate_filename+"_out")
   
   # Glacier extent shapefile
-  glacier_extent = elmer_mesh.shp_to_xy(os.path.join(os.getenv("HOME"),"Data/ShapeFiles/Glaciers/3D/"+glacier+"/glacier_extent_normal"))
+  glacier_extent = elmer_mesh.shp_to_xy(os.path.join(os.getenv("DATA_HOME"),"ShapeFiles/Glaciers/3D/"+glacier+"/glacier_extent_normal"))
   if glacier == 'Helheim':
-    glacier_hole1 = elmer_mesh.shp_to_xy(os.path.join(os.getenv("HOME"),"Data/ShapeFiles/Glaciers/3D/Helheim/glacier_hole1"))
-    glacier_hole2 = elmer_mesh.shp_to_xy(os.path.join(os.getenv("HOME"),"Data/ShapeFiles/Glaciers/3D/Helheim/glacier_hole2"))
+    glacier_hole1 = elmer_mesh.shp_to_xy(os.path.join(os.getenv("DATA_HOME"),"ShapeFiles/Glaciers/3D/Helheim/glacier_hole1"))
+    glacier_hole2 = elmer_mesh.shp_to_xy(os.path.join(os.getenv("DATA_HOME"),"ShapeFiles/Glaciers/3D/Helheim/glacier_hole2"))
     glacier_extent = np.row_stack([glacier_extent,glacier_hole1,glacier_hole2])
   
   # Get end points for flux gates

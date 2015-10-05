@@ -7,8 +7,8 @@
 
 import os
 import sys
-sys.path.append(os.path.join(os.getenv("HOME"),"Code/Util/Modules"))
-sys.path.append(os.path.join(os.getenv("HOME"),"Code/BigThreeGlaciers/Tools"))
+sys.path.append(os.path.join(os.getenv("CODE_HOME"),"Util/Modules"))
+sys.path.append(os.path.join(os.getenv("CODE_HOME"),"BigThreeGlaciers/Tools"))
 import geotiff
 import numpy as np
 import bed, dist, elevation
@@ -36,7 +36,7 @@ elif glacier == 'Kanger':
   ymax = -2280000.0
 
 # Directories
-DIRX=os.path.join(os.getenv("HOME"),"Data/ShapeFiles/Glaciers/3D/"+glacier+"/")
+DIRX=os.path.join(os.getenv("DATA_HOME"),"ShapeFiles/Glaciers/3D/"+glacier+"/")
 
 # Mesh extent
 #exterior = mesh.shp_to_xy(DIRX+"glacier_extent_normal")

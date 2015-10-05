@@ -5,8 +5,8 @@
 import os
 import sys
 import numpy as np
-sys.path.append(os.path.join(os.getenv("HOME"),"Code/Util/Modules"))
-sys.path.append(os.path.join(os.getenv("HOME"),"Code/BigThreeGlaciers/Tools"))
+sys.path.append(os.path.join(os.getenv("CODE_HOME"),"Util/Modules"))
+sys.path.append(os.path.join(os.getenv("CODE_HOME"),"BigThreeGlaciers/Tools"))
 import coords, elevation
 import scipy.interpolate
 import geotiff
@@ -33,10 +33,10 @@ def cresis(year,glacier,verticaldatum='geoid',cleanup=True):
 
   if (year == '2001'):
     if glacier == 'Helheim':
-      file = os.path.join(os.getenv("HOME"),"Data/Bed/Cresis/Helheim/helheim_20010521_good_wgs84.csv")
+      file = os.path.join(os.getenv("DATA_HOME"),"Bed/Cresis/Helheim/helheim_20010521_good_wgs84.csv")
       ind = range(3180,3297)
     elif glacier == 'Kanger':
-      file = os.path.join(os.getenv("HOME"),"Data/Bed/Cresis/Kanger/Data_20010520_01.csv")
+      file = os.path.join(os.getenv("DATA_HOME"),"Bed/Cresis/Kanger/Data_20010520_01.csv")
       ind=range(4387,4475)
       
     data = np.loadtxt(file,skiprows=1,delimiter=',')
@@ -58,10 +58,10 @@ def cresis(year,glacier,verticaldatum='geoid',cleanup=True):
   else:
     if glacier == 'Helheim':
       print "Using data set Helheim_2006_2014_Composite"
-      file=os.path.join(os.getenv("HOME"),"Data/Bed/Cresis/Helheim/Helheim_2006_2014_Composite/flightlines/Helheim_2006_2014_Composite_Flightlines.txt")
+      file=os.path.join(os.getenv("DATA_HOME"),"Bed/Cresis/Helheim/Helheim_2006_2014_Composite/flightlines/Helheim_2006_2014_Composite_Flightlines.txt")
     elif glacier == 'Kanger':
       print "Using data set Kanger_2006_2014_Composite"
-      file=os.path.join(os.getenv("HOME"),"Data/Bed/Cresis/Kanger/Kangerdlugssuaq_2006_2014_Composite/flightlines/Kangerdlugssuaq_2006_2014_Composite_Flightlines.txt")
+      file=os.path.join(os.getenv("DATA_HOME"),"Bed/Cresis/Kanger/Kangerdlugssuaq_2006_2014_Composite/flightlines/Kangerdlugssuaq_2006_2014_Composite_Flightlines.txt")
 
     else: 
       print "unknown glacier"
@@ -152,8 +152,7 @@ def cresis(year,glacier,verticaldatum='geoid',cleanup=True):
   
   # Select what reference we want for the elevation  
   if verticaldatum == "geoid":
-    geoidheight = coords.geoidheight(x2,y2)
-    zb = zb-geoidheight
+    zb = coords.geoidheight(x2,y2,zb)
   elif verticaldatum == "ellipsoid":
     zb = zb
   else:
@@ -183,10 +182,10 @@ def cresis_grid(glacier,verticaldatum='geoid'):
   # Read the ASCII grid. Why they use ASCII grids, no one knows. Ugh.
   if glacier == 'Helheim':
     print "Using data set Helheim_2006_2014_Composite"
-    file = os.path.join(os.getenv("HOME"),"Data/Bed/Cresis/Helheim/Helheim_2006_2014_Composite/grids/helheim_2006_2014_composite_bottom.txt")
+    file = os.path.join(os.getenv("DATA_HOME"),"Bed/Cresis/Helheim/Helheim_2006_2014_Composite/grids/helheim_2006_2014_composite_bottom.txt")
   elif glacier == 'Kanger':
     print "Using data set Kanger_2006_2014_Composite"
-    file = os.path.join(os.getenv("HOME"),"Data/Bed/Cresis/Kanger/Kangerdlugssuaq_2006_2014_Composite/grids/kangerdlugssuaq_2006_2014_composite_bottom.txt")
+    file = os.path.join(os.getenv("DATA_HOME"),"Bed/Cresis/Kanger/Kangerdlugssuaq_2006_2014_Composite/grids/kangerdlugssuaq_2006_2014_composite_bottom.txt")
 
   # Get file info
   fid = open(file)
@@ -209,8 +208,8 @@ def cresis_grid(glacier,verticaldatum='geoid'):
   
   if verticaldatum == 'geoid':
     x_grid,y_grid = np.meshgrid(x,y)
-    geoidheight = coords.geoidheight(x_grid.flatten(),y_grid.flatten())
-    grid = grid - np.reshape(geoidheight,(ny,nx))
+    geoidheight = coords.geoidheight(x_grid.flatten(),y_grid.flatten(),grid)
+    grid = np.reshape(geoidheight,(ny,nx))
   elif verticaldatum == 'ellipsoid':
     grid = grid
   else:
@@ -300,7 +299,7 @@ def morlighem_grid(xmin=-np.inf,xmax=np.inf,ymin=-np.inf,ymax=np.Inf,verticaldat
   '''
 
   # Load Bed DEM
-  file = os.path.join(os.getenv("HOME"),"Data/Bed/Morlighem_2014/MCdataset-2015-04-27.tif")
+  file = os.path.join(os.getenv("DATA_HOME"),"Bed/Morlighem_2014/MCdataset-2015-04-27.tif")
   [xb,yb,zb]=geotiff.read(file,xmin,xmax,ymin,ymax)
   zb[zb==-9999] = 'NaN'
   
@@ -308,7 +307,7 @@ def morlighem_grid(xmin=-np.inf,xmax=np.inf,ymin=-np.inf,ymax=np.Inf,verticaldat
   # to correct only if we want the ellipsoid height.
   if verticaldatum == "ellipsoid":
     # Load Geoid 
-    file = os.path.join(os.getenv("HOME"),"Data/Bed/Morlighem_2014/geoid.tif")
+    file = os.path.join(os.getenv("DATA_HOME"),"Bed/Morlighem_2014/geoid.tif")
     [xg,yg,zg]=geotiff.read(file,xmin,xmax,ymin,ymax)
     bed = zb+zg
   elif verticaldatum == "geoid":
@@ -323,11 +322,13 @@ def morlighem_grid(xmin=-np.inf,xmax=np.inf,ymin=-np.inf,ymax=np.Inf,verticaldat
 def smith_grid(glacier,xmin=-np.Inf,xmax=np.Inf,ymin=-np.Inf,ymax=np.Inf,grid='unstructured',model='aniso',smoothing=1,verticaldatum='geoid'):
 
   '''
-  xpts,ypts,zpts = smith_grid(glacier,xmin=-np.Inf,xmax=np.Inf,ymin=-np.Inf,ymax=np.Inf,
-  					grid='unstructured',model='aniso',smoothing=1,verticaldatum='geoid')
+               
+  xpts,ypts,zpts = smith_grid(glacier, xmin=-np.Inf ,xmax=np.Inf, 
+  			ymin=-np.Inf, ymax=np.Inf, grid='unstructured',
+  			model='aniso', smoothing=1, verticaldatum='geoid')
 
-  Output Ben Smith's bed, either as an unstructured mesh (grid='unstructured') or as a
-  structured grid (grid='structured').
+  Output Ben Smith's bed, either as an unstructured mesh (grid='unstructured') 
+  or as a structured grid (grid='structured').
   
   Inputs:
   glacier: glacier name
@@ -344,9 +345,9 @@ def smith_grid(glacier,xmin=-np.Inf,xmax=np.Inf,ymin=-np.Inf,ymax=np.Inf,grid='u
   # Load Ben Smith's interpolated bed. The input data set is in EPSG 3413, relative to WGS84
   # ellipsoid.
   if model == 'iso':
-    file = os.path.join(os.getenv("HOME"),"Data/Bed/Smith_2015/"+glacier+"/iso_models.txt")
+    file = os.path.join(os.getenv("DATA_HOME"),"Bed/Smith_2015/"+glacier+"/iso_models.txt")
   else:
-    file = os.path.join(os.getenv("HOME"),"Data/Bed/Smith_2015/"+glacier+"/aniso_models.txt")
+    file = os.path.join(os.getenv("DATA_HOME"),"Bed/Smith_2015/"+glacier+"/aniso_models.txt")
 
   # Load data
   data = np.loadtxt(file)
@@ -361,8 +362,7 @@ def smith_grid(glacier,xmin=-np.Inf,xmax=np.Inf,ymin=-np.Inf,ymax=np.Inf,grid='u
   zpts = z[ind]
   
   if verticaldatum == 'geoid':
-    geoidheight = coords.geoidheight(xpts,ypts)
-    zpts = zpts - geoidheight
+    zpts = coords.geoidheight(xpts,ypts,zpts)
   elif verticaldatum == 'ellipsoid':
     zpts = zpts
   else:
@@ -375,7 +375,8 @@ def smith_grid(glacier,xmin=-np.Inf,xmax=np.Inf,ymin=-np.Inf,ymax=np.Inf,grid='u
 def smith_at_pts(xpts,ypts,glacier,model='aniso',smoothing=1,verticaldatum='geoid',method='linear'):
 
   '''
-  zbed_interp = smith_at_pts(xpts,ypts,glacier,model='aniso',smoothing=1,verticaldatum='geoid',method='linear')
+  zbed_interp = smith_at_pts(xpts,ypts,glacier,model='aniso'
+  				,smoothing=1,verticaldatum='geoid',method='linear')
   
   Interpolate Ben Smith's interpolated bed elevations to point locations.
   
@@ -400,8 +401,7 @@ def smith_at_pts(xpts,ypts,glacier,model='aniso',smoothing=1,verticaldatum='geoi
   # Now fix the vertical datum. We didn't fix it in the call to "smith_grid" because we would 
   # have had to calculate the geoid height at more points. This saves a bit of time.
   if verticaldatum == 'geoid':
-    geoidheight = coords.geoidheight(xpts,ypts)
-    zbed_interp = zbed_interp - geoidheight
+    zbed_interp = coords.geoidheight(xpts,ypts,zbed_interp)
   elif verticaldatum == 'ellipsoid':
     zbed_interp = zbed_interp
   else:

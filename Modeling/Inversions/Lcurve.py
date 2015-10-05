@@ -7,12 +7,22 @@ import sys
 import os
 import matplotlib.pyplot as plt
 from pylab import *
+import argparse
 
 args = sys.argv
 
-ver = args[1]
-RES = args[2]
-DIR = os.path.join(os.getenv("HOME"),"Models/Helheim/Results/"+ver+"/")
+# Get inputs to file
+parser = argparse.ArgumentParser()
+parser.add_argument("-mesh", dest="meshname", required = True,
+        help = "Name of mesh.")
+parser.add_argument("-dim", dest="dimension",required = True,
+		help = "3D or Flowline.")
+args, _ = parser.parse_known_args(sys.argv)
+RES = args.meshname
+ver = args.dimension
+
+# Input directory
+DIR = os.path.join(os.getenv("MODEL_HOME"),"Helheim/Results/"+ver+"/")
 DIRR = DIR+RES+"/Inversion/"
 
 if not(os.path.isdir(DIRR)):

@@ -5,8 +5,8 @@
 import os
 import sys
 import numpy as np
-sys.path.append(os.path.join(os.getenv("HOME"),"Code/Util/Modules"))
-sys.path.append(os.path.join(os.getenv("HOME"),"Code/BigThreeGlaciers/Tools"))
+sys.path.append(os.path.join(os.getenv("CODE_HOME"),"Util/Modules"))
+sys.path.append(os.path.join(os.getenv("CODE_HOME"),"BigThreeGlaciers/Tools"))
 import climate, glacier_flowline,icefronts, velocity
 import matplotlib.pyplot as plt
 import matplotlib, fracyear

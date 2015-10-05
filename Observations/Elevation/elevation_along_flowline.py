@@ -2,8 +2,8 @@
 
 import os
 import sys
-sys.path.append(os.path.join(os.getenv("HOME"),"Code/Util/Modules/"))
-sys.path.append(os.path.join(os.getenv("HOME"),"Code/BigThreeGlaciers/Tools/"))
+sys.path.append(os.path.join(os.getenv("CODE_HOME"),"Util/Modules/"))
+sys.path.append(os.path.join(os.getenv("CODE_HOME"),"BigThreeGlaciers/Tools/"))
 import glacier_flowline, elevation, icefronts, flotation
 import numpy as np
 import matplotlib.pyplot as plt
@@ -16,10 +16,10 @@ import matplotlib
 # Inputs #
 ##########
 
-#glacier = 'Kanger'
-glacier = 'Helheim'
+args = sys.argv
+glacier = args[1][:] # Options: Kanger, Helheim
 
-x,y,zb,dists = glacier_flowline.load(glacier)
+x,y,zb,dists = glacier_flowline.load(glacier,verticaldatum='geoid')
 float = flotation.height(zb,rho_i=917.0,rho_sw=1020.0)
 
 dists_eul = -1.0*np.array([2.0,5.0,10.0,20.0,30.0]) # kilometers
@@ -148,9 +148,16 @@ for i in range(0,len(ind)):
   plt.plot(0,0,'s',color=coloptions[i],label=str(int(dists_eul[i]))+' km')
 plt.plot(0,0,'o',color='w',label='Worldview')
 plt.plot(0,0,'^',color='w',label='ATM')
-for i in range(0,len(ind)):
-  plt.plot(time_wv,zpt_wv[:,i]-gimp[i],'o',markersize=5,color=coloptions[i])
-  plt.plot(time_atm,zpt_atm[:,i]-gimp[i],'^',markersize=5,color=coloptions[i])
+for i in range(3,5):
+  all_t = np.r_[time_wv,time_atm]
+  sortind = np.argsort(all_t)
+  all_zs = np.r_[zpt_wv[:,i],zpt_atm[:,i]]-zpt_wv[1,i]
+  all_t = all_t[sortind]
+  all_zs = all_zs[sortind]
+  nonnan = np.where(~np.isnan(all_zs))
+  plt.plot(all_t[nonnan],all_zs[nonnan],color=coloptions[i])
+  plt.plot(time_wv,zpt_wv[:,i]-zpt_wv[1,i],'o',markersize=5,color=coloptions[i])
+  plt.plot(time_atm,zpt_atm[:,i]-zpt_wv[1,i],'^',markersize=5,color=coloptions[i])
 x_formatter = matplotlib.ticker.ScalarFormatter(useOffset=False)
 ax.xaxis.set_major_formatter(x_formatter)
 labels=[]

@@ -5,8 +5,8 @@
 
 import os
 import sys
-sys.path.append(os.path.join(os.getenv("HOME"),"Code/Util/Modules/"))
-sys.path.append(os.path.join(os.getenv("HOME"),"Code/BigThreeGlaciers/Tools/"))
+sys.path.append(os.path.join(os.getenv("CODE_HOME"),"Util/Modules/"))
+sys.path.append(os.path.join(os.getenv("CODE_HOME"),"BigThreeGlaciers/Tools/"))
 import glacier_flowline, elevation, icefronts, fluxgate
 import numpy as np
 import matplotlib.pyplot as plt
@@ -22,27 +22,27 @@ if glacier == 'Helheim':
   xmax = 320000.0
   ymin = -2588000.0
   ymax = -2566000.0
-  ximage,yimage,zimage = geotiff.read(os.path.join(os.getenv("HOME"),"Data/Mosaics/Helheim/mosaicHelheim.2014-159.148.38725_1-20mgeo.tif"))
+  ximage,yimage,zimage = geotiff.read(os.path.join(os.getenv("DATA_HOME"),"Mosaics/Helheim/mosaicHelheim.2014-159.148.38725_1-20mgeo.tif"))
 elif glacier == 'Kanger':
   xmin = 449800.0
   xmax = 503000.0
   ymin = -2302000.0
   ymax = -2266000.0
-  ximage,yimage,zimage = geotiff.read(os.path.join(os.getenv("HOME"),"Data/Mosaics/Kanger/mosaicKang.2014-160.163.38740_1-20mgeo.tif"))
+  ximage,yimage,zimage = geotiff.read(os.path.join(os.getenv("DATA_HOME"),"Mosaics/Kanger/mosaicKang.2014-160.163.38740_1-20mgeo.tif"))
     
 ###########################
 # dH/dt from the fluxgate #
 ###########################
 
-flux_time_gate1_mor,flux_dH_gate1_mor = fluxgate.fluxgate_thinning(glacier,"fluxgate1",bedsource='morlighem')
+flux_time_gate1_smith,flux_dH_gate1_smith = fluxgate.fluxgate_thinning(glacier,"fluxgate1",bedsource='smith')
 flux_time_gate1_cresis,flux_dH_gate1_cresis = fluxgate.fluxgate_thinning(glacier,"fluxgate1",bedsource='cresis')
 x_gate1,y_gate1 = fluxgate.fluxbox_geometry(glacier,"fluxgate1")
 
-flux_time_gate2_mor,flux_dH_gate2_mor = fluxgate.fluxgate_thinning(glacier,"fluxgate2",bedsource='morlighem')
+flux_time_gate2_smith,flux_dH_gate2_smith = fluxgate.fluxgate_thinning(glacier,"fluxgate2",bedsource='smith')
 flux_time_gate2_cresis,flux_dH_gate2_cresis = fluxgate.fluxgate_thinning(glacier,"fluxgate2",bedsource='cresis')
 x_gate2,y_gate2 = fluxgate.fluxbox_geometry(glacier,"fluxgate2")
 
-flux_time_gate3_mor,flux_dH_gate3_mor = fluxgate.fluxgate_thinning(glacier,"fluxgate3",bedsource='morlighem')
+flux_time_gate3_smith,flux_dH_gate3_smith = fluxgate.fluxgate_thinning(glacier,"fluxgate3",bedsource='smith')
 flux_time_gate3_cresis,flux_dH_gate3_cresis = fluxgate.fluxgate_thinning(glacier,"fluxgate3",bedsource='cresis')
 x_gate3,y_gate3 = fluxgate.fluxbox_geometry(glacier,"fluxgate3")
 
@@ -51,7 +51,7 @@ x_gate3,y_gate3 = fluxgate.fluxbox_geometry(glacier,"fluxgate3")
 ######################
 
 # Load WV DEMs	
-xwv,ywv,zwv,timewv = elevation.worldview_grid(glacier,xmin,xmax,ymin,ymax,years='all',verticaldatum='geoid')
+xwv,ywv,zwv,timewv = elevation.worldview_grid(glacier,xmin,xmax,ymin,ymax,years='all',verticaldatum='ellipsoid')
 
 wv_time_gate1,wv_dH_gate1 = fluxgate.dem_thinning(glacier,xwv,ywv,zwv,timewv,"fluxgate1")
 wv_time_gate2,wv_dH_gate2 = fluxgate.dem_thinning(glacier,xwv,ywv,zwv,timewv,"fluxgate2")
@@ -68,26 +68,29 @@ gs = matplotlib.gridspec.GridSpec(3,1)
 
 plt.subplot(gs[0,:])
 ax = plt.gca()
-nonnan = np.where(~(np.isnan(flux_dH_gate3_mor[:,0])))[0]
-plt.errorbar(flux_time_gate3_mor[nonnan],flux_dH_gate3_mor[nonnan,0],flux_dH_gate3_mor[nonnan,1],linestyle='dashed',marker='o',color='b',markersize=3)
+nonnan = np.where(~(np.isnan(flux_dH_gate3_smith[:,0])))[0]
+plt.errorbar(flux_time_gate3_smith[nonnan],flux_dH_gate3_smith[nonnan,0],flux_dH_gate3_smith[nonnan,1],linestyle='dashed',marker='o',color='b',markersize=3)
 plt.plot(flux_time_gate3_cresis,flux_dH_gate3_cresis[:,0],'k+',markersize=3)
+plt.plot(wv_time_gate3[:,0],wv_dH_gate3[:,0],'ko',markersize=3)
 plt.xticks(range(2000,2017),fontsize=8,fontname="Arial")
 ax.set_xticklabels([])
 
 plt.subplot(gs[1,:])
 ax = plt.gca()
-nonnan = np.where(~(np.isnan(flux_dH_gate1_mor[:,0])))[0]
-plt.errorbar(flux_time_gate1_mor[nonnan],flux_dH_gate1_mor[nonnan,0],flux_dH_gate1_mor[nonnan,1],linestyle='dashed',marker='o',color='g',markersize=3)
+nonnan = np.where(~(np.isnan(flux_dH_gate1_smith[:,0])))[0]
+plt.errorbar(flux_time_gate1_smith[nonnan],flux_dH_gate1_smith[nonnan,0],flux_dH_gate1_smith[nonnan,1],linestyle='dashed',marker='o',color='g',markersize=3)
 plt.plot(flux_time_gate1_cresis,flux_dH_gate1_cresis[:,0],'k+',markersize=3)
+plt.plot(wv_time_gate1[:,0],wv_dH_gate1[:,0],'ko',markersize=3)
 plt.xticks(range(2000,2017),fontsize=8,fontname="Arial")
 plt.ylabel("dH/dt (m/yr)",fontsize=9,fontname='Arial')
 ax.set_xticklabels([])
 
 plt.subplot(gs[2,:])
 ax = plt.gca()
-nonnan = np.where(~(np.isnan(flux_dH_gate2_mor[:,0])))[0]
-plt.errorbar(flux_time_gate2_mor[nonnan],flux_dH_gate2_mor[nonnan,0],flux_dH_gate2_mor[nonnan,1],linestyle='dashed',marker='o',color='r',markersize=3)
+nonnan = np.where(~(np.isnan(flux_dH_gate2_smith[:,0])))[0]
+plt.errorbar(flux_time_gate2_smith[nonnan],flux_dH_gate2_smith[nonnan,0],flux_dH_gate2_smith[nonnan,1],linestyle='dashed',marker='o',color='r',markersize=3)
 plt.plot(flux_time_gate2_cresis,flux_dH_gate2_cresis[:,0],'k+',markersize=3)
+plt.plot(wv_time_gate2[:,0],wv_dH_gate2[:,0],'ko',markersize=3)
 x_formatter = matplotlib.ticker.ScalarFormatter(useOffset=False)
 ax.xaxis.set_major_formatter(x_formatter)
 labels=[]

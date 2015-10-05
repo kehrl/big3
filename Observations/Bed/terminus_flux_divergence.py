@@ -6,8 +6,8 @@
 import os
 import sys
 import numpy as np
-sys.path.append(os.path.join(os.getenv("HOME"),"Code/Util/Modules"))
-sys.path.append(os.path.join(os.getenv("HOME"),"Code/Helheim/Tools"))
+sys.path.append(os.path.join(os.getenv("CODE_HOME"),"Util/Modules"))
+sys.path.append(os.path.join(os.getenv("CODE_HOME"),"BigThreeGlaciers/Tools"))
 import helheim_velocity, helheim_icefronts, helheim_bed, helheim_elevation
 import matplotlib.pyplot as plt
 import geotiff, dist

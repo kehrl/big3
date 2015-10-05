@@ -8,7 +8,7 @@ import os
 import sys
 import shutil
 import numpy as np
-sys.path.append(os.path.join(os.getenv("HOME"),"Code/Util/Modules"))
+sys.path.append(os.path.join(os.getenv("CODE_HOME"),"Util/Modules"))
 sys.path.append("/usr/local/bin/")
 from subprocess import call
 import math
@@ -19,7 +19,7 @@ import glob
 # Get arguments
 args = sys.argv
 
-DIR=os.path.join(os.getenv("HOME"),"Data/Imagery/Landsat/")
+DIR=os.path.join(os.getenv("DATA_HOME"),"Imagery/Landsat/")
 glacier = args[1][:] # Options: Kanger, Helheim
 
 ############################################

@@ -3,8 +3,8 @@
 import os
 import sys
 import numpy as np
-sys.path.append(os.path.join(os.getenv("HOME"),"Code/Util/Modules"))
-sys.path.append(os.path.join(os.getenv("HOME"),"Code/BigThreeGlaciers/Tools"))
+sys.path.append(os.path.join(os.getenv("CODE_HOME"),"Util/Modules"))
+sys.path.append(os.path.join(os.getenv("CODE_HOME"),"BigThreeGlaciers/Tools"))
 import velocity, icefronts, bed, glacier_flowline, fluxgate
 import matplotlib.pyplot as plt
 import matplotlib, geotiff, fracyear
@@ -33,9 +33,9 @@ dists_mel = np.array([0.5,1.0,1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0])
 # Image for plotting
 if glacier == "Helheim":
   #image = geotiff.read(os.path.join(os.getenv("HOME"),"Data/Mosaics/Helheim/mosaicHelheim.2014-159.148.38725_1-20mgeo.tif"))
-  image = geotiff.readrgb(os.path.join(os.getenv("HOME"),"Data/Imagery/ASTER/Helheim/20130812141113_AST2125988263_2.tif"))
+  image = geotiff.readrgb(os.path.join(os.getenv("DATA_HOME"),"Imagery/ASTER/Helheim/20130812141113_AST2125988263_2.tif"))
 elif glacier == "Kanger":
-  image = geotiff.read(os.path.join(os.getenv("HOME"),"Data/Mosaics/Kanger/mosaicKang.2014-160.163.38740_1-20mgeo.tif"))
+  image = geotiff.read(os.path.join(os.getenv("DATA_HOME"),"Mosaics/Kanger/mosaicKang.2014-160.163.38740_1-20mgeo.tif"))
     
 ################
 # Plot options #
@@ -125,8 +125,8 @@ dH_time,dH = fluxgate.fluxgate_thinning(glacier,"fluxgate1",bedsource='morlighem
 
 if plot_images == 1:
   
-  DIRLANDSAT = os.path.join(os.getenv("HOME"),"Data/Imagery/Landsat/"+glacier+"/TIF/")
-  DIRTSX = os.path.join(os.getenv("HOME"),"Data/Mosaics/"+glacier+"/")
+  DIRLANDSAT = os.path.join(os.getenv("DATA_HOME"),"Imagery/Landsat/"+glacier+"/TIF/")
+  DIRTSX = os.path.join(os.getenv("DATA_HOME"),"Mosaics/"+glacier+"/")
   
   if glacier == 'Helheim':
     xmin = 304000.0

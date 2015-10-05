@@ -5,6 +5,8 @@ import scipy.sparse as sparse
 import scipy.sparse.linalg as linalg
 import scipy.signal as signal
 import sys
+import os
+
 
 ###########
 # Options #

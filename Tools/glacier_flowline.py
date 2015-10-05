@@ -6,18 +6,37 @@
 import sys
 import os
 import numpy as np
-sys.path.append(os.path.join(os.getenv("HOME"),"Code/BigThreeGlaciers/Tools"))
+sys.path.append(os.path.join(os.getenv("CODE_HOME"),"BigThreeGlaciers/Tools"))
 import elmer_mesh as mesh
 import icefronts, bed
 import dist
 import scipy.signal as signal
 
-def load(glacier):
+def load(glacier,shapefilename='center_flowline',filt_len='none',verticaldatum='geoid',bedmodel='aniso',bedsmoothing=4):
+
+  '''
+  x,y,zb_filt,dists = load(glacier,shapefilename='center_flowline')
+  
+  Load glacier flowline. This script is mostly to keep everything consistent (distance along flowline,
+  chosen bed profile,etc.
+  
+  Inputs:
+  glacier: glacier name
+  shapefilename: shapefile to use for the flowline
+  filt_len: filter length (in meters) for the bed profile
+  verticaldatum: geoid or ellipsoid
+  
+  Outputs:
+  x,y: x,y coordinates of flowline
+  zb_filt: bed profile for flowline
+  '''
 
   if glacier == "Helheim":
-    file_flowline_in = os.path.join(os.getenv("HOME"),"Data/ShapeFiles/Glaciers/Flowlines/Helheim/helheim_center_flowline")
+    file1 = 'helheim_'
+    file_flowline_in = os.path.join(os.getenv("DATA_HOME"),"ShapeFiles/Glaciers/Flowlines/Helheim/"+file1+shapefilename)
   elif glacier == 'Kanger':
-    file_flowline_in = os.path.join(os.getenv("HOME"),"Data/ShapeFiles/Glaciers/Flowlines/Kanger/kanger_center_flowline")
+    file1 = 'kanger_'
+    file_flowline_in = os.path.join(os.getenv("DATA_HOME"),"ShapeFiles/Glaciers/Flowlines/Kanger/"+file1+shapefilename)
   else:
     sys.exit("Unknown glacier.") 
   
@@ -37,8 +56,8 @@ def load(glacier):
   terminus_val, terminus_time = icefronts.distance_along_flowline(x,y,dists,glacier,type='icefront')
 
   # Get average terminus position
-  time1 = 2009.0
-  time2 = 2015.0
+  time1 = 2008.0
+  time2 = 2016.0
   indt = np.where((terminus_time > time1) & (terminus_time < time2))
   terminus_time = terminus_time[indt[0]]
   terminus_val = terminus_val[indt[0]]
@@ -50,23 +69,22 @@ def load(glacier):
   dists = dists-terminus
 
   # Find bed elevation
-  
-  zb = bed.morlighem_pts(x,y,glacier,'geoid')
   if glacier == 'Helheim':
-    zb_cresis = bed.cresis('2001',glacier,'geoid')
-    ind = np.where(x > 309000)[0]
-    zb[ind] = np.interp(x[ind],zb_cresis[:,0],zb_cresis[:,2])
+    zb = bed.smith_at_pts(x,y,glacier,model=bedmodel,smoothing=bedsmoothing,verticaldatum=verticaldatum)
   elif glacier == 'Kanger':
-    zb_cresis1 = bed.cresis('2009a',glacier,'geoid')
-    zb_cresis2 = bed.cresis('2008',glacier,'geoid')
+    zb = bed.morlighem_pts(x,y,glacier,verticaldatum)
+    zb_cresis1 = bed.cresis('2009a',glacier,verticaldatum)
+    zb_cresis2 = bed.cresis('2008',glacier,verticaldatum)
     ind1 = np.where((x > 490970) & (x < 491300))[0]
     ind2 = np.where(x > 491300)[0]
     zb[ind1] = np.interp(x[ind1],zb_cresis1[:,0],zb_cresis1[:,2])
     zb[ind2] = np.interp(x[ind2],zb_cresis2[:,0],zb_cresis2[:,2])
 
-  filt_len = 1000.0
-  cutoff=(1/filt_len)/(1/(np.diff(dists[1:3])*2))
-  b,a=signal.butter(4,cutoff,btype='low')
-  zb_filt = signal.filtfilt(b,a,zb)
+  if filt_len != 'none':
+    cutoff=(1/filt_len)/(1/(np.diff(dists[1:3])*2))
+    b,a=signal.butter(4,cutoff,btype='low')
+    zb_filt = signal.filtfilt(b,a,zb)
+  else:
+    zb_filt = zb
 
   return x,y,zb_filt,dists

@@ -14,8 +14,8 @@ import math
 import sys
 import scipy.interpolate
 import numpy as np
-sys.path.append(os.path.join(os.getenv("HOME"),"Code/Util/Modules"))
-sys.path.append(os.path.join(os.getenv("HOME"),"Code/BigThreeGlaciers/Tools"))
+sys.path.append(os.path.join(os.getenv("CODE_HOME"),"Util/Modules"))
+sys.path.append(os.path.join(os.getenv("CODE_HOME"),"BigThreeGlaciers/Tools"))
 import geodat, icefronts, dist, geotiff, fracyear
 
 #########################################################################################
@@ -25,8 +25,8 @@ def convert_binary_to_geotiff(glacier):
   # so I've set up a script to convert all of them to geotiff. Then the "geodat" module 
   # checks to see if there are geotiffs before unpacking the binary files.
   
-  DIRTOP_TSX = os.path.join(os.getenv("HOME"),"Data/Velocity/TSX/"+glacier+"/")
-  DIRTOP_RADARSAT = os.path.join(os.getenv("HOME"),"Data/Velocity/RADARSAT/Greenland/")
+  DIRTOP_TSX = os.path.join(os.getenv("DATA_HOME"),"Velocity/TSX/"+glacier+"/")
+  DIRTOP_RADARSAT = os.path.join(os.getenv("DATA_HOME"),"Velocity/RADARSAT/Greenland/")
   
   # TSX files
   files = os.listdir(DIRTOP_TSX)
@@ -34,18 +34,18 @@ def convert_binary_to_geotiff(glacier):
     if file.startswith('track'):
       print file
       # Load binary data
-      x,y,v,vx,vy,ex,ey,time,interval = geodat.readbinary(DIRTOP_TSX+file+"/mosaicOffsets")
+      x,y,v,vx,vy,ex,ey,time,interval = geodat.readbinary(DIRTOP_TSX+file+"/mosaicOffsets",nodatavalue=-2.0e9)
       year,month,day = fracyear.fracyear_to_date(time)
     
       # Set up date label for geotiff file
       date = "%04d%02d%02d" % (year,month,day)
     
       # Save as geotiff
-      geotiff.write_from_grid(x,y,np.flipud(v),float('NaN'),DIRTOP_TSX+"TIF/"+file+"_"+date+"_v.tif")
-      geotiff.write_from_grid(x,y,np.flipud(vx),float('NaN'),DIRTOP_TSX+"TIF/"+file+"_"+date+"_vx.tif")
-      geotiff.write_from_grid(x,y,np.flipud(vy),float('NaN'),DIRTOP_TSX+"TIF/"+file+"_"+date+"_vy.tif")
-      geotiff.write_from_grid(x,y,np.flipud(ex),float('NaN'),DIRTOP_TSX+"TIF/"+file+"_"+date+"_ex.tif")
-      geotiff.write_from_grid(x,y,np.flipud(ey),float('NaN'),DIRTOP_TSX+"TIF/"+file+"_"+date+"_ey.tif")
+      geotiff.write_from_grid(x,y,np.flipud(v),-2.0e9,DIRTOP_TSX+"TIF/"+file+"_"+date+"_v.tif")
+      geotiff.write_from_grid(x,y,np.flipud(vx),-2.0e9,DIRTOP_TSX+"TIF/"+file+"_"+date+"_vx.tif")
+      geotiff.write_from_grid(x,y,np.flipud(vy),-2.0e9,DIRTOP_TSX+"TIF/"+file+"_"+date+"_vy.tif")
+      geotiff.write_from_grid(x,y,np.flipud(ex),-2.0e9,DIRTOP_TSX+"TIF/"+file+"_"+date+"_ex.tif")
+      geotiff.write_from_grid(x,y,np.flipud(ey),-2.0e9,DIRTOP_TSX+"TIF/"+file+"_"+date+"_ey.tif")
   
   # RADARSAT files    
   files = os.listdir(DIRTOP_RADARSAT)
@@ -56,11 +56,11 @@ def convert_binary_to_geotiff(glacier):
       x,y,v,vx,vy,ex,ey,time,interval = geodat.readbinary(DIRTOP_RADARSAT+file+"/mosaicOffsets")
     
       # Save as geotiff
-      geotiff.write_from_grid(x,y,np.flipud(v),float('NaN'),DIRTOP_RADARSAT+"TIF/"+file+"_v.tif")
-      geotiff.write_from_grid(x,y,np.flipud(vx),float('NaN'),DIRTOP_RADARSAT+"TIF/"+file+"_vx.tif")
-      geotiff.write_from_grid(x,y,np.flipud(vy),float('NaN'),DIRTOP_RADARSAT+"TIF/"+file+"_vy.tif")
-      geotiff.write_from_grid(x,y,np.flipud(ex),float('NaN'),DIRTOP_RADARSAT+"TIF/"+file+"_ex.tif")
-      geotiff.write_from_grid(x,y,np.flipud(ey),float('NaN'),DIRTOP_RADARSAT+"TIF/"+file+"_ey.tif")
+      geotiff.write_from_grid(x,y,np.flipud(v),-2.0e9,DIRTOP_RADARSAT+"TIF/"+file+"_v.tif")
+      geotiff.write_from_grid(x,y,np.flipud(vx),-2.0e9,DIRTOP_RADARSAT+"TIF/"+file+"_vx.tif")
+      geotiff.write_from_grid(x,y,np.flipud(vy),-2.0e9,DIRTOP_RADARSAT+"TIF/"+file+"_vy.tif")
+      geotiff.write_from_grid(x,y,np.flipud(ex),-2.0e9,DIRTOP_RADARSAT+"TIF/"+file+"_ex.tif")
+      geotiff.write_from_grid(x,y,np.flipud(ey),-2.0e9,DIRTOP_RADARSAT+"TIF/"+file+"_ey.tif")
       
   return 1
     
@@ -95,9 +95,9 @@ def velocity_at_eulpoints(xpt,ypt,glacier,data='all',xy_velocities='False'):
   dirs = []
   for type in data:
     if type == 'RADARSAT':
-      DIRTOP = os.path.join(os.getenv("HOME"),"Data/Velocity/RADARSAT/Greenland/")
+      DIRTOP = os.path.join(os.getenv("DATA_HOME"),"Velocity/RADARSAT/Greenland/")
     elif type == 'TSX':
-      DIRTOP = os.path.join(os.getenv("HOME"),"Data/Velocity/TSX/"+glacier+"/")
+      DIRTOP = os.path.join(os.getenv("DATA_HOME"),"Velocity/TSX/"+glacier+"/")
     
     DIRs=os.listdir(DIRTOP)
     for DIR in DIRs:
@@ -191,9 +191,9 @@ def velocity_along_flowline(xf,yf,glacier,cutoff='terminus',data='all'):
   dirs = []
   for type in data:
     if type == 'RADARSAT':
-      DIRTOP = os.path.join(os.getenv("HOME"),"Data/Velocity/RADARSAT/Greenland/")
+      DIRTOP = os.path.join(os.getenv("DATA_HOME"),"Velocity/RADARSAT/Greenland/")
     elif type == 'TSX':
-      DIRTOP = os.path.join(os.getenv("HOME"),"Data/Velocity/TSX/"+glacier+"/")
+      DIRTOP = os.path.join(os.getenv("DATA_HOME"),"Velocity/TSX/"+glacier+"/")
     
     DIRs=os.listdir(DIRTOP)
     for DIR in DIRs:
@@ -280,9 +280,9 @@ def velocity_at_lagpoints(xf,yf,pts,glacier,data='all'):
   dirs = []
   for type in data:
     if type == 'RADARSAT':
-      DIRTOP = os.path.join(os.getenv("HOME"),"Data/Velocity/RADARSAT/Greenland/")
+      DIRTOP = os.path.join(os.getenv("DATA_HOME"),"Velocity/RADARSAT/Greenland/")
     elif type == 'TSX':
-      DIRTOP = os.path.join(os.getenv("HOME"),"Data/Velocity/TSX/"+glacier+"/")
+      DIRTOP = os.path.join(os.getenv("DATA_HOME"),"Velocity/TSX/"+glacier+"/")
     
     DIRs=os.listdir(DIRTOP)
     for DIR in DIRs:
@@ -350,9 +350,9 @@ def velocity_at_lagpoints(xf,yf,pts,glacier,data='all'):
   return vpt_all, tpt_all, ept_all, dists_all, xpt_all, ypt_all 
 
 #########################################################################################
-def tsx_near_time(time,glacier):
+def tsx_near_time(time,glacier,just_filename = False):
 
-  DIR_TSX = os.path.join(os.getenv("HOME"),"Data/Velocity/TSX/"+glacier+"/")
+  DIR_TSX = os.path.join(os.getenv("DATA_HOME"),"Velocity/TSX/"+glacier+"/")
 
   DIRs=os.listdir(DIR_TSX)
   tpt=[]
@@ -364,18 +364,24 @@ def tsx_near_time(time,glacier):
       tsx_time,interval = geodat.readtime(DIR_TSX+DIR+"/mosaicOffsets")
       if abs(tsx_time-time) < min_diff:
         min_diff = abs(tsx_time-time)
+        best_time = tsx_time
         best_track = DIR
 
-  # Return the closest velocity profile
-  x,y,v,vx,vy,ex,ey,time,interval = geodat.readvelocity(DIR_TSX,best_track,"/mosaicOffsets")
-  return x,y,vx,vy,v,time
+  
+  if just_filename:
+    year,month,day = fracyear.fracyear_to_date(best_time)
+    return DIR_TSX+'TIF/'+best_track+'_'+"%04d%02d%02d" % (year,month,day),best_time
+  else:
+    # Return the closest velocity profile
+    x,y,v,vx,vy,ex,ey,time,interval = geodat.readvelocity(DIR_TSX,best_track,"/mosaicOffsets")
+    return x,y,vx,vy,v,time
 
 
 #########################################################################################
 def variability(x,y,time1,time2,glacier):
 
-  DIR_TSX = os.path.join(os.getenv("HOME"),"Data/Velocity/TSX/"+glacier+"/")
-  DIR_RADARSAT = os.path.join(os.getenv("HOME"),"Data/Velocity/RADARSAT/Greenland/")
+  DIR_TSX = os.path.join(os.getenv("DATA_HOME"),"Velocity/TSX/"+glacier+"/")
+  DIR_RADARSAT = os.path.join(os.getenv("DATA_HOME"),"Velocity/RADARSAT/Greenland/")
 
   #################
   # LOAD TSX Data #
@@ -424,8 +430,8 @@ def divergence_at_eulpoints(xpt,ypt):
   except:
     n = 0
 
-  DIR_TSX = os.path.join(os.getenv("HOME"),"Data/Velocity/TSX/"+glacier+"/")
-  DIR_RADARSAT = os.path.join(os.getenv("HOME"),"Data/Velocity/RADARSAT/Greenland/")
+  DIR_TSX = os.path.join(os.getenv("DATA_HOME"),"Velocity/TSX/"+glacier+"/")
+  DIR_RADARSAT = os.path.join(os.getenv("DATA_HOME"),"Velocity/RADARSAT/Greenland/")
 
   #################
   # LOAD TSX Data #
@@ -568,123 +574,146 @@ def divergence_at_eulpoints(xpt,ypt):
   
 #########################################################################################
 
-def inversion_3D(x,y,file_velocity_in,dir_velocity_out):
+def inversion_3D(glacier,x,y,time,dir_velocity_out,blur=False):
 
-  # Inputs:
-  # x : list of x coordinates for grid interpolation
-  # y : list of y coordinates for grid interpolation
-  # file_velocity_in : velocity file for interpolation
-  # dir_velocity_out : directory for outputting the velocity
+  '''
+  Inputs:
+  x : list of x coordinates for grid interpolation
+  y : list of y coordinates for grid interpolation
+  file_velocity_in : velocity file for interpolation
+  dir_velocity_out : directory for outputting the velocity
   
-  # Outputs:
-  # u : velocity in x-dir on grid defined by x,y
-  # y : velocity in y-dir on grid defined by x,y
+  Outputs:
+  u : velocity in x-dir on grid defined by x,y
+  y : velocity in y-dir on grid defined by x,y
+  '''
+  
+  xmin = np.min(x)-2.0e3
+  xmax = np.max(x)+2.0e3
+  ymin = np.min(y)-2.0e3
+  ymax = np.max(y)+2.0e3
+  
+  OUTDIR = os.path.join(os.getenv("DATA_HOME"),"Velocity/MosaicVelocities/"+glacier)
   
   # Large velocity map to fill in gaps in smaller velocity map
-  file_velocity_in_global = os.path.join(os.getenv("HOME"),"Data/Velocity/Random/Greenland/track-07to10")
-  x1,y1,v1,vx1,vy1,ex1,ey1,time,interval = geodat.readbinary(file_velocity_in_global+"/mosaicOffsets")
-
-  # The large velocity map has some gaps. So we need to make the map smaller and fill in the gaps
-  xmin = np.argmin(abs(x1-(np.min(x)-10e3)))
-  xmax = np.argmin(abs(x1-(np.max(x)+10e3)))
-  ymin = np.argmin(abs(y1-(np.min(y)-10e3)))
-  ymax = np.argmin(abs(y1-(np.max(y)+10e3)))
-
-  x1 = x1[xmin:xmax]
-  y1 = y1[ymin:ymax]
-  v1 = v1[ymin:ymax,xmin:xmax]
-  vx1 = vx1[ymin:ymax,xmin:xmax]
-  vy1 = vy1[ymin:ymax,xmin:xmax]
-  ex1 = ex1[ymin:ymax,xmin:xmax]
-  ey1 = ey1[ymin:ymax,xmin:xmax]
+  file_velocity_global = os.path.join(os.getenv("DATA_HOME"),"Velocity/Random/Greenland/AllGLVel/mosaicOffsets")
 
   # Individual velocity map
-  x2,y2,v2,vx2,vy2,ex2,ey2,time,interval = geodat.readbinary(file_velocity_in+"/mosaicOffsets")
-
-  # Grid points for interpolation
-  xgrid,ygrid = np.meshgrid(x,y)
-
-  # Create functions for interpolation
-  fu2 = scipy.interpolate.RegularGridInterpolator([y2,x2],vx2,method='linear',bounds_error=False)
-  fv2 = scipy.interpolate.RegularGridInterpolator([y2,x2],vy2,method='linear',bounds_error=False)
-
-  # Interpolate velocities from individual velocity map onto grid
-  vx = fu2((ygrid,xgrid))
-  vy = fv2((ygrid,xgrid))
-
-  # Fill in spots in velocity map that are not covered by the individual velocity map 
-  nans = np.where(np.isnan(vx))
-  nonnan = np.where(~(np.isnan(vx1)))
-  xgrid1,ygrid1 = np.meshgrid(x1,y1)
-  vx[nans] = scipy.interpolate.griddata(np.column_stack([ygrid1[nonnan],xgrid1[nonnan]]),vx1[nonnan],(ygrid[nans],xgrid[nans]),method='linear')
-  vy[nans] = scipy.interpolate.griddata(np.column_stack([ygrid1[nonnan],xgrid1[nonnan]]),vy1[nonnan],(ygrid[nans],xgrid[nans]),method='linear')
-
+  filename1,time1 = tsx_near_time(time,glacier,just_filename=True)
+  filename2,time2 = tsx_near_time(time-0.1,glacier,just_filename=True)
+  filename3,time3 = tsx_near_time(time+0.1,glacier,just_filename=True)
+  year,month,day = fracyear.fracyear_to_date(time1)
+  date = "%04d%02d%02d" % (year,month,day)
+  
+  files_vx = ' '+filename1+'_vx.tif'+' '+filename2+'_vx.tif'+\
+  		' '+filename3+'_vx.tif'+' '+file_velocity_global+'_vx.tif'
+  files_vy = ' '+filename1+'_vy.tif'+' '+filename2+'_vy.tif'+\
+  		' '+filename3+'_vy.tif'+' '+file_velocity_global+'_vy.tif'
+  
+  CURRENTDIR = os.getcwd()
+  os.chdir(OUTDIR)
+  filename_vx = 'mosaic-'+date+'-vx'
+  if not(os.path.isfile(filename_vx+'-tile-0.tif')):
+    os.system('dem_mosaic --t_projwin '+str(xmin)+' '+str(ymin)+' '+str(xmax)+\
+  		' '+str(ymax)+' --priority-blending-length 10 -o'+filename_vx+files_vx)
+  filename_vy = 'mosaic-'+date+'-vy'
+  if not(os.path.isfile(filename_vy+'-tile-0.tif')):
+    os.system('dem_mosaic --t_projwin '+str(xmin)+' '+str(ymin)+' '+str(xmax)+\
+  		' '+str(ymax)+' --priority-blending-length 10 -o'+filename_vy+files_vy)
+  
+  xu,yu,uu = geotiff.read(filename_vx+"-tile-0.tif")
+  xv,yv,vv = geotiff.read(filename_vy+"-tile-0.tif")
+  
+  if blur == True:
+    print "Blurring DEM over 17 pixels (roughly 500 m in each direction)..."
+    # 17 pixel gaussian blur
+    vx_blur = scipy.ndimage.filters.gaussian_filter(vx,sigma=2,truncate=4)
+    vy_blur = scipy.ndimage.filters.gaussian_filter(vy,sigma=2,truncate=4)
+  
+  os.chdir(CURRENTDIR)
   
   # Calculate velocity magnitude
-  vmag = np.sqrt(vx**2+vy**2)
+  vmag = np.sqrt(uu**2+vv**2)
   
-  # Put the value for no data back in for interpolation in Elmer
-  nans = np.where(np.isnan(vx))
-  #vx[nans] = -2.0e9
-  #vy[nans] = -2.0e9
-  #vmag[nans] = -2.0e9
-  
-  #################################
-  # Write out velocities to files #
-  #################################
+  ######################################################
+  # Write out velocities to files for inversion solver #
+  ######################################################
   
   # File for velocity in x-dir
   fidu = open(dir_velocity_out+"/UDEM.xy","w")
-  fidu.write('{}\n{}\n'.format(len(x),len(y)))
+  fidu.write('{}\n{}\n'.format(len(xu),len(yu)))
   
   # File for velocity in y-dir
   fidv = open(dir_velocity_out+"/VDEM.xy","w")
-  fidv.write('{}\n{}\n'.format(len(x),len(y)))
+  fidv.write('{}\n{}\n'.format(len(xv),len(yv)))
   
   # File for velocity magnitude
   fidmag = open(dir_velocity_out+"/VMAG.xy","w")
-  fidmag.write('{}\n{}\n'.format(len(x),len(y)))
+  fidmag.write('{}\n{}\n'.format(len(xu),len(yu)))
   
-  for i in range(0,len(x)):
-    for j in range(0,len(y)):
-      fidu.write('{} {} {}\n'.format(x[i],y[j],vx[j,i]))
-      fidv.write('{} {} {}\n'.format(x[i],y[j],vy[j,i]))
-      fidmag.write('{} {} {}\n'.format(x[i],y[j],vmag[j,i]))
+  for i in range(0,len(xu)):
+    for j in range(0,len(yu)):
+      fidu.write('{} {} {}\n'.format(xu[i],yu[j],uu[j,i]))
+      fidv.write('{} {} {}\n'.format(xv[i],yv[j],vv[j,i]))
+      fidmag.write('{} {} {}\n'.format(xu[i],yu[j],vmag[j,i]))
   
   fidv.close()
   fidu.close()
   fidmag.close()
 
+  # Interpolate to input grid
+  xgrid,ygrid = np.meshgrid(x,y)
+  fu = scipy.interpolate.RegularGridInterpolator((yu,xu),uu,method='linear')
+  vx = fu((ygrid,xgrid))
+  fv = scipy.interpolate.RegularGridInterpolator((yv,xv),vv,method='linear')
+  vy = fv((ygrid,xgrid))
+  
   return vx,vy
 
 def inversion_2D(x,y,d,glacier,file_velocity_in,dir_velocity_out,filt_len='none'):
-  import os
-  import sys
-  import numpy as np
-  sys.path.append(os.path.join(os.getenv("HOME"),"Code/Util/Modules"))
-  import scipy.interpolate 
-  import scipy.signal as signal
-  import geodat
   
-  # Large velocity map, in case the small map isn't big enough
-  file_velocity_large = os.path.join(os.getenv("HOME"),"Data/Velocity/Random/Greenland/track-07to10/mosaicOffsets")
-  x2,y2,v2,vx2,vy2,ex2,ey2,time2,interval2 = geodat.readbinary(file_velocity_large)
-  f2 = scipy.interpolate.RegularGridInterpolator([y2,x2],v2)
-  vint2=f2(np.column_stack([y,x]),method='linear')
+  xmin = np.min(x)-2.0e3
+  xmax = np.max(x)+2.0e3
+  ymin = np.min(y)-2.0e3
+  ymax = np.max(y)+2.0e3
   
-  # Individual velocity map
-  x1,y1,v1,vx1,vy1,ex1,ey1,time1,interval1 = geodat.readbinary(file_velocity_in)
-  f1 = scipy.interpolate.RegularGridInterpolator([y1,x1],v1,bounds_error=False)
-  vint1=f1(np.column_stack([y,x]),method='linear') 
+  OUTDIR = os.path.join(os.getenv("DATA_HOME"),"Velocity/MosaicVelocities/"+glacier)
+  
+  # Large velocity map to fill in gaps in smaller velocity map
+  file_velocity_global = os.path.join(os.getenv("DATA_HOME"),"Velocity/Random/Greenland/AllGLVel/mosaicOffsets")
 
-  # Combine velocity records
-  vcomb=vint1
-  nans = np.where((np.isnan(vcomb)))
-  vcomb[nans] = vint2[nans] 
+  # Individual velocity map
+  filename1,time1 = tsx_near_time(time,glacier,just_filename=True)
+  filename2,time2 = tsx_near_time(time-0.1,glacier,just_filename=True)
+  filename3,time3 = tsx_near_time(time+0.1,glacier,just_filename=True)
+  year,month,day = fracyear.fracyear_to_date(time1)
+  date = "%04d%02d%02d" % (year,month,day)
   
-  # Linearly interpolate NaN values
-  nonnan = np.where(~(np.isnan(vcomb)))
-  vnonnan = np.interp(d,d[nonnan],vcomb[nonnan])
+  files_vx = ' '+filename1+'_vx.tif'+' '+filename2+'_vx.tif'+\
+  		' '+filename3+'_vx.tif'+' '+file_velocity_global+'_vx.tif'
+  files_vy = ' '+filename1+'_vy.tif'+' '+filename2+'_vy.tif'+\
+  		' '+filename3+'_vy.tif'+' '+file_velocity_global+'_vy.tif'
+  
+  CURRENTDIR = os.getcwd()
+  os.chdir(OUTDIR)
+  filename_vx = 'mosaic-'+date+'-vx'
+  if not(os.path.isfile(filename_vx+'-tile-0.tif')):
+    os.system('dem_mosaic --t_projwin '+str(xmin)+' '+str(ymin)+' '+str(xmax)+\
+  		' '+str(ymax)+' --priority-blending-length 10 -o'+filename_vx+files_vx)
+  filename_vy = 'mosaic-'+date+'-vy'
+  if not(os.path.isfile(filename_vy+'-tile-0.tif')):
+    os.system('dem_mosaic --t_projwin '+str(xmin)+' '+str(ymin)+' '+str(xmax)+\
+  		' '+str(ymax)+' --priority-blending-length 10 -o'+filename_vy+files_vy)
+  
+  xu,yu,uu = geotiff.read(filename_vx+"-tile-0.tif")
+  xv,yv,vv = geotiff.read(filename_vy+"-tile-0.tif")  
+  
+  fu = scipy.interpolate.RegularGridInterpolator((yu,xu),uu)
+  vx = f(x,y)
+  fv = scipy.interpolate.RegularGridInterpolator((yv,xv),vv)
+  vy = f(x,y)
+  
+  vnonnan = np.sqrt(vx**2+vy**2)
   
   # Filter velocities
   if filt_len != 'none':
@@ -702,4 +731,4 @@ def inversion_2D(x,y,d,glacier,file_velocity_in,dir_velocity_out,filt_len='none'
     fid.write('{} {}\n'.format(d[j],filtered[j]))
   fid.close()
 
-  return 1
+  return filtered

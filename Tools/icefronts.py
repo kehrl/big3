@@ -5,7 +5,7 @@
 
 import os
 import sys
-sys.path.append(os.path.join(os.getenv("HOME"),"Code/Util/Modules"))
+sys.path.append(os.path.join(os.getenv("CODE_HOME"),"Util/Modules"))
 import shapefile
 import fracyear
 from shapely.geometry import LineString
@@ -25,9 +25,9 @@ def cleanup(glacier,type='icefront'):
   '''
   
   if type is 'icefront':
-    DIRI=os.path.join(os.getenv("HOME"),"Data/ShapeFiles/IceFronts/"+glacier+"/")
+    DIRI=os.path.join(os.getenv("DATA_HOME"),"ShapeFiles/IceFronts/"+glacier+"/")
   elif type is 'rift':
-    DIRI=os.path.join(os.getenv("HOME"),"Data/ShapeFiles/Rifts/"+glacier+"/")
+    DIRI=os.path.join(os.getenv("DATA_HOME"),"ShapeFiles/Rifts/"+glacier+"/")
 
   files = os.listdir(DIRI)
   os.chdir(DIRI)
@@ -65,9 +65,9 @@ def distance_along_flowline(x,y,dists,glacier,type='icefront'):
   '''
   
   if type is 'icefront':
-    DIRI=os.path.join(os.getenv("HOME"),"Data/ShapeFiles/IceFronts/"+glacier+"/")
+    DIRI=os.path.join(os.getenv("DATA_HOME"),"ShapeFiles/IceFronts/"+glacier+"/")
   elif type is 'rift':
-    DIRI=os.path.join(os.getenv("HOME"),"Data/ShapeFiles/Rifts/"+glacier+"/")
+    DIRI=os.path.join(os.getenv("DATA_HOME"),"ShapeFiles/Rifts/"+glacier+"/")
 
   files = os.listdir(DIRI)
 
@@ -169,9 +169,9 @@ def load_all(time1,time2,glacier,type='icefront'):
   '''
   
   if type is 'icefront':
-    DIRI=os.path.join(os.getenv("HOME"),"Data/ShapeFiles/IceFronts/"+glacier+"/")
+    DIRI=os.path.join(os.getenv("DATA_HOME"),"ShapeFiles/IceFronts/"+glacier+"/")
   elif type is 'rift':
-    DIRI=os.path.join(os.getenv("HOME"),"Data/ShapeFiles/Rifts/"+glacier+"/")
+    DIRI=os.path.join(os.getenv("DATA_HOME"),"ShapeFiles/Rifts/"+glacier+"/")
 
   files = os.listdir(DIRI)
 
@@ -222,7 +222,7 @@ def near_time(time,glacier):
   best_x,best_y: x,y coordinates for terminus position that is closest in time to "time"
   '''
 
-  DIRI=os.path.join(os.getenv("HOME"),"Data/ShapeFiles/IceFronts/"+glacier+"/")
+  DIRI=os.path.join(os.getenv("DATA_HOME"),"ShapeFiles/IceFronts/"+glacier+"/")
 
   files = os.listdir(DIRI)
 
@@ -247,7 +247,7 @@ def near_time(time,glacier):
             best_x = np.r_[best_x,termpts[:,0]]
             best_y = np.r_[best_y,termpts[:,1]]
           except:
-            print "no points in shape"
+            print ""
         best_time = icetime
 
   return best_x,best_y,best_time
@@ -267,7 +267,7 @@ def calving(glacier):
   behavior: a column array of time, calvingstyle, satellite, file date
   '''
   
-  DIR=os.path.join(os.getenv("HOME"),"Data/CalvingStyle/"+glacier+"/")
+  DIR=os.path.join(os.getenv("DATA_HOME"),"CalvingStyle/"+glacier+"/")
 
   # Outputs
   time = []

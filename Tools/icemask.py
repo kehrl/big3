@@ -4,7 +4,7 @@
 
 import os
 import sys
-sys.path.append(os.path.join(os.getenv("HOME"),"Code/Util/Modules"))
+sys.path.append(os.path.join(os.getenv("CODE_HOME"),"Util/Modules"))
 import elmer_mesh
 import matplotlib.path as path
 import numpy as np
@@ -12,7 +12,7 @@ import numpy as np
 def load(glacier,xmin,xmax,ymin,ymax,dx,ice=0):
 
   # Directory for holes for mask
-  DIR = os.path.join(os.getenv("HOME"),'Data/Shapefiles/IceMasks/'+glacier+'/')
+  DIR = os.path.join(os.getenv("DATA_HOME"),'Shapefiles/IceMasks/'+glacier+'/')
   files = os.listdir(DIR)
   
   # Set up grid

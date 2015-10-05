@@ -3,8 +3,8 @@
 
 import sys
 import os
-sys.path.append(os.path.join(os.getenv("HOME"),"Code/Util/Modules"))
-sys.path.append(os.path.join(os.getenv("HOME"),"Code/Helheim/Tools"))
+sys.path.append(os.path.join(os.getenv("CODE_HOME"),"Util/Modules"))
+sys.path.append(os.path.join(os.getenv("CODE_HOME"),"Helheim/Tools"))
 import elmer_read
 import matplotlib.pyplot as plt
 import matplotlib
@@ -15,12 +15,12 @@ args = sys.argv
 
 RES=args[1]
 regpar = args[2:]
-DIRR=os.path.join(os.getenv("HOME"),"Models/Helheim/Results/3D/"+RES+"/Inversion/")
+DIRR=os.path.join(os.getenv("MODEL_HOME"),"Helheim/Results/3D/"+RES+"/Inversion/")
 bbed = 3
 bsur = 4
 
 # Mesh boundaries
-DIRM = os.path.join(os.getenv("HOME"),"Models/Helheim/Meshes/3D/"+RES+"/Inputs/")
+DIRM = os.path.join(os.getenv("MODEL_HOME"),"Helheim/Meshes/3D/"+RES+"/Inputs/")
 extent = np.loadtxt(DIRM+"mesh_extent.dat")
 hole1 = np.loadtxt(DIRM+"mesh_hole1.dat")
 hole2 = np.loadtxt(DIRM+"mesh_hole2.dat")

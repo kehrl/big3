@@ -85,11 +85,10 @@ Initial Condition 1
     Real Procedure "Rheology.so" "Viscosity"
   !MuS = Real $ (2.0*6.4e-25*yearinsec)^(-1.0/3.0)*1.0e-6 
   ! Using a mixed value from Habermann (Jakobshavn) and Nick (Helheim flowline), -5 deg C
-  ! MuS = Variable coordinate 1, Coordinate 2
-  !     REAL MATC "MuSquare(tx)"
  
 ! initial guess for (square root) slip coeff.
-  Beta = REAL $ 1.0e3/sqrt(1.0e06*yearinsec)
+  Beta = Variable Coordinate 1, Coordinate 2
+    Real Procedure "Sliding_Beta.so" "GuessBeta"
 
   Pressure = Real 0.0
   Velocity 1 = Real 0.0
@@ -333,8 +332,10 @@ Boundary Condition 1
   Normal-Tangential VeloD = Logical True
   
   Velocity 1 = Real 0.0e0
-  Slip Coefficient 2 = 1.0e-4
-  Slip Coefficient 3 = 1.0e-4
+  Slip Coefficient 2 = Variable Beta
+     REAL MATC "tx*tx"
+  Slip Coefficient 3 = Variable Beta
+     REAL MATC "tx*tx"
 
   Save Line = Logical True
   Save Scalars = Logical True
@@ -415,21 +416,21 @@ Boundary Condition 5
   Name = "Calving front"
   Target Boundaries(1) = 3
   
-!  Flow Force BC = Logical True
-!  External Pressure = Variable Coordinate 3 !we are in MPa units
-!    Real MATC "-1.0*waterpressure(tx)*1.0E-06"
+  Flow Force BC = Logical True
+  External Pressure = Variable Coordinate 3 !we are in MPa units
+    Real MATC "-1.0*waterpressure(tx)*1.0E-06"
     
 ! Dirichlet BCs
-  Velocity 1 = Variable Coordinate 1
-    Real procedure "UWA_Bnd.so" "UBnd"
-  Velocity 2 = Variable Coordinate 1
-    Real procedure "UWA_Bnd.so" "VBnd"
+!  Velocity 1 = Variable Coordinate 1
+!    Real procedure "UWA_Bnd.so" "UBnd"
+!  Velocity 2 = Variable Coordinate 1
+!    Real procedure "UWA_Bnd.so" "VBnd"
 
 !Dirichlet BC => Same Dirichlet
-  VeloD 1 = Variable Coordinate 1
-    Real procedure "UWA_Bnd.so" "UBnd"
-  VeloD 2 = Variable Coordinate 1
-    Real procedure "UWA_Bnd.so" "VBnd"
+!  VeloD 1 = Variable Coordinate 1
+!    Real procedure "UWA_Bnd.so" "UBnd"
+!  VeloD 2 = Variable Coordinate 1
+!    Real procedure "UWA_Bnd.so" "VBnd"
 
   Save Line = Logical True
   Save Scalars = Logical True

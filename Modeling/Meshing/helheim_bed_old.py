@@ -13,10 +13,10 @@ import matplotlib.pyplot as plt
 from netCDF4 import Dataset
 
 # Beds
-morlighem_file=os.path.join(os.getenv("HOME"),"Data/Bed/Morlighem_2014/morlighem_bed.grd")
-smith_file=os.path.join(os.getenv("HOME"),"Data/Bed/Ben_smith_feb2014/smith_helheim_bed.grd")
-cresis2008_file=os.path.join(os.getenv("HOME"),"Data/Bed/Cresis/Helheim_2008_2012_Composite/flightlines/Helheim_2008_2012_Composite_Flightlines.txt")
-cresis2001_file=os.path.join(os.getenv("HOME"),"Data/Bed/Cresis/helheim_flightline_05212001_good_nsidc.dat")
+morlighem_file=os.path.join(os.getenv("DATA_HOME"),"Bed/Morlighem_2014/morlighem_bed.grd")
+smith_file=os.path.join(os.getenv("DATA_HOME"),"Bed/Ben_smith_feb2014/smith_helheim_bed.grd")
+cresis2008_file=os.path.join(os.getenv("DATA_HOME"),"Bed/Cresis/Helheim_2008_2012_Composite/flightlines/Helheim_2008_2012_Composite_Flightlines.txt")
+cresis2001_file=os.path.join(os.getenv("DATA_HOME"),"Bed/Cresis/helheim_flightline_05212001_good_nsidc.dat")
 
 try:
   zbed_cresis2008

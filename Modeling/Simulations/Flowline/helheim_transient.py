@@ -4,7 +4,7 @@ import os
 import sys
 from subprocess import call
 import shutil, glob
-sys.path.append(os.path.join(os.getenv("HOME"),"Code/Util/Modules"))
+sys.path.append(os.path.join(os.getenv("CODE_HOME"),"Util/Modules"))
 import elmer_read
 import numpy as np
 import matplotlib.pyplot as plt
@@ -16,10 +16,10 @@ import matplotlib.pyplot as plt
 MESHNAME='MorlighemNew_SmoothedVelocity' 
 
 # Directories
-DIRS=os.path.join(os.getenv("HOME"),"Code/Helheim/Modeling/SolverFiles/Flowline/")
-DIRM=os.path.join(os.getenv("HOME"),"Models/Helheim/Meshes/Flowline/"+MESHNAME+"/")
-DIRR=os.path.join(os.getenv("HOME"),"Models/Helheim/Results/Flowline/"+MESHNAME+"/")
-DIRELMERLIB = os.path.join(os.getenv("HOME"),"Code/Helheim/Modeling/Elmerlib/")
+DIRS=os.path.join(os.getenv("CODE_HOME"),"BigThreeGlaciers/Modeling/SolverFiles/Flowline/")
+DIRM=os.path.join(os.getenv("MODEL_HOME"),"Helheim/Meshes/Flowline/"+MESHNAME+"/")
+DIRR=os.path.join(os.getenv("MODEL_HOME"),"Helheim/Results/Flowline/"+MESHNAME+"/")
+DIRELMERLIB = os.path.join(os.getenv("CODE_HOME"),"BigThreeGlaciers/Modeling/Elmerlib/")
 
 # Solver file
 solverfile='flowline2.sif'

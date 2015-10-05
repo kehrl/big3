@@ -3,7 +3,7 @@
 import os
 import sys
 import numpy as np
-sys.path.append(os.path.join(os.getenv("HOME"),"Code/Util/Modules"))
+sys.path.append(os.path.join(os.getenv("CODE_HOME"),"Util/Modules"))
 import netCDF4, jdcal
 import coords, fracyear
 import scipy.signal as signal
@@ -11,12 +11,12 @@ import scipy.signal as signal
 def racmo_grid(xmin,xmax,ymin,ymax,variable,epsg=3413):
 
   # RACMO data
-  files = [(os.path.join(os.getenv("HOME"),"Data/Climate/RACMO/2015_09_Laura_Kehrl/RACMO2.3_GRN11_"+variable+"_daily_2001_2010.nc")), \
-           (os.path.join(os.getenv("HOME"),"Data/Climate/RACMO/2015_09_Laura_Kehrl/RACMO2.3_GRN11_"+variable+"_daily_2011_2014.nc"))]
+  files = [(os.path.join(os.getenv("DATA_HOME"),"Climate/RACMO/2015_09_Laura_Kehrl/RACMO2.3_GRN11_"+variable+"_daily_2001_2010.nc")), \
+           (os.path.join(os.getenv("DTATA_HOME"),"Climate/RACMO/2015_09_Laura_Kehrl/RACMO2.3_GRN11_"+variable+"_daily_2011_2014.nc"))]
 
   rec1 = netCDF4.Dataset(files[0])
   rec2 = netCDF4.Dataset(files[1])
-  mask = netCDF4.Dataset(os.path.join(os.getenv("HOME"),"Data/Climate/RACMO/2015_09_Laura_Kehrl/RACMO23_masks_ZGRN11.nc")).variables['icemask'][:]
+  mask = netCDF4.Dataset(os.path.join(os.getenv("DATA_HOME"),"Climate/RACMO/2015_09_Laura_Kehrl/RACMO23_masks_ZGRN11.nc")).variables['icemask'][:]
 
 
   # Load RACMO data

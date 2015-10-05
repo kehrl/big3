@@ -7,8 +7,8 @@
 import openpyxl
 import os,sys
 import numpy as np
-sys.path.append(os.path.join(os.getenv("HOME"),"Code/Util/Modules"))
-sys.path.append(os.path.join(os.getenv("HOME"),"Code/BigThreeGlaciers/Tools"))
+sys.path.append(os.path.join(os.getenv("CODE_HOME"),"Util/Modules"))
+sys.path.append(os.path.join(os.getenv("CODE_HOME"),"BigThreeGlaciers/Tools"))
 import fracyear
 import shapefile, shapely.geometry
 import matplotlib.pyplot as plt, matplotlib
@@ -34,7 +34,7 @@ elif glacier == 'Jak':
 ############
   
 # Load excel spreadsheet
-excelfile=os.path.join(os.getenv("HOME"),"Data/Elevation/TanDEM/OrderLists/"+glacier+"_TDM.xlsx")
+excelfile=os.path.join(os.getenv("DATA_HOME"),"Elevation/TanDEM/OrderLists/"+glacier+"_TDM.xlsx")
 data = openpyxl.load_workbook(excelfile)[glacier]
 
 # Values that we want from the file
@@ -130,8 +130,8 @@ print len(cand_ind)
 # Worldview DEMs #
 ##################
 
-stereopairs = shapefile.Reader(os.path.join(os.getenv("HOME"),"Data/Elevation/Worldview/Orders/20150721_JHK_order/stereo_dg_imagery_index_CC75_N_Gr_front_vm300m"))
-monopairs = shapefile.Reader(os.path.join(os.getenv("HOME"),"Data/Elevation/Worldview/Orders/20150721_JHK_order/validpairs"))
+stereopairs = shapefile.Reader(os.path.join(os.getenv("DATA_HOME"),"Elevation/Worldview/Orders/20150721_JHK_order/stereo_dg_imagery_index_CC75_N_Gr_front_vm300m"))
+monopairs = shapefile.Reader(os.path.join(os.getenv("DATA_HOME"),"Elevation/Worldview/Orders/20150721_JHK_order/validpairs"))
 
 if glacier == 'Jak':
   pt = [-185662.0,-2272488.0]

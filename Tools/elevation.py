@@ -11,13 +11,14 @@
 import os
 import sys
 import numpy as np
-sys.path.append(os.path.join(os.getenv("HOME"),"Code/Util/Modules"))
-sys.path.append(os.path.join(os.getenv("HOME"),"Code/BigThreeGlaciers/Tools"))
+sys.path.append(os.path.join(os.getenv("CODE_HOME"),"Util/Modules"))
+sys.path.append(os.path.join(os.getenv("CODE_HOME"),"BigThreeGlaciers/Tools"))
 import icefronts, glacier_flowline, coords
 import coords, geotiff
 import scipy.interpolate, dist, fracyear
 import scipy.signal as signal
 import shapely.geometry
+import scipy.ndimage
 
 def gimp_at_pts(xpts,ypts,glacier,verticaldatum):
   
@@ -34,31 +35,15 @@ def gimp_at_pts(xpts,ypts,glacier,verticaldatum):
   elev: 1-d numpy array of GIMP surface elevations at xpts, ypts
   '''
   
-  # Choose gimp surface DEM based on glacier name
-  if glacier == 'Helheim':
-    file = os.path.join(os.getenv("HOME"),'Data/Elevation/Gimp/gimpdem3_1.tif')
-  elif glacier == 'Kanger':
-    file = os.path.join(os.getenv("HOME"),'Data/Elevation/Gimp/gimpdem4_2.tif')
-  else: 
-    sys.exit("Unknown glacier.")
-  
-  # Read GIMP DEM
-  [x,y,z]=geotiff.read(file)
+  # Read grid of gimp dem
+  x,y,z = gimp_grid(np.min(xpts)-2.0e3,np.max(xpts)+2.0e3,np.min(ypts)-2.0e3,\
+  			np.max(ypts)+2.0e3,glacier=glacier,verticaldatum=verticaldatum)
   
   # Interpolate DEM to points
   f = scipy.interpolate.RegularGridInterpolator((y,x),z,method="linear")
   zs = f(np.column_stack([ypts,xpts]))
   
-  # Choose vertical datum
-  if verticaldatum == "ellipsoid":
-    elev = zs
-  elif verticaldatum == "geoid":
-    geoidheight = coords.geoidheight(xpts,ypts)
-    elev = zs - geoidheight
-  else:
-    print "Unknown datum, defaulting to height above ellipsoid"
-  
-  return elev
+  return zs
   
 def gimp_grid(xmin,xmax,ymin,ymax,glacier,verticaldatum):
   
@@ -77,27 +62,27 @@ def gimp_grid(xmin,xmax,ymin,ymax,glacier,verticaldatum):
   elev: grid of GIMP surface elevations 
   '''
   
+  # Get correct tile of the GIMP DEM
   if glacier == 'Helheim':
-    file = os.path.join(os.getenv("HOME"),'Data/Elevation/Gimp/gimpdem3_1.tif')
+    subset = 'gimpdem3_1'
   elif glacier == 'Kanger':
-    file = os.path.join(os.getenv("HOME"),'Data/Elevation/Gimp/gimpdem4_2.tif')
+    subset = 'gimpdem4_2'
   else: 
     sys.exit("Unknown glacier.")
+  
+  # Load correct file for geoid or ellipsoid heights
+  if verticaldatum == 'geoid':
+    fileend = '-adj.tif'
+  else:
+    fileend = '.tif'
+  
+  # File name  
+  file = os.path.join(os.getenv("DATA_HOME"),'Elevation/Gimp/'+subset+fileend)
     
   # Get GIMP DEM
   [x,y,zs]=geotiff.read(file,xmin,xmax,ymin,ymax)
-  
-  if verticaldatum == "ellipsoid":
-    elev = np.array(zs)
-  elif verticaldatum == "geoid":
-    (xgrid,ygrid)=np.meshgrid(x,y)
-    geoidheight = coords.geoidheight(xgrid.flatten(),ygrid.flatten())
-    zg = np.reshape(geoidheight,(len(y),len(x)))
-    elev = zs - zg
-  else: 
-    print "Unrecognized vertical datum."
     
-  return x,y,elev
+  return x,y,zs
 
 def atm(years,verticaldatum):
 
@@ -116,7 +101,7 @@ def atm(years,verticaldatum):
   '''
   
   # Directory for ATM
-  ATMDIR = os.path.join(os.getenv("HOME"),'Data/Elevation/ATM/HelheimKanger/')
+  ATMDIR = os.path.join(os.getenv("DATA_HOME"),'Elevation/ATM/HelheimKanger/')
   DIRs = os.listdir(ATMDIR)
   
   atm = {}
@@ -125,7 +110,6 @@ def atm(years,verticaldatum):
     
   for DIR in DIRs:
     if (DIR.startswith('2') or DIR.startswith('1')) and ((years == 'all') or (DIR[0:4] in years)):
-      print "Loading",DIR,"..."
       x=[]
       y=[]
       z=[]
@@ -151,8 +135,7 @@ def atm(years,verticaldatum):
   # Choose vertical datum
   if verticaldatum=='geoid':
     for key in atm.keys():
-      geoidheight = coords.geoidheight(atm[key][:,0],atm[key][:,1])
-      atm[key][:,2] = atm[key][:,2] - geoidheight
+      atm[key][:,2] = coords.geoidheight(atm[key][:,0],atm[key][:,1],atm[key][:,2])
   elif verticaldatum=='ellipsoid':
     atm = atm
   else: 
@@ -259,7 +242,7 @@ def atm_at_pts(xpts,ypts,glacier,years='all',maxdist=200,verticaldatum='geoid'):
 
   return zpts,time
    
-def worldview_grid(glacier,xmin=0,xmax=0,ymin=0,ymax=0,resolution=32,years='all',verticaldatum='geoid'):
+def worldview_grid(glacier,xmin=-np.Inf,xmax=np.Inf,ymin=-np.Inf,ymax=np.Inf,resolution=32,years='all',verticaldatum='geoid'):
 
   '''
   x,y,zs_nonnan,time_nonnan=worldview_grid(glacier,xmin=0,xmax=0,ymin=0,ymax=0,resolution=32,years='all',verticaldatum='geoid')
@@ -284,14 +267,20 @@ def worldview_grid(glacier,xmin=0,xmax=0,ymin=0,ymax=0,resolution=32,years='all'
   y = np.linspace(ymin,(ny-1)*dy+ymin,ny)
   xgrid,ygrid = np.meshgrid(x,y)
     
-  WVDIR = os.path.join(os.getenv("HOME"),'/Users/kehrl/Data/Elevation/Worldview/'+glacier+'/')
+  WVDIR = os.path.join(os.getenv("DATA_HOME"),'Elevation/Worldview/'+glacier+'/')
   DIRs = os.listdir(WVDIR)
+  
+  # Find file ending based on whether we want elevation relative to geoid or ellipsoid
+  if verticaldatum == 'geoid':
+    filestring = 'trans-adj.tif'
+  else:
+    filestring = 'trans.tif'
   
   # Find dates where we have data in the desired region
   dates=[]
   glacier = shapely.geometry.Polygon([(xmin,ymin),(xmin,ymax),(xmax,ymax),(xmax,ymin)])
   for DIR in DIRs:
-    if (DIR[0:8] not in dates) and DIR.startswith('2') and (DIR.endswith('_32m.tif') or DIR.endswith('32m_trans.tif')):
+    if (DIR[0:8] not in dates) and DIR.startswith('2') and (DIR.endswith(filestring)):
       wvxmin,wvxmax,wvymin,wvymax = geotiff.extent(WVDIR+DIR)
       wv_extent = shapely.geometry.Polygon([(wvxmin,wvymin),(wvxmin,wvymax),(wvxmax,wvymax),(wvxmax,wvymin)])
       if glacier.intersects(wv_extent):
@@ -313,7 +302,7 @@ def worldview_grid(glacier,xmin=0,xmax=0,ymin=0,ymax=0,resolution=32,years='all'
     n = 1 # Count number of files for that date
     time[i] = fracyear.date_to_fracyear(int(date[0:4]),int(date[4:6]),float(date[6:8]))
     for DIR in DIRs:
-      if DIR.startswith(date) and (DIR.endswith('_32m.tif') or DIR.endswith('32m_trans.tif')): 
+      if DIR.startswith(date) and DIR.endswith(filestring): 
         # Read file
         xwv,ywv,zwv = geotiff.read(WVDIR+DIR) 
         zwv[zwv==0] = 'NaN'
@@ -333,13 +322,6 @@ def worldview_grid(glacier,xmin=0,xmax=0,ymin=0,ymax=0,resolution=32,years='all'
           n = n+1
           
     zs[zs==0] = 'NaN' 
-  
-  # Set elevation relative to vertical datum
-  geoidheight = coords.geoidheight(xgrid.flatten(),ygrid.flatten())
-  geoidheight = np.reshape(geoidheight,(ny,nx))
-  if verticaldatum == 'geoid':
-    for i in range(0,len(time)):
-      zs[:,:,i] = zs[:,:,i] - geoidheight
       
   # It's possible we still pulled a DEM full of NaNs in the desired region. If so, let's chuck those.
   nonnan=[]
@@ -354,15 +336,22 @@ def worldview_grid(glacier,xmin=0,xmax=0,ymin=0,ymax=0,resolution=32,years='all'
 def worldview_along_flowline(xpts,ypts,glacier,years='all',cutoff='terminus',verticaldatum='geoid',filt_len='none'):
 
   '''
-  pts = worldview_along_flowline(xpts,ypts,glacier,years='all',cutoff='terminus',verticaldatum='geoid',filt_len='none')
+  pts = worldview_along_flowline(xpts, ypts, glacier ,years='all', 
+  		cutoff='terminus', verticaldatum='geoid', filt_len='none')
   
   Outputs worldview surface elevations along a flowline defined by xpts,ypts. Same as "atm_along_flowline" except
   for worldview data. See that function for more information.
   '''
 
   # Worldview data
-  WVDIR = os.path.join(os.getenv("HOME"),"/Users/kehrl/Data/Elevation/Worldview/"+glacier+"/")
+  WVDIR = os.path.join(os.getenv("DATA_HOME"),"Elevation/Worldview/"+glacier+"/")
   DIRs = os.listdir(WVDIR)
+
+  # Find file ending based on whether we want elevation relative to geoid or ellipsoid
+  if verticaldatum == 'geoid':
+    filestring = 'trans-adj.tif'
+  else:
+    filestring = 'trans.tif'
   
   # Set up output dictionary
   pts = {}
@@ -376,7 +365,7 @@ def worldview_along_flowline(xpts,ypts,glacier,years='all',cutoff='terminus',ver
 # Find dates where we have data in the desired region
   dates=[]
   for DIR in DIRs:
-    if (DIR[0:8] not in dates) and DIR.startswith('2') and DIR.endswith('.tif'):
+    if (DIR[0:8] not in dates) and DIR.startswith('2') and DIR.endswith(filestring):
       xmin,xmax,ymin,ymax = geotiff.extent(WVDIR+DIR)
       within = np.where((xpts > xmin) & (xpts < xmax) & (ypts > ymin) & (ypts < ymax))[0]
       if len(within) > 0:
@@ -392,7 +381,7 @@ def worldview_along_flowline(xpts,ypts,glacier,years='all',cutoff='terminus',ver
 
   for date in dates:
     for DIR in DIRs:
-      if DIR.startswith(date) and (DIR.endswith('_32m.tif') or DIR.endswith('32m_trans.tif')): 
+      if DIR.startswith(date) and (DIR.endswith(filestring)): 
         #print "Loading data from "+DIR+"\n"
         x,y,z = geotiff.read(WVDIR+DIR)
         z[z == 0] ='NaN'
@@ -428,16 +417,6 @@ def worldview_along_flowline(xpts,ypts,glacier,years='all',cutoff='terminus',ver
   if cutoff == 'terminus':
     print "Cleaning up DEM points by removing points in front of ice front."
     print "You can change this setting by setting `cutoff = 'none'.'"
-	    
-  # Choose if elevation should be relative to geoid or ellipsoid
-  if verticaldatum == 'geoid':
-    geoidheight = coords.geoidheight(xpts,ypts)
-    for key in pts.keys():
-      pts[key][:,2] = pts[key][:,2] - geoidheight
-  elif verticaldatum == 'ellipsoid':
-     pts = pts
-  else:
-    print "Unknown datum, defaulting to height above ellipsoid"
   
   # Filter if desired
   if filt_len != 'none':
@@ -453,7 +432,8 @@ def worldview_along_flowline(xpts,ypts,glacier,years='all',cutoff='terminus',ver
 def worldview_at_pts(xpts,ypts,glacier,years='all',verticaldatum='geoid'):
 
   '''
-  zpts,time = worldview_at_pts(xpts,ypts,glacier,years='all',verticaldatum='geoid')
+  zpts,time = worldview_at_pts(xpts,ypts,glacier,
+  				years='all',verticaldatum='geoid')
   
   Interpolates worldview surface elevations to points xpts,ypts.
   
@@ -481,18 +461,20 @@ def worldview_at_pts(xpts,ypts,glacier,years='all',verticaldatum='geoid'):
 
   return zpts,time
 
-def dem_continuous(xmin,xmax,ymin,ymax,glacier,date,verticaldatum='geoid',fillin='none'):
+def dem_continuous(glacier,date,verticaldatum='geoid',fillin=False,blur=False):
 
   '''
-  xg,yg,zs = dem_continuous(xmin,xmax,ymin,ymax,glacier,date,verticaldatum='geoid',fillin='none')
+  xg,yg,zs = dem_continuous(glacier, date, xmin, xmax, ymin, ymax,
+  				verticaldatum='geoid', fillin='none')
   
-  The worldview DEMs do not cover the entire glacier extent, so this function combines individual
-  DEMs to produce a continuous DEM for different time periods.
+  The worldview DEMs do not cover the entire glacier extent, so 
+  this function combines individual DEMs to produce a continuous DEM 
+  for different time periods.
   
   Inputs:
-  xmin,xmax,ymin,ymax: desired output grid size
   glacier: glacier name
   date: date for terminus DEM (see function for options)
+  xmin,xmax,ymin,ymax: desired output grid size
   verticaldatum: geoid or elliipsoid
   fillin: fill in no data locations
   
@@ -501,18 +483,40 @@ def dem_continuous(xmin,xmax,ymin,ymax,glacier,date,verticaldatum='geoid',fillin
   zg: continuous surface DEM 
   '''
   
-  # Load gimp DEM
-  xg,yg,zg = gimp_grid(xmin,xmax,ymin,ymax,glacier,verticaldatum)
+  # Get correct tile of the GIMP DEM
+  if glacier == 'Helheim':
+    subset = 'gimpdem3_1'
+    xmin = 233000.0
+    xmax = 318000.0
+    ymin = -2601000.0
+    ymax = -2515000.0
+  elif glacier == 'Kanger':
+    subset = 'gimpdem4_2'
+    xmin = 420000.0
+    xmax = 500000.0
+    ymin = -2320000.0
+    ymax = -2210000.0
+  else: 
+    sys.exit("Unknown glacier.")
   
-  # Create output
-  zs = np.zeros_like(zg)
-  zs = np.array(zg)
+  # Load correct file for geoid or ellipsoid heights
+  if verticaldatum == 'geoid':
+    fileend = '-adj.tif'
+  else:
+    fileend = '.tif'
+  
+  # Gimp filename  
+  gimpfile = os.path.join(os.getenv("DATA_HOME"),'Elevation/Gimp/'+subset+fileend)
+  
+  # Directories for high res DEMs
+  OUTDIR = os.path.join(os.getenv("DATA_HOME"),"Elevation/MosaicDEMs/"+glacier+"/")
+  WVDIR = os.path.join(os.getenv("DATA_HOME"),"Elevation/Worldview/"+glacier+"/")
+  TDXDIR = os.path.join(os.getenv("DATA_HOME"),"Elevation/Worldview/"+glacier+"/")
   
   # Select dates for worldview images 
   if glacier == 'Helheim':
     if date == '20120624':
       dates = ['20120624','20120513','20120520']
-      dates_backup = ['20110319','20110615']
     elif date == '20110319':
       dates = ['20110319','20110615']
       dates_backup = ['20110628']
@@ -524,44 +528,58 @@ def dem_continuous(xmin,xmax,ymin,ymax,glacier,date,verticaldatum='geoid',fillin
       dates = ['20110712','20110808','20110823']
       dates_backup = ['20110824']
   
-  # Load worldview images and update dates file in case there are multiple 
-  # DEMs for a single date
-  xwv,ywv,zwv,timewv = worldview_grid(glacier,np.min(xg),np.max(xg),np.min(yg),np.max(yg),resolution=xg[1]-xg[0],years=dates,verticaldatum=verticaldatum)
-  xwvb,ywvb,zwvb,timewvb = worldview_grid(glacier,np.min(xg),np.max(xg),np.min(yg),np.max(yg),resolution=xg[1]-xg[0],years=dates_backup,verticaldatum=verticaldatum)  
-    
-  # Use worldview DEM
-  for i in range(0,len(xg)):
-    for j in range(0,len(yg)):
-      nonnan = np.where(~(np.isnan(zwv[j,i,:])))[0]
-      if len(nonnan) > 0:
-        zs[j,i] = np.mean(zwv[j,i,nonnan])
-      elif (len(np.where(~(np.isnan(zwvb[j,i,:])))[0])) > 0 and (fillin != 'none'):
-        nonnan = np.where(~(np.isnan(zwvb[j,i,:])))[0]
-        zs[j,i] = np.mean(zwvb[j,i,nonnan])
+  
+  files = ''
+  dirs_wv = os.listdir(WVDIR)
+  for d in dates:
+    for dir in dirs_wv:
+      if (d in dir) and (dir.endswith(fileend)):
+        files = files+' '+WVDIR+dir
+  files = files+' '+gimpfile  
+  
+  CURRENTDIR = os.getcwd()
+  os.chdir(OUTDIR)
+  filename = 'mosaic-'+date+'-'+verticaldatum
+  if not(os.path.isfile(filename+'-tile-0.tif')):
+    os.system('dem_mosaic --t_projwin '+str(xmin)+' '+str(ymin)+' '+str(xmax)+\
+  		' '+str(ymax)+' --priority-blending-length 40 -o'+filename+files)
+  
+  xg,yg,zs = geotiff.read(filename+"-tile-0.tif")
+  
+  if blur == True:
+    print "Blurring DEM over 17 pixels (roughly 500 m in each direction)..."
+    # 17 pixel gaussian blur
+    zs_blur = scipy.ndimage.filters.gaussian_filter(zs,sigma=2,truncate=4)
+  
+  os.chdir(CURRENTDIR)
   
   return xg,yg,zs
   
-def dem_continuous_flowline(xf,yf,glacier,date,verticaldatum='geoid',fillin='none'):
+def dem_continuous_flowline(xf,yf,glacier,date,filt_len='none',verticaldatum='geoid',fillin=False):
 
   '''
-  zflow = dem_continuous_flowline(xf,yf,glacier,date,verticaldatum='geoid',fillin='none')
+  zflow = dem_continuous_flowline(xf,yf,dists,glacier,date,filt_len='none',verticaldatum='geoid',fillin='none')
 
   Same as "dem_continuous", except output the coordinates along a flowline rather than as a 
   grid. See "dem_continuous" for more information.
 
   '''
-  # Get grid dimensions for dem_continuous
-  xmin = np.min(xf)-10.0e3
-  xmax = np.max(xf)+10.0e3
-  ymin = np.min(yf)-10.0e3
-  ymax = np.max(yf)+10.0e3
   
   # Get grid for that date 
-  xg,yg,zgrid = dem_continuous(xmin,xmax,ymin,ymax,glacier,date,verticaldatum,fillin)
+  xg,yg,zgrid = dem_continuous(glacier,date,verticaldatum,fillin,blur=False)
   
   # Interpolate grid onto flowline
   dem = scipy.interpolate.RegularGridInterpolator([yg,xg],zgrid)
    
   zflow = dem((yf,xf)) 
+  
+  # Filter flowline if filt_len is not set to none
+  if filt_len != 'none':
+    print "fix this"
+    cutoff=(1/filt_len)/(1/((dists[1]-dists[0])*2))
+    b,a=signal.butter(4,cutoff,btype='low')
+    zflow_filtered = signal.filtfilt(b,a,zflow)
+  else:
+    zflow_filtered = zflow
    
-  return zflow
+  return zflow_filtered

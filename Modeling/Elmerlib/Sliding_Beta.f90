@@ -94,4 +94,57 @@ FUNCTION Weertman( Model, nodenumber, dumy) RESULT(coeff) !
 
     Return
 End
+
+!------------------------------------------------------------------!
+FUNCTION GuessBeta( Model, nodenumber, dumy) RESULT(coeff) !
+!------------------------------------------------------------------!
+	USE types
+	USE DefUtils
+    IMPLICIT NONE
+	TYPE(Model_t) :: Model
+    REAL(kind=dp) :: dumy,coeff
+    INTEGER :: nodenumber
+    REAL(kind=dp) :: LinearInterp
+
+    REAL(kind=dp),allocatable :: xx(:),yy(:),beta0(:,:)
+    REAL(kind=dp) :: x,y,z
     
+    INTEGER :: nx,ny
+    INTEGER :: i,j
+		
+    LOGICAL :: FirstTimeBeta=.true.
+
+    SAVE xx,yy,beta0,nx,ny
+    SAVE FirstTimeBeta
+
+    if (FirstTimeBeta) then
+
+    	FirstTimeBeta=.False.
+
+
+        ! open file
+        open(10,file='Inputs/beta0.xy')
+        Read(10,*) nx
+        Read(10,*) ny
+        ALLOCATE(xx(nx),yy(ny))
+        ALLOCATE(beta0(nx,ny))
+        Do i=1,nx
+        	Do j=1,ny
+                read(10,*) xx(i),yy(j),beta0(i,j)
+            End Do
+		End do
+		close(10)
+    End if
+
+    ! position current point
+    x = Model % Nodes % x (nodenumber)
+    y = Model % Nodes % y (nodenumber)
+
+    coeff = LinearInterp(beta0,xx,yy,nx,ny,x,y)
+		
+    Return
+End
+
+!------------------------------------------------------------------!
+include 'Interp.f90' !
+!------------------------------------------------------------------!    

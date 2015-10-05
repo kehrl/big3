@@ -19,10 +19,10 @@ RES="High_Normal"
 solverfile='model2.sif'
 
 # Directories
-DIRS=os.path.join(os.getenv("HOME"),"Code/Helheim/Modeling/SolverFiles/3D/")
-DIRM=os.path.join(os.getenv("HOME"),"Models/Helheim/Meshes/3D/"+RES+"/")
-DIRR=os.path.join(os.getenv("HOME"),"Models/Helheim/Results/3D/"+RES+"/Inversion/")
-DIRX=os.path.join(os.getenv("HOME"),"Data/ShapeFiles/Glaciers/3D/Helheim/")
+DIRS=os.path.join(os.getenv("CODE_HOME"),"BigThreeGlaciers/Modeling/SolverFiles/3D/")
+DIRM=os.path.join(os.getenv("MODEL_HOME"),"Helheim/Meshes/3D/"+RES+"/")
+DIRR=os.path.join(os.getenv("MODEL_HOME"),"Helheim/Results/3D/"+RES+"/Inversion/")
+DIRX=os.path.join(os.getenv("DATA_HOME"),"ShapeFiles/Glaciers/3D/Helheim/")
 
 ####################################################
 # Copy model inputs into the solver file directory #

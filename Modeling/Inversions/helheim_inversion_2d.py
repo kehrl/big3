@@ -7,7 +7,7 @@ import os
 import sys
 import shutil
 import numpy as np
-sys.path.append(os.path.join(os.getenv("HOME"),"Code/Util/Modules"))
+sys.path.append(os.path.join(os.getenv("CODE_HOME"),"Util/Modules"))
 from subprocess import call
 import math
 import scipy.interpolate as interpolate
@@ -18,20 +18,23 @@ import elmer_read
 # Inputs #
 ##########
 
-MESHNAME='DEM20120624H'
+#MESHNAME='DEM20120624Low'
+MESHNAME='DEM20120624Low'
 
 glacier = 'Helheim'
 
 # Regularization parameters (lambda)
-regpars=['1e7','1e8','5e8','1e9','5e9','1e10','5e10','1e11','5e11','1e12','5e12','1e13','1e14','1e15']
+
+#regpars=['1e7','1e8','5e8','1e9','5e9','1e10','5e10','1e11','5e11','1e12','5e12','1e13','5e13','1e14','5e14','1e15','5e15','1e16','5e16','1e17']
+
 #regpars=["1e10"]
-#regpars=['1e12']
+regpars=['1e14']
 
 # Directories
-DIRS=os.path.join(os.getenv("HOME"),"Code/BigThreeGlaciers/Modeling/SolverFiles/Flowline/")
-DIRM=os.path.join(os.getenv("HOME"),"Models/"+glacier+"/Meshes/Flowline/"+MESHNAME+"/")
-DIRR=os.path.join(os.getenv("HOME"),"Models/"+glacier+"/Results/Flowline/"+MESHNAME+"/Inversion/")
-DIRELMERLIB = os.path.join(os.getenv("HOME"),"Code/BigThreeGlaciers/Modeling/Elmerlib/")
+DIRS=os.path.join(os.getenv("CODE_HOME"),"BigThreeGlaciers/Modeling/SolverFiles/Flowline/")
+DIRM=os.path.join(os.getenv("MODEL_HOME"),glacier+"/Meshes/Flowline/"+MESHNAME+"/")
+DIRR=os.path.join(os.getenv("MODEL_HOME"),glacier+"/Results/Flowline/"+MESHNAME+"/Inversion/")
+DIRELMERLIB = os.path.join(os.getenv("CODE_HOME"),"BigThreeGlaciers/Modeling/Elmerlib/")
 
 # Flowline
 file_flowline_in=DIRM+"Inputs/flowline.dat"
@@ -51,7 +54,7 @@ for file in input_files:
   shutil.copy(DIRM+"Inputs/"+file,DIRS+"Inputs/")
 del input_files
 
-# Check that fortran files are compiled
+# Compile fortran functions for flowline model
 readfiles = glob.glob(DIRELMERLIB+"Flowline/"+"*.f90")
 
 with open(DIRELMERLIB+"Flowline.f90", "wb") as outfile:
@@ -118,8 +121,8 @@ for regpar in regpars:
   # Save results into different files and directories #
   #####################################################
   
-  bed = elmer_read.saveline_boundary(DIRM+"elmer/",runname,bbed)
-  surf = elmer_read.saveline_boundary(DIRM+"elmer/",runname,bsurf)
+  surf_bed = elmer_read.saveline_boundary(DIRM+"elmer/",runname,bbed)
+  surf_sur = elmer_read.saveline_boundary(DIRM+"elmer/",runname,bsurf)
   
   os.rename(DIRM+"elmer/"+runname+".dat",DIRR+runname+"_"+regpar+".dat")
   os.rename(DIRM+"elmer/"+runname+".dat.names",DIRR+runname+"_"+regpar+".dat.names")
@@ -143,18 +146,20 @@ del fid_info
 ##############################################
 #Linear Beta square
 fid = open(DIRM+"/Inputs/beta_linear.xy",'w')
-fid.write('{0}\n'.format(len(bed['node'])))
-ind=np.argsort(bed['coord1'])
+fid.write('{0}\n'.format(len(surf_bed['node'])))
+ind=np.argsort(surf_bed['coord1'])
 for i in ind:
-  fid.write('{0} {1} {2:.4g}\n'.format(bed['coord1'][i],bed['coord2'][i],bed['beta'][i]**2))
+  fid.write('{0} {1} {2:.4g}\n'.format(surf_bed['coord1'][i],surf_bed['coord2'][i],surf_bed['beta'][i]**2))
 fid.close()
 
 #Weertman coefficient
 fid = open(DIRM+"/Inputs/beta_weertman.dat",'w')
+coeff=(surf_bed['beta'][ind[0]]**2)*(surf_bed['vel1'][ind[0]]**(2.0/3.0))
+fid.write('{0} {1:.4g}\n'.format(surf_bed['coord1'][ind[0]]-50,coeff))
 for i in ind:
-  coeff=(bed['beta'][i]**2)*(bed['vel1'][i]**(2.0/3.0))
-  fid.write('{0} {1:.4g}\n'.format(bed['coord1'][i],coeff))
-fid.write('{0} {1:.4g}\n'.format(bed['coord1'][i]+5000,coeff))
+  coeff=(surf_bed['beta'][i]**2)*(surf_bed['vel1'][i]**(2.0/3.0))
+  fid.write('{0} {1:.4g}\n'.format(surf_bed['coord1'][i],coeff))
+fid.write('{0} {1:.4g}\n'.format(surf_bed['coord1'][i]+5000,coeff))
 fid.close()
 
 

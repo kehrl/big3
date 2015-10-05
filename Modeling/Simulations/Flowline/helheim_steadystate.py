@@ -12,10 +12,10 @@ import glob
 MESHNAME='MorlighemNew_SmoothedVelocity' 
 
 # Directories
-DIRS=os.path.join(os.getenv("HOME"),"Code/Helheim/Modeling/SolverFiles/Flowline/")
-DIRM=os.path.join(os.getenv("HOME"),"Models/Helheim/Meshes/Flowline/"+MESHNAME+"/")
-DIRR=os.path.join(os.getenv("HOME"),"Models/Helheim/Results//Flowline/")
-DIRELMERLIB = os.path.join(os.getenv("HOME"),"Code/Helheim/Modeling/Elmerlib/")
+DIRS=os.path.join(os.getenv("CODE_HOME"),"Helheim/Modeling/SolverFiles/Flowline/")
+DIRM=os.path.join(os.getenv("MODEL_HOME"),"Helheim/Meshes/Flowline/"+MESHNAME+"/")
+DIRR=os.path.join(os.getenv("MODEL_HOME"),"Helheim/Results//Flowline/")
+DIRELMERLIB = os.path.join(os.getenv("CODE_HOME"),"Helheim/Modeling/Elmerlib/")
 
 # Solver file
 solverfile='flowline1.sif'

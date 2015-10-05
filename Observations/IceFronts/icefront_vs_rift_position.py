@@ -17,7 +17,7 @@ import math
 ###########
 
 MESHNAME = "High"
-DIRM = os.path.join(os.getenv("HOME"),"Models/Helheim/Meshes/Flowline/"+MESHNAME+"/")
+DIRM = os.path.join(os.getenv("MODEL_HOME"),"Helheim/Meshes/Flowline/"+MESHNAME+"/")
 flowline = np.loadtxt(DIRM+"Inputs/flowline.dat",skiprows=1)
 
 ################
@@ -30,7 +30,7 @@ rifts = 0 # plot rifts
 xlim1=78 #km along flowline
 xlim2=90 #km along flowline
 
-image = geotiff.readrgb(os.path.join(os.getenv("HOME"),"Data/Imagery/Landsat/Helheim/TIF/20140611135917_LC82320132014162LGN00.tif"))
+image = geotiff.readrgb(os.path.join(os.getenv("DATA_HOME"),"Imagery/Landsat/Helheim/TIF/20140611135917_LC82320132014162LGN00.tif"))
 
 # Bed profiles
 years=['2013','2012','2009b','2008','2001']
