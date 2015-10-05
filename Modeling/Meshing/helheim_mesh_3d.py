@@ -10,75 +10,92 @@ sys.path.append(os.path.join(os.getenv("HOME"),"Code/Util/Modules"))
 sys.path.append(os.path.join(os.getenv("HOME"),"Code/BigThreeGlaciers/Tools"))
 import elmer_mesh as mesh
 import elmer_inversion
-import helheim_velocity, helheim_bed, helheim_elevation
+import velocity, bed, elevation, fracyear, glacier_extent
 from subprocess import call
 from scipy.interpolate import *
 import numpy as np
 import flowparameter
-import geotiff
+import argparse
 
 ##########
 # Inputs #
 ##########
 
-MESHNAME='HighResolution'
+# Get inputs to file
+parser = argparse.ArgumentParser()
+parser.add_argument("-mesh", dest="meshname", required = True,
+        help = "Name of mesh.")
+parser.add_argument("-d", dest="date", required = True,
+            help = "Date for mesh.")
+parser.add_argument("-n", dest="npartitions", required = True,
+            help = "Number of partitions.")
+parser.add_argument("-bname", dest="bedname", required = False,default='smith',
+            help = "Name of bed file (smith,morlighem,cresis).")
+parser.add_argument("-bmodel", dest="bedmodel", required = False,default='aniso',
+            help = "Type of bed (aniso,iso).")
+parser.add_argument("-bsmooth", dest="bedsmooth", type=int,required = False,\
+			default=4,help = "Smoothness of bed (1-8).")
+parser.add_argument("-lc", dest="lc", type=int,required = False,\
+			default=[500,1000,2000,5000],\
+			help = "Four numbers that define the mesh resolution for grounding-line (500 m),channels (1000 m),regions near channels (2000 m), and entire mesh (5000 m).")
+parser.add_argument("-extrude", dest="extrude", type=int,required = False,\
+			default=5,\
+			help = "Number of extrusion levels.")
+
+# Get arguments
+args, _ = parser.parse_known_args(sys.argv)
+
+date = args.date
+partitions = args.npartitions
+bedname = args.bedname
+bedmodel = args.bedmodel
+bedsmoothing = args.bedsmooth
+MESHNAME = args.meshname
+
+# Mesh refinement
+lc3,lc2,lc4,lc1 = args.lc
+levels=args.extrude #levels of extrusion
+
+del args, parser
+
+# File names
+glacier = 'Helheim'
 
 # Directories
-DIRS=os.path.join(os.getenv("HOME"),"Code/Helheim/Modeling/SolverFiles/3D")
-DIRM=os.path.join(os.getenv("HOME"),"Models/Helheim/Meshes/3D/"+MESHNAME+"/")
-DIRR=os.path.join(os.getenv("HOME"),"Models/Helheim/Results/3D/")
-DIRX=os.path.join(os.getenv("HOME"),"Data/ShapeFiles/Glaciers/3D/Helheim/")
-Inputs=os.path.join(DIRM+"Inputs/")
+DIRS = os.path.join(os.getenv("CODE_HOME"),"BigThreeGlaciers/Modeling/SolverFiles/3D")
+DIRM = os.path.join(os.getenv("MODEL_HOME"),glacier+"/Meshes/3D/"+MESHNAME+"/")
+DIRR = os.path.join(os.getenv("MODEL_HOME"),glacier+"/Results/3D/")
+DIRX = os.path.join(os.getenv("DATA_HOME"),"ShapeFiles/Glaciers/3D/"+glacier+"/")
+Inputs = os.path.join(DIRM+"Inputs/")
 
 # Make mesh directories
 if not(os.path.isdir(DIRM)):
   os.makedirs(DIRM)
   os.makedirs(DIRM+"/Inputs")
 
-# Mesh refinement
-lc1=2000 # for entire mesh
-lc2=500 # for channels close to the grounding line
-lc3=250 # for grounding line
-lc4=700 # for regions surrounding channels
-lc1=2000 # for entire mesh
-lc2=2000 # for channels close to the grounding line
-lc3=2000 # for grounding line
-lc4=2000 # for regions surrounding channels
-levels=5 #levels of extrusion
-partitions="4" # Number of partitions
+# Densities for finding floating ice
+rho_i = 917.0
+rho_sw = 1020.0
 
-# Bed and surface
-file_bed = 'morlighem' 
-file_surf = 'gimp'
-
-# Velocity profile for inversion
-file_velocity_in = os.path.join(os.getenv("HOME"),"Data/Velocity/TSX/Helheim/track-27794")
+# Time
+time = fracyear.date_to_fracyear(int(date[0:4]),int(date[4:6]),int(date[6:8]))
 
 #################
 # Mesh Geometry #
 #################
 
 # Mesh exterior
-exterior = mesh.shp_to_xy(DIRX+"glacier_extent_normal")
-mesh_file=Inputs+"mesh_extent.dat"
-fid = open(mesh_file,"w")
-for i in range(0,len(exterior[0])):
-  fid.write('{} {}\n'.format(exterior[0][i],exterior[1][i]))
-fid.close()
+exterior = glacier_extent.load(glacier,time)
+np.savetxt(Inputs+"mesh_extent.dat",exterior[:,0:2])
 
 # Mesh holes
 hole1 = mesh.shp_to_xy(DIRX+"glacier_hole1")
-fid = open(Inputs+"mesh_hole1.dat","w")
-for i in range(0,len(hole1[0])):
-  fid.write('{} {}\n'.format(hole1[0][i],hole1[1][i]))
-fid.close()
+np.savetxt(Inputs+"mesh_hole1.dat",hole1[:,0:2])
 
 hole2 = mesh.shp_to_xy(DIRX+"glacier_hole2")
-fid = open(Inputs+"mesh_hole2.dat","w")
-for i in range(0,len(hole2[0])):
-  fid.write('{} {}\n'.format(hole2[0][i],hole2[1][i]))
-fid.close()
+np.savetxt(Inputs+"mesh_hole2.dat",hole2[:,0:2])
 
+# All holes
 holes = []
 holes.append({'xy': hole1})
 holes.append({'xy': hole2})
@@ -99,10 +116,12 @@ file_3d=os.path.join(DIRM+"Elmer")
 #############
 
 # Gmsh .geo file
-x,y,zbed,zsur = mesh.xy_to_gmsh_3d(exterior,holes,refine,DIRM,lc1,lc2,lc3,lc4,file_bed,file_surf)
+x,y,zbed,zsur = mesh.xy_to_gmsh_3d(glacier,date,exterior,holes,refine,DIRM,\
+		lc1,lc2,lc3,lc4,bedname,bedmodel,bedsmoothing,rho_i,rho_sw)
 
 # Create .msh file
-call(["gmsh","-1","-2",file_2d+".geo", "-o",os.path.join(os.getenv("HOME"),file_2d+".msh")])
+call(["gmsh","-1","-2",file_2d+".geo", "-o",os.path.join(os.getenv("HOME"),\
+		file_2d+".msh")])
 
 # Create elmer mesh
 call(["ElmerGrid","14","2",file_2d+".msh","-autoclean"])
@@ -112,17 +131,17 @@ call(["ExtrudeMesh",file_2d,file_3d,str(levels),"1","1","0","0","0","0",Inputs,"
 
 # Partition mesh for parallel processing
 os.chdir(DIRM)
-call(["ElmerGrid","2","2","elmer","dir","-metis",partitions])
+call(["ElmerGrid","2","2","Elmer","dir","-metis",partitions])
 
 # Output as gmsh file so we can look at it
-call(["ElmerGrid","2","4","elmer"])
+call(["ElmerGrid","2","4","Elmer"])
 
 ##########################################
 # Print out velocity data for inversions #
 ##########################################
 
 # Output files for velocities in x,y directions (u,v)
-u,v = velocity.inversion_3D(x,y,file_velocity_in,Inputs,glacier)
+u,v = velocity.inversion_3D(glacier,x,y,time,Inputs)
 
 #########################################################################
 # Import mesh boundary, calculate flow parameter at mesh nodes, and use #
@@ -197,11 +216,6 @@ for i in range(0,len(Temps_lin)):
   fid.write('{0} {1} {2} {3} {4}\n'.format(int(nodes[i,0]),nodes[i,2],nodes[i,3],nodes[i,4],Anodes[i]))
 fid.close() 
 del nans, kristin_file,Temps_near,fid,Temps_lin   
-
-###############################################################
-# Print out half of driving stress for initial guess for Beta #
-###############################################################
-
 
 #################################################################
 # Calculate basal sliding speed using SIA for inflow boundaries #

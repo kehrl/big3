@@ -7,7 +7,7 @@ import os
 import shutil
 import sys
 import numpy as np
-sys.path.append(os.path.join(os.getenv("HOME"),"Code/Util/Modules"))
+sys.path.append(os.path.join(os.getenv("CODE_HOME"),"Util/Modules"))
 from subprocess import call
 import math
 import glob
@@ -15,19 +15,34 @@ import numpy as np
 import elmer_read 
 import elmer_mesh as mesh
 import numpy as np
+import argparse
 
 ##########
 # Inputs #
 ##########
 
+# Get inputs to file
+parser = argparse.ArgumentParser()
+parser.add_argument("-mesh", dest="meshname", required = True,
+        help = "Name of mesh.")
+parser.add_argument("-n", dest="npartitions", required = True,
+        help = "Number of partitions.")
+parser.add_argument("-regpar", dest="regpars", required = False,\
+		default='1e10',help = "Number of partitions.")
+
+args, _ = parser.parse_known_args(sys.argv)
+RES = args.meshname
+partitions = args.npartitions
+regpars = args.regpars
+
 # Model Resolution
-RES = 'HighResolution'
+glacier = 'Helheim'
 
 # Directories
-DIRS=os.path.join(os.getenv("HOME"),"Code/Helheim/Modeling/SolverFiles/3D/")
-DIRM=os.path.join(os.getenv("HOME"),"Models/Helheim/Meshes/3D/"+RES+"/")
-DIRR=os.path.join(os.getenv("HOME"),"Models/Helheim/Results/3D/"+RES+"/Inversion/")
-DIRX=os.path.join(os.getenv("HOME"),"Data/ShapeFiles/Glaciers/3D/Helheim/")
+DIRS=os.path.join(os.getenv("CODE_HOME"),"BigThreeGlaciers/Modeling/SolverFiles/3D/")
+DIRM=os.path.join(os.getenv("MODEL_HOME"),glacier+"/Meshes/3D/"+RES+"/")
+DIRR=os.path.join(os.getenv("MODEL_HOME"),glacier+"/Results/3D/"+RES+"/Inversion/")
+DIRX=os.path.join(os.getenv("DATA_HOME"),"ShapeFiles/Glaciers/3D/"+glacier)
 Inputs=os.path.join(DIRM+"/Inputs/")
 
 if not(os.path.exists(DIRR)):
@@ -45,7 +60,7 @@ bsurf=4
 runname="beta"
 
 # Regularization parameters (lambda)
-#regpars=['1e10','1e8','1e9','1e11','1e12','1e7','1e13','1e6','1e14']
+#regpars=['1e10','1e8','1e9','1e11','1e12','1e7','1e13','1e14']
 regpars=['1e10']
 
 # Mesh files for making pretty graphs
@@ -86,7 +101,7 @@ for regpar in regpars:
   fid1.close()
   fid2.close()
   del fid1, fid2
-  call(["mpirun","-quiet","-n","4","elmersolver_mpi"])
+  call(["mpirun","-quiet","-n",partitions,"elmersolver_mpi"])
   os.system('rm robin_beta_temp.sif')
   
   #####################################
@@ -134,7 +149,8 @@ for regpar in regpars:
 fid = open(Inputs+"beta_linear.xyz",'w')
 fid.write('{0}\n'.format(len(bed['node'])))
 for i in range(0,len(bed['node'])):
-  fid.write('{0} {1} {2:.4f} {3}\n'.format(bed['coord1'][i],bed['coord2'][i],bed['coord3'][i],bed['beta'][i]**2))
+  fid.write('{0} {1} {2:.4f} {3}\n'.format(bed['coord1'][i],bed['coord2'][i],\
+  		bed['coord3'][i],bed['beta'][i]**2))
 fid.close()
 
 #Weertman coefficient
@@ -143,4 +159,14 @@ fid.write('{0}\n'.format(len(bed['node'])))
 for i in range(0,len(bed['node'])):
   coeff=(bed['beta'][i]**2)*(bed['vel'][i]**(2.0/3.0))
   fid.write('{0} {1} {2:.4f} {3}\n'.format(bed['coord1'][i],bed['coord2'][i],bed['coord3'][i],coeff))
-fid.close()   
+fid.close() 
+
+
+# Remove files in solver Input directory
+for file in os.listdir(DIRS+"Inputs/"):
+  file_path = os.path.join(DIRS+"Inputs/", file)
+  try:
+   if os.path.isfile(file_path):
+     os.unlink(file_path)  
+  except:
+    pass
