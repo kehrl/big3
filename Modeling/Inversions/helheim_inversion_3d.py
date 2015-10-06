@@ -27,8 +27,8 @@ parser.add_argument("-mesh", dest="meshname", required = True,
         help = "Name of mesh.")
 parser.add_argument("-n", dest="npartitions", required = True,
         help = "Number of partitions.")
-parser.add_argument("-regpar", dest="regpars", required = False,\
-		default='1e10',help = "Number of partitions.")
+parser.add_argument("-regpar", dest="regpars", required = False,
+		default='1e10',help = "Regularization parameter.")
 
 args, _ = parser.parse_known_args(sys.argv)
 RES = args.meshname
