@@ -12,7 +12,9 @@ import numpy as np
 def load(glacier,xmin,xmax,ymin,ymax,dx,ice=0):
 
   # Directory for holes for mask
+
   DIR = os.path.join(os.getenv("DATA_HOME"),'Shapefiles/IceMasks/'+glacier+'/')
+
   files = os.listdir(DIR)
   
   # Set up grid

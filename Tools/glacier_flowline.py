@@ -7,6 +7,7 @@ import sys
 import os
 import numpy as np
 sys.path.append(os.path.join(os.getenv("CODE_HOME"),"BigThreeGlaciers/Tools"))
+sys.path.append(os.path.join(os.getenv("CODE_HOME"),"Util/Modules"))
 import elmer_mesh as mesh
 import icefronts, bed
 import dist
@@ -58,6 +59,7 @@ def load(glacier,shapefilename='center_flowline',filt_len='none',verticaldatum='
   # Get average terminus position
   time1 = 2008.0
   time2 = 2016.0
+  
   indt = np.where((terminus_time > time1) & (terminus_time < time2))
   terminus_time = terminus_time[indt[0]]
   terminus_val = terminus_val[indt[0]]

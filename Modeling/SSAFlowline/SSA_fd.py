@@ -7,7 +7,6 @@ import scipy.signal as signal
 import sys
 import os
 
-
 ###########
 # Options #
 ###########

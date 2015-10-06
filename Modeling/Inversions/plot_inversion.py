@@ -15,6 +15,7 @@ args = sys.argv
 
 RES=args[1]
 regpar = args[2:]
+
 DIRR=os.path.join(os.getenv("MODEL_HOME"),"Helheim/Results/3D/"+RES+"/Inversion/")
 bbed = 3
 bsur = 4

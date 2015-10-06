@@ -32,4 +32,5 @@ for DIR in DIRs:
   if DIR.endswith("DEM_32m_trans.tif"):
     shutil.copy(TOPDIR+DIR,OUTDIR+DIR)
     os.system('dem_geoid --geoid EGM2008 '+DIR)
+
   

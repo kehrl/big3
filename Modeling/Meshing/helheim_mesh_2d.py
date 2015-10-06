@@ -232,6 +232,8 @@ fid.close()
 
 del thick, dwdx, R, fid
 
+del thick, dwdx, R
+
 #########################################################
 # Finally export coordinates of flowline for future use #
 #########################################################

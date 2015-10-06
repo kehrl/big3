@@ -224,6 +224,7 @@ def near_time(time,glacier):
 
   DIRI=os.path.join(os.getenv("DATA_HOME"),"ShapeFiles/IceFronts/"+glacier+"/")
 
+
   files = os.listdir(DIRI)
 
   best_time = []
@@ -247,7 +248,7 @@ def near_time(time,glacier):
             best_x = np.r_[best_x,termpts[:,0]]
             best_y = np.r_[best_y,termpts[:,1]]
           except:
-            print ""
+            pass
         best_time = icetime
 
   return best_x,best_y,best_time

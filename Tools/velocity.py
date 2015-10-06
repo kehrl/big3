@@ -25,8 +25,10 @@ def convert_binary_to_geotiff(glacier):
   # so I've set up a script to convert all of them to geotiff. Then the "geodat" module 
   # checks to see if there are geotiffs before unpacking the binary files.
   
+
   DIRTOP_TSX = os.path.join(os.getenv("DATA_HOME"),"Velocity/TSX/"+glacier+"/")
   DIRTOP_RADARSAT = os.path.join(os.getenv("DATA_HOME"),"Velocity/RADARSAT/Greenland/")
+
   
   # TSX files
   files = os.listdir(DIRTOP_TSX)
@@ -35,12 +37,14 @@ def convert_binary_to_geotiff(glacier):
       print file
       # Load binary data
       x,y,v,vx,vy,ex,ey,time,interval = geodat.readbinary(DIRTOP_TSX+file+"/mosaicOffsets",nodatavalue=-2.0e9)
+
       year,month,day = fracyear.fracyear_to_date(time)
     
       # Set up date label for geotiff file
       date = "%04d%02d%02d" % (year,month,day)
     
       # Save as geotiff
+
       geotiff.write_from_grid(x,y,np.flipud(v),-2.0e9,DIRTOP_TSX+"TIF/"+file+"_"+date+"_v.tif")
       geotiff.write_from_grid(x,y,np.flipud(vx),-2.0e9,DIRTOP_TSX+"TIF/"+file+"_"+date+"_vx.tif")
       geotiff.write_from_grid(x,y,np.flipud(vy),-2.0e9,DIRTOP_TSX+"TIF/"+file+"_"+date+"_vy.tif")
@@ -56,6 +60,7 @@ def convert_binary_to_geotiff(glacier):
       x,y,v,vx,vy,ex,ey,time,interval = geodat.readbinary(DIRTOP_RADARSAT+file+"/mosaicOffsets")
     
       # Save as geotiff
+
       geotiff.write_from_grid(x,y,np.flipud(v),-2.0e9,DIRTOP_RADARSAT+"TIF/"+file+"_v.tif")
       geotiff.write_from_grid(x,y,np.flipud(vx),-2.0e9,DIRTOP_RADARSAT+"TIF/"+file+"_vx.tif")
       geotiff.write_from_grid(x,y,np.flipud(vy),-2.0e9,DIRTOP_RADARSAT+"TIF/"+file+"_vy.tif")
@@ -732,3 +737,4 @@ def inversion_2D(x,y,d,glacier,file_velocity_in,dir_velocity_out,filt_len='none'
   fid.close()
 
   return filtered
+

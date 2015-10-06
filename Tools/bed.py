@@ -62,7 +62,6 @@ def cresis(year,glacier,verticaldatum='geoid',cleanup=True):
     elif glacier == 'Kanger':
       print "Using data set Kanger_2006_2014_Composite"
       file=os.path.join(os.getenv("DATA_HOME"),"Bed/Cresis/Kanger/Kangerdlugssuaq_2006_2014_Composite/flightlines/Kangerdlugssuaq_2006_2014_Composite_Flightlines.txt")
-
     else: 
       print "unknown glacier"
     
@@ -208,7 +207,7 @@ def cresis_grid(glacier,verticaldatum='geoid'):
   
   if verticaldatum == 'geoid':
     x_grid,y_grid = np.meshgrid(x,y)
-    geoidheight = coords.geoidheight(x_grid.flatten(),y_grid.flatten(),grid)
+    geoidheight = coords.geoidheight(x_grid.flatten(),y_grid.flatten(),grid.flatten())
     grid = np.reshape(geoidheight,(ny,nx))
   elif verticaldatum == 'ellipsoid':
     grid = grid
@@ -401,7 +400,12 @@ def smith_at_pts(xpts,ypts,glacier,model='aniso',smoothing=1,verticaldatum='geoi
   # Now fix the vertical datum. We didn't fix it in the call to "smith_grid" because we would 
   # have had to calculate the geoid height at more points. This saves a bit of time.
   if verticaldatum == 'geoid':
+<<<<<<< HEAD
     zbed_interp = coords.geoidheight(xpts,ypts,zbed_interp)
+=======
+    geoidheight = coords.geoidheight(xpts,ypts)
+    zbed_interp = zbed_interp - geoidheight
+>>>>>>> d2d2e86231d6b8a7b57d1b13af469dcf89a021d0
   elif verticaldatum == 'ellipsoid':
     zbed_interp = zbed_interp
   else:

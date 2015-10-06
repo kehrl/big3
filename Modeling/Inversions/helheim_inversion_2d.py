@@ -18,15 +18,13 @@ import elmer_read
 # Inputs #
 ##########
 
-#MESHNAME='DEM20120624Low'
+
 MESHNAME='DEM20120624Low'
 
 glacier = 'Helheim'
 
 # Regularization parameters (lambda)
-
 #regpars=['1e7','1e8','5e8','1e9','5e9','1e10','5e10','1e11','5e11','1e12','5e12','1e13','5e13','1e14','5e14','1e15','5e15','1e16','5e16','1e17']
-
 #regpars=["1e10"]
 regpars=['1e14']
 
@@ -54,7 +52,8 @@ for file in input_files:
   shutil.copy(DIRM+"Inputs/"+file,DIRS+"Inputs/")
 del input_files
 
-# Compile fortran functions for flowline model
+
+# Check that fortran files are compiled
 readfiles = glob.glob(DIRELMERLIB+"Flowline/"+"*.f90")
 
 with open(DIRELMERLIB+"Flowline.f90", "wb") as outfile:

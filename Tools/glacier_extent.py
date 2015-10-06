@@ -17,9 +17,14 @@ def load(glacier,time):
   
   Inputs:
   glacier: glacier name
+<<<<<<< HEAD
   time: time (fractional year) when we want the glacier extent
   
   Outputs:
+=======
+  time: time when we want the glacier extent:
+  
+>>>>>>> d2d2e86231d6b8a7b57d1b13af469dcf89a021d0
   xextent,yextent: 1-D arrays of x and y coordinates that define glacier extent for that date
   '''
   
@@ -33,6 +38,7 @@ def load(glacier,time):
   dnew = np.arange(0,dold[-1],20.0)
   xextent = np.interp(dnew,dold,xextent)
   yextent = np.interp(dnew,dold,yextent)
+
   f = scipy.interpolate.interp1d(dold,bound,kind='nearest')
   bound = f(dnew)
   
@@ -71,5 +77,3 @@ def load(glacier,time):
       bound = np.r_[np.delete(bound[0:ind1],range(ind2+1,ind1)),boundterminus,bound[ind1+1:]]
   
   return np.column_stack([xextent,yextent,bound])
-  
-  

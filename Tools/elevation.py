@@ -35,6 +35,7 @@ def gimp_at_pts(xpts,ypts,glacier,verticaldatum):
   elev: 1-d numpy array of GIMP surface elevations at xpts, ypts
   '''
   
+
   # Read grid of gimp dem
   x,y,z = gimp_grid(np.min(xpts)-2.0e3,np.max(xpts)+2.0e3,np.min(ypts)-2.0e3,\
   			np.max(ypts)+2.0e3,glacier=glacier,verticaldatum=verticaldatum)
@@ -555,10 +556,11 @@ def dem_continuous(glacier,date,verticaldatum='geoid',fillin=False,blur=False):
   
   return xg,yg,zs
   
-def dem_continuous_flowline(xf,yf,glacier,date,filt_len='none',verticaldatum='geoid',fillin=False):
+def dem_continuous_flowline(xf,yf,glacier,date,verticaldatum='geoid',fillin='none',filt_len='none'):
 
   '''
-  zflow = dem_continuous_flowline(xf,yf,dists,glacier,date,filt_len='none',verticaldatum='geoid',fillin='none')
+  zflow = dem_continuous_flowline(xf,yf,glacier,date,verticaldatum='geoid',fillin='none')
+>>>>>>> d2d2e86231d6b8a7b57d1b13af469dcf89a021d0
 
   Same as "dem_continuous", except output the coordinates along a flowline rather than as a 
   grid. See "dem_continuous" for more information.
@@ -583,3 +585,4 @@ def dem_continuous_flowline(xf,yf,glacier,date,filt_len='none',verticaldatum='ge
     zflow_filtered = zflow
    
   return zflow_filtered
+

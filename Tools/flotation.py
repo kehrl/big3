@@ -92,6 +92,7 @@ def height(zb,rho_i=917.0,rho_sw=1020.0):
   ind = np.where(zb < 0)[0]
   
   # Find flotation height
+
   floatheight[ind] = (1-rho_sw/rho_i)*zb[ind]
 
   return floatheight
