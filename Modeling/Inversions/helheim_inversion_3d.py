@@ -101,7 +101,7 @@ for regpar in regpars:
   fid1.close()
   fid2.close()
   del fid1, fid2
-  call(["mpirun","-quiet","-n",partitions,"elmersolver_mpi"])
+  call(["mpiexec","-np",partitions,"elmersolver_mpi"])
   os.system('rm robin_beta_temp.sif')
   
   #####################################

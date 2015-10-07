@@ -400,12 +400,7 @@ def smith_at_pts(xpts,ypts,glacier,model='aniso',smoothing=1,verticaldatum='geoi
   # Now fix the vertical datum. We didn't fix it in the call to "smith_grid" because we would 
   # have had to calculate the geoid height at more points. This saves a bit of time.
   if verticaldatum == 'geoid':
-<<<<<<< HEAD
     zbed_interp = coords.geoidheight(xpts,ypts,zbed_interp)
-=======
-    geoidheight = coords.geoidheight(xpts,ypts)
-    zbed_interp = zbed_interp - geoidheight
->>>>>>> d2d2e86231d6b8a7b57d1b13af469dcf89a021d0
   elif verticaldatum == 'ellipsoid':
     zbed_interp = zbed_interp
   else:
