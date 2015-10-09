@@ -149,7 +149,7 @@ u,v = velocity.inversion_3D(glacier,x,y,time,Inputs)
 #########################################################################
 
 # Get mesh nodes
-nodes_file=DIRM+"/elmer/mesh.nodes"
+nodes_file=DIRM+"Elmer/mesh.nodes"
 nodes=np.loadtxt(nodes_file)
 
 # Get modeled temperatures from Kristin's work
