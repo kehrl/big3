@@ -188,7 +188,7 @@ def load_all(time1,time2,glacier,type='icefront'):
       # Time of that terminus position
       if ("TSX" in file) or ("moon" in file):
         time = fracyear.doy_to_fracyear(float(file[0:4]),float(file[5:8]))
-      elif ("ASTER" in file) or ("Landsat" in file):
+      elif ("ASTER" in file) or ("Landsat" in file) or ("WV" in file):
         time = fracyear.date_to_fracyear(float(file[0:4]),float(file[5:7]),float(file[8:10]))
       if (time > time1) and (time < time2):
         termt.append(time)
@@ -240,7 +240,7 @@ def near_time(time,glacier):
       # Time of that terminus position
       if ("TSX" in file) or ("moon" in file):
         icetime = fracyear.doy_to_fracyear(float(file[0:4]),float(file[5:8]))
-      elif ("ASTER" in file) or ("Landsat" in file):
+      elif ("ASTER" in file) or ("Landsat" in file) or ("WV" in file):
         icetime = fracyear.date_to_fracyear(float(file[0:4]),float(file[5:7]),float(file[8:10]))
       if abs(icetime-time) < min_diff:
         best_x = np.zeros(0)
