@@ -110,17 +110,23 @@ def distance_along_flowline(x,y,dists,glacier,type='icefront'):
         # Time of that terminus position
         if ("TSX" in file) or ("moon" in file):
           terminus_time.append(fracyear.doy_to_fracyear(float(file[0:4]),float(file[5:8])))
-        elif ("ASTER" in file) or ("Landsat" in file):
+        elif ("ASTER" in file) or ("Landsat" in file) or ("WV" in file):
           terminus_time.append(fracyear.date_to_fracyear(float(file[0:4]),float(file[5:7]),float(file[8:10])))
-
+        else:
+          sys.exit("Don't know that date format for "+file)
   terminus_time = np.array(terminus_time)
   terminus_val = np.array(terminus_val)
   terminus_file = np.array(dates)
   
-  sortind=np.argsort(terminus_time,0)
-  terminus_time = terminus_time[sortind]
-  terminus_val = terminus_val[sortind]
-  terminus_file = terminus_file[sortind]
+  # Need to double check that we imported the same number of times and 
+  # terminus values. If we didn't something is horribly wrong.
+  if len(terminus_time) == len(terminus_val):
+    sortind=np.argsort(terminus_time,0)
+    terminus_time = terminus_time[sortind]
+    terminus_val = terminus_val[sortind]
+    terminus_file = terminus_file[sortind]
+  else:
+    sys.exit("Length of terminus values and times are different. Something is very wrong")
   
   return terminus_val, terminus_time
 
@@ -267,14 +273,13 @@ def calving(glacier):
   Outputs:
   behavior: a column array of time, calvingstyle, satellite, file date
   '''
-  
+
   DIR=os.path.join(os.getenv("DATA_HOME"),"CalvingStyle/"+glacier+"/")
 
-  # Outputs
-  time = []
   value = []
   type = []
   file = []
+  time = []
 
   fid = open(DIR+"Combined.dat")
   lines = fid.readlines()
