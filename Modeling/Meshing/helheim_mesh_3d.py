@@ -153,7 +153,7 @@ nodes_file=DIRM+"Elmer/mesh.nodes"
 nodes=np.loadtxt(nodes_file)
 
 # Get modeled temperatures from Kristin's work
-kristin_file=os.path.join(os.getenv("HOME"),"Data/Climate/IceTemperature/Helheim/helheim_TA.xyz")
+kristin_file=os.path.join(os.getenv("DATA_HOME"),"Data/Climate/IceTemperature/Helheim/helheim_TA.xyz")
 tempdata=np.genfromtxt(kristin_file,delimiter=',')
 tempdata=np.delete(tempdata,(0),axis=0)
 
