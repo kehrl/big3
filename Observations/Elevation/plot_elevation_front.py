@@ -49,8 +49,6 @@ nrow = len(years)
 # Make plot
 plt.figure(figsize=(ncol*2.8,nrow*3))
 cmap = matplotlib.cm.get_cmap('gray_r',4)
-bounds=[-10,-5,0,5,10]
-norm = matplotlib.colors.BoundaryNorm(bounds, cmap.N)
 gs = matplotlib.gridspec.GridSpec(nrow,ncol)
 gs.update(right=0.94,left=0.02,wspace=0.04,hspace=0.04)
 for j in range(0,nrow):
@@ -59,13 +57,13 @@ for j in range(0,nrow):
     plt.subplot(gs[j,i])
     wvind = np.where(np.floor(timewv)==year)[0][i]
     date = fracyear.fracyear_to_date(timewv[wvind])
-    plt.imshow(zwv[:,:,wvind],extent=[np.min(xwv),np.max(xwv),np.min(ywv),np.max(ywv)],clim=[0,600],origin='lower')
-    plt.scatter(xf,yf,c=zabovefloat[:,wvind],s=3.0**2.0,cmap=cmap,edgecolors='none',norm=norm)
+    plt.imshow(zwv[:,:,wvind],extent=[np.min(xwv),np.max(xwv),np.min(ywv),np.max(ywv)],clim=[0,200],origin='lower')
+    plt.scatter(xf,yf,c=zabovefloat[:,wvind],s=3.0**2.0,cmap='gist_gray_r',edgecolors='none',vmin=-10,vmax=10)
     plt.xlim([np.min(xwv),np.max(xwv)])
     plt.ylim([np.min(ywv),np.max(ywv)])
     plt.xticks([])
     plt.yticks([])
     plt.text(xmin+500,ymax-1.25e3,str(date[0])+'-'+str(date[1])+'-'+str(int(np.floor(date[2]))),backgroundcolor='w',fontsize=8)
     
-plt.savefig("/Users/kehrl/Bigtmp/"+glacier+"_dems.pdf")
+plt.savefig("/Users/kehrl/Bigtmp/"+glacier+"_dems.png",format='PNG',dpi=150)
 plt.close()
