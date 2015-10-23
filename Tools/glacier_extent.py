@@ -17,14 +17,9 @@ def load(glacier,time):
   
   Inputs:
   glacier: glacier name
-<<<<<<< HEAD
   time: time (fractional year) when we want the glacier extent
   
   Outputs:
-=======
-  time: time when we want the glacier extent:
-  
->>>>>>> d2d2e86231d6b8a7b57d1b13af469dcf89a021d0
   xextent,yextent: 1-D arrays of x and y coordinates that define glacier extent for that date
   '''
   
