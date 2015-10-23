@@ -12,7 +12,7 @@ def racmo_grid(xmin,xmax,ymin,ymax,variable,epsg=3413):
 
   # RACMO data
   files = [(os.path.join(os.getenv("DATA_HOME"),"Climate/RACMO/2015_09_Laura_Kehrl/RACMO2.3_GRN11_"+variable+"_daily_2001_2010.nc")), \
-           (os.path.join(os.getenv("DTATA_HOME"),"Climate/RACMO/2015_09_Laura_Kehrl/RACMO2.3_GRN11_"+variable+"_daily_2011_2014.nc"))]
+           (os.path.join(os.getenv("DATA_HOME"),"Climate/RACMO/2015_09_Laura_Kehrl/RACMO2.3_GRN11_"+variable+"_daily_2011_2014.nc"))]
 
   rec1 = netCDF4.Dataset(files[0])
   rec2 = netCDF4.Dataset(files[1])
@@ -62,7 +62,7 @@ def racmo_grid(xmin,xmax,ymin,ymax,variable,epsg=3413):
   if variable == 't2m':
     # Convert Kelvin to Celsius
     var_subset=var_subset-273.15
-  elif variable == 'smb' or variable == 'precip':
+  elif variable == 'smb' or variable == 'precip' or variable == 'runoff':
     # If variable is smb, convert kg m-2 s-1 to kg m-2 d-1
     var_subset=var_subset*(60*60*24.0)
 
@@ -75,21 +75,31 @@ def racmo_at_pts(xpt,ypt,variable,filt_len='none',epsg=3413,method='nearest'):
   xrac,yrac,var,time = racmo_grid(np.min(xpt)-20e3,np.max(xpt)+20e3,np.min(ypt)-20e3,np.max(ypt)+20e3,variable,epsg=3413)
  
   # Number of points
-  Npt = len(xpt)
+  Npt = xpt.shape
   Nt = len(time)
   
   # Set up output variables
   xrac_subset = np.zeros(Npt)
   yrac_subset = np.zeros(Npt)
-  var_subset = np.zeros([Nt,Npt])
+  
+  if not Npt:
+    var_subset = np.zeros([Nt,0])
+  else:
+    var_subset = np.zeros([Nt,Npt])
 
   
   if method == 'nearest':
-    for j in range(0,Npt):
-      ind = np.argmin((xrac-xpt[j])**2.0 + (yrac-ypt[j])**2.0)
-      xrac_subset[j] = xrac[ind]
-      yrac_subset[j] = yrac[ind]
-      var_subset[:,j] = var[:,ind]
+    if not Npt:
+      ind = np.argmin((xrac-xpt)**2.0 + (yrac-ypt)**2.0)
+      xrac_subset = xrac[ind]
+      yrac_subset = yrac[ind]
+      var_subset = var[:,ind]
+    else:
+      for j in range(0,Npt):
+        ind = np.argmin((xrac-xpt[j])**2.0 + (yrac-ypt[j])**2.0)
+        xrac_subset[j] = xrac[ind]
+        yrac_subset[j] = yrac[ind]
+        var_subset[:,j] = var[:,ind]
 
   elif method == 'linear':
     for j in range(0,Nt):
@@ -97,12 +107,15 @@ def racmo_at_pts(xpt,ypt,variable,filt_len='none',epsg=3413,method='nearest'):
     
   # Filter the timeseries
   if filt_len != 'none':
-    filtered = np.zeros([Nt,Npt])
     print "Filtered timeseries for variable",variable
     cutoff=(1/(filt_len/365.25))/(1/(np.diff(time[1:3])*2))
     b,a=signal.butter(3,cutoff,btype='low')
-    for j in range(0,Npt):
-      filtered[:,j] = signal.filtfilt(b,a,var_subset[:,j])
+    if not Npt:
+      filtered = signal.filtfilt(b,a,var_subset)
+    else:
+      filtered = np.zeros([Nt,Npt])
+      for j in range(0,Npt):
+        filtered[:,j] = signal.filtfilt(b,a,var_subset[:,j])
   else:
     filtered = var_subset
     
@@ -192,3 +205,15 @@ def calculate_PDD(time,T):
     
 
   return time,PDD
+  
+#def cumsmb(xpt,ypt,epsg=3413,method='nearest'):
+#
+#  '''
+#  Cumulative surface mass balance.
+#  '''
+#
+#  xrac_subset,yrac_subset,filtered,time = racmo_at_pts(xpt,ypt,variable,\
+#  		filt_len='none',epsg=epsg,method=method)
+#
+#
+#return
