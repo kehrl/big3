@@ -144,7 +144,7 @@ def atm(years,verticaldatum):
     
   return atm
 
-def atm_along_flowline(xpts,ypts,glacier,years='all',cutoff='none',maxdist=200,verticaldatum='geoid'):
+def atm_along_flowline(xpts,ypts,glacier,years='all',cutoff='none',maxdist=200,method='closest',verticaldatum='geoid'):
   
   '''
   pts = atm_along_flowline(xpts,ypts,glacier,years='all',cutoff='none',maxdist=200,verticaldatum='geoid')
@@ -179,15 +179,21 @@ def atm_along_flowline(xpts,ypts,glacier,years='all',cutoff='none',maxdist=200,v
   dates = data.keys()
   R = len(xpts)
   for date in dates:
-    z = np.zeros(R); z[:] = 'NaN'
-    d = np.zeros(R); d[:] = 'NaN'
+    z = np.zeros(R); z[:] = float('NaN')
+    d = np.zeros(R); d[:] = float('NaN')
     for i in range(0,R):
-      ind = np.argmin((xpts[i]-data[date][:,0])**2 + (ypts[i]-data[date][:,1])**2)
-      xatm = data[date][ind,0]
-      yatm = data[date][ind,1]
-      d[i] = dist.between_pts(xpts[i],ypts[i],xatm,yatm)
-      if d[i] < maxdist:
-        z[i] = data[date][ind,2]
+      if method == 'closest':
+        ind = np.argmin((xpts[i]-data[date][:,0])**2 + (ypts[i]-data[date][:,1])**2)
+        xatm = data[date][ind,0]
+        yatm = data[date][ind,1]
+        d[i] = dist.between_pts(xpts[i],ypts[i],xatm,yatm)
+        if d[i] < maxdist:
+          z[i] = data[date][ind,2]
+      elif method == 'average':
+        ind = np.where(np.sqrt((xpts[i]-data[date][:,0])**2 + (ypts[i]-data[date][:,1])**2)<maxdist)[0]
+        nonnan = np.where(~(np.isnan(data[date][ind,2])))[0]
+        if len(nonnan) > 0.8*len(ind):
+          z[i] = np.nanmean(data[date][ind,2])
         
     if cutoff == 'terminus':
       # Get fractional year
@@ -196,7 +202,7 @@ def atm_along_flowline(xpts,ypts,glacier,years='all',cutoff='none',maxdist=200,v
       # Get terminus position when ATM was collected
       termpos = np.interp(time,term_time,term_values)
       ind = np.where(dists > termpos)[0]
-      z[ind] = 'NaN' 
+      z[ind] = float('NaN') 
     
     # Save elevations if there are any
     if len(np.where(~(np.isnan(z)))[0]) > 0:
@@ -208,7 +214,7 @@ def atm_along_flowline(xpts,ypts,glacier,years='all',cutoff='none',maxdist=200,v
 	    
   return pts
   
-def atm_at_pts(xpts,ypts,glacier,years='all',maxdist=200,verticaldatum='geoid'):
+def atm_at_pts(xpts,ypts,glacier,years='all',maxdist=200,verticaldatum='geoid',method='average',cutoff='none'):
 
   '''
   zpts,time = atm_at_pts(xpts,ypts,glacier,years='all',maxdist=200,verticaldatum='geoid')
@@ -228,7 +234,7 @@ def atm_at_pts(xpts,ypts,glacier,years='all',maxdist=200,verticaldatum='geoid'):
   '''
 
   # Get ATM data
-  atm = atm_along_flowline(xpts,ypts,glacier,years,'none',maxdist,verticaldatum)
+  atm = atm_along_flowline(xpts,ypts,glacier,years=years,maxdist=maxdist,cutoff='none',verticaldatum=verticaldatum,method=method)
   
   # Get dates
   dates = np.sort(atm.keys())
@@ -269,7 +275,9 @@ def worldview_grid(glacier,xmin=-np.Inf,xmax=np.Inf,ymin=-np.Inf,ymax=np.Inf,res
   xgrid,ygrid = np.meshgrid(x,y)
     
   WVDIR = os.path.join(os.getenv("DATA_HOME"),'Elevation/Worldview/'+glacier+'/')
-  DIRs = os.listdir(WVDIR)
+  TDXDIR = os.path.join(os.getenv("DATA_HOME"),'Elevation/TDX/'+glacier+'/')
+  WVDIRs = os.listdir(WVDIR)
+  TDXDIRs = os.listdir(TDXDIR)
   
   # Find file ending based on whether we want elevation relative to geoid or ellipsoid
   if verticaldatum == 'geoid':
@@ -280,11 +288,25 @@ def worldview_grid(glacier,xmin=-np.Inf,xmax=np.Inf,ymin=-np.Inf,ymax=np.Inf,res
   # Find dates where we have data in the desired region
   dates=[]
   glacier = shapely.geometry.Polygon([(xmin,ymin),(xmin,ymax),(xmax,ymax),(xmax,ymin)])
-  for DIR in DIRs:
+  for DIR in WVDIRs:
     if (DIR[0:8] not in dates) and DIR.startswith('2') and (DIR.endswith(filestring)):
       wvxmin,wvxmax,wvymin,wvymax = geotiff.extent(WVDIR+DIR)
       wv_extent = shapely.geometry.Polygon([(wvxmin,wvymin),(wvxmin,wvymax),(wvxmax,wvymax),(wvxmax,wvymin)])
       if glacier.intersects(wv_extent):
+        if not(years) or (years=='all'):
+          dates.append(DIR[0:8])
+        else:
+          if len(years) == 4:
+            if DIR[0:4] in years:
+              dates.append(DIR[0:8])
+          else:
+            if DIR[0:8] in years:
+              dates.append(DIR[0:8])
+  for DIR in TDXDIRs:
+    if DIR.endswith(filestring):
+      tdxmin,tdxmax,tdymin,tdymax = geotiff.extent(TDXDIR+DIR)
+      td_extent = shapely.geometry.Polygon([(tdxmin,wvymin),(tdxmin,tdymax),(tdxmax,wvymax),(tdxmax,tdymin)])
+      if glacier.intersects(td_extent):
         if not(years) or (years=='all'):
           dates.append(DIR[0:8])
         else:
@@ -302,11 +324,15 @@ def worldview_grid(glacier,xmin=-np.Inf,xmax=np.Inf,ymin=-np.Inf,ymax=np.Inf,res
     date = dates[i]
     n = 1 # Count number of files for that date
     time[i] = fracyear.date_to_fracyear(int(date[0:4]),int(date[4:6]),float(date[6:8]))
-    for DIR in DIRs:
+    for DIR in np.r_[TDXDIRs,WVDIRs]:
       if DIR.startswith(date) and DIR.endswith(filestring): 
         # Read file
-        xwv,ywv,zwv = geotiff.read(WVDIR+DIR) 
-        zwv[zwv==0] = 'NaN'
+        if  os.path.isfile(WVDIR+DIR):
+          xwv,ywv,zwv = geotiff.read(WVDIR+DIR) 
+          zwv[zwv==0] = float('NaN')
+        else:
+          xwv,ywv,zwv = geotiff.read(TDXDIR+DIR) 
+          zwv[zwv==0] = float('NaN')
         
         # Interpolate onto output grid
         zwv_dem = scipy.interpolate.RegularGridInterpolator([ywv,xwv],zwv,bounds_error = False,method='linear',fill_value=float('nan'))
@@ -331,10 +357,15 @@ def worldview_grid(glacier,xmin=-np.Inf,xmax=np.Inf,ymin=-np.Inf,ymax=np.Inf,res
       nonnan.append(i)
   zs_nonnan = zs[:,:,nonnan]
   time_nonnan = time[nonnan]    
+  
+  # Sort by time
+  sortind = np.argsort(time_nonnan)
+  time_nonnan = time_nonnan[sortind]
+  zs_nonnan = zs_nonnan[:,:,sortind]
       
   return x,y,zs_nonnan,time_nonnan
 
-def worldview_along_flowline(xpts,ypts,glacier,years='all',cutoff='terminus',verticaldatum='geoid',filt_len='none'):
+def worldview_along_flowline(xpts,ypts,glacier,years='all',cutoff='terminus',verticaldatum='geoid',filt_len='none',method='linear'):
 
   '''
   pts = worldview_along_flowline(xpts, ypts, glacier ,years='all', 
@@ -346,7 +377,10 @@ def worldview_along_flowline(xpts,ypts,glacier,years='all',cutoff='terminus',ver
 
   # Worldview data
   WVDIR = os.path.join(os.getenv("DATA_HOME"),"Elevation/Worldview/"+glacier+"/")
-  DIRs = os.listdir(WVDIR)
+  WVDIRs = os.listdir(WVDIR)
+  TDXDIR = os.path.join(os.getenv("DATA_HOME"),"Elevation/TDX/"+glacier+"/")
+  TDXDIRs = os.listdir(TDXDIR)
+
 
   # Find file ending based on whether we want elevation relative to geoid or ellipsoid
   if verticaldatum == 'geoid':
@@ -360,12 +394,12 @@ def worldview_along_flowline(xpts,ypts,glacier,years='all',cutoff='terminus',ver
   # Load ice front positions so we can toss data in front of terminus
   if cutoff == 'terminus':
     dists = dist.transect(xpts,ypts)
-    term_values, term_time = icefronts.distance_along_flowline(xpts,ypts,dists,glacier,'icefront')
+    term_values, term_time = icefronts.distance_along_flowline(xpts,ypts,dists,glacier,type='icefront')
   
   
 # Find dates where we have data in the desired region
   dates=[]
-  for DIR in DIRs:
+  for DIR in WVDIRs:
     if (DIR[0:8] not in dates) and DIR.startswith('2') and DIR.endswith(filestring):
       xmin,xmax,ymin,ymax = geotiff.extent(WVDIR+DIR)
       within = np.where((xpts > xmin) & (xpts < xmax) & (ypts > ymin) & (ypts < ymax))[0]
@@ -379,15 +413,33 @@ def worldview_along_flowline(xpts,ypts,glacier,years='all',cutoff='terminus',ver
           else:
             if DIR[0:8] in years:
               dates.append(DIR[0:8])
+  for DIR in TDXDIRs:
+    if DIR.endswith(filestring):
+      xmin,xmax,ymin,ymax = geotiff.extent(TDXDIR+DIR)
+      within = np.where((xpts > xmin) & (xpts < xmax) & (ypts > ymin) & (ypts < ymax))[0]
+      if len(within) > 0:
+        if not(years) or (years=='all'):
+          dates.append(DIR[0:8])
+        else:
+          if len(years) == 4:
+            if DIR[0:4] in years:
+              dates.append(DIR[0:8])
+          else:
+            if DIR[0:8] in years:
+              dates.append(DIR[0:8])
+
 
   for date in dates:
-    for DIR in DIRs:
+    for DIR in np.r_[TDXDIRs,WVDIRs]:
       if DIR.startswith(date) and (DIR.endswith(filestring)): 
         #print "Loading data from "+DIR+"\n"
-        x,y,z = geotiff.read(WVDIR+DIR)
-        z[z == 0] ='NaN'
+        if os.path.isfile(WVDIR+DIR):
+          x,y,z = geotiff.read(WVDIR+DIR)
+          z[z == 0] = float('NaN')
+        else:
+          x,y,z = geotiff.read(TDXDIR+DIR)
 
-        dem = scipy.interpolate.RegularGridInterpolator([y,x],z)
+        dem = scipy.interpolate.RegularGridInterpolator([y,x],z,method=method)
     
         # Find points that fall within the DEM
         ind = np.where((xpts > np.min(x)) & (xpts < np.max(x)) & (ypts > np.min(y)) & (ypts < np.max(y)))
@@ -430,7 +482,7 @@ def worldview_along_flowline(xpts,ypts,glacier,years='all',cutoff='terminus',ver
   
   return pts
 
-def worldview_at_pts(xpts,ypts,glacier,years='all',verticaldatum='geoid'):
+def worldview_at_pts(xpts,ypts,glacier,years='all',verticaldatum='geoid',cutoff='none',method='linear',radius=500):
 
   '''
   zpts,time = worldview_at_pts(xpts,ypts,glacier,
@@ -443,24 +495,102 @@ def worldview_at_pts(xpts,ypts,glacier,years='all',verticaldatum='geoid'):
   glacier: glacier name
   years: years that we want data
   verticaldatum: geoid or ellipsoid
+  cutoff: cutoff elevations in front of terminus ('terminus' or 'none')
+  method: 'linear' extrapolation or 'average' value for a region defined by radius
+  radius: radius for average value (only necessary if method is 'average')
   
   Outputs:
   zpts: array of surface elevations for points xpts,ypts
   time: time of the arrays
   '''
-
-  wv = worldview_along_flowline(xpts,ypts,glacier,years,'none',verticaldatum)
   
-  dates = np.sort(wv.keys())
-  time = np.zeros(len(dates))
-  zpts = np.zeros([len(dates),len(xpts)])
-  
-  for i in range(0,len(dates)):
-    date = dates[i]
-    time[i] = fracyear.date_to_fracyear(float(date[0:4]),float(date[4:6]),float(date[6:8]))
-    zpts[i,:] = wv[date][:,2]
+  if method == 'linear':
+    wv = worldview_along_flowline(xpts,ypts,glacier,years=years,cutoff=cutoff,verticaldatum=verticaldatum,method=method)
+    time = np.zeros(len(dates))
+    zpts = np.zeros([len(dates),len(xpts)])
+    dates = np.sort(wv.keys())
+    for i in range(0,len(dates)):
+      date = dates[i]
+      time[i] = fracyear.date_to_fracyear(float(date[0:4]),float(date[4:6]),float(date[6:8]))
+      zpts[i,:] = wv[date][:,2]
+  elif method == 'average':
+    xmin = np.min(xpts)-radius*3
+    ymin = np.min(ypts)-radius*3
+    xmax = np.max(xpts)+radius*3
+    ymax = np.max(ypts)+radius*3
+    
+    xwv,ywv,zwv,timewv = worldview_grid(glacier,xmin,xmax,ymin,ymax,years='all',verticaldatum='geoid')
+    N = len(timewv)
+    
+    time = timewv
+    zpts = np.zeros([N,len(xpts)])
+    zpts_std = np.zeros([N,len(xpts)])
+    zpts[:,:] = float('nan')
+    zpts_std[:,:] = float('nan')
+    
+    xwv_grid,ywv_grid = np.meshgrid(xwv,ywv) 
+    xwv_flattened = xwv_grid.flatten()
+    ywv_flattened = ywv_grid.flatten()
+    
+    for j in range(0,len(xpts)):
+      ind = np.where(np.sqrt((xpts[j] - xwv_flattened)**2+(ypts[j] - ywv_flattened)**2) < radius)[0]
+      for i in range(0,N):
+        nonnan = np.where(~(np.isnan(zwv[:,:,i].flatten()[ind])))[0]
+        if len(nonnan) > 0.8*len(ind):
+          zpts[i,j] = np.nanmean(zwv[:,:,i].flatten()[ind])
+          zpts_std[i,j] = np.nanvar(zwv[:,:,i].flatten()[ind])
+      
+        
+    
+  return zpts,zpts_std,time
 
-  return zpts,time
+def grid_near_time(time,glacier,verticaldatum='geoid'):
+
+  '''
+  Find the elevation grid closest in time to the input time.
+  
+  Inputs:
+  time: time that you want the grid
+  glacier: glacier name
+  verticaldatum: geoid or ellipsoid
+  
+  Outputs:
+  x,y: grid coordinates
+  zs: surface elevations
+  besttime: time of grid that is closest to input time
+  '''
+
+  # Worldview data
+  WVDIR = os.path.join(os.getenv("DATA_HOME"),"Elevation/Worldview/"+glacier+"/")
+  WVDIRs = os.listdir(WVDIR)
+  TDXDIR = os.path.join(os.getenv("DATA_HOME"),"Elevation/TDX/"+glacier+"/")
+  TDXDIRs = os.listdir(TDXDIR)
+
+
+  # Find file ending based on whether we want elevation relative to geoid or ellipsoid
+  if verticaldatum == 'geoid':
+    filestring = 'trans-adj.tif'
+  else:
+    filestring = 'trans.tif'
+  
+# Find dates where we have data in the desired region
+  besttime = 0
+  for DIR in WVDIRs:
+    if DIR.startswith('2') and DIR.endswith(filestring):
+      demtime = fracyear.date_to_fracyear(int(DIR[0:4]),int(DIR[4:6]),int(DIR[6:8]))
+      if abs(demtime-time) < abs(besttime-time):
+        besttime = demtime
+        bestfile = WVDIR+DIR
+  for DIR in TDXDIRs:
+    if DIR.startswith('2') and DIR.endswith(filestring):
+      demtime = fracyear.date_to_fracyear(int(DIR[0:4]),int(DIR[4:6]),int(DIR[6:8]))
+      if abs(demtime-time) < abs(besttime-time):
+        besttime = demtime
+        bestfile = TDXDIR+DIR
+       
+  x,y,zs = geotiff.read(bestfile)
+
+  return x,y,zs,besttime
 
 def dem_continuous(glacier,date,verticaldatum='geoid',fillin=False,blur=False):
 
@@ -560,7 +690,6 @@ def dem_continuous_flowline(xf,yf,glacier,date,verticaldatum='geoid',fillin='non
 
   '''
   zflow = dem_continuous_flowline(xf,yf,glacier,date,verticaldatum='geoid',fillin='none')
->>>>>>> d2d2e86231d6b8a7b57d1b13af469dcf89a021d0
 
   Same as "dem_continuous", except output the coordinates along a flowline rather than as a 
   grid. See "dem_continuous" for more information.
