@@ -1,6 +1,12 @@
-# This module produces an ice mask where ice/water is zero and land is one. 
-#
-# LMK, UW, 9/15/2015
+'''
+This module deals with our ice masking products. You can produce a ice mask grid or 
+load all the points that define where land is located. 
+
+x,y,mask = load_grid(glacier,xmin,xmax,ymin,ymax,dx,ice=0)
+pts = load_points(glacier)
+
+LMK, UW, 9/15/2015
+'''
 
 import os
 import sys
@@ -9,10 +15,25 @@ import elmer_mesh
 import matplotlib.path as path
 import numpy as np
 
-def load(glacier,xmin,xmax,ymin,ymax,dx,ice=0):
+def load_grid(glacier,xmin,xmax,ymin,ymax,dx,ice=0):
+
+  '''
+  Load ice mask grid.
+  
+  x,y,mask = load_grid(glacier,xmin,xmax,ymin,ymax,dx,ice=0)
+  
+  Inputs:
+  glacier: glacier name
+  xmin,xmax,ymin,ymax: output dimensions for grid
+  dx: grid spacing
+  ice: set ice grid points to 0 or 1
+  
+  Outputs:
+  x,y: grid points
+  mask: mask grid of 0,1's 
+  '''
 
   # Directory for holes for mask
-
   DIR = os.path.join(os.getenv("DATA_HOME"),'Shapefiles/IceMasks/'+glacier+'/')
 
   files = os.listdir(DIR)
@@ -48,3 +69,34 @@ def load(glacier,xmin,xmax,ymin,ymax,dx,ice=0):
   mask = np.reshape(maskflatten,[ny,nx])    
 
   return x,y,mask
+
+def load_points(glacier):
+
+  '''
+  Load all points that define where land is located.
+  
+  pts = load_points(glacier)
+  
+  Inputs:
+  glacier: glacier name
+  
+  Outputs:
+  pts: 2d array of points that define land extent
+
+  '''
+
+  DIR = os.path.join(os.getenv("DATA_HOME"),'Shapefiles/IceMasks/'+glacier+'/')
+
+  files = os.listdir(DIR)
+  
+  n=0
+  for file in files:
+    if file.endswith('.shp'):
+      hole = elmer_mesh.shp_to_xy(DIR+file)
+      if n==0:
+        pts = hole[:,0:2]  
+      else:
+        pts = np.row_stack([pts,hole[:,0:2]])
+      n=1
+      
+  return pts
