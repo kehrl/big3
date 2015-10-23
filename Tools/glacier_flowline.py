@@ -74,7 +74,7 @@ def load(glacier,shapefilename='center_flowline',filt_len='none',verticaldatum='
   if glacier == 'Helheim':
     zb = bed.smith_at_pts(x,y,glacier,model=bedmodel,smoothing=bedsmoothing,verticaldatum=verticaldatum)
   elif glacier == 'Kanger':
-    zb = bed.morlighem_pts(x,y,glacier,verticaldatum)
+    zb = bed.morlighem_pts(x,y,verticaldatum)
     zb_cresis1 = bed.cresis('2009a',glacier,verticaldatum)
     zb_cresis2 = bed.cresis('2008',glacier,verticaldatum)
     ind1 = np.where((x > 490970) & (x < 491300))[0]
