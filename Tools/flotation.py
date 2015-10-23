@@ -117,26 +117,33 @@ def extent(xs,ys,zs,ztime,glacier,rho_i=917.0,rho_sw=1020.0,bedsource='cresis',v
   
   # Find bed elevations
   if bedsource=='cresis':
-    cresis = bed.cresis('all',glacier,verticaldatum)
+    cresis = bed.cresis('all',glacier,verticaldatum,cleanup=True)
     cresis2001 = bed.cresis('2001',glacier,verticaldatum)
     cresis = np.row_stack([cresis[cresis[:,2]<-200.0,:],cresis2001[cresis2001[:,2]<-200.0,:]])
   else:
     print "need to work on morlighem"
   
   # Find flotation height
-  zfloat = height(cresis[:,2],rho_i,rho_sw)
+  zfloat = height(cresis[:,2],rho_i=rho_i,rho_sw=rho_sw)
   xf = cresis[:,0]
   yf = cresis[:,1]
   
   # Calculate height above flotation through time
-  N = len(ztime)
+  try:
+    N = len(ztime)
+  except: 
+    N = 1
   zabovefloat=np.zeros([len(zfloat),N])
   zabovefloat[:,:] = 'NaN'
-  
   for i in range(0,N): 
   
     # Get glacier extent so we're only checking if the glacier is floating where there is glacier ice
-    extent = glacier_extent.load(glacier,ztime[i])
+    if N == 1: # no iteration if only one DEM
+      extent = glacier_extent.load(glacier,ztime)
+      dem = scipy.interpolate.RegularGridInterpolator([ys,xs],zs[:,:],bounds_error = False,method='linear',fill_value=float('nan')) 
+    else:
+      extent = glacier_extent.load(glacier,ztime[i])
+      dem = scipy.interpolate.RegularGridInterpolator([ys,xs],zs[:,:,i],bounds_error = False,method='linear',fill_value=float('nan')) 
     
     # Check what points are located on glacier ice
     box = path.Path(extent[:,0:2])
@@ -145,8 +152,7 @@ def extent(xs,ys,zs,ztime,glacier,rho_i=917.0,rho_sw=1020.0,bedsource='cresis',v
     inside = box.contains_points(np.column_stack([cresis[:,0:2]]))
     
     # Current surface elevation
-    dem = scipy.interpolate.RegularGridInterpolator([xs,ys],zs[:,:,i],bounds_error = False,method='linear',fill_value=float('nan')) 
-    zs_on_zb = dem(cresis[:,0:2])
+    zs_on_zb = dem((cresis[:,1],cresis[:,0]))
     
     # Find height above flotation
     zabovefloat[inside,i] = zs_on_zb[inside]-zfloat[inside]
