@@ -52,6 +52,7 @@ xracK,yracK,precipK,timeK = climate.racmo_at_pts(xptK,yptK,'precip',filt_len=fil
 # Helheim
 xracH,yracH,runoffH,timeH = climate.racmo_at_pts(xptH,yptH,'runoff',filt_len=filt_len)
 xracH,yracH,t2mH,timeH = climate.racmo_at_pts(xptH,yptH,'t2m',filt_len=filt_len)
+xracH,yracH,smbH,timeH = climate.racmo_at_pts(xptK,yptK,'smb',filt_len=filt_len)
 xracH,yracH,precipH,timeH = climate.racmo_at_pts(xptH,yptH,'precip',filt_len=filt_len)
 
 #############
@@ -75,23 +76,25 @@ ax.set_xticklabels([])
 plt.subplot(gs[1,:])
 ax = plt.gca()
 plt.plot([time1,time2],[0,0],'k')
-plt.plot(timeH,smbH,'r',linewidth=1.5,label='Helheim')
-plt.plot(timeK,smbK,'b',linewidth=1.5,label='Kanger')
+plt.plot(timeH,smbH*365.25/917.0,'r',linewidth=1.5,label='Helheim')
+plt.plot(timeK,smbK*365.25/917.0,'b',linewidth=1.5,label='Kanger')
 plt.legend(loc=2,fontsize=10,numpoints=1,handlelength=0.4,labelspacing=0.05,ncol=2,columnspacing=0.7,handletextpad=0.2)
-plt.ylabel('SMB (kg m$^{-2}$ d$^{-1}$)')
+plt.ylabel('SMB (m a$^{-1}$)')
 plt.xlim([time1,time2])
 ax.set_xticklabels([])
 
 plt.subplot(gs[2,:])
 ax = plt.gca()
-plt.plot(timeH,runoffH,'r',linewidth=1.5)
-plt.plot(timeK,runoffK,'b',linewidth=1.5)
-plt.ylabel('Runoff (kg m$^{-2}$ d$^{-1}$)')
+plt.plot(timeH,runoffH*365.25/917.0,'r',linewidth=1.5)
+plt.plot(timeK,runoffK*365.25/917.0,'b',linewidth=1.5)
+plt.ylabel('Runoff (m a$^{-1}$)')
 plt.xlim([time1,time2])
 x_formatter = matplotlib.ticker.ScalarFormatter(useOffset=False)
 ax.xaxis.set_major_formatter(x_formatter)
 
-plt.subplots_adjust(hspace=0.05,wspace=0) 
+plt.subplots_adjust(hspace=0.05,wspace=0)
+plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/racmo_timeseries.pdf"),FORMAT='PDF',dpi=800)
+plt.close()
 
 ###########################################################
 # Quantify beginning and end of melt season for each year #
