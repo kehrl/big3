@@ -59,6 +59,7 @@ def cresis(year,glacier,verticaldatum='geoid',cleanup=True):
     if glacier == 'Helheim':
       print "Using data set Helheim_2006_2014_Composite"
       file=os.path.join(os.getenv("DATA_HOME"),"Bed/Cresis/Helheim/Helheim_2006_2014_Composite/flightlines/Helheim_2006_2014_Composite_Flightlines.txt")
+      #file=os.path.join(os.getenv("DATA_HOME"),"Bed/Cresis/Helheim/Helheim_2008_2012_Composite/flightlines/Helheim_2008_2012_Composite_Flightlines.txt")
     elif glacier == 'Kanger':
       print "Using data set Kanger_2006_2014_Composite"
       file=os.path.join(os.getenv("DATA_HOME"),"Bed/Cresis/Kanger/Kangerdlugssuaq_2006_2014_Composite/flightlines/Kangerdlugssuaq_2006_2014_Composite_Flightlines.txt")
@@ -96,7 +97,8 @@ def cresis(year,glacier,verticaldatum='geoid',cleanup=True):
     x2,y2 = coords.convert(x,y,4326,3413)
     
     if glacier == 'Helheim':
-      # Radar picks to toss, if cleanup is set to true
+      # Radar picks to toss, if cleanup is set to true. The indices are for the Helheim 
+      # 006-2014 composite product.
       if cleanup==True:
         badind = np.r_[range(22406,22513),range(26969,27020),range(29300,29336),range(30253,30408),range(33224,33440),range(33552,33620),range(37452,37531),\
       		range(37640,37675),range(37819,37836),range(44127,44207),range(46942,47030),range(53595,53663),\
@@ -105,7 +107,7 @@ def cresis(year,glacier,verticaldatum='geoid',cleanup=True):
       else: 
         badind = []
       if year == '2006a':
-        ind = range(22285,22413)
+        ind = range(22285,22406)
       elif year == '2006b':
         ind = range(26856,26969)
       elif year == '2008a':
@@ -128,6 +130,15 @@ def cresis(year,glacier,verticaldatum='geoid',cleanup=True):
           if ("ICESat" not in type[i]) and (i not in badind):
             ind.append(i)
     elif glacier == 'Kanger':
+      # Radar picks to toss, if cleanup is set to true. The indices are for the Kanger
+      # 2006-2014 composite product.
+      if cleanup==True:
+        badind = np.r_[range(28502,28581),range(28672,28756),range(31032,31216),
+        		range(29927,30075),range(33768,33847),range(28851,29063),
+        		range(39150,39210),range(40471,40550),range(23853,23860),
+        		range(36055,36095)] 
+      else: 
+        badind = []
       if year == '2008':
         ind = range(23600,23853)
       elif year == '2009a':
@@ -143,7 +154,7 @@ def cresis(year,glacier,verticaldatum='geoid',cleanup=True):
       elif year == 'all':
         ind = []
         for i in range(0,len(type)):
-          if 'ICESat' not in type[i]:
+          if 'ICESat' not in type[i] and (i not in badind):
             ind.append(i)
     else:
       print "Unrecognized CreSIS profile"
@@ -248,7 +259,7 @@ def cresis_grid_pts(xpts,ypts,glacier,verticaldatum='geoid',method='linear'):
 
 #########################################################################################
 
-def morlighem_pts(xpts,ypts,glacier,verticaldatum='geoid',method='linear'):
+def morlighem_pts(xpts,ypts,verticaldatum='geoid',method='linear'):
   
   '''
   bed = morlighem_pts(xpts,ypts,glacier,verticaldatum='geoid')
@@ -269,15 +280,15 @@ def morlighem_pts(xpts,ypts,glacier,verticaldatum='geoid',method='linear'):
   xmin = np.min(xpts)-2.0e3
   xmax = np.max(xpts)+2.0e3
   ymin = np.min(ypts)-2.0e3
-  ymax = np.min(ypts)+2.0e3
+  ymax = np.max(ypts)+2.0e3
   
   # Load bed DEM
-  x,y,z = morlighem_grid(xmin,xmax,ymin,ymax,verticaldatum=verticaldatum)
+  xbed,ybed,zbed = morlighem_grid(xmin,xmax,ymin,ymax,verticaldatum=verticaldatum)
   
-  f = scipy.interpolate.RegularGridInterpolator((y,x),z,method=method,bounds_error=False)
-  bed = f(np.column_stack([ypts,xpts]))
+  f = scipy.interpolate.RegularGridInterpolator((ybed,xbed),zbed,method=method,bounds_error=False)
+  zb = f(np.column_stack([ypts,xpts]))
       
-  return bed
+  return zb
 
 #########################################################################################
   
@@ -312,7 +323,7 @@ def morlighem_grid(xmin=-np.inf,xmax=np.inf,ymin=-np.inf,ymax=np.Inf,verticaldat
   elif verticaldatum == "geoid":
     bed = zb
   else:
-    print "Unknown vertical datum, defaulting to geoid height"
+    sys.exit("Unknown vertical datum, defaulting to geoid height")
   
   return xb,yb,bed
 
