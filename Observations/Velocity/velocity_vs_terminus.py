@@ -5,15 +5,12 @@ import sys
 import numpy as np
 sys.path.append(os.path.join(os.getenv("CODE_HOME"),"Util/Modules"))
 sys.path.append(os.path.join(os.getenv("CODE_HOME"),"BigThreeGlaciers/Tools"))
-import velocity, icefronts, bed, glacier_flowline, fluxgate
+import velocity, icefronts, bed, glacier_flowline, elevation, fluxgate, flotation
 import matplotlib.pyplot as plt
-import matplotlib, geotiff, fracyear
+import matplotlib, geotiff, fracyear, dem_shading, icemask
 from matplotlib.ticker import AutoMinorLocator
-import shapefile
 import scipy.signal as signal
-import jdcal
 import pylab
-from shapely.geometry import LineString
 import matplotlib.cm as cmx
 import matplotlib.colors as colors
 
@@ -41,7 +38,7 @@ elif glacier == "Kanger":
 # Plot options #
 ################
 
-time1 = 2008.5 #start time for plot
+time1 = 2008.4 #start time for plot
 time2 = 2015.75 # end time for plot
 seasonal = 1 # plot seasonal bars, to highlight seasonal trends
 normalized = 0
@@ -56,8 +53,10 @@ plot_images = 1
 ############ 
 # Flowline #
 ############
-
-x,y,zb,dists = glacier_flowline.load(glacier)
+if glacier == 'Helheim':
+  x,y,zb,dists = glacier_flowline.load(glacier,shapefilename='flowline_flightline')
+else:
+  x,y,zb,dists = glacier_flowline.load(glacier)
 
 ##################
 # Get ice fronts #
@@ -117,7 +116,24 @@ del interped
 # Get thinning rates inferred from flux gates #
 ###############################################
 
-dH_time,dH = fluxgate.fluxgate_thinning(glacier,"fluxgate1",bedsource='morlighem')
+if glacier == 'Helheim':
+  xmin = 285000.0
+  xmax = 320000.0
+  ymin = -2588000.0
+  ymax = -2566000.0
+  ximage,yimage,zimage = geotiff.read(os.path.join(os.getenv("DATA_HOME"),"Mosaics/Helheim/mosaicHelheim.2014-159.148.38725_1-20mgeo.tif"))
+elif glacier == 'Kanger':
+  xmin = 449800.0
+  xmax = 503000.0
+  ymin = -2302000.0
+  ymax = -2266000.0
+
+xwv,ywv,zwv,timewv = elevation.worldview_grid(glacier,xmin,xmax,ymin,ymax,years='all',verticaldatum='ellipsoid')
+dH_time,dH = fluxgate.dem_thinning(glacier,xwv,ywv,zwv,timewv,"fluxgate3",type='absolute')
+
+zpt_atm,time_atm = elevation.atm_at_pts(x[ind_eul],y[ind_eul],glacier,years='all',maxdist=250,verticaldatum='geoid',method='average',cutoff='terminus')
+zpt_wv,zpt_std,time_wv = elevation.worldview_at_pts(x[ind_eul],y[ind_eul],glacier,years='all',verticaldatum='geoid',cutoff='terminus',method='average',radius=250)
+
 
 ###############
 # Plot images #
@@ -133,21 +149,22 @@ if plot_images == 1:
     xmax = 314000.0
     ymin = -2582500.0
     ymax = -2572500.0
-    imagefiles = ['mosaicHelheim.2013-211.72.33973_1-20mgeo.tif',
-             'mosaicHelheim.2013-332.72.35810_1-20mgeo.tif',
+    imagefiles = ['mosaicHelheim.2013-216.148.34049_1-20mgeo.tif',
+             'mosaicHelheim.2013-304.148.35385_1-20mgeo.tif',
+             'mosaicHelheim.2014-027.148.36721_1-20mgeo.tif',
              '20140330140600_LC82330132014089LGN00.tif',
-             '20140821140551_LC82330132014233LGN00.tif'] #mosaicHelheim.2014-247.148.40061_1-20mgeo.tif
-    clims = [[0,255],[100,255],[0,255],[0,255]]
+             '20140729135956_LC82320142014210LGN00.tif'] 
+    clims = [[0,255],[100,255],[70,255],[0,255],[0,255]]
   if glacier == 'Kanger':
     xmin = 488000.0
     xmax = 498000.0
     ymin = -2298000.0
     ymax = -2288000.0
-    imagefiles = ['mosaicKang.2012-187.163.28052_1-20mgeo.tif',
-                  'mosaicKang.2013-349.163.36068_1-20mgeo.tif',
-                  '20140410134655_LC82300122014100LGN00.tif',
-                  'mosaicKang.2014-182.163.39074_1-20mgeo.tif']
-    clims = [[50,255],[70,255],[30,225],[50,255]]
+    imagefiles = ['20120802134148_LE72300122012215EDC00.tif',
+                  'mosaicKang.2014-088.65.37640_1-20mgeo.tif',
+                  'mosaicKang.2014-182.163.39074_1-20mgeo.tif',
+                  'mosaicKang.2014-292.163.40744_1-20mgeo.tif']
+    clims = [[0,3],[50,255],[50,255],[50,255]]
   
   images = []
   images_time = []
@@ -169,41 +186,86 @@ if plot_images == 1:
   N = len(images) # number of images
   images_labels = ['a','b','c','d','e']
   
-  plt.figure(figsize=(7.0,4.0))
-  gs = matplotlib.gridspec.GridSpec(2,N+1,width_ratios=np.append(np.ones(N),0.1))
-  gs.update(right=0.94,left=0.02,wspace=0.04,hspace=0.04)
+  plt.figure(figsize=(5,4))
+  gs = matplotlib.gridspec.GridSpec(4,N+1,width_ratios=np.append(np.ones(N),0.1))
+  gs.update(left=0.02,wspace=0.02,hspace=0.02,top=0.98,right=0.9)
   for i in range(0,N):
+  
+    xdem,ydem,zdem,demtime = elevation.grid_near_time(images_time[i][3],glacier)
+    xvel,yvel,uvel,vvel,vvel,vtime = velocity.tsx_near_time(images_time[i][3],glacier)
+    #if i == 0:
+      #xmask,ymask,mask = icemask.load(glacier,np.min(xvel),np.max(xvel),np.min(yvel),np.max(yvel),100)
+    xf,yf,zabovefloat = flotation.extent(xdem,ydem,zdem,demtime,glacier,rho_i=917.0,rho_sw=1020.0,bedsource='cresis',verticaldatum='geoid')
+  
+    for j in [0,1,3]:
+      ax = plt.subplot(gs[j,i])
+      plt.imshow(images[i][2],extent=[np.min(images[i][0]),np.max(images[i][0]),np.min(images[i][1]),np.max(images[i][1])],origin='lower',cmap='Greys_r')
+      plt.clim(clims[i])
+      plt.xlim([xmin,xmax])
+      plt.ylim([ymin,ymax])
+      plt.xticks([])
+      plt.yticks([])
+      
     ax = plt.subplot(gs[0,i])
-    plt.text(xmin+500,ymax-1.25e3,str(images_time[i][0])+'-'+str(images_time[i][1])+'-'+str(int(np.floor(images_time[i][2]))),backgroundcolor='w',fontsize=8)
+    year,month,day = fracyear.fracyear_to_date(images_time[i][3])
+    plt.text(xmin+500,ymax-1.25e3,str(year)+'-'+str(month)+'-'+str(int(np.floor(day))),backgroundcolor='w',fontsize=8)
     plt.text(xmin+500,ymin+1e3,images_type[i],backgroundcolor='w',fontsize=8)
     plt.text(xmin+500,ymax-3e3,images_labels[i],fontsize=9,fontweight='bold')
-    plt.imshow(images[i][2],extent=[np.min(images[i][0]),np.max(images[i][0]),np.min(images[i][1]),np.max(images[i][1])],origin='lower',cmap='Greys_r')
-    plt.clim(clims[i])
+    
+    ax = plt.subplot(gs[1,i])
+    #vvel = np.ma.masked_array(vvel,mask)
+    year,month,day = fracyear.fracyear_to_date(vtime)
+    xfront,yfront,ftime = icefronts.near_time(images_time[i][3],glacier)
+    im = plt.imshow(vvel/1e3,extent=[np.min(xvel),np.max(xvel),np.min(yvel),np.max(yvel)],origin='lower')
+    plt.plot(xfront,yfront,'k',linewidth=1.5)
+    plt.clim([5,10])
     plt.xlim([xmin,xmax])
     plt.ylim([ymin,ymax])
     plt.xticks([])
     plt.yticks([])
     
-    ax = plt.subplot(gs[1,i])
-    xvel,yvel,uvel,yvel,vvel,vtime = velocity.tsx_near_time(images_time[i][3],glacier)
-    year,month,day = fracyear.fracyear_to_date(vtime)
-    xfront,yfront,ftime = icefronts.near_time(images_time[i][3],glacier)
-    im = plt.imshow(vvel/1e3,extent=[np.min(xvel),np.max(xvel),np.min(yvel),np.max(yvel)],origin='lower')
-    plt.plot(xfront,yfront,'k',linewidth=1.5)
+    if i == N-1:
+      ax = plt.subplot(gs[1,N])
+      cb = plt.colorbar(im,cax=ax)
+      cb.set_ticks(range(4,12))
+      cb.ax.tick_params(labelsize=8)
+      cb.set_label('Speed (km/yr)',fontsize=8)
+    
+    ax = plt.subplot(gs[2,i])
+    shadeddem = dem_shading.set_shade(zdem,0,220)
+    im = plt.imshow(shadeddem,extent=[np.min(xdem),np.max(xdem),np.min(ydem),np.max(ydem)],origin='lower')
+    year,month,day = fracyear.fracyear_to_date(demtime)
     plt.text(xmin+500,ymax-1.25e3,str(year)+'-'+str(month)+'-'+str(int(np.floor(day))),backgroundcolor='w',fontsize=8)
-    plt.clim([4,10])
+    plt.xlim([xmin,xmax])
+    plt.ylim([ymin,ymax])
+    plt.clim([0,220])
+    plt.xticks([])
+    plt.yticks([])
+    
+    if i == N-1:
+      ax = plt.subplot(gs[2,N])
+      cb = plt.colorbar(im,cax=ax)
+      cb.set_ticks(np.arange(0,250,50))
+      cb.ax.tick_params(labelsize=8)
+      cb.set_label('Elevation (m)',fontsize=8)
+    
+    ax = plt.subplot(gs[3,i])
+    im=plt.scatter(xf,yf,c=zabovefloat,lw=0,vmin=-25,vmax=25,cmap='RdBu_r',s=6)
+    year,month,day = fracyear.fracyear_to_date(demtime)
+    plt.text(xmin+500,ymax-1.25e3,str(year)+'-'+str(month)+'-'+str(int(np.floor(day))),backgroundcolor='w',fontsize=8)
     plt.xlim([xmin,xmax])
     plt.ylim([ymin,ymax])
     plt.xticks([])
     plt.yticks([])
+    
+    if i == N-1:
+      ax = plt.subplot(gs[3,N])
+      cb = plt.colorbar(im,cax=ax)
+      cb.set_ticks(np.arange(-20,40,20))
+      cb.ax.tick_params(labelsize=8)
+      cb.set_label('Height above \n flotation (m)',fontsize=8)
   
-  ax = plt.subplot(gs[1,N])
-  cb = plt.colorbar(im,cax=ax)
-  cb.set_ticks(range(4,12))
-  cb.ax.tick_params(labelsize=8)
-  cb.set_label('Glacier speed (km/yr)',fontsize=8)
-  
-  plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+"_images.pdf"),FORMAT='PDF',dpi=800)
+  plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+"_images.png"),FORMAT='PNG',dpi=800)
   plt.close()
   
   del clims,year,month,day,imagefiles,xmin,xmax,ymin,ymax,xvel,yvel,vvel,vtime,DIRTSX,DIRLANDSAT
@@ -217,12 +279,12 @@ if plot_overview == 1:
   gs = matplotlib.gridspec.GridSpec(6,1)
 
   # Plot terminus
-  plt.subplot(gs[-3, :])
+  plt.subplot(gs[-2, :])
   ax = plt.gca()
   ind = np.where(calvingstyle[:,1] == 'Tabular')[0]
   plt.ylim([-4,4])
   if seasonal:
-    xTickPos = np.linspace(np.floor(time1)-0.25,np.floor(time2)-0.25,(np.floor(time2)-np.floor(time1))*2+1)
+    xTickPos = np.linspace(np.floor(time1)-0.25,np.ceil(time2)-0.25,(np.ceil(time2)-np.floor(time1))*2+1)
     ax.bar(xTickPos, [max(plt.ylim())-min(plt.ylim())] * len(xTickPos), (xTickPos[1]-xTickPos[0]), bottom=min(plt.ylim()), color=['0.8','w'],linewidth=0)
   for i in ind:
     if i == ind[1]:
@@ -241,6 +303,9 @@ if plot_overview == 1:
       plt.bar(float(calvingstyle[i,0])-0.03,8.0,width=0.03,color=[1,0.6,0.6],edgecolor='none',label='Nontabular',bottom=-4)
     elif i != 0:
       plt.bar(float(calvingstyle[i,0])-0.03,8.0,width=0.03,color=[1,0.6,0.6],edgecolor='none',bottom=-4)
+  if plot_images == 1:
+   for i in range(0,len(images)):
+      plt.plot([images_time[i][3],images_time[i][3]],ax.get_ylim(),'--',color='0.3')
   plt.legend(loc=2,fontsize=8,numpoints=1,handlelength=0.4,labelspacing=0.05,ncol=3,columnspacing=0.7,handletextpad=0.2)
   nonnan = np.where(~(np.isnan(terminus_val)))[0]
   plt.plot(terminus_time[nonnan],terminus_val[nonnan]/1e3,'ko',linewidth=1,markersize=2)
@@ -254,15 +319,20 @@ if plot_overview == 1:
   plt.ylabel('Terminus \n (km)',fontsize=8,fontname="Arial")
   ax.tick_params('both', length=8, width=1.5, which='major')
   ax.tick_params('both', length=4, width=1, which='minor')
-  plt.ylim(np.floor((np.min(terminus_val))/1e3),np.ceil((np.max(terminus_val))/1e3))
-  if plot_images == 1:
-   for i in range(0,len(images)):
-      plt.plot([images_time[i][3],images_time[i][3]],ax.get_ylim(),'--',color='0.3')
+  if glacier == 'Helheim':
+    plt.ylim([-2.2,2.2])
+  else:  
+    plt.ylim(np.floor((np.min(terminus_val))/1e3),np.ceil((np.max(terminus_val))/1e3))
+
 
   # Plot velocities
   ax = plt.subplot(gs[0:-3, :]) 
   #plt.plot([2000,2014],[0,0],'k')
   coloptions=['b','c','g','y','r']
+  if plot_images == 1:
+   for i in range(0,len(images)):
+      plt.plot([images_time[i][3],images_time[i][3]],[0,12],'--',color='0.3')
+      plt.text(images_time[i][3]+0.05,0.3,images_labels[i],fontsize=9,fontweight='bold')
   if normalized == 1:
     for i in range(0,len(dists_eul)):
       nonnan = np.where(~(np.isnan(vel_val[:,i])))[0]
@@ -289,40 +359,51 @@ if plot_overview == 1:
   plt.xticks(range(2000,2017),fontsize=8,fontname="Arial")
   ax.set_xticklabels([])
   if seasonal:
-    xTickPos = np.linspace(np.floor(time1)-0.25,np.floor(time2)-0.25,(np.floor(time2)-np.floor(time1))*2+1)
+    xTickPos = np.linspace(np.floor(time1)-0.25,np.ceil(time2)-0.25,(np.ceil(time2)-np.floor(time1))*2+1)
     ax.bar(xTickPos, [max(plt.ylim())-min(plt.ylim())] * len(xTickPos), (xTickPos[1]-xTickPos[0]), bottom=min(plt.ylim()), color=['0.8','w'],linewidth=0)
   plt.xlim([time1,time2])
+
+
+  # Plot thinning rates from velocities
+  plt.subplot(gs[-3, :])
+  floatheight=flotation.height(zb[ind_eul])
+  ax = plt.gca()
+  plt.ylim([-100,100])
   if plot_images == 1:
    for i in range(0,len(images)):
       plt.plot([images_time[i][3],images_time[i][3]],ax.get_ylim(),'--',color='0.3')
-      plt.text(images_time[i][3]+0.05,0.3,images_labels[i],fontsize=9,fontweight='bold')
-
-  # Plot thinning rates from velocities
-  plt.subplot(gs[-2, :])
-  ax = plt.gca()
-  plt.ylim([-100,100])
   if seasonal:
-    xTickPos = np.linspace(np.floor(time1)-0.25,np.floor(time2)-0.25,(np.floor(time2)-np.floor(time1))*2+1)
+    xTickPos = np.linspace(np.floor(time1)-0.25,np.ceil(time2)-0.25,(np.ceil(time2)-np.floor(time1))*2+1)
     ax.bar(xTickPos, [max(plt.ylim())-min(plt.ylim())] * len(xTickPos), (xTickPos[1]-xTickPos[0]), bottom=min(plt.ylim()), color=['0.8','w'],linewidth=0)
-  plt.plot([time1,time2],[0,0],'k',linewidth=0.5)
-  plt.errorbar(dH_time,dH[:,0],dH[:,1],marker='o',linestyle='none',color='k',markersize=2)
+    #plt.plot(dH_time,dH[:,0]-dH[0,0],marker='o',linestyle='none',color='r',markersize=3)
+  if glacier == 'Helheim':
+    plt.plot([time1,time2],[floatheight[0]-zpt_wv[0,0],floatheight[0]-zpt_wv[0,0]],'b:',linewidth=1)
+    plt.plot(time_wv,zpt_wv[:,0]-zpt_wv[0,0],'bo',markersize=3)
+    plt.plot(time_atm,zpt_atm[:,0]-zpt_wv[0,0],'b+',markersize=4)
+    plt.plot(time_wv,zpt_wv[:,1]-zpt_wv[0,1],'co',markersize=3)
+    plt.plot(time_atm,zpt_atm[:,1]-zpt_wv[0,1],'c+',markersize=4)
+  elif glacier == 'Kanger':
+    plt.plot([time1,time2],[floatheight[0]-zpt_atm[4,0],floatheight[0]-zpt_atm[4,0]],'b:',linewidth=1)
+    plt.plot(time_wv,zpt_wv[:,0]-zpt_atm[4,0],'bo',markersize=3)
+    plt.plot(time_atm,zpt_atm[:,0]-zpt_atm[4,0],'b+',markersize=4)
+    plt.plot(time_wv,zpt_wv[:,1]-zpt_atm[4,1],'co',markersize=3)
+    plt.plot(time_atm,zpt_atm[:,1]-zpt_atm[4,1],'c+',markersize=4)
   x_formatter = matplotlib.ticker.ScalarFormatter(useOffset=False)
   ax.xaxis.set_major_formatter(x_formatter)
   ax.xaxis.set_minor_locator(AutoMinorLocator(2))
   ax.yaxis.set_minor_locator(AutoMinorLocator(2))
+  ax.set_xticklabels([])
   plt.xticks(range(2000,2016),fontsize=8,fontname="Arial")
   plt.xlim([time1,time2])
-  plt.yticks(np.arange(-80,120,40),fontsize=8,fontname="Arial")
-  plt.ylabel('dH/dt \n (m/yr)',fontsize=8,fontname="Arial")
+  plt.ylabel('Relative elevation (m)',fontsize=8,fontname="Arial")
   ax.tick_params('both', length=8, width=1.5, which='major')
   ax.tick_params('both', length=4, width=1, which='minor')
   if glacier == 'Helheim':
-    plt.ylim([-40,90])
+    plt.ylim([-25,5])
+    plt.yticks(np.arange(-20,20,10),fontsize=8,fontname="Arial")
   elif glacier == 'Kanger':
-    plt.ylim([-80,40])
-  if plot_images == 1:
-   for i in range(0,len(images)):
-      plt.plot([images_time[i][3],images_time[i][3]],ax.get_ylim(),'--',color='0.3')
+    plt.yticks(np.arange(-40,20,20),fontsize=8,fontname="Arial")
+    plt.ylim([-50,10])
 
   # Plot presence of rigid melange
   plt.subplot(gs[-1, :])
@@ -351,7 +432,7 @@ if plot_overview == 1:
   plt.xticks(range(2000,2017),fontsize=8,fontname="Arial")
   ax.set_xticklabels([])
   #if seasonal:
-  #  xTickPos = np.linspace(np.floor(time1)-0.25,np.floor(time2)-0.25,(np.floor(time2)-np.floor(time1))*2+1)
+  #  xTickPos = np.linspace(np.floor(time1)-0.25,np.floor(time2)-0.25,(np.ceil(time2)-np.ceil(time1))*2+1)
   #  ax.bar(xTickPos, [max(plt.ylim())-min(plt.ylim())] * len(xTickPos), (xTickPos[1]-xTickPos[0]), bottom=min(plt.ylim()), color=['0.8','w'],linewidth=0)
   for i in range(2000,2017):
     labels.append('Jan \n'+str(i))
@@ -510,7 +591,7 @@ if plot_radargram == 1:
 if plot_bed == 1:
 
   # Get morlighem bed
-  zb_morlighem = bed.morlighem_pts(x,y,glacier,'geoid')
+  zb_morlighem = bed.morlighem_pts(x,y,verticaldatum='geoid')
   if glacier == 'Helheim':
     ind = np.where(x > 309900)[0]
     zb_morlighem[ind] = 'NaN'
