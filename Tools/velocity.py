@@ -1,14 +1,20 @@
-#Various scripts for processing and pulling Helheim velocity data:
-#
-# velocity_at_eulpoints(xpt,ypt): get velocity magnitude timeseries at an Eulerian point
-# divergence_at_eulpoints(xpt,ypt): get divx,divy at Eulerian points through time
-# velocity_at_lagpoints(x,y,dists,pts): get velocity timeseries at a Lagrangian point
-# velocity_along_flowline(x,y): get velocity timeseries along flowline
-# inversion_3D(file_velocity_in, dir_velocity_out): output velocity data for ElmerSolver
-# inversion_2D(x,y,dist,file_velocity_in, dir_velocity_out): output velocity along flowline for ElmerSolver
-#
-#LMK, UW, 04/01/2014
+'''
+Various scripts for processing and pulling the Helheim and Kanger velocity data:
 
+  velocity_at_eulpoints(xpt,ypt): get velocity magnitude timeseries 
+  			at an Eulerian point
+  divergence_at_eulpoints(xpt,ypt): get divx,divy at Eulerian points 
+  			through time
+  velocity_at_lagpoints(x,y,dists,pts): get velocity timeseries at 
+  			a Lagrangian point
+  velocity_along_flowline(x,y): get velocity timeseries along flowline
+  inversion_3D(file_velocity_in, dir_velocity_out): output velocity 
+  			data for ElmerSolver
+  inversion_2D(x,y,dist,file_velocity_in, dir_velocity_out): output 
+  			velocity along flowline for ElmerSolver
+ 
+LMK, UW, 04/01/2014
+'''
 import os
 import math
 import sys
@@ -21,10 +27,12 @@ import geodat, icefronts, dist, geotiff, fracyear
 #########################################################################################
 def convert_binary_to_geotiff(glacier):
 
-  # I'm getting tired of unpacking Ian's binary velocity files every time I need to use them,
-  # so I've set up a script to convert all of them to geotiff. Then the "geodat" module 
-  # checks to see if there are geotiffs before unpacking the binary files.
-  
+  '''
+I'm getting tired of unpacking Ian's binary velocity files every time 
+I need to use them, so I've set up a script to convert all of them to 
+geotiff. Then the "geodat" module checks to see if there are geotiffs 
+before unpacking the binary files.
+  '''
 
   DIRTOP_TSX = os.path.join(os.getenv("DATA_HOME"),"Velocity/TSX/"+glacier+"/")
   DIRTOP_RADARSAT = os.path.join(os.getenv("DATA_HOME"),"Velocity/RADARSAT/Greenland/")
@@ -44,7 +52,6 @@ def convert_binary_to_geotiff(glacier):
       date = "%04d%02d%02d" % (year,month,day)
     
       # Save as geotiff
-
       geotiff.write_from_grid(x,y,np.flipud(v),-2.0e9,DIRTOP_TSX+"TIF/"+file+"_"+date+"_v.tif")
       geotiff.write_from_grid(x,y,np.flipud(vx),-2.0e9,DIRTOP_TSX+"TIF/"+file+"_"+date+"_vx.tif")
       geotiff.write_from_grid(x,y,np.flipud(vy),-2.0e9,DIRTOP_TSX+"TIF/"+file+"_"+date+"_vy.tif")
@@ -72,15 +79,16 @@ def convert_binary_to_geotiff(glacier):
 #########################################################################################
 def velocity_at_eulpoints(xpt,ypt,glacier,data='all',xy_velocities='False'):
 
-  # Finds velocity at nearest gridcell to xpt, ypt for all velocity maps. Output is 
-  # velocity at xpt, ypt through time.
+  '''
+  Finds velocity at nearest gridcell to xpt, ypt for all 
+  velocity maps. Output is velocity at xpt, ypt through time.
 
   # Inputs:
   # xpt, ypt: coordinates of flowline
   # glacier: glacier name
   # data: TSX, Radarsat, or all data
   # xy_velocities: True or False; do you want the x,y velocities too?
-
+  '''
   # Select data type
   if data == 'all':
     data = ['TSX','RADARSAT']
@@ -165,11 +173,25 @@ def velocity_at_eulpoints(xpt,ypt,glacier,data='all',xy_velocities='False'):
     return vpt_sort,tpt_sort,ept_sort
   
 #########################################################################################
-def velocity_along_flowline(xf,yf,glacier,cutoff='terminus',data='all'):      
+def velocity_along_flowline(xf,yf,dists,glacier,cutoff='terminus',data='all'):      
   
-  # Find velocity along flowline with coordinates xf, yf. The variable "dists" (distance 
-  # along flowline) is used to determine which points to throw out in front if the ice front.
-  # The output is velocity along the flowline through time.
+  '''
+  Find velocity along flowline with coordinates xf, yf. The variable "dists" (distance 
+  along flowline) is used to determine which points to throw out in front if the ice front.
+  The output is velocity along the flowline through time.
+  
+  Inputs:
+  xf,yf: flowline positions
+  dists: distances along flowline
+  glacier: Kanger or Helheim
+  cutoff: cutoff velocities in front of terminus if set to 'terminus'
+  data: 'all' data, or just 'TSX' or 'RADARSAT' 
+  
+  Outputs:
+  vpt_sort: velocities along flowline
+  tpt_sort: time for velocities
+  term_sort: interpolated terminus positions for velocities
+  '''
   
   if data == 'all':
     data = ['TSX','RADARSAT']
@@ -184,8 +206,7 @@ def velocity_along_flowline(xf,yf,glacier,cutoff='terminus',data='all'):
   # Load terminus profiles so we can cutoff velocities in front of the terminus #
   ###############################################################################
 
-  dists = dist.transect(xf,yf)
-  term_values, term_time = icefronts.distance_along_flowline(xf,yf,dists,glacier,'icefront')
+  term_values, term_time = icefronts.distance_along_flowline(xf,yf,dists,glacier,type='icefront')
   
   ###################
   # Load velocities #
@@ -198,8 +219,9 @@ def velocity_along_flowline(xf,yf,glacier,cutoff='terminus',data='all'):
     if type == 'RADARSAT':
       DIRTOP = os.path.join(os.getenv("DATA_HOME"),"Velocity/RADARSAT/Greenland/")
     elif type == 'TSX':
-      DIRTOP = os.path.join(os.getenv("DATA_HOME"),"Velocity/TSX/"+glacier+"/")
-    
+      #DIRTOP = os.path.join(os.getenv("DATA_HOME"),"Velocity/TSX/"+glacier+"/")
+      DIRTOP = "/Volumes/insar4/ian/TSX/Helheim/velocityNewDEM/Auto/"
+       
     DIRs=os.listdir(DIRTOP)
     for DIR in DIRs:
       if DIR.startswith('track') or DIR.startswith('winter'):
@@ -356,6 +378,23 @@ def velocity_at_lagpoints(xf,yf,pts,glacier,data='all'):
 
 #########################################################################################
 def tsx_near_time(time,glacier,just_filename = False):
+
+  '''
+  Find TSX data closest to "time".
+  
+  Inputs:
+  time: time that you want data
+  glacier: glacier name (Kanger or Helheim)
+  just_filename: option to only return the filename
+
+  Outputs:
+  x,y: grid coordinates
+  vx,vy: x and y velocities
+  v: velocity magnitudes for gird
+  time: time of transect
+  interval: time between radar images used in velocity calculations
+
+  '''
 
   DIR_TSX = os.path.join(os.getenv("DATA_HOME"),"Velocity/TSX/"+glacier+"/")
 
