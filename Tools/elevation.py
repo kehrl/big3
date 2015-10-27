@@ -323,6 +323,7 @@ def worldview_grid(glacier,xmin=-np.Inf,xmax=np.Inf,ymin=-np.Inf,ymax=np.Inf,res
   for i in range(0,len(dates)):
     date = dates[i]
     n = 1 # Count number of files for that date
+    ngrid = np.ones([ny,nx])
     time[i] = fracyear.date_to_fracyear(int(date[0:4]),int(date[4:6]),float(date[6:8]))
     for DIR in np.r_[TDXDIRs,WVDIRs]:
       if DIR.startswith(date) and DIR.endswith(filestring): 
@@ -343,7 +344,12 @@ def worldview_grid(glacier,xmin=-np.Inf,xmax=np.Inf,ymin=-np.Inf,ymax=np.Inf,res
         zwv_on_grid[zwv_on_grid=='NaN']=0
         
         if n > 1: # there is more than one file for that date, so we need to treat it differently
-          zs[:,:,i] = (zs[:,:,i]*(n-1)+zwv_on_grid)/n
+          nonnan = np.array(np.where(zwv_on_grid != 0))
+          for [k,j] in nonnan.T:
+            if np.isnan(zs[k,j,i]):
+              zs[k,j,i] = zwv_on_grid[k,j]
+            else:
+              zs[k,j,i] = (zs[k,j,i]*(ngrid[k,j]-1)+zwv_on_grid[k,j])/ngrid[k,j]
         else:
           zs[:,:,i] = zwv_on_grid
           n = n+1
@@ -385,8 +391,10 @@ def worldview_along_flowline(xpts,ypts,glacier,years='all',cutoff='terminus',ver
   # Find file ending based on whether we want elevation relative to geoid or ellipsoid
   if verticaldatum == 'geoid':
     filestring = 'trans-adj.tif'
-  else:
+  elif verticaldatum == 'ellipsoid':
     filestring = 'trans.tif'
+  else:
+    sys.exit("Unknown vertical datum.")
   
   # Set up output dictionary
   pts = {}
@@ -506,9 +514,10 @@ def worldview_at_pts(xpts,ypts,glacier,years='all',verticaldatum='geoid',cutoff=
   
   if method == 'linear':
     wv = worldview_along_flowline(xpts,ypts,glacier,years=years,cutoff=cutoff,verticaldatum=verticaldatum,method=method)
+    dates = np.sort(wv.keys())
     time = np.zeros(len(dates))
     zpts = np.zeros([len(dates),len(xpts)])
-    dates = np.sort(wv.keys())
+    zpts_std = np.zeros([len(dates),len(xpts)])
     for i in range(0,len(dates)):
       date = dates[i]
       time[i] = fracyear.date_to_fracyear(float(date[0:4]),float(date[4:6]),float(date[6:8]))
@@ -632,12 +641,14 @@ def dem_continuous(glacier,date,verticaldatum='geoid',fillin=False,blur=False):
   
   # Load correct file for geoid or ellipsoid heights
   if verticaldatum == 'geoid':
-    fileend = '-adj.tif'
+    fileend = 'trans-adj.tif'
+  elif verticaldatum == 'ellipsoid':
+    fileend = 'trans.tif'
   else:
-    fileend = '.tif'
+    sys.exit("Unknown vertical datum.")
   
   # Gimp filename  
-  gimpfile = os.path.join(os.getenv("DATA_HOME"),'Elevation/Gimp/'+subset+fileend)
+  gimpfile = os.path.join(os.getenv("DATA_HOME"),'Elevation/Gimp/'+subset+fileend[5:])
   
   # Directories for high res DEMs
   OUTDIR = os.path.join(os.getenv("DATA_HOME"),"Elevation/MosaicDEMs/"+glacier+"/")
@@ -697,7 +708,7 @@ def dem_continuous_flowline(xf,yf,glacier,date,verticaldatum='geoid',fillin='non
   '''
   
   # Get grid for that date 
-  xg,yg,zgrid = dem_continuous(glacier,date,verticaldatum,fillin,blur=False)
+  xg,yg,zgrid = dem_continuous(glacier,date,verticaldatum=verticaldatum,fillin=fillin,blur=False)
   
   # Interpolate grid onto flowline
   dem = scipy.interpolate.RegularGridInterpolator([yg,xg],zgrid)
