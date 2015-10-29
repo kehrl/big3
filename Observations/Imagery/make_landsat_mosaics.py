@@ -28,7 +28,7 @@ glacier = args[1][:] # Options: Kanger, Helheim
 if glacier == 'Helheim':
   extent='280000 -2597000 320000 -2560000'
 elif glacier == 'Kanger':
-  extent='457000 -2308000 516000 -2269000'
+  extent='450000 -2308000 516000 -2269000'
 else:
   sys.exit("Unknown glacier")
 
