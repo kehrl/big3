@@ -26,7 +26,7 @@ glacier = args[1][:] # Options: Kanger, Helheim
 # Set extent for cropping based on glacier #
 ############################################
 if glacier == 'Helheim':
-  extent='280000 -2597000 320000 -2560000'
+  extent='270000 -2597000 320000 -2550000'
 elif glacier == 'Kanger':
   extent='450000 -2308000 516000 -2269000'
 else:
