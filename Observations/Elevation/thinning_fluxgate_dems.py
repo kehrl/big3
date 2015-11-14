@@ -7,134 +7,131 @@ import os
 import sys
 sys.path.append(os.path.join(os.getenv("CODE_HOME"),"Util/Modules/"))
 sys.path.append(os.path.join(os.getenv("CODE_HOME"),"BigThreeGlaciers/Tools/"))
-import glacier_flowline, elevation, icefronts, fluxgate
+import glacier_flowline, elevation, icefronts, fluxgate, climate
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import matplotlib.cm as cmx
 import matplotlib
 import geotiff
+ 
 
-glacier = 'Helheim' 
+###########
+# WV DEMs #
+###########
 
-if glacier == 'Helheim':
-  xmin = 285000.0
-  xmax = 320000.0
-  ymin = -2588000.0
-  ymax = -2566000.0
-  ximage,yimage,zimage = geotiff.read(os.path.join(os.getenv("DATA_HOME"),"Mosaics/Helheim/mosaicHelheim.2014-159.148.38725_1-20mgeo.tif"))
-elif glacier == 'Kanger':
-  xmin = 449800.0
-  xmax = 503000.0
-  ymin = -2302000.0
-  ymax = -2266000.0
-  ximage,yimage,zimage = geotiff.read(os.path.join(os.getenv("DATA_HOME"),"Mosaics/Kanger/mosaicKang.2014-160.163.38740_1-20mgeo.tif"))
-    
-###########################
-# dH/dt from the fluxgate #
-###########################
-
-flux_time_gate1_smith,flux_dH_gate1_smith = fluxgate.fluxgate_thinning(glacier,"fluxgate1",bedsource='smith')
-flux_time_gate1_cresis,flux_dH_gate1_cresis = fluxgate.fluxgate_thinning(glacier,"fluxgate1",bedsource='cresis')
-x_gate1,y_gate1 = fluxgate.fluxbox_geometry(glacier,"fluxgate1")
-
-flux_time_gate2_smith,flux_dH_gate2_smith = fluxgate.fluxgate_thinning(glacier,"fluxgate2",bedsource='smith')
-flux_time_gate2_cresis,flux_dH_gate2_cresis = fluxgate.fluxgate_thinning(glacier,"fluxgate2",bedsource='cresis')
-x_gate2,y_gate2 = fluxgate.fluxbox_geometry(glacier,"fluxgate2")
-
-flux_time_gate3_smith,flux_dH_gate3_smith = fluxgate.fluxgate_thinning(glacier,"fluxgate3",bedsource='smith')
-flux_time_gate3_cresis,flux_dH_gate3_cresis = fluxgate.fluxgate_thinning(glacier,"fluxgate3",bedsource='cresis')
-x_gate3,y_gate3 = fluxgate.fluxbox_geometry(glacier,"fluxgate3")
-
-######################
-# dH/dt from WV DEMs #
-######################
-
-# Load WV DEMs	
-xwv,ywv,zwv,timewv = elevation.worldview_grid(glacier,xmin,xmax,ymin,ymax,years='all',verticaldatum='ellipsoid')
-
-wv_time_gate1,wv_dH_gate1 = fluxgate.dem_thinning(glacier,xwv,ywv,zwv,timewv,"fluxgate1")
-wv_time_gate2,wv_dH_gate2 = fluxgate.dem_thinning(glacier,xwv,ywv,zwv,timewv,"fluxgate2")
-wv_time_gate3,wv_dH_gate3 = fluxgate.dem_thinning(glacier,xwv,ywv,zwv,timewv,"fluxgate3")
+# Load DEMs	
+xwv_H,ywv_H,zwv_H,timewv_H = elevation.dem_grid('Helheim',285000.0,320000.0,-2588000.0,-2566000.0,years='all',verticaldatum='ellipsoid')
+xwv_K,ywv_K,zwv_K,timewv_K = elevation.dem_grid('Kanger',449800.0,503000.0,-2302000.0,-2266000.0,years='all',verticaldatum='ellipsoid',method='nearest')
 
 ###########################
-# Plot dH/dt through time #
+# Load terminus positions #
 ###########################
+
+x_H,y_H,zb_H,dists_H = glacier_flowline.load('Helheim',shapefilename='flowline_flightline')
+x_K,y_K,zb_K,dists_K = glacier_flowline.load('Kanger')
+
+terminus_val_H, terminus_time_H = icefronts.distance_along_flowline(x_H,y_H,dists_H,'Helheim',type='icefront',time1=2008.,time2=2016.)
+terminus_val_K, terminus_time_K = icefronts.distance_along_flowline(x_K,y_K,dists_K,'Helheim',type='icefront',time1=2008.,time2=2016.)
+
+##################
+# Load fluxgates #
+##################
+
+xgate_H,ygate_H = fluxgate.fluxbox_geometry('Helheim',"fluxgate3")
+xgate_K,ygate_K = fluxgate.fluxbox_geometry('Kanger',"fluxgate3")
+
+##################
+# SMB from RACMO #
+##################
+
+xrac_H,yrac_H,smbrac_H,timerac_H = climate.racmo_at_pts(np.mean(xgate_H),np.mean(ygate_H),'smb',filt_len='none')
+xrac_K,yrac_K,smbrac_K,timerac_K = climate.racmo_at_pts(np.mean(xgate_K),np.mean(ygate_K),'smb',filt_len='none')
+
+
+###############################################
+# dH/dt from the fluxgate, WV, and comparison #
+###############################################
+
+# Helheim
+flux_time_H,flux_dH_H = fluxgate.fluxgate_thinning('Helheim',"fluxgate3",bedsource='smith')
+wv_time_H,wv_dH_H = fluxgate.dem_thinning('Helheim',xwv_H,ywv_H,zwv_H,timewv_H,"fluxgate3")
+dH_time_H,dH_flux_H,dH_dem_H,dH_smb_H= fluxgate.compare_thinning_rates(wv_time_H,wv_dH_H,flux_time_H,flux_dH_H,timerac_H,smbrac_H,rho_i=900.0)
+
+
+# Kanger
+flux_time_K,flux_dH_K = fluxgate.fluxgate_thinning('Kanger',"fluxgate3",bedsource='cresis')
+wv_time_K,wv_dH_K = fluxgate.dem_thinning('Kanger',xwv_K,ywv_K,zwv_K,timewv_K,"fluxgate3")
+dH_time_K,dH_flux_K,dH_dem_K,dH_smb_K = fluxgate.compare_thinning_rates(wv_time_K,wv_dH_K,flux_time_K,flux_dH_K,timerac_K,smbrac_K,rho_i=900.0)
+
+plt.figure(figsize=(3,3))
+matplotlib.rc('font',family='Arial')
+plt.plot([-70,70],[-70,70],c='0.7',lw=2)
+plt.errorbar(dH_dem_K[:,0],dH_flux_K[:,0],yerr=dH_flux_K[:,1],xerr=dH_dem_K[:,1],fmt='bo',markersize=3,zorder=3)
+plt.errorbar(dH_dem_H[:,0],dH_flux_H[:,0],yerr=dH_flux_H[:,1],xerr=dH_dem_H[:,1],fmt='ko',markersize=3,zorder=3)
+plt.xticks(np.arange(-60,80,20),fontsize=8)
+plt.yticks(np.arange(-60,80,20),fontsize=8)
+plt.ylim([-70,70])
+plt.xlim([-70,70])
+plt.ylabel('Flux thinning rate (m/yr)',fontsize=8)
+plt.xlabel('DEM thinning rate (m/yr)',fontsize=8)
+plt.tight_layout()
+plt.legend(loc=4,numpoints=1,fontsize=8)
+plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/"+"Thinning_comparison.pdf"),FORMAT='PDF')
+plt.close()
+
+plt.figure(figsize=(3,3))
+coloptions = ['m','r','y','g','b','c','k']
+matplotlib.rc('font',family='Arial')
+plt.plot([0,0],[-150,150],'k')
+plt.plot([-4,4],[0,0],'k')
+interped = np.interp(flux_time_H,terminus_time_H,terminus_val_H)
+for i in range(6,len(interped)):
+  ind = int(np.floor(flux_time_H[i])-2009.0)
+  plt.errorbar(interped[i]/1e3,flux_dH_H[i,0],fmt='o',yerr=flux_dH_H[i,1],label='Flux',markersize=3,color=coloptions[ind])
+interped = np.interp(wv_time_H[:,0],terminus_time_H,terminus_val_H)
+plt.plot(interped/1e3,wv_dH_H[:,0],'yo',label="DEM",markersize=3)
+plt.xlabel('Terminus position (km)',fontsize=8)
+plt.ylabel('Thinning rate (m/yr)',fontsize=8)
+plt.yticks(np.arange(-150,200,75),fontsize=8)
+plt.xticks(np.arange(-4,5,1),fontsize=8)
+plt.xlim([-2,2])
+plt.ylim([-150,150])
+plt.legend(loc=2,fontsize=8,numpoints=1)
+plt.tight_layout()
+plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/Helheim_terminus_thinning.pdf"),FORMAT='PDF')
+plt.close()
+
+
+####################################################################
+# OK. Let's try to really compare DEM and inferred thinning rates. #
+####################################################################
 
 time1 = 2008.5
 time2 = 2015.5
 plt.figure(figsize=(6.5,6.5))
-gs = matplotlib.gridspec.GridSpec(3,1)
 
-plt.subplot(gs[0,:])
 ax = plt.gca()
-nonnan = np.where(~(np.isnan(flux_dH_gate3_smith[:,0])))[0]
-plt.errorbar(flux_time_gate3_smith[nonnan],flux_dH_gate3_smith[nonnan,0],flux_dH_gate3_smith[nonnan,1],linestyle='dashed',marker='o',color='b',markersize=3)
-plt.plot(flux_time_gate3_cresis,flux_dH_gate3_cresis[:,0],'k+',markersize=3)
-plt.plot(wv_time_gate3[:,0],wv_dH_gate3[:,0],'ko',markersize=3)
-plt.xticks(range(2000,2017),fontsize=8,fontname="Arial")
-ax.set_xticklabels([])
-
-plt.subplot(gs[1,:])
-ax = plt.gca()
-nonnan = np.where(~(np.isnan(flux_dH_gate1_smith[:,0])))[0]
-plt.errorbar(flux_time_gate1_smith[nonnan],flux_dH_gate1_smith[nonnan,0],flux_dH_gate1_smith[nonnan,1],linestyle='dashed',marker='o',color='g',markersize=3)
-plt.plot(flux_time_gate1_cresis,flux_dH_gate1_cresis[:,0],'k+',markersize=3)
-plt.plot(wv_time_gate1[:,0],wv_dH_gate1[:,0],'ko',markersize=3)
-plt.xticks(range(2000,2017),fontsize=8,fontname="Arial")
-plt.ylabel("dH/dt (m/yr)",fontsize=9,fontname='Arial')
-ax.set_xticklabels([])
-
-plt.subplot(gs[2,:])
-ax = plt.gca()
-nonnan = np.where(~(np.isnan(flux_dH_gate2_smith[:,0])))[0]
-plt.errorbar(flux_time_gate2_smith[nonnan],flux_dH_gate2_smith[nonnan,0],flux_dH_gate2_smith[nonnan,1],linestyle='dashed',marker='o',color='r',markersize=3)
-plt.plot(flux_time_gate2_cresis,flux_dH_gate2_cresis[:,0],'k+',markersize=3)
-plt.plot(wv_time_gate2[:,0],wv_dH_gate2[:,0],'ko',markersize=3)
+nonnan = np.where(~(np.isnan(flux_dH_gate3[:,0])))[0]
+plt.errorbar(wv_time_gate3[:,0],wv_dH_gate3[:,0],xerr=wv_time_gate3[:,1],yerr=wv_dH_gate3[:,1],fmt='o',c='r',markersize=3)
+plt.errorbar(flux_time_gate3[nonnan],flux_dH_gate3[nonnan,0],yerr=flux_dH_gate3[nonnan,1],fmt='o-',color='k',markersize=3)
+#plt.plot(flux_time_gate3_cresis,flux_dH_gate3_cresis[:,0],'g+',markersize=3)
 x_formatter = matplotlib.ticker.ScalarFormatter(useOffset=False)
 ax.xaxis.set_major_formatter(x_formatter)
-labels=[]
-for i in range(2000,2017):
-  labels.append('Jan \n'+str(i))
-plt.xticks(range(2000,2017))
-ax.set_xticklabels(labels,fontsize=8,fontname='Arial')
 
-for i in range(0,3):
-  plt.subplot(gs[i,:])
-  plt.xlim([time1,time2])
-  plt.ylim([-100,100])
-  plt.yticks(np.arange(-75,100,25),fontsize=8)
-  ax = plt.gca()
-  xTickPos = np.linspace(np.floor(time1)-0.25,np.floor(time2)-0.25,(np.floor(time2)-np.floor(time1))*2+1)
-  ax.bar(xTickPos, [max(plt.ylim())-min(plt.ylim())] * len(xTickPos), (xTickPos[1]-xTickPos[0]), bottom=min(plt.ylim()), color=['0.8','w'],linewidth=0)
+nonnan = np.where(~(np.isnan(flux_dH_gate3[:,0])))[0]
+plt.errorbar(wv_time_gate1[:,0],wv_dH_gate1[:,0],xerr=wv_time_gate1[:,1],yerr=wv_dH_gate1[:,1],fmt='o',c='r',markersize=3)
+plt.errorbar(flux_time_gate1[nonnan],flux_dH_gate1[nonnan,0],flux_dH_gate1[nonnan,1],fmt='o',color='m',markersize=3)
+plt.xlim([time1,time2])
 
-plt.subplots_adjust(hspace=0.05,wspace=0) 
-plt.savefig(os.path.join(os.getenv("HOME"),'Bigtmp/'+glacier+'_thinning_timeline.pdf'),FORMAT='PDF')
-plt.close()
-
-#####################
-# Plot overview map #
-#####################
-
-plt.figure(figsize=(4,3))
-plt.imshow(zimage,extent=[np.min(ximage),np.max(ximage),np.min(yimage),np.max(yimage)],origin='lower',cmap='Greys_r')
-ax = plt.gca()
-plt.xlim([xmin,xmax])
-plt.ylim([ymin,ymax])
-path = matplotlib.path.Path(np.column_stack([x_gate1,y_gate1]))
-patch = matplotlib.patches.PathPatch(path,facecolor='g',edgecolor='k',alpha=0.4,lw=0)
-ax.add_patch(patch)
-plt.plot(x_gate1,y_gate1,'k',linewidth=1)
-path = matplotlib.path.Path(np.column_stack([x_gate2,y_gate2]))
-patch = matplotlib.patches.PathPatch(path,facecolor='r',edgecolor='k',alpha=0.4,lw=0)
-ax.add_patch(patch)
-plt.plot(x_gate2,y_gate2,'k',linewidth=1)
-path = matplotlib.path.Path(np.column_stack([x_gate3,y_gate3]))
-patch = matplotlib.patches.PathPatch(path,facecolor='b',edgecolor='k',alpha=0.4,lw=0)
-ax.add_patch(patch)
-plt.plot(x_gate3,y_gate3,'k',linewidth=1)
-plt.xticks([])
-plt.yticks([])
-
-plt.savefig(os.path.join(os.getenv("HOME"),'Bigtmp/'+glacier+'_thinning_overview.pdf'),FORMAT='PDF',dpi=600)
-plt.close()
+plt.figure()
+plt.plot([-150,80],[-150,80],'k--',lw=1.5)
+plt.errorbar(dH_dem_gate1[:,0],dH_flux_gate1[:,0],xerr=dH_dem_gate1[:,1],yerr=dH_flux_gate1[:,1],fmt='go')
+plt.errorbar(dH_dem_gate3[:,0]*10,dH_flux_gate3[:,0],xerr=dH_dem_gate3[:,1],yerr=dH_flux_gate3[:,1],fmt='ro')
+plt.gca().set_aspect('equal', adjustable='box')
+plt.xlim([-120,80])
+plt.ylim([-120,80])
+plt.xlabel('DEM thinning rate (m/yr)',fontsize=10)
+plt.ylabel('Velocity thinning rate (m/yr)',fontsize=10)
+plt.xticks(np.arange(-100,120,40),fontsize=10)
+plt.yticks(np.arange(-100,120,40),fontsize=10)
