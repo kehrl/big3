@@ -22,7 +22,7 @@ import scipy.interpolate
 import numpy as np
 sys.path.append(os.path.join(os.getenv("CODE_HOME"),"Util/Modules"))
 sys.path.append(os.path.join(os.getenv("CODE_HOME"),"BigThreeGlaciers/Tools"))
-import geodat, icefronts, dist, geotiff, fracyear
+import geodat, icefronts, dist, geotiff, fracyear, icemask
 
 #########################################################################################
 def convert_binary_to_geotiff(glacier):
@@ -219,8 +219,7 @@ def velocity_along_flowline(xf,yf,dists,glacier,cutoff='terminus',data='all'):
     if type == 'RADARSAT':
       DIRTOP = os.path.join(os.getenv("DATA_HOME"),"Velocity/RADARSAT/Greenland/")
     elif type == 'TSX':
-      #DIRTOP = os.path.join(os.getenv("DATA_HOME"),"Velocity/TSX/"+glacier+"/")
-      DIRTOP = "/Volumes/insar4/ian/TSX/Helheim/velocityNewDEM/Auto/"
+      DIRTOP = os.path.join(os.getenv("DATA_HOME"),"Velocity/TSX/"+glacier+"/")
        
     DIRs=os.listdir(DIRTOP)
     for DIR in DIRs:
@@ -275,7 +274,7 @@ def velocity_along_flowline(xf,yf,dists,glacier,cutoff='terminus',data='all'):
 
 
 ##########################################################################################
-def velocity_at_lagpoints(xf,yf,pts,glacier,data='all'):
+def velocity_at_lagpoints(xf,yf,dists,pts,glacier,data='all'):
   
   # Find velocity at lagrangian points with distance "pts" behind (or in front) of the 
   # glacier terminus.
@@ -295,8 +294,7 @@ def velocity_at_lagpoints(xf,yf,pts,glacier,data='all'):
   # Load terminus positions #
   ###########################
   
-  dists = dist.transect(xf,yf)
-  term_values, term_time = icefronts.distance_along_flowline(xf,yf,dists,glacier,'icefront')
+  term_values, term_time = icefronts.distance_along_flowline(xf,yf,dists,glacier,type='icefront')
   
   ###################
   # LOAD velocities #
@@ -422,46 +420,107 @@ def tsx_near_time(time,glacier,just_filename = False):
 
 
 #########################################################################################
-def variability(x,y,time1,time2,glacier):
+def variability(glacier,time1,time2):
 
   DIR_TSX = os.path.join(os.getenv("DATA_HOME"),"Velocity/TSX/"+glacier+"/")
-  DIR_RADARSAT = os.path.join(os.getenv("DATA_HOME"),"Velocity/RADARSAT/Greenland/")
 
+  if glacier == 'Helheim':
+    xmin = 270000.0
+    xmax = 354900.0
+    ymin = -2601000.0
+    ymax = -2541000.0
+  elif glacier == 'Kanger':
+    xmin = 457000.0
+    xmax = 517000.0
+    ymin = -2319100.0
+    ymax = -2247100.0
+  
+  dx = dy = 100.
+  nx = int(np.ceil((xmax-xmin)/dx)+1)
+  x = np.linspace(xmin,(nx-1)*dx+xmin,nx)
+  ny = int(np.ceil((ymax-ymin)/dx)+1)
+  y = np.linspace(ymin,(ny-1)*dy+ymin,ny)
+  xgrid,ygrid = np.meshgrid(x,y) 
+  coords = np.column_stack([ygrid.flatten(),xgrid.flatten()])
+ 
   #################
   # LOAD TSX Data #
   #################
 
   DIRs=os.listdir(DIR_TSX)
-  tpt=[]
   
   # Get number of velocity files
-  m=0
+  nt=0
   for DIR in DIRs:
     if DIR.startswith('track'):
-      m = m+1
+      nt = nt+1
 
-  vpt=np.zeros([m,n])
-  tpt=np.zeros([m,1])
-  ept=np.zeros([m,n])
-  count=0
+  # Set up variables
+  velgrid = np.zeros([ny,nx,nt])
+  mask = np.zeros([ny,nx,nt])
+  velgrid_mask = np.zeros([ny,nx,nt])
+  time = np.zeros([nt,1])
+  ergrid = np.zeros([ny,nx,nt])
+
+  # Load velocity and mask
+  count = 0
   for j in range(0,len(DIRs)):
     DIR=DIRs[j]
     if DIR.startswith('track'):
-      infile=DIR_TSX+DIR
-      x1,y1,v1,vx1,vy1,ex1,ey1,time,interval = geodat.readvelocity(DIR_TSX,DIR,"mosaicOffsets")
-      tpt[count]=time
+      # Load velocity
+      x1,y1,v1,vx1,vy1,ex1,ey1,time1,interval1 = geodat.readvelocity(DIR_TSX,DIR,"mosaicOffsets")
+      time[count] = time1
+      year,month,day = fracyear.fracyear_to_date(time1)
       
-      x2,y2
-        
-      count = count + 1
+      xind1 = np.argmin(abs(x1-xmin))
+      xind2 = np.argmin(abs(x1-xmax))+1
+      yind1 = np.argmin(abs(y1-ymin))
+      yind2 = np.argmin(abs(y1-ymax))+1
+      
+      # Load velocity
+      try:
+        # If the input and output grids have the same dimensions...
+        velgrid[:,:,count] = v1[yind1:yind2,xind1:xind2]
+      except:
+        # Otherwise interpolate onto output grid
+        f_dem = scipy.interpolate.RegularGridInterpolator([y1,x1],v1,bounds_error = False,method='linear',fill_value=float('nan'))
+        v_flatten = f_dem(coords)
+    
+        # Reshape to grid
+        velgrid[:,:,count] = np.reshape(v_flatten,(ny,nx))
+    
+      # Load mask
+      date = "%04d%02d%02d" % (year,month,day)
+      maskfile = DIR_TSX+'TIF/'+DIR+'_'+date+'_'+'mask.tif'
+      if os.path.isfile(maskfile):
+        xmask,ymask,mask[:,:,count] = geotiff.read(maskfile)
+      else:
+        xmask,ymask,mask[:,:,count] = icemask.load_grid(glacier,xmin,xmax,ymin,ymax,dx,icefront_time=time1)
+        geotiff.write_from_grid(xmask,ymask,np.flipud(mask[:,:,count]),float('nan'),maskfile)
+      
+      velgrid_mask[:,:,count] = np.array(velgrid[:,:,count])
+      velgrid_mask[mask[:,:,count]==1,count] = float('nan')
+      
+      count = count+1 
   
-  # Sort arrays by time
-  tpt_tsx = tpt
-  ept_tsx = ept
-  vpt_tsx = vpt
- 
+  # Throw out obvious outliers
+  ind = np.where(velgrid > 16.0e3)
+  velgrid[ind[0],ind[1],ind[2]] = float('nan')
+  velgrid_mask[ind[0],ind[1],ind[2]] = float('nan')
+  print "Throwing out velocities above 16 km/yr to deal with outliers in Kanger record"
+  
+  # Get average and std values
+  velmean = np.nanmean(velgrid_mask,axis=2)
+  velstd = np.nanstd(velgrid_mask,axis=2)
 
-  return x,y,meanvel,change,numpts
+  # Get number of nonnan velocities for each pixel
+  velcount = np.zeros([ny,nx])
+  for j in range(0,ny):
+    for i in range(0,nx):
+      nonnan = len(np.where(~(np.isnan(velgrid_mask[j,i,:])))[0])
+      velcount[j,i] = nonnan          
+
+  return x,y,velgrid_mask,velmean,velstd,velcount,time
 
 #########################################################################################
 def divergence_at_eulpoints(xpt,ypt):
@@ -618,12 +677,13 @@ def divergence_at_eulpoints(xpt,ypt):
   
 #########################################################################################
 
-def inversion_3D(glacier,x,y,time,dir_velocity_out,blur=False):
+def inversion_3D(glacier,x,y,time,dir_velocity_out='none',blur=False):
 
   '''
   Inputs:
   x : list of x coordinates for grid interpolation
   y : list of y coordinates for grid interpolation
+  time : primary time for velocities, which will be filled in with other data
   file_velocity_in : velocity file for interpolation
   dir_velocity_out : directory for outputting the velocity
   
@@ -658,11 +718,11 @@ def inversion_3D(glacier,x,y,time,dir_velocity_out,blur=False):
   os.chdir(OUTDIR)
   filename_vx = 'mosaic-'+date+'-vx'
   if not(os.path.isfile(filename_vx+'-tile-0.tif')):
-    os.system('dem_mosaic --t_projwin '+str(xmin)+' '+str(ymin)+' '+str(xmax)+\
+    os.system('dem_mosaic --hole-fill-length 5 --t_projwin '+str(xmin)+' '+str(ymin)+' '+str(xmax)+\
   		' '+str(ymax)+' --priority-blending-length 10 -o'+filename_vx+files_vx)
   filename_vy = 'mosaic-'+date+'-vy'
   if not(os.path.isfile(filename_vy+'-tile-0.tif')):
-    os.system('dem_mosaic --t_projwin '+str(xmin)+' '+str(ymin)+' '+str(xmax)+\
+    os.system('dem_mosaic --hole-fill-length 5 --t_projwin '+str(xmin)+' '+str(ymin)+' '+str(xmax)+\
   		' '+str(ymax)+' --priority-blending-length 10 -o'+filename_vy+files_vy)
   
   xu,yu,uu = geotiff.read(filename_vx+"-tile-0.tif")
@@ -683,27 +743,28 @@ def inversion_3D(glacier,x,y,time,dir_velocity_out,blur=False):
   # Write out velocities to files for inversion solver #
   ######################################################
   
-  # File for velocity in x-dir
-  fidu = open(dir_velocity_out+"/UDEM.xy","w")
-  fidu.write('{}\n{}\n'.format(len(xu),len(yu)))
+  if dir_velocity_out != 'none':
+    # File for velocity in x-dir
+    fidu = open(dir_velocity_out+"/UDEM.xy","w")
+    fidu.write('{}\n{}\n'.format(len(xu),len(yu)))
   
-  # File for velocity in y-dir
-  fidv = open(dir_velocity_out+"/VDEM.xy","w")
-  fidv.write('{}\n{}\n'.format(len(xv),len(yv)))
+    # File for velocity in y-dir
+    fidv = open(dir_velocity_out+"/VDEM.xy","w")
+    fidv.write('{}\n{}\n'.format(len(xv),len(yv)))
   
-  # File for velocity magnitude
-  fidmag = open(dir_velocity_out+"/VMAG.xy","w")
-  fidmag.write('{}\n{}\n'.format(len(xu),len(yu)))
+    # File for velocity magnitude
+    fidmag = open(dir_velocity_out+"/VMAG.xy","w")
+    fidmag.write('{}\n{}\n'.format(len(xu),len(yu)))
   
-  for i in range(0,len(xu)):
-    for j in range(0,len(yu)):
-      fidu.write('{} {} {}\n'.format(xu[i],yu[j],uu[j,i]))
-      fidv.write('{} {} {}\n'.format(xv[i],yv[j],vv[j,i]))
-      fidmag.write('{} {} {}\n'.format(xu[i],yu[j],vmag[j,i]))
+    for i in range(0,len(xu)):
+      for j in range(0,len(yu)):
+        fidu.write('{} {} {}\n'.format(xu[i],yu[j],uu[j,i]))
+        fidv.write('{} {} {}\n'.format(xv[i],yv[j],vv[j,i]))
+        fidmag.write('{} {} {}\n'.format(xu[i],yu[j],vmag[j,i]))
   
-  fidv.close()
-  fidu.close()
-  fidmag.close()
+    fidv.close()
+    fidu.close()
+    fidmag.close()
 
   # Interpolate to input grid
   xgrid,ygrid = np.meshgrid(x,y)
