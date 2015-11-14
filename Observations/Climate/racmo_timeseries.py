@@ -15,7 +15,7 @@ from matplotlib.ticker import AutoMinorLocator
 #################################################################################
 # Get coordinates for distance D along the flowline for both Kanger and Helheim #
 #################################################################################
-D = 10.e3 # m inland from average terminus position
+D = 10.0e3 # m inland from average terminus position
 
 # Helheim:
 xH,yH,zbH,distsH = glacier_flowline.load('Helheim')
@@ -41,18 +41,20 @@ del xK,yK,zbK,distsK,ind
 # Load RACMO data #
 ###################
 
-filt_len = 14.0 # filter length in days for timeseries
+filt_len = 31.0 # filter length in days for timeseries
 
 # Kanger
 xracK,yracK,runoffK,timeK = climate.racmo_at_pts(xptK,yptK,'runoff',filt_len=filt_len)
+xracK,yracK,zsK,timeKz = climate.racmo_at_pts(xptK,yptK,'zs',filt_len='none')
 xracK,yracK,t2mK,timeK = climate.racmo_at_pts(xptK,yptK,'t2m',filt_len=filt_len)
 xracK,yracK,smbK,timeK = climate.racmo_at_pts(xptK,yptK,'smb',filt_len=filt_len)
 xracK,yracK,precipK,timeK = climate.racmo_at_pts(xptK,yptK,'precip',filt_len=filt_len)
 
 # Helheim
 xracH,yracH,runoffH,timeH = climate.racmo_at_pts(xptH,yptH,'runoff',filt_len=filt_len)
+xracH,yracH,zsH,timeHz = climate.racmo_at_pts(xptH,yptH,'zs',filt_len='none')
 xracH,yracH,t2mH,timeH = climate.racmo_at_pts(xptH,yptH,'t2m',filt_len=filt_len)
-xracH,yracH,smbH,timeH = climate.racmo_at_pts(xptK,yptK,'smb',filt_len=filt_len)
+xracH,yracH,smbH,timeH = climate.racmo_at_pts(xptH,yptH,'smb',filt_len=filt_len)
 xracH,yracH,precipH,timeH = climate.racmo_at_pts(xptH,yptH,'precip',filt_len=filt_len)
 
 #############
