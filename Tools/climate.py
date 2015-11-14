@@ -1,4 +1,4 @@
-# This is a module to help load the RACMO timeseries. 
+# This module deals with the climate products.
 
 import os
 import sys
@@ -8,56 +8,100 @@ import netCDF4, jdcal
 import coords, fracyear
 import scipy.signal as signal
 
-def racmo_grid(xmin,xmax,ymin,ymax,variable,epsg=3413):
+def racmo_grid(xmin,xmax,ymin,ymax,variable,epsg=3413,maskvalues='ice'):
+
+  ''' 
+  Pull all values for RACMO smb, t2m, zs, or runoff values for the region defined 
+  by xmin,xmax,ymin,ymax.
+  
+  xrac_subset,yrac_subset,var_subset,time = racmo_grid(xmin,xmax,ymin,ymax,
+  		variable,epsg=3413,mask='ice')
+  
+  Inputs:
+  xmin,xmax,ymin,ymax : region where you want racmo data
+  variable : what variable you want (runoff, t2m, zs, smb)
+  maskvalues : if you want only 'ice' or 'notice' or 'both' values
+  
+  Outputs:
+  xrac_subet,yrac_subset : output x,y
+  var_subset: value of chosen variable at these points
+  time : time
+  '''
 
   # RACMO data
-  files = [(os.path.join(os.getenv("DATA_HOME"),"Climate/RACMO/2015_09_Laura_Kehrl/RACMO2.3_GRN11_"+variable+"_daily_2001_2010.nc")), \
+  if variable != 'zs':
+    files = [(os.path.join(os.getenv("DATA_HOME"),"Climate/RACMO/2015_09_Laura_Kehrl/RACMO2.3_GRN11_"+variable+"_daily_2001_2010.nc")), \
            (os.path.join(os.getenv("DATA_HOME"),"Climate/RACMO/2015_09_Laura_Kehrl/RACMO2.3_GRN11_"+variable+"_daily_2011_2014.nc"))]
+  else:
+    files = [(os.path.join(os.getenv("DATA_HOME"),"Climate/RACMO/ZS_ZGRN_V5_1960-2014_detrended_2day.nc"))]
 
   rec1 = netCDF4.Dataset(files[0])
-  rec2 = netCDF4.Dataset(files[1])
+  if variable != 'zs':
+    rec2 = netCDF4.Dataset(files[1])
   mask = netCDF4.Dataset(os.path.join(os.getenv("DATA_HOME"),"Climate/RACMO/2015_09_Laura_Kehrl/RACMO23_masks_ZGRN11.nc")).variables['icemask'][:]
-
 
   # Load RACMO data
   lat = np.array(rec1.variables['lat'][:])
   lon = np.array(rec1.variables['lon'][:])
   var1 = np.array(rec1.variables[variable][:])
-  var2 = np.array(rec2.variables[variable][:])
   daysfrom1950_1 = np.array(rec1.variables['time'][:])
-  daysfrom1950_2 = np.array(rec2.variables['time'][:])
+  if variable != 'zs':
+    var2 = np.array(rec2.variables[variable][:])
+    daysfrom1950_2 = np.array(rec2.variables['time'][:])
 
   # Convert date to fractional year
   startday1950 = jdcal.gcal2jd(1950,1,1)
   Nt1 = len(daysfrom1950_1)
-  Nt2 = len(daysfrom1950_2)
-  time = np.zeros(Nt1+Nt2)
-  for i in range(0,Nt1):
-    year,month,day,fracday = jdcal.jd2gcal(startday1950[0],startday1950[1]+daysfrom1950_1[i])
-    time[i] = fracyear.date_to_fracyear(year,month,day)
-  for i in range(0,Nt2):
-    year,month,day,fracday = jdcal.jd2gcal(startday1950[0],startday1950[1]+daysfrom1950_2[i])
-    time[i+Nt1] = fracyear.date_to_fracyear(year,month,day)
+  if variable != 'zs':
+    Nt2 = len(daysfrom1950_2)
+    time = np.zeros(Nt1+Nt2)
+    for i in range(0,Nt1):
+      year,month,day,fracday = jdcal.jd2gcal(startday1950[0],startday1950[1]+daysfrom1950_1[i])
+      time[i] = fracyear.date_to_fracyear(year,month,day) 
+    for i in range(0,Nt2):
+      year,month,day,fracday = jdcal.jd2gcal(startday1950[0],startday1950[1]+daysfrom1950_2[i])
+      time[i+Nt1] = fracyear.date_to_fracyear(year,month,day)
+  else:
+    time = daysfrom1950_1 
+    time = time[0:-71]
+    var1 = var1[0:-71,:,:]
+    
   
   # Convert lat,lon to epsg 3413
   xrac,yrac = coords.convert(lon,lat,4326,epsg)
 
   # Find x,y indices that fall within the desired grid and check to make sure that the chosen
   # indices fall on the ice mask (mask == 1) 
-  xind = np.where((xrac >= xmin) & (xrac <= xmax) & (mask == 1))
+  if maskvalues == 'ice':
+    xind = np.where((xrac >= xmin) & (xrac <= xmax) & (mask == 1))
+  elif maskvalues == 'notice':
+    xind = np.where((xrac >= xmin) & (xrac <= xmax) & (mask == 0))
+  elif maskvalues == 'both':
+    xind = np.where((xrac >= xmin) & (xrac <= xmax))
   xrac_subset = xrac[xind]
   yrac_subset = yrac[xind]
-  var1_subset = var1[:,:,xind[0],xind[1]]
-  var2_subset = var2[:,:,xind[0],xind[1]]
+  if variable != 'zs':
+    var1_subset = var1[:,:,xind[0],xind[1]]  
+    var2_subset = var2[:,:,xind[0],xind[1]]
+  else:
+    var1_subset = var1[:,xind[0],xind[1]] 
   mask_subset = mask[xind[0],xind[1]]
-
-  yind = np.where((yrac_subset >= ymin) & (yrac_subset <= ymax) & (mask_subset == 1))
+  
+  if maskvalues == 'ice':
+    yind = np.where((yrac_subset >= ymin) & (yrac_subset <= ymax) & (mask_subset == 1))
+  elif maskvalues == 'notice':
+    yind = np.where((yrac_subset >= ymin) & (yrac_subset <= ymax) & (mask_subset == 0))
+  elif maskvalues == 'both':
+    yind = np.where((yrac_subset >= ymin) & (yrac_subset <= ymax))
   xrac_subset = xrac_subset[yind]
   yrac_subset = yrac_subset[yind]
-  var1_subset = var1_subset[:,:,yind]
-  var2_subset = var2_subset[:,:,yind]
-  
-  var_subset = np.row_stack([var1_subset[:,0,0,:],var2_subset[:,0,0,:]])
+  if variable != 'zs':  
+    var1_subset = var1_subset[:,:,yind]
+    var2_subset = var2_subset[:,:,yind]
+    var_subset = np.row_stack([var1_subset[:,0,0,:],var2_subset[:,0,0,:]])
+  else:
+    var1_subset = var1_subset[:,yind]
+    var_subset = var1_subset[:,0,:]
   
   if variable == 't2m':
     # Convert Kelvin to Celsius
@@ -70,26 +114,45 @@ def racmo_grid(xmin,xmax,ymin,ymax,variable,epsg=3413):
   return xrac_subset,yrac_subset,var_subset,time
 
   
-def racmo_at_pts(xpt,ypt,variable,filt_len='none',epsg=3413,method='nearest'):
+def racmo_at_pts(xpt,ypt,variable,filt_len='none',epsg=3413,method='nearest',maskvalues='ice'):
 
-  xrac,yrac,var,time = racmo_grid(np.min(xpt)-20e3,np.max(xpt)+20e3,np.min(ypt)-20e3,np.max(ypt)+20e3,variable,epsg=3413)
+  '''
+  Calculate RACMO timeseries at points xpts,ypts. You can either use the nearest 
+  RACMO grid point or linearly interpolate from the nearest points.
+  
+  xrac_subset,yrac_subset,filtered,time = racmo_at_pts(xpt,ypt,variable,
+  		filt_len='none',epsg=3413,method='nearest',mask='ice')
+  		
+  Inputs:
+  xpt,ypt : points where you want the RACMO timeseries
+  variable : what RACMO variable you want (t2m, zs, runoff, smb)
+  filt_len : whether or not the timeseries should be filtered and if it should be filtered over how many days
+  method : method for calculating the RACMO timeseries at xpt, ypt (linear or nearest)
+  mask : should we only grab points for 'ice' or 'notice' or 'both'
+  
+  Outputs :
+  xrac_subset, yrac_subset : coordinates for nearest points
+  filtered : filtered (or not filtered) timeseries
+  time : time
+  '''
+
+  xrac,yrac,var,time = racmo_grid(np.min(xpt)-20e3,np.max(xpt)+20e3,np.min(ypt)-20e3,np.max(ypt)+20e3,variable,epsg=3413,maskvalues=maskvalues)
+
+  # Number of timesteps
+  Nt = len(time)
  
   # Number of points
-  Npt = xpt.shape
-  Nt = len(time)
-  
-  # Set up output variables
-  xrac_subset = np.zeros(Npt)
-  yrac_subset = np.zeros(Npt)
-  
-  if not Npt:
-    var_subset = np.zeros([Nt,0])
+  if isinstance(xpt,(float,int)):
+    var_subset = np.zeros(Nt)
   else:
+    Npt = len(xpt)
     var_subset = np.zeros([Nt,Npt])
-
-  
+    # Set up output variables
+    xrac_subset = np.zeros(Npt)
+    yrac_subset = np.zeros(Npt)
+    
   if method == 'nearest':
-    if not Npt:
+    if isinstance(xpt,(float,int)):
       ind = np.argmin((xrac-xpt)**2.0 + (yrac-ypt)**2.0)
       xrac_subset = xrac[ind]
       yrac_subset = yrac[ind]
@@ -100,7 +163,6 @@ def racmo_at_pts(xpt,ypt,variable,filt_len='none',epsg=3413,method='nearest'):
         xrac_subset[j] = xrac[ind]
         yrac_subset[j] = yrac[ind]
         var_subset[:,j] = var[:,ind]
-
   elif method == 'linear':
     for j in range(0,Nt):
       var_subset[j,:] = scipy.interpolate.griddata((xrac,yrac),var[j,:],(xpt,ypt),method='linear')
@@ -110,7 +172,7 @@ def racmo_at_pts(xpt,ypt,variable,filt_len='none',epsg=3413,method='nearest'):
     print "Filtered timeseries for variable",variable
     cutoff=(1/(filt_len/365.25))/(1/(np.diff(time[1:3])*2))
     b,a=signal.butter(3,cutoff,btype='low')
-    if not Npt:
+    if isinstance(xpt,(float,int)):
       filtered = signal.filtfilt(b,a,var_subset)
     else:
       filtered = np.zeros([Nt,Npt])
@@ -206,14 +268,74 @@ def calculate_PDD(time,T):
 
   return time,PDD
   
-#def cumsmb(xpt,ypt,epsg=3413,method='nearest'):
-#
-#  '''
-#  Cumulative surface mass balance.
-#  '''
-#
-#  xrac_subset,yrac_subset,filtered,time = racmo_at_pts(xpt,ypt,variable,\
-#  		filt_len='none',epsg=epsg,method=method)
-#
-#
-#return
+def cumsmb(xpt,ypt,epsg=3413,rho_i=900.0,method='nearest',maskvalues='ice'):
+
+  '''
+  Cumulative surface mass balance.
+  '''
+
+  xrac,yrac,smb,time = racmo_at_pts(xpt,ypt,'smb',\
+  		filt_len='none',epsg=epsg,method=method,maskvalues=maskvalues)
+
+
+  if isinstance(xpt,(float,int)):
+    zs_smb = np.zeros(len(time))
+    for i in range(1,len(time)):
+      zs_smb[i] = zs_smb[i-1]+smb[i]
+  else:
+    zs_smb = np.zeros([len(time),len(xpt)])
+    for i in range(1,len(time)):
+      zs_smb[i,:] = zs_smb[i-1,:]+smb[i,:]
+  
+  zs_smb = zs_smb/rho_i
+  
+  return xrac,yrac,zs_smb,time
+
+def SIF_at_pts(xpts,ypts,epsg=3413,filt_len='none'):
+
+  file = os.path.join(os.getenv("DATA_HOME"),"Climate/SeaIce/METOFFICE-GLO-SST-L4-NRT-OBS-SST-V2_1447191850310.nc")
+  
+  rec = netCDF4.Dataset(file)
+  
+  lat = rec.variables['lat'][:]
+  lon = rec.variables['lon'][:]
+  time = rec.variables['time'][:]
+  mask = rec.variables['mask'][:]
+  sia = rec.variables['sea_ice_fraction'][:]
+  
+  lon_grid,lat_grid = np.meshgrid(lon,lat)
+  
+  xsia,ysia = coords.convert(lon_grid,lat_grid,4326,epsg)
+  
+  # Find closest point 
+  ind = np.where((mask[0,:,:] == 1) | (mask[0,:,:] == 8))
+  
+  try:
+    bestind = np.zeros(len(xpts))
+    print "need to fix code for multiple points"
+  except:
+    mindist = 500.e3
+    for j in range(0,len(lat)):
+      for i in range(0,len(lon)):
+        if (mask[100,j,i] != 2):
+          d = np.sqrt((xsia[j,i]-xpts)**2+(ysia[j,i]-ypts)**2)
+          if d < mindist:
+            mindist = d
+            bestind = [j,i]
+    
+  # Convert time to fractional years
+  # Why they have time listed as seconds since Jan. 1, 1981 is beyond me. 
+  fractime = 1981. + time/(365.25*24*60*60)
+
+
+    
+  # Filter the timeseries
+  if filt_len != 'none':
+    print "Filtered timeseries for SIF"
+    cutoff=(1/(filt_len/365.25))/(1/(np.diff(fractime[1:3])*2))
+    b,a=signal.butter(3,cutoff,btype='low')
+    filtered = signal.filtfilt(b,a,sia[:,bestind[0],bestind[1]])
+  else:
+    filtered = sia[:,bestind[0],bestind[1]]
+
+  return xsia[bestind[0],bestind[1]],ysia[bestind[0],bestind[1]],filtered,fractime
