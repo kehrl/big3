@@ -13,7 +13,7 @@ import numpy as np
 from subprocess import call
 import glob
 
-def cleanup(glacier,type='icefront'):
+def cleanup(glacier,type='Icefronts'):
 
   '''
   cleanup(glacier,type='icefront')
@@ -24,10 +24,13 @@ def cleanup(glacier,type='icefront'):
   output.
   '''
   
-  if type is 'icefront':
+  if type is 'icefront' or type is 'IceFronts':
     DIRI=os.path.join(os.getenv("DATA_HOME"),"ShapeFiles/IceFronts/"+glacier+"/")
   elif type is 'rift':
     DIRI=os.path.join(os.getenv("DATA_HOME"),"ShapeFiles/Rifts/"+glacier+"/")
+  else:
+    DIRI=os.path.join(os.getenv("DATA_HOME"),"ShapeFiles/"+type+"/"+glacier+"/")
+    
 
   files = os.listdir(DIRI)
   os.chdir(DIRI)
@@ -47,7 +50,8 @@ def cleanup(glacier,type='icefront'):
 
   return "success"
 
-def distance_along_flowline(x,y,dists,glacier,type='icefront'):
+def distance_along_flowline(x,y,dists,glacier,type='icefront',imagesource=False,
+		time1=-np.inf, time2=np.inf):
 
   '''
   terminus_val,terminus_time=distance_along_flowline(x,y,dists,glacier,type='icefront')
@@ -73,7 +77,7 @@ def distance_along_flowline(x,y,dists,glacier,type='icefront'):
 
   terminus_val = []
   terminus_time = []
-  dates = []
+  sensorname = []
 
   lineflow = LineString(np.column_stack([x,y]))
     
@@ -105,18 +109,28 @@ def distance_along_flowline(x,y,dists,glacier,type='icefront'):
     
         # Terminus position
         terminus_val.append( dists[flowind]+((intersection[0]-x[flowind])**2+(intersection[1]-y[flowind])**2)**(0.5) )
-        dates.append(file[0:-4])
         
         # Time of that terminus position
         if ("TSX" in file) or ("moon" in file):
           terminus_time.append(fracyear.doy_to_fracyear(float(file[0:4]),float(file[5:8])))
-        elif ("ASTER" in file) or ("Landsat" in file) or ("WV" in file):
+          sensorname.append('TSX')
+        elif ("ASTER" in file):
           terminus_time.append(fracyear.date_to_fracyear(float(file[0:4]),float(file[5:7]),float(file[8:10])))
+          sensorname.append('ASTER')
+        elif ("Landsat7" in file):
+          terminus_time.append(fracyear.date_to_fracyear(float(file[0:4]),float(file[5:7]),float(file[8:10])))
+          sensorname.append('Landsat7')
+        elif ("Landsat" in file):
+          terminus_time.append(fracyear.date_to_fracyear(float(file[0:4]),float(file[5:7]),float(file[8:10])))
+          sensorname.append('Landsat8')
+        elif ("WV" in file):
+          terminus_time.append(fracyear.date_to_fracyear(float(file[0:4]),float(file[5:7]),float(file[8:10])))
+          sensorname.append('WV')
         else:
           sys.exit("Don't know that date format for "+file)
   terminus_time = np.array(terminus_time)
   terminus_val = np.array(terminus_val)
-  terminus_file = np.array(dates)
+  terminus_source = np.array(sensorname)
   
   # Need to double check that we imported the same number of times and 
   # terminus values. If we didn't something is horribly wrong.
@@ -124,11 +138,47 @@ def distance_along_flowline(x,y,dists,glacier,type='icefront'):
     sortind=np.argsort(terminus_time,0)
     terminus_time = terminus_time[sortind]
     terminus_val = terminus_val[sortind]
-    terminus_file = terminus_file[sortind]
+    terminus_source = terminus_source[sortind]
   else:
     sys.exit("Length of terminus values and times are different. Something is very wrong")
   
-  return terminus_val, terminus_time
+  # Subset record to cover only a certain time period if time1,time2 are set.
+  ind = np.where((terminus_time > time1) & (terminus_time < time2))[0]
+  terminus_time = terminus_time[ind]
+  terminus_val = terminus_val[ind]
+  terminus_source = terminus_source[ind]
+  
+  # Sometimes we will want to know the image source for each digitized ice front position.
+  if imagesource == False:
+    return terminus_val, terminus_time
+  else:
+    return terminus_val, terminus_time, terminus_source
+
+def quantify_uncertainty(x,y,dists,glacier,time1,time2):
+  
+  # Get ice front positions
+  terminus_val, terminus_time,terminus_source = distance_along_flowline(x,y,dists,
+  		glacier,type='icefront',imagesource=True,time1=time1,time2=time2)
+  
+  # Figure out what times we have multiple ice front positions for comparison
+  unique,unique_count = np.unique(terminus_time,return_counts=True)
+  dup_times = unique[unique_count > 1]
+  
+  N = len(dup_times)
+  delta = np.zeros(N)
+  files = [] 
+  for i in range(0,N):
+    ind = []
+    for j in range(0,len(terminus_time)):      
+      if terminus_time[j] == dup_times[i]:
+        ind.append(j)
+    if len(ind) == 2:
+      delta[i] = terminus_val[ind[0]] - terminus_val[ind[1]]
+      files.append([terminus_source[ind[0]],terminus_source[ind[1]]])
+    else:
+      print "problem"  
+  
+  return delta  
 
 def position(x,y,dists,glacier,time):
 
@@ -202,20 +252,24 @@ def load_all(time1,time2,glacier,type='icefront'):
   termy[:,:]= 'NaN'
   numpoints = 0
   for i in range(0,n):
+    numpoints=0
     file = shapefiles[i]
     # Load shapefile
     sf = shapefile.Reader(DIRI+file)
     shapes = sf.shapes()
     for shape in shapes:
-      termpts = np.array(shape.points[:])
-      if len(termpts[:,0]) > 0:
-        termx[numpoints:numpoints+len(termpts[:,0]),i] = termpts[:,0]
-        termy[numpoints:numpoints+len(termpts[:,0]),i] = termpts[:,1]
-        numpoints = numpoints+len(termpts[:,0])
+      try:
+        termpts = np.array(shape.points[:])
+        if len(termpts[:,0]) > 0:
+          termx[numpoints:numpoints+len(termpts[:,0]),i] = termpts[:,0]
+          termy[numpoints:numpoints+len(termpts[:,0]),i] = termpts[:,1]
+          numpoints = numpoints+len(termpts[:,0])
+      except:
+        pass
       
   return termx, termy, termt
 
-def near_time(time,glacier):
+def near_time(time,glacier,type='all'):
 
   '''
   best_x,best_y,best_time=near_time(time,glacier)
@@ -223,24 +277,31 @@ def near_time(time,glacier):
   Inputs:
   time: time when we want terminus position
   glacier: glacier name
+  type: data source for ice front position (TSX, WV, Landsat, or all)
   
   Outputs:
   best_x,best_y: x,y coordinates for terminus position that is closest in time to "time"
   '''
 
+  # Ice front directory
   DIRI=os.path.join(os.getenv("DATA_HOME"),"ShapeFiles/IceFronts/"+glacier+"/")
-
-
   files = os.listdir(DIRI)
+
+  if type == 'all':
+    type = ['TSX','Landsat','ASTER','WV']
 
   best_time = []
   min_diff = 1.0
   for file in files:
     if file.endswith('.shp') and (not "moon" in file):
       # Time of that terminus position
-      if ("TSX" in file) or ("moon" in file):
+      if ("TSX" in file) and ("TSX" in type):
         icetime = fracyear.doy_to_fracyear(float(file[0:4]),float(file[5:8]))
-      elif ("ASTER" in file) or ("Landsat" in file) or ("WV" in file):
+      elif ("ASTER" in file) and ("ASTER" in type):
+        icetime = fracyear.date_to_fracyear(float(file[0:4]),float(file[5:7]),float(file[8:10]))
+      elif ("Landsat" in file) and ("Landsat" in type):
+        icetime = fracyear.date_to_fracyear(float(file[0:4]),float(file[5:7]),float(file[8:10]))
+      elif ("WV" in file) and ("WV" in file):
         icetime = fracyear.date_to_fracyear(float(file[0:4]),float(file[5:7]),float(file[8:10]))
       if abs(icetime-time) < min_diff:
         best_x = np.zeros(0)
@@ -258,7 +319,6 @@ def near_time(time,glacier):
         best_time = icetime
 
   return best_x,best_y,best_time
-
 
 def calving(glacier):
   
@@ -289,7 +349,7 @@ def calving(glacier):
       value.append(p[2])
       type.append(p[1])
       file.append(p[0])
-      if p[1] == 'Landsat':
+      if p[1] == 'Landsat' or p[1] == 'Worldview':
         time.append(fracyear.date_to_fracyear(float(p[0][0:4]),float(p[0][5:7]),float(p[0][8:10])))
       elif p[1] == 'TSX':
         time.append(fracyear.doy_to_fracyear(float(p[0][0:4]),float(p[0][5:8])))
