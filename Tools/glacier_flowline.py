@@ -51,18 +51,14 @@ def load(glacier,shapefilename='center_flowline',filt_len='none',verticaldatum='
   
   # Get new distances
   dists = dist.transect(x,y)
-  
-  # Get terminus positions so that we can set distance along flowline 
-  # relative to the average terminus position
-  terminus_val, terminus_time = icefronts.distance_along_flowline(x,y,dists,glacier,type='icefront')
 
   # Get average terminus position
   time1 = 2008.0
   time2 = 2016.0
   
-  indt = np.where((terminus_time > time1) & (terminus_time < time2))
-  terminus_time = terminus_time[indt[0]]
-  terminus_val = terminus_val[indt[0]]
+  # Get terminus positions so that we can set distance along flowline 
+  # relative to the average terminus position
+  terminus_val, terminus_time = icefronts.distance_along_flowline(x,y,dists,glacier,type='icefront',time1=time1,time2=time2)
 
   # Average terminus position
   terminus = np.mean(terminus_val)
@@ -78,7 +74,7 @@ def load(glacier,shapefilename='center_flowline',filt_len='none',verticaldatum='
     zb_cresis1 = bed.cresis('2009a',glacier,verticaldatum)
     zb_cresis2 = bed.cresis('2008',glacier,verticaldatum)
     ind1 = np.where((x > 490970) & (x < 491300))[0]
-    ind2 = np.where(x > 491300)[0]
+    ind2 = np.where((x > 491300) & (x < 495600))[0]
     zb[ind1] = np.interp(x[ind1],zb_cresis1[:,0],zb_cresis1[:,2])
     zb[ind2] = np.interp(x[ind2],zb_cresis2[:,0],zb_cresis2[:,2])
 
