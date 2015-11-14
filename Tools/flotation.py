@@ -85,15 +85,21 @@ def height(zb,rho_i=917.0,rho_sw=1020.0):
   '''
 
   # Set up output
-  floatheight = np.zeros(len(zb))
-  floatheight[:] = 'NaN' # no flotation height for bed elevations above sea level
+  try:
+    floatheight = np.zeros(len(zb))
+    floatheight[:] = 'NaN' # no flotation height for bed elevations above sea level
   
-  # Find places where bed is below sea level
-  ind = np.where(zb < 0)[0]
+    # Find places where bed is below sea level
+    ind = np.where(zb < 0)[0]
   
-  # Find flotation height
+    # Find flotation height
 
-  floatheight[ind] = (1-rho_sw/rho_i)*zb[ind]
+    floatheight[ind] = (1-rho_sw/rho_i)*zb[ind]
+  except:
+    if zb < 0:
+      floatheight = (1-rho_sw/rho_i)*zb
+    else:
+      floatheight = float('nan')
 
   return floatheight
 
@@ -105,7 +111,7 @@ def extent(xs,ys,zs,ztime,glacier,rho_i=917.0,rho_sw=1020.0,bedsource='cresis',v
   work for cresis radar picks.
   
   Inputs:
-  xs,ys,zs,time from elevation.worldview_grid
+  xs,ys,zs,time from elevation.dem_grid
   glacier: name of glacier
   rho_i: ice density
   rho_sw: seawater density
@@ -119,7 +125,7 @@ def extent(xs,ys,zs,ztime,glacier,rho_i=917.0,rho_sw=1020.0,bedsource='cresis',v
   if bedsource=='cresis':
     cresis = bed.cresis('all',glacier,verticaldatum,cleanup=True)
     cresis2001 = bed.cresis('2001',glacier,verticaldatum)
-    cresis = np.row_stack([cresis[cresis[:,2]<-200.0,:],cresis2001[cresis2001[:,2]<-200.0,:]])
+    cresis = np.row_stack([cresis[cresis[:,2]<-50.0,:],cresis2001[cresis2001[:,2]<-50.0,:]])
   else:
     print "need to work on morlighem"
   
