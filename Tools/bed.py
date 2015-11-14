@@ -7,7 +7,7 @@ import sys
 import numpy as np
 sys.path.append(os.path.join(os.getenv("CODE_HOME"),"Util/Modules"))
 sys.path.append(os.path.join(os.getenv("CODE_HOME"),"BigThreeGlaciers/Tools"))
-import coords, elevation
+import coords, elevation, flotation
 import scipy.interpolate
 import geotiff
 
@@ -59,7 +59,6 @@ def cresis(year,glacier,verticaldatum='geoid',cleanup=True):
     if glacier == 'Helheim':
       print "Using data set Helheim_2006_2014_Composite"
       file=os.path.join(os.getenv("DATA_HOME"),"Bed/Cresis/Helheim/Helheim_2006_2014_Composite/flightlines/Helheim_2006_2014_Composite_Flightlines.txt")
-      #file=os.path.join(os.getenv("DATA_HOME"),"Bed/Cresis/Helheim/Helheim_2008_2012_Composite/flightlines/Helheim_2008_2012_Composite_Flightlines.txt")
     elif glacier == 'Kanger':
       print "Using data set Kanger_2006_2014_Composite"
       file=os.path.join(os.getenv("DATA_HOME"),"Bed/Cresis/Kanger/Kangerdlugssuaq_2006_2014_Composite/flightlines/Kangerdlugssuaq_2006_2014_Composite_Flightlines.txt")
@@ -104,8 +103,10 @@ def cresis(year,glacier,verticaldatum='geoid',cleanup=True):
       		range(37640,37675),range(37819,37836),range(44127,44207),range(46942,47030),range(53595,53663),\
       		range(53713,53793),range(53974,53987),range(56646,56726),range(64006,64013),range(61237,61529),range(61745,62000),range(68541,68810),\
       		range(69202,69475),range(75645,75904),range(77285,77538),range(77728,77970)] 
+        floatind = np.where(zs < flotation.height(zb,rho_i=917.,rho_sw=1020.))[0]
       else: 
         badind = []
+        floatind = []
       if year == '2006a':
         ind = range(22285,22406)
       elif year == '2006b':
@@ -137,8 +138,10 @@ def cresis(year,glacier,verticaldatum='geoid',cleanup=True):
         		range(29927,30075),range(33768,33847),range(28851,29063),
         		range(39150,39210),range(40471,40550),range(23853,23860),
         		range(36055,36095)] 
+        floatind = np.where(zs < flotation.height(zb,rho_i=917.,rho_sw=1020.))[0]
       else: 
         badind = []
+        floatind = []
       if year == '2008':
         ind = range(23600,23853)
       elif year == '2009a':
@@ -154,7 +157,7 @@ def cresis(year,glacier,verticaldatum='geoid',cleanup=True):
       elif year == 'all':
         ind = []
         for i in range(0,len(type)):
-          if 'ICESat' not in type[i] and (i not in badind):
+          if 'ICESat' not in type[i] and (i not in badind) and (i not in floatind):
             ind.append(i)
     else:
       print "Unrecognized CreSIS profile"
@@ -163,12 +166,14 @@ def cresis(year,glacier,verticaldatum='geoid',cleanup=True):
   # Select what reference we want for the elevation  
   if verticaldatum == "geoid":
     zb = coords.geoidheight(x2,y2,zb)
+    zs = coords.geoidheight(x2,y2,zs)
   elif verticaldatum == "ellipsoid":
     zb = zb
+    zs = zs
   else:
     print "Unknown vertical datum, defaulting to ellipsoid height"
     
-  return np.column_stack([x2[ind],y2[ind],zb[ind],dates[ind]])
+  return np.column_stack([x2[ind],y2[ind],zb[ind],zs[ind],dates[ind]])
 
 #########################################################################################
 
@@ -329,7 +334,7 @@ def morlighem_grid(xmin=-np.inf,xmax=np.inf,ymin=-np.inf,ymax=np.Inf,verticaldat
 
 #########################################################################################
   
-def smith_grid(glacier,xmin=-np.Inf,xmax=np.Inf,ymin=-np.Inf,ymax=np.Inf,grid='unstructured',model='aniso',smoothing=1,verticaldatum='geoid'):
+def smith_grid(glacier,xmin=-np.Inf,xmax=np.Inf,ymin=-np.Inf,ymax=np.Inf,grid='unstructured',model='aniso',smoothing=3,verticaldatum='geoid'):
 
   '''
                
@@ -364,20 +369,28 @@ def smith_grid(glacier,xmin=-np.Inf,xmax=np.Inf,ymin=-np.Inf,ymax=np.Inf,grid='u
   x = data[:,0]
   y = data[:,1]
   z = data[:,1+smoothing]
-  
-  # Find points that fall within the desired spatial extent
-  ind = np.where((x >= xmin) & (x <= xmax) & (y >= ymin) & (y <= ymax))[0]
-  xpts = x[ind]
-  ypts = y[ind]
-  zpts = z[ind]
-  
+
   if verticaldatum == 'geoid':
-    zpts = coords.geoidheight(xpts,ypts,zpts)
+    z = coords.geoidheight(x,y,z)
   elif verticaldatum == 'ellipsoid':
-    zpts = zpts
+    z = z
   else:
     print "Unknown datum, defaulting to geoid"
-  
+
+  # Create structured grid, if desired  
+  if grid == 'structured':
+    xpts = np.arange(xmin,xmax+100,100.)
+    ypts = np.arange(ymin,ymax+100,100.)
+    xgrid,ygrid = np.meshgrid(xpts,ypts)
+    zpts_flat = scipy.interpolate.griddata((y,x),z,(ygrid.flatten(),xgrid.flatten()),method='linear',fill_value=float('nan'))
+    zpts = np.reshape(zpts_flat,(len(ypts),len(xpts)))
+  else:
+    # Find points that fall within the desired spatial extent
+    ind = np.where((x >= xmin) & (x <= xmax) & (y >= ymin) & (y <= ymax))[0]
+    xpts = x[ind]
+    ypts = y[ind]
+    zpts = z[ind]
+
   return xpts,ypts,zpts
 
 #########################################################################################
@@ -415,7 +428,7 @@ def smith_at_pts(xpts,ypts,glacier,model='aniso',smoothing=1,verticaldatum='geoi
   elif verticaldatum == 'ellipsoid':
     zbed_interp = zbed_interp
   else:
-    print "Unknown datum, defaulting to geoid"
+    sys.exit("Unknown vertical datum.")
 
 
   return zbed_interp
