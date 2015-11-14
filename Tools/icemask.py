@@ -123,7 +123,7 @@ def load_points(glacier):
   
   n=0
   for file in files:
-    if file.endswith('.shp'):
+    if (file.endswith('.shp')) and ('hole' in file):
       hole = elmer_mesh.shp_to_xy(DIR+file)
       if n==0:
         pts = hole[:,0:2]  
