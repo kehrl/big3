@@ -32,7 +32,7 @@ FUNCTION LateralFrictionCoefficient( Model, nodenumber, dumy) RESULT(kcoeff) !
     End if
     
     
-    
+    ! Find current x coordinate
     x = Model % Nodes % x (nodenumber)  
     
     ! Now find data closest to current position
@@ -48,7 +48,8 @@ FUNCTION LateralFrictionCoefficient( Model, nodenumber, dumy) RESULT(kcoeff) !
       	END IF
    	END DO
 
-	! Interpolate width to current position, and then find halfwidth for friction coefficient calculation
+	! Interpolate width to current position, and then find halfwidth for 
+	! friction coefficient calculation
    	if (.not.found) then
       	print *, 'LateralFrictionCoefficient: Could not find a suitable width to interpolate ',x
    	else
@@ -71,12 +72,14 @@ FUNCTION LateralFrictionCoefficient( Model, nodenumber, dumy) RESULT(kcoeff) !
         CALL FATAL('LateralFrictionCoefficient','Could not find variable Viscosity')
   	END IF
   	
+  	! Get viscosity and set up variables
   	eta = ViscosityValues(ViscosityPerm(nodenumber))
 	n = 3
 	yearinsec = 365.25*24*60*60
 	rhoi = 917.0/(1.0e6*yearinsec**2)
 	
+	! Compute lateral friction coefficient according to Gagliardin et al, 2010
 	kcoeff = eta * (n+1)**(1/n) / (halfwidth**(1+(1/n)))
-	
+    
     Return
 End

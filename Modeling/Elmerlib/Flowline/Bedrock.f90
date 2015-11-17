@@ -21,7 +21,7 @@ FUNCTION BedFromFile( Model, nodenumber) RESULT(zb) !
 
     	FirstTimeBed=.False.
 
-        ! open file
+        ! Load bed
         Open(10,file='Inputs/roughbed.dat')
         Read(10,*) RB
         Allocate(xbed(RB),zbed(RB))
@@ -31,7 +31,7 @@ FUNCTION BedFromFile( Model, nodenumber) RESULT(zb) !
 		Close(10)
     End if
 
-    ! position current point
+    ! Get current position
     x = Model % Nodes % x (nodenumber)
     y = Model % Nodes % y (nodenumber)
 
@@ -55,6 +55,7 @@ FUNCTION BedFromFile( Model, nodenumber) RESULT(zb) !
       	END IF
    	END DO
 	
+	! Linearly interpolate to current position
 	IF (found) THEN
    		if (xbed(minind) >= xnew) then 
       		ratio=(xnew-xbed(minind))/(xbed(minind+1)-xbed(minind))
@@ -68,5 +69,6 @@ FUNCTION BedFromFile( Model, nodenumber) RESULT(zb) !
 	    print *,'No bed at',xnew
 		CALL FATAL(SolverName,'No bed found for above coordinates')
 	end if	
+	
     Return
 End

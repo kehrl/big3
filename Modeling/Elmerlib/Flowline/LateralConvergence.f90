@@ -1,7 +1,4 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!
-!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 FUNCTION LateralConvergence (Model, nodenumber, dumy) RESULT(MassLoad)
    	USE Types
@@ -30,7 +27,7 @@ FUNCTION LateralConvergence (Model, nodenumber, dumy) RESULT(MassLoad)
 
     	FirsttimeLC=.False.
 
-        ! open file
+        ! Load data
         Open(10,file='Inputs/width.dat')
         Read(10,*) R
         Allocate(xhw(R),hw(R),dwdx(R))
@@ -88,9 +85,12 @@ FUNCTION LateralConvergence (Model, nodenumber, dumy) RESULT(MassLoad)
       	endif
    	endif
 	
+	! Get weight and current velocity
 	weight = WeightValues(WeightPerm(nodenumber))
 	velx = VelocityValues(VelocityPerm(nodenumber))
 	
+	! Calculate mass load
 	MassLoad = (-dw/width)*weight*velx	
+
 	RETURN
 END

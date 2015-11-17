@@ -14,13 +14,15 @@ FUNCTION USF_Init (Model, nodenumber) RESULT(vel)
    	REAL(KIND=dp), ALLOCATABLE :: xs(:), vs(:)
    	LOGICAL :: found
    
-    LOGICAL :: Firsttime4=.true.
-        
-   	SAVE Firsttime4,xs,vs,Rs
+    LOGICAL :: FirsttimeInit=.True.
+    
+    ! Save variables for future use    
+   	SAVE FirsttimeInit,xs,vs,Rs
    
-   	if (Firsttime4) then
+    ! Load velocity data
+   	if (FirsttimeInit) then
    		! Read file
-   		Firsttime4=.False.
+   		FirsttimeInit=.False.
    		
    		OPEN(10,file="Inputs/velocity.dat")
    		Read(10,*) Rs
@@ -29,6 +31,7 @@ FUNCTION USF_Init (Model, nodenumber) RESULT(vel)
    		CLOSE(10)
    	End if
    
+    ! Find current position
 	x=Model % Nodes % x (nodenumber)
    
    	found = .false.
@@ -43,6 +46,7 @@ FUNCTION USF_Init (Model, nodenumber) RESULT(vel)
       	endif 
    	20 enddo
 
+    ! Linearly interpolate to current position
    	if (.not.found) then
       	print *, 'Could not find a suitable velocity to interpolate ',x
    	else
