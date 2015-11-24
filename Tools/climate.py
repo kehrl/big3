@@ -301,11 +301,11 @@ def SIF_at_pts(xpts,ypts,epsg=3413,filt_len='none'):
   lon = rec.variables['lon'][:]
   time = rec.variables['time'][:]
   mask = rec.variables['mask'][:]
-  sia = rec.variables['sea_ice_fraction'][:]
+  sif = rec.variables['sea_ice_fraction'][:]
   
   lon_grid,lat_grid = np.meshgrid(lon,lat)
   
-  xsia,ysia = coords.convert(lon_grid,lat_grid,4326,epsg)
+  xsif,ysif = coords.convert(lon_grid,lat_grid,4326,epsg)
   
   # Find closest point 
   ind = np.where((mask[0,:,:] == 1) | (mask[0,:,:] == 8))
@@ -318,7 +318,7 @@ def SIF_at_pts(xpts,ypts,epsg=3413,filt_len='none'):
     for j in range(0,len(lat)):
       for i in range(0,len(lon)):
         if (mask[100,j,i] != 2):
-          d = np.sqrt((xsia[j,i]-xpts)**2+(ysia[j,i]-ypts)**2)
+          d = np.sqrt((xsif[j,i]-xpts)**2+(ysif[j,i]-ypts)**2)
           if d < mindist:
             mindist = d
             bestind = [j,i]
@@ -327,15 +327,13 @@ def SIF_at_pts(xpts,ypts,epsg=3413,filt_len='none'):
   # Why they have time listed as seconds since Jan. 1, 1981 is beyond me. 
   fractime = 1981. + time/(365.25*24*60*60)
 
-
-    
   # Filter the timeseries
   if filt_len != 'none':
     print "Filtered timeseries for SIF"
     cutoff=(1/(filt_len/365.25))/(1/(np.diff(fractime[1:3])*2))
     b,a=signal.butter(3,cutoff,btype='low')
-    filtered = signal.filtfilt(b,a,sia[:,bestind[0],bestind[1]])
+    filtered = signal.filtfilt(b,a,sif[:,bestind[0],bestind[1]])
   else:
-    filtered = sia[:,bestind[0],bestind[1]]
+    filtered = sif[:,bestind[0],bestind[1]]
 
-  return xsia[bestind[0],bestind[1]],ysia[bestind[0],bestind[1]],filtered,fractime
+  return xsif[bestind[0],bestind[1]],ysif[bestind[0],bestind[1]],filtered,fractime
