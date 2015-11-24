@@ -13,7 +13,7 @@ import icefronts, bed
 import dist
 import scipy.signal as signal
 
-def load(glacier,shapefilename='center_flowline',filt_len='none',verticaldatum='geoid',bedmodel='aniso',bedsmoothing=4):
+def load(glacier,shapefilename='center_flowline',filt_len=2.0e3,verticaldatum='geoid',bedmodel='aniso',bedsmoothing=4):
 
   '''
   x,y,zb_filt,dists = load(glacier,shapefilename='center_flowline')
@@ -45,7 +45,7 @@ def load(glacier,shapefilename='center_flowline',filt_len='none',verticaldatum='
   d = dist.transect(flowline[:,0],flowline[:,1])
 
   # Set uniform spacing between nodes along flowline
-  dists_old = np.linspace(0,np.max(d),np.max(d)/50)
+  dists_old = np.linspace(0,np.max(d),np.max(d)/20)
   x = np.interp(dists_old,d,flowline[:,0])
   y = np.interp(dists_old,d,flowline[:,1])
   
@@ -70,19 +70,40 @@ def load(glacier,shapefilename='center_flowline',filt_len='none',verticaldatum='
   if glacier == 'Helheim':
     zb = bed.smith_at_pts(x,y,glacier,model=bedmodel,smoothing=bedsmoothing,verticaldatum=verticaldatum)
   elif glacier == 'Kanger':
-    zb = bed.morlighem_pts(x,y,verticaldatum)
-    zb_cresis1 = bed.cresis('2009a',glacier,verticaldatum)
-    zb_cresis2 = bed.cresis('2008',glacier,verticaldatum)
-    ind1 = np.where((x > 490970) & (x < 491300))[0]
-    ind2 = np.where((x > 491300) & (x < 495600))[0]
-    zb[ind1] = np.interp(x[ind1],zb_cresis1[:,0],zb_cresis1[:,2])
-    zb[ind2] = np.interp(x[ind2],zb_cresis2[:,0],zb_cresis2[:,2])
+    cresis = bed.cresis('all',glacier,verticaldatum=verticaldatum)
+    cutdist = 100.
+    dcresis = []
+    zcresis = []
+    tcresis = []
+    for i in range(0,len(cresis[:,0])):
+      mindist = np.min(np.sqrt((cresis[i,0]-x)**2+(cresis[i,1]-y)**2))
+      if mindist < cutdist:
+        minind = np.argmin(np.sqrt((cresis[i,0]-x)**2+(cresis[i,1]-y)**2))
+        dcresis.append(dists[minind])
+        zcresis.append(cresis[i,2])
+        tcresis.append(cresis[i,4])
+
+    ind = np.argsort(dcresis)
+    dcresis = np.array(dcresis)[ind]
+    zcresis = np.array(zcresis)[ind]
+    zb = np.interp(dists,dcresis,zcresis)
 
   if filt_len != 'none':
+    ind = np.where(~(np.isnan(zb)))[0]
+    zb_filt = np.zeros_like(zb)
+    zb_filt[:] = float('nan')
     cutoff=(1/filt_len)/(1/(np.diff(dists[1:3])*2))
     b,a=signal.butter(4,cutoff,btype='low')
-    zb_filt = signal.filtfilt(b,a,zb)
+    zb_filt[ind] = signal.filtfilt(b,a,zb[ind])
   else:
     zb_filt = zb
+    
+  if (glacier == 'Kanger') and (shapefilename=='flowline_flightline'):
+    ind = np.where(dists > 3000.)[0]
+    zb_filt[ind] = float('nan')
+  elif (glacier == 'Helheim') and (shapefilename=='flowline_flightline'):
+    ind = np.where(dists > 3900.)[0]
+    zb_filt[ind] = float('nan')
+    
 
   return x,y,zb_filt,dists
