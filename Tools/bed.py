@@ -103,7 +103,9 @@ def cresis(year,glacier,verticaldatum='geoid',cleanup=True):
       		range(37640,37675),range(37819,37836),range(44127,44207),range(46942,47030),range(53595,53663),\
       		range(53713,53793),range(53974,53987),range(56646,56726),range(64006,64013),range(61237,61529),range(61745,62000),range(68541,68810),\
       		range(69202,69475),range(75645,75904),range(77285,77538),range(77728,77970)] 
-        floatind = np.where(zs < flotation.height(zb,rho_i=917.,rho_sw=1020.))[0]
+        # Find locations where ice is floating so we can toss those out
+        floatind = np.where(coords.geoidheight(x2,y2,zs) < flotation.height(coords.geoidheight(x2,y2,zb),rho_i=917.,rho_sw=1025.))[0]
+        badind = np.union1d(badind,floatind)
       else: 
         badind = []
         floatind = []
@@ -138,7 +140,9 @@ def cresis(year,glacier,verticaldatum='geoid',cleanup=True):
         		range(29927,30075),range(33768,33847),range(28851,29063),
         		range(39150,39210),range(40471,40550),range(23853,23860),
         		range(36055,36095)] 
-        floatind = np.where(zs < flotation.height(zb,rho_i=917.,rho_sw=1020.))[0]
+        # Find locations where ice is floating so we can toss those out
+        floatind = np.where(coords.geoidheight(x2,y2,zs) < flotation.height(coords.geoidheight(x2,y2,zb),rho_i=910.,rho_sw=1025.))[0]
+        badind = np.union1d(badind,floatind)
       else: 
         badind = []
         floatind = []
@@ -157,7 +161,7 @@ def cresis(year,glacier,verticaldatum='geoid',cleanup=True):
       elif year == 'all':
         ind = []
         for i in range(0,len(type)):
-          if 'ICESat' not in type[i] and (i not in badind) and (i not in floatind):
+          if 'ICESat' not in type[i] and (i not in badind):
             ind.append(i)
     else:
       print "Unrecognized CreSIS profile"
@@ -171,7 +175,7 @@ def cresis(year,glacier,verticaldatum='geoid',cleanup=True):
     zb = zb
     zs = zs
   else:
-    print "Unknown vertical datum, defaulting to ellipsoid height"
+    sys.exit("Unknown vertical datum, exiting...")
     
   return np.column_stack([x2[ind],y2[ind],zb[ind],zs[ind],dates[ind]])
 
