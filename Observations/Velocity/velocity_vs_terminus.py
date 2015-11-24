@@ -23,8 +23,8 @@ args = sys.argv
 glacier = args[1][:] # Options: Kanger, Helheim
 
 # Locations for velocities
-dists_eul = -1.0*np.array([2.5,5.0,10.0,15.0,20.0]) # kilometers
-dists_mel = np.arange(0.0,5.1,0.1)
+dists_eul = -1.0*np.array([2,5.0,10.0,15.0,20.0]) # kilometers
+dists_mel = np.array([-0.5])
 #dists_lag = np.array([1.0,5.0,10.0,20.0,30.0])
 
 # What bed to use for thinning gates through fluxgate method
@@ -46,16 +46,14 @@ lagrangian = 0
 # Which plots?
 plot_overview = 1
 plot_radargram = 0
-plot_bed = 1
+plot_bed = 0
 plot_images = 0
 
 ############ 
 # Flowline #
 ############
-if glacier == 'Helheim':
-  x,y,zb,dists = glacier_flowline.load(glacier,shapefilename='flowline_flightline')
-else:
-  x,y,zb,dists = glacier_flowline.load(glacier)
+
+x,y,zb,dists = glacier_flowline.load(glacier,shapefilename='flowline_flightline',filt_len=2.0e3)
 
 ##################
 # Get ice fronts #
@@ -117,12 +115,13 @@ elif glacier == 'Kanger':
   ymin = -2302000.0
   ymax = -2266000.0
 
-xwv,ywv,zwv,timewv = elevation.dem_grid(glacier,xmin,xmax,ymin,ymax,years='all',verticaldatum='ellipsoid')
-dem_time,dem_dH = fluxgate.dem_thinning(glacier,xwv,ywv,zwv,timewv,"fluxgate3",type='rate')
+xdem,ydem,zdem,timedem,errordem = elevation.dem_grid(glacier,xmin,xmax,ymin,ymax,years='all',verticaldatum='ellipsoid',return_error=True)
+dem_time,dem_dH = fluxgate.dem_thinning(glacier,xdem,ydem,zdem,timedem,errordem,"fluxgate3",type='rate')
 flux_time,flux_dH = fluxgate.fluxgate_thinning(glacier,"fluxgate3",bedsource=bedsource)
 xflux,yflux = fluxgate.fluxbox_geometry(glacier,"fluxgate3")
 
 xrac,yrac,smbrac,timerac = climate.racmo_at_pts(np.mean(xflux),np.mean(yflux),'smb',filt_len=14.0)
+xrac,yrac,runrac,timerac = climate.racmo_at_pts(np.mean(xflux),np.mean(yflux),'runoff',filt_len=14.0)
 xsif,ysif,sif,timesif = climate.SIF_at_pts(np.mean(xflux),np.mean(yflux),filt_len=14.)
 
 dH_time,dH_flux,dH_dem,dH_smb = fluxgate.compare_thinning_rates(dem_time,dem_dH,flux_time,flux_dH,timerac,smbrac,rho_i=900.0)
@@ -131,12 +130,13 @@ dH_time,dH_flux,dH_dem,dH_smb = fluxgate.compare_thinning_rates(dem_time,dem_dH,
 # Get elevations near terminus #
 ################################
 
-zpt_atm,time_atm = elevation.atm_at_pts(x[ind_eul],y[ind_eul],glacier,years='all',maxdist=250,verticaldatum='geoid',method='average',cutoff='terminus')
-zpt_wv,zpt_std,time_wv = elevation.dem_at_pts(x[ind_eul],y[ind_eul],glacier,years='all',verticaldatum='geoid',cutoff='terminus',method='average',radius=250)
+zpt_atm,zptstd_atm,time_atm = elevation.atm_at_pts(x[ind_eul],y[ind_eul],glacier,years='all',maxdist=250.,verticaldatum='geoid',method='average',cutoff='terminus')
+
+zpt_dem,zpterror_dem,time_dem = elevation.dem_at_pts(x[ind_eul],y[ind_eul],glacier,years='all',verticaldatum='geoid',cutoff='terminus',method='average',radius=250.)
 
 # Get rid of elevations that are in front of the ice front 
-interped = np.interp(time_wv,terminus_time,terminus_val)
-zpt_wv[interped < dists_eul[0]*1.0e3+250,0] = float('NaN')
+interped = np.interp(time_dem,terminus_time,terminus_val)
+zpt_dem[interped < dists_eul[0]*1.0e3+250,0] = float('NaN')
 interped = np.interp(time_atm,terminus_time,terminus_val)
 zpt_atm[interped < dists_eul[0]*1.0e3+250,0] = float('NaN')
 del interped
@@ -286,8 +286,8 @@ if plot_images == 1:
 ###########################################
 
 if plot_overview == 1:
-  plt.figure(figsize=(7.45,6.0))
-  gs = matplotlib.gridspec.GridSpec(6,1)
+  plt.figure(figsize=(7.45,7))
+  gs = matplotlib.gridspec.GridSpec(7,1)
 
   # Plot terminus
   plt.subplot(gs[-2, :])
@@ -333,13 +333,15 @@ if plot_overview == 1:
   ax.tick_params('both', length=3, width=1, which='minor')
   if glacier == 'Helheim':
     plt.ylim([-3,3])
+    plt.text(2008.13,-2.6,'e',fontsize=9,fontname='arial',weight='bold')
   elif glacier == 'Kanger':
     plt.ylim([-4.5,4.5])
+    plt.text(2008.13,-3.8,'e',fontsize=9,fontname='arial',weight='bold')
   else:  
     plt.ylim(np.floor((np.min(terminus_val))/1e3),np.ceil((np.max(terminus_val))/1e3))
 
   # Plot velocities
-  ax = plt.subplot(gs[0:-4, :]) 
+  ax = plt.subplot(gs[0:-5, :]) 
   #plt.plot([2000,2014],[0,0],'k')
   #coloptions=['k','r','y','g','b']
   coloptions=['r','b','g','limegreen','gold']
@@ -351,25 +353,27 @@ if plot_overview == 1:
   if normalized == 1:
     for i in range(0,len(dists_eul)):
       nonnan = np.where(~(np.isnan(vel_val[:,i])))[0]
-      plt.plot(vel_time[nonnan],(vel_val[nonnan,i]-vel_val[nonnan[0],i])/1e3,markoptions[i],color=coloptions[i],label=str(dists_eul[i])+' km',linewidth=1,markersize=3)
+      plt.plot(vel_time[nonnan],(vel_val[nonnan,i]-vel_val[nonnan[0],i])/1e3,markoptions[i],color=coloptions[i],label='M'+'{0:02d}'.format(int(abs(dists_eul[i]))),linewidth=1,markersize=3)
     plt.yticks(range(-3,3,1),fontsize=8,fontname='Arial')
     if glacier == 'Kanger':
       plt.ylim([-1.5,3])
   else:
     for i in range(0,len(dists_eul)):
       nonnan = np.where(~(np.isnan(vel_val[:,i])))[0]
-      plt.plot(vel_time[nonnan],(vel_val[nonnan,i])/1e3,markoptions[i],color=coloptions[i],label=str(dists_eul[i])+' km',linewidth=1,markersize=3)
+      plt.plot(vel_time[nonnan],(vel_val[nonnan,i])/1e3,markoptions[i],color=coloptions[i],label='M'+'{0:02d}'.format(int(abs(dists_eul[i]))),markersize=3)
     plt.yticks(range(2,12),fontsize=8,fontname="Arial")
     if glacier == 'Helheim':
       plt.ylim([3.5,11])
+      plt.text(2008.13,8.4,'a',fontsize=9,fontname='arial',weight='bold')
     elif glacier == 'Kanger':
       plt.ylim([2.5,12])
-  plt.ylabel('Glacier speed \n (km/yr)',fontsize=8,fontname="Arial")
+      plt.text(2008.13,8.8,'a',fontsize=9,fontname='arial',weight='bold')
+  plt.ylabel('Glacier speed \n (km yr$^{-1}$)',fontsize=8,fontname="Arial")
   x_formatter = matplotlib.ticker.ScalarFormatter(useOffset=False)
   ax.xaxis.set_major_formatter(x_formatter)
   ax.xaxis.set_minor_locator(AutoMinorLocator(2))
   ax.yaxis.set_minor_locator(AutoMinorLocator(2))
-  plt.legend(loc=2,fontsize=8,numpoints=1,handlelength=0.4,labelspacing=0.1,ncol=2,columnspacing=0.5)
+  plt.legend(loc=2,fontsize=8,numpoints=1,handlelength=0.2,handletextpad=0.5,labelspacing=0.1,ncol=2,columnspacing=0.8)
   matplotlib.rc('font',family="Arial",)
   ax.tick_params('both', length=6, width=1.25, which='major')
   ax.tick_params('both', length=3, width=1, which='minor')
@@ -380,29 +384,24 @@ if plot_overview == 1:
     xTickPos = np.linspace(np.floor(time1)-0.25,np.ceil(time2)-0.25,(np.ceil(time2)-np.floor(time1))*2+1)
     ax.bar(xTickPos, [max(plt.ylim())-min(plt.ylim())] * len(xTickPos), (xTickPos[1]-xTickPos[0]), bottom=min(plt.ylim()), color=['0.85','w'],linewidth=0)
   plt.xlim([time1,time2])
-
-
+ 
   # Plot surface elevations
-  plt.subplot(gs[-4, :])
+  plt.subplot(gs[-5, :])
   ax = plt.gca()
-  plt.ylim([-100,100])
+  plt.ylim([-120,120])
   if plot_images == 1:
    for i in range(0,len(images)):
       plt.plot([images_time[i][3],images_time[i][3]],ax.get_ylim(),'--',color='0.3')
   if seasonal:
     xTickPos = np.linspace(np.floor(time1)-0.25,np.ceil(time2)-0.25,(np.ceil(time2)-np.floor(time1))*2+1)
     plt.bar(xTickPos, [max(plt.ylim())-min(plt.ylim())] * len(xTickPos), (xTickPos[1]-xTickPos[0]), bottom=min(plt.ylim()), color=['0.85','w'],linewidth=0,zorder=1)
-  if glacier == 'Helheim':
-    ind = 0
-  elif glacier == 'Kanger':
-    ind = 1
-  plt.fill_between([time1,time2],np.ones(2)*flotation.height(zb[ind_eul[ind]]-50)-flotation.height(zb[ind_eul[ind]]),np.ones(2)*flotation.height(zb[ind_eul[ind]]+50)-flotation.height(zb[ind_eul[ind]]),
-  alpha=0.1,facecolor=coloptions[ind],edgecolor=coloptions[ind],antialiased=True,zorder=2)
-  plt.plot([time1,time2],[0,0],'--',c=coloptions[ind],linewidth=1)
-  plt.plot(time_wv,zpt_wv[:,ind]-flotation.height(zb[ind_eul[ind]]),markoptions[ind],color=coloptions[ind],markersize=3)
-  plt.plot(time_atm,zpt_atm[:,ind]-flotation.height(zb[ind_eul[ind]]),'^',color=coloptions[ind],markersize=4)
-  plt.plot(0,0,'^',markersize=4,label='ATM',c=coloptions[ind])
-  plt.plot(0,0,'o',markersize=3,label='DEM',c=coloptions[ind])
+  plt.fill_between([time1,time2],np.ones(2)*flotation.height(zb[ind_eul[0]]-50)-flotation.height(zb[ind_eul[0]]),np.ones(2)*flotation.height(zb[ind_eul[0]]+50)-flotation.height(zb[ind_eul[0]]),
+  alpha=0.1,facecolor='b',edgecolor='b',antialiased=True,zorder=2)
+  plt.plot([time1,time2],[0,0],'b:',linewidth=1.0)
+  plt.errorbar(time_dem,zpt_dem[:,1]-flotation.height(zb[ind_eul[1]]),yerr=zpterror_dem,fmt='o',color=coloptions[1],markersize=3)
+  plt.plot(time_atm,zpt_atm[:,1]-flotation.height(zb[ind_eul[1]]),'^',color=coloptions[1],markersize=3)
+  plt.plot(0,0,'^',markersize=3,label='ATM',c='k')
+  plt.plot(0,0,'o',markersize=3,label='DEM',c='k')
   x_formatter = matplotlib.ticker.ScalarFormatter(useOffset=False)
   ax.xaxis.set_major_formatter(x_formatter)
   ax.xaxis.set_minor_locator(AutoMinorLocator(2))
@@ -414,17 +413,58 @@ if plot_overview == 1:
   ax.tick_params('both', length=6, width=1.25, which='major')
   ax.tick_params('both', length=3, width=1, which='minor')
   if glacier == 'Helheim':
-    plt.yticks(np.arange(-20,30,10),fontsize=8,fontname="Arial")
-    plt.ylim([-5,25])
+    plt.yticks(np.arange(80,120,10),fontsize=8,fontname="Arial")
+    plt.ylim([70,105])
+    plt.text(2008.13,98,'b',fontsize=9,fontname='arial',weight='bold')
   elif glacier == 'Kanger':
-    plt.yticks(np.arange(0,70,20),fontsize=8,fontname="Arial")
-    plt.ylim([-5,65])
+    plt.yticks(np.arange(-20,40,10),fontsize=8,fontname="Arial")
+    plt.ylim([-20,40])
+    plt.text(2008.13,30,'b',fontsize=9,fontname='arial',weight='bold')
   plt.legend(loc=3,fontsize=8,numpoints=1,handlelength=0.4,labelspacing=0.05,ncol=3,columnspacing=0.7,handletextpad=0.5)
+
+  # Plot surface elevations
+  plt.subplot(gs[-4, :])
+  ax = plt.gca()
+  plt.ylim([-120,120])
+  if plot_images == 1:
+   for i in range(0,len(images)):
+      plt.plot([images_time[i][3],images_time[i][3]],ax.get_ylim(),'--',color='0.3')
+  if seasonal:
+    xTickPos = np.linspace(np.floor(time1)-0.25,np.ceil(time2)-0.25,(np.ceil(time2)-np.floor(time1))*2+1)
+    plt.bar(xTickPos, [max(plt.ylim())-min(plt.ylim())] * len(xTickPos), (xTickPos[1]-xTickPos[0]), bottom=min(plt.ylim()), color=['0.85','w'],linewidth=0,zorder=1)
+  plt.fill_between([time1,time2],np.ones(2)*flotation.height(zb[ind_eul[0]]-50)-flotation.height(zb[ind_eul[0]]),np.ones(2)*flotation.height(zb[ind_eul[0]]+50)-flotation.height(zb[ind_eul[0]]),
+  alpha=0.1,facecolor='r',edgecolor='r',antialiased=True,zorder=2)
+  plt.plot([time1,time2],[0,0],'r:',linewidth=1.0)
+  plt.errorbar(time_dem,zpt_dem[:,0]-flotation.height(zb[ind_eul[0]]),yerr=zpterror_dem,fmt='o',color=coloptions[0],markersize=3)
+  plt.plot(time_atm,zpt_atm[:,0]-flotation.height(zb[ind_eul[0]]),'^',color=coloptions[0],markersize=3)
+  plt.plot(0,0,'^',markersize=3,label='ATM',c='k')
+  plt.plot(0,0,'o',markersize=3,label='DEM',c='k')
+  x_formatter = matplotlib.ticker.ScalarFormatter(useOffset=False)
+  ax.xaxis.set_major_formatter(x_formatter)
+  ax.xaxis.set_minor_locator(AutoMinorLocator(2))
+  ax.yaxis.set_minor_locator(AutoMinorLocator(2))
+  ax.set_xticklabels([])
+  plt.xticks(range(2000,2016),fontsize=8,fontname="Arial")
+  plt.xlim([time1,time2])
+  plt.ylabel('Height above\n flotation (m)',fontsize=8,fontname="Arial")
+  ax.tick_params('both', length=6, width=1.25, which='major')
+  ax.tick_params('both', length=3, width=1, which='minor')
+  if glacier == 'Helheim':
+    plt.yticks(np.arange(-10,40,10),fontsize=8,fontname="Arial")
+    plt.ylim([-5,30])
+    plt.text(2008.13,23,'c',fontsize=9,fontname='arial',weight='bold')
+  elif glacier == 'Kanger':
+    plt.yticks(np.arange(-30,20,10),fontsize=8,fontname="Arial")
+    plt.ylim([-40,20])
+    plt.text(2008.13,10,'c',fontsize=9,fontname='arial',weight='bold')
+  plt.legend(loc=3,fontsize=8,numpoints=1,handlelength=0.4,labelspacing=0.05,ncol=3,columnspacing=0.7,handletextpad=0.5)
+
   
   # Plot thinning rates
   plt.subplot(gs[-3, :])
   ax = plt.gca()
   plt.ylim([-140,140])
+  plt.plot([time1,time2],[0,0],'k:',lw=1)
   if plot_images == 1:
    for i in range(0,len(images)):
       plt.plot([images_time[i][3],images_time[i][3]],ax.get_ylim(),'--',color='0.3')
@@ -443,17 +483,19 @@ if plot_overview == 1:
   ax.set_xticklabels([])
   plt.xticks(range(2000,2016),fontsize=8,fontname="Arial")
   plt.xlim([time1,time2])
-  plt.ylabel('dH/dt\n(m/yr)',fontsize=8,fontname="Arial")
+  plt.ylabel('dH/dt (m yr$^{-1}$)',fontsize=8,fontname="Arial")
   ax.tick_params('both', length=6, width=1.25, which='major')
   ax.tick_params('both', length=3, width=1, which='minor')
   if glacier == 'Helheim':
     plt.yticks(np.arange(-100,120,50),fontsize=8,fontname="Arial")
-    plt.ylim([-130,80])
+    plt.ylim([-110,80])
+    plt.text(2008.13,45,'d',fontsize=9,fontname='arial',weight='bold')
   elif glacier == 'Kanger':
     plt.yticks(np.arange(-100,150,50),fontsize=8,fontname="Arial")
-    plt.ylim([-140,100])
+    plt.ylim([-90,80])
+    plt.text(2008.13,50,'d',fontsize=9,fontname='arial',weight='bold')
 
-  # Plot presence of rigid melange
+  # Plot presence of rigid melange and/or climate variables
   plt.subplot(gs[-1, :])
   rigid2 = np.zeros(len(velmel_time))
   rigid2[:] = float('nan')
@@ -484,10 +526,19 @@ if plot_overview == 1:
   ax.set_xticklabels(labels,fontsize=8,fontname='Arial')
   plt.xlim([time1,time2])
   #plt.bar(time1,0.2,bottom=0.4,width=time2-time1,color='0.6',edgecolor='0.6',label=)
-  plt.bar(velmel_time[:,0]-velmel_time[:,1]/2,np.ones(len(velmel_time[:,0]))*0.2,bottom=0.4,width=velmel_time[:,1],color='blue',edgecolor='none',label='Nonrigid')
-  plt.bar(velmel_time[rigid2==1,0]-velmel_time[rigid2==1,1]/2,rigid2[rigid2==1]*0.2,bottom=0.4,width=velmel_time[rigid2==1,1],color='lightblue',edgecolor='none',label='Rigid')
+  #plt.bar(velmel_time[:,0]-velmel_time[:,1]/2,np.ones(len(velmel_time[:,0]))*0.2,bottom=0.4,width=velmel_time[:,1],color='blue',edgecolor='none',label='Nonrigid')
+  #plt.bar(velmel_time[rigid2==1,0]-velmel_time[rigid2==1,1]/2,rigid2[rigid2==1]*0.2,bottom=0.4,width=velmel_time[rigid2==1,1],color='lightblue',edgecolor='none',label='Rigid')
   plt.plot(timesif,sif,'k',lw=1.5,label='SIF')
-  plt.legend(loc=2,fontsize=8,numpoints=1,handlelength=0.7,labelspacing=0.05,ncol=3,columnspacing=0.7,handletextpad=0.5)
+  ax2 = ax.twinx()
+  ax2.plot([0,0],[1,1],'k',lw=1.5,label='SIF')
+  ax2.plot(timerac,runrac,'-',c='0.4',dashes=[2,1],lw=1.5,label='Runoff')
+  ax2.set_xlim([time1,time2])
+  ax2.set_ylim([0,50])
+  ax2.set_yticks([0,25,50])
+  ax2.set_yticklabels([0,25,50],fontsize=8,fontname='Arial')
+  ax2.set_ylabel('Runoff (kg m$^{-2}$ d$^{-1}$)',fontsize=8,fontname='Arial')
+  plt.legend(loc=3,fontsize=8,numpoints=1,handlelength=0.7,labelspacing=0.05,ncol=4,columnspacing=0.7,handletextpad=0.5)
+  ax.text(2008.13,0.35,'f',fontsize=9,fontname='arial',weight='bold')
   if plot_images == 1:
    for i in range(0,len(images)):
       plt.plot([images_time[i][3],images_time[i][3]],ax.get_ylim(),'--',color='0.3')
@@ -543,9 +594,13 @@ if plot_overview == 1:
     xmax = 313000.
     ymin = -2587000.
     ymax = -2552000.
-  ax.plot(x,y,'k',lw=1)
+  ax.plot(x[dists>-21e3],y[dists>-21e3],'k',lw=1)
   for i in range(0,len(velocitypoints)):
     ax.plot(velocitypoints[i,0],velocitypoints[i,1],'o',color=coloptions[i],markersize=5)
+    if i in [1,2,4]:
+      ax.text(velocitypoints[i,0]-3.8e3,velocitypoints[i,1]-1.5e3,'M'+'{0:02d}'.format(int(abs(dists_eul[i]))),fontsize=8,fontname='Arial')
+    else:
+      ax.text(velocitypoints[i,0],velocitypoints[i,1]+0.75e3,'M'+'{0:02d}'.format(int(abs(dists_eul[i]))),fontsize=8,fontname='Arial')
   ax.set_xticklabels([])
   ax.set_yticklabels([])
   ax.set_yticks([])
@@ -586,10 +641,12 @@ if plot_overview == 1:
   elif glacier == 'Kanger':
     xg,yg = m ([-33.0],[68.63333])
   m.plot(xg,yg,'ro',markersize=4)
-  del m,xg,yg,ax,patch,path,xmin,xmax,ymin,ymax
 
-  plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+"_velocity_map.pdf"),FORMAT='PDF',dpi=200)
+  plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+"_velocity_map.pdf"),FORMAT='PDF',dpi=400)
   plt.close()
+
+  del m,xg,yg,ax,patch,path,xmin,xmax,ymin,ymax,cbaxes,cb,vel_masked,cx,xmask,ymask,mask,xvel,yvel,vel,ximage,yimage,image,imagetime,ax2,fig
+
    
 ###########################
 # Plot velocity radargram #

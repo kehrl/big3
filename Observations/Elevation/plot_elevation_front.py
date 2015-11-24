@@ -30,11 +30,10 @@ elif glacier == 'Kanger':
   ymax = -2285000.0
 
 # Load worldview DEMs
-xwv,ywv,zwv,timewv = elevation.worldview_grid(glacier,xmin,xmax,ymin,ymax,years='all',resolution=32,verticaldatum='geoid')
+xwv,ywv,zwv,timewv = elevation.dem_grid(glacier,xmin,xmax,ymin,ymax,years='all',resolution=32,verticaldatum='geoid')
 
 # Calculate height above flotation at CreSIS radar picks
 xf,yf,zabovefloat = flotation.extent(xwv,ywv,zwv,timewv,glacier,rho_i=917.0,rho_sw=1020.0,bedsource='cresis',verticaldatum='geoid')
-
 
 # Length of plot
 N = len(timewv)

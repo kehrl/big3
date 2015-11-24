@@ -8,7 +8,9 @@ import matplotlib.pyplot as plt
 import matplotlib, geotiff, fracyear, dem_shading, icemask, glacier_extent
 from matplotlib.ticker import AutoMinorLocator
 import scipy.signal as signal
-import pylab
+from scipy import stats
+import scipy
+import pylab, cubehelix
 import matplotlib.cm as cmx
 import matplotlib.colors as colors
 
@@ -21,8 +23,8 @@ import matplotlib.colors as colors
 args = sys.argv
 glacier = args[1][:] # Options: Kanger, Helheim
 
-time1 = 2008.
-time2 = 2016.
+time1 = 2011.
+time2 = 2015.
 
 # Map extent
 if glacier == 'Kanger':
@@ -44,7 +46,6 @@ elif glacier == "Kanger":
   imagetime = fracyear.date_to_fracyear(2014,7,6)
   ximage,yimage,image = geotiff.readrgb(os.path.join(os.getenv("DATA_HOME"),"Imagery/Landsat/Kanger/TIF/20140706135251_LC82310122014187LGN00.tif"))
 
-
 # Load bed
 xb,yb,zb = bed.morlighem_grid(xmin,xmax,ymin,ymax,verticaldatum='geoid')
 #xb,yb,zb = bed.smith_grid(glacier,xmin,xmax,ymin,ymax,verticaldatum='geoid',model='aniso',smoothing=4,grid='structured')
@@ -53,10 +54,7 @@ xb,yb,zb = bed.morlighem_grid(xmin,xmax,ymin,ymax,verticaldatum='geoid')
 xvel,yvel,velall,velmean,velstd,velcount,veltime = velocity.variability(glacier,time1,time2)
 
 # Load elevation variability
-if glacier == 'Helheim':
-  xzs,yzs,zsall,zsmean,zsstd,zscount,zstime = elevation.variability(glacier,time1,time2,data='TDX')
-elif glacier == 'Kanger':
-  xzs,yzs,zsall,zsmean,zsstd,zscount,zstime = elevation.variability(glacier,time1,time2)
+xzs,yzs,zsall,zsmean,zsstd,zscount,zstime = elevation.variability(glacier,time1,time2)
 
 # Find flotation conditions
 xwv,ywv,zwv,timewv = elevation.dem_grid(glacier,xmin,xmax,ymin,ymax,years='all',resolution=32,verticaldatum='geoid')
@@ -79,6 +77,7 @@ velstd_high[velcount < 0.5*len(veltime)] = float('nan')
 fig = plt.figure(figsize=(7.5,2.4))
 matplotlib.rc('font',family='Arial')
 gs = matplotlib.gridspec.GridSpec(1,4)
+cx = cubehelix.cmap(start=1.2,rot=-1.1,reverse=True,minLight=0.1,sat=2)
 
 plt.subplot(gs[0])
 ax1 = plt.gca()
@@ -94,13 +93,14 @@ ymin1,ymax1 = plt.ylim()
 path = matplotlib.path.Path([[0.49*(xmax1-xmin1)+xmin,0.98*(ymax1-ymin1)+ymin1],
   			[0.98*(xmax1-xmin1)+xmin,0.98*(ymax1-ymin1)+ymin1],
   			[0.98*(xmax1-xmin1)+xmin,0.66*(ymax1-ymin1)+ymin1],
-  			[0.49*(xmax1-xmin1)+xmin,0.66*(ymax1-ymin1)+ymin1]])
+  			[0.49*(xmax1-xmin1)+xmin,0.66*(ymax1-ymin1)+ymin1],
+  			[0.49*(xmax1-xmin1)+xmin,0.98*(ymax1-ymin1)+ymin1]])
 patch = matplotlib.patches.PathPatch(path,edgecolor='k',facecolor='w',lw=1,zorder=3)
 ax1.add_patch(patch)
 cbaxes = fig.add_axes([0.15, 0.86, 0.085, 0.02]) 
 cb = plt.colorbar(p,cax=cbaxes,orientation='horizontal',ticks=[-1,0,1]) 
-cb.set_label('Bed elevation \n (km asl)',size=9,fontname='arial')
-cb.ax.tick_params(labelsize=9)
+cb.set_label('Bed elevation \n (km asl)',size=8,fontname='arial')
+cb.ax.tick_params(labelsize=8)
 #ax1.plot([xmin+0.61*(xmax-xmin),xmin+0.61*(xmax-xmin)+5e3],[ymin+0.73*(ymax-ymin),ymin+0.73*(ymax-ymin)],'k',linewidth=1.5)
 #ax1.plot([xmin+0.61*(xmax-xmin),xmin+0.61*(xmax-xmin)],[ymin+0.73*(ymax-ymin),ymin+0.71*(ymax-ymin)],'k',linewidth=1.5)
 #ax1.plot([xmin+0.61*(xmax-xmin)+5e3,xmin+0.61*(xmax-xmin)+5e3],[ymin+0.73*(ymax-ymin),ymin+0.71*(ymax-ymin)],'k',linewidth=1.5)
@@ -110,7 +110,8 @@ plt.subplot(gs[1])
 ax2 = plt.gca()
 ax2.axes.autoscale(False)
 plt.imshow(image[:,:,0],extent=[np.min(ximage),np.max(ximage),np.min(yimage),np.max(yimage)],cmap='Greys_r',origin='lower',clim=[0,0.6])
-p=plt.imshow(velstd_high*2/1.0e3,clim=[0,1],extent=[np.min(xvel),np.max(xvel),np.min(yvel),np.max(yvel)],origin='lower',cmap='jet')
+norms = matplotlib.colors.BoundaryNorm(np.arange(0,1.1,0.1),cx.N)
+p=plt.imshow(velstd_high*2/1.0e3,clim=[0,1],extent=[np.min(xvel),np.max(xvel),np.min(yvel),np.max(yvel)],origin='lower',cmap=cx,norm=norms)
 plt.contour(velstd_high*2/1.0e3,levels=[0.1],extent=[np.min(xvel),np.max(xvel),np.min(yvel),np.max(yvel)],origin='lower',colors='k',lw=2,zorder=2)
 ax2.set_xticks([])
 ax2.set_yticks([])
@@ -121,21 +122,23 @@ ymin1,ymax1 = plt.ylim()
 path = matplotlib.path.Path([[0.49*(xmax1-xmin1)+xmin,0.98*(ymax1-ymin1)+ymin1],
   			[0.98*(xmax1-xmin1)+xmin,0.98*(ymax1-ymin1)+ymin1],
   			[0.98*(xmax1-xmin1)+xmin,0.66*(ymax1-ymin1)+ymin1],
-  			[0.49*(xmax1-xmin1)+xmin,0.66*(ymax1-ymin1)+ymin1]])
+  			[0.49*(xmax1-xmin1)+xmin,0.66*(ymax1-ymin1)+ymin1],
+  			[0.49*(xmax1-xmin1)+xmin,0.98*(ymax1-ymin1)+ymin1]])
 patch = matplotlib.patches.PathPatch(path,edgecolor='k',facecolor='w',lw=1,zorder=3)
 ax2.add_patch(patch)
 cbaxes = fig.add_axes([0.39, 0.86, 0.085, 0.02]) 
 cb = plt.colorbar(p,cax=cbaxes,orientation='horizontal',ticks=[0,0.5,1]) 
-cb.set_label(r"Velocity 2-$\mathrm{\sigma}$",size=9,fontname='arial')
-cb.ax.tick_params(labelsize=9)
+cb.set_label(r"Velocity 2-$\mathrm{\sigma}$"+"\n"+"(km yr$^{-1}$)",size=8,fontname='arial')
+cb.ax.tick_params(labelsize=8)
 
 plt.subplot(gs[2])
 ax3 = plt.gca()
 ax3.axes.autoscale(False)
 plt.imshow(image[:,:,0],extent=[np.min(ximage),np.max(ximage),np.min(yimage),np.max(yimage)],cmap='Greys_r',origin='lower',clim=[0,0.6])
 zsstd_high = np.array(zsstd)
-zsstd_high[zscount < 2] = float('nan')
-p=plt.imshow(zsstd_high*2,clim=[0,20],extent=[np.min(xzs),np.max(xzs),np.min(yzs),np.max(yzs)],origin='lower',cmap='jet')
+zsstd_high[zscount < 1] = float('nan')
+norms = matplotlib.colors.BoundaryNorm(np.arange(0,22,2),cx.N)
+p=plt.imshow(zsstd_high*2,clim=[0,20],extent=[np.min(xzs),np.max(xzs),np.min(yzs),np.max(yzs)],origin='lower',cmap=cx,norm=norms)
 plt.contour(velstd_high*2/1.0e3,levels=[0.1],extent=[np.min(xvel),np.max(xvel),np.min(yvel),np.max(yvel)],origin='lower',colors='k',lw=2,zorder=2)
 #plt.contour(zsstd_high*1.96,levels=[5],extent=[np.min(xvel),np.max(xvel),np.min(yvel),np.max(yvel)],origin='lower',colors='k',lw=2)
 ax3.set_xticks([])
@@ -147,13 +150,14 @@ ymin1,ymax1 = plt.ylim()
 path = matplotlib.path.Path([[0.49*(xmax1-xmin1)+xmin,0.98*(ymax1-ymin1)+ymin1],
   			[0.98*(xmax1-xmin1)+xmin,0.98*(ymax1-ymin1)+ymin1],
   			[0.98*(xmax1-xmin1)+xmin,0.66*(ymax1-ymin1)+ymin1],
-  			[0.49*(xmax1-xmin1)+xmin,0.66*(ymax1-ymin1)+ymin1]])
+  			[0.49*(xmax1-xmin1)+xmin,0.66*(ymax1-ymin1)+ymin1],
+  			[0.49*(xmax1-xmin1)+xmin,0.98*(ymax1-ymin1)+ymin1]])
 patch = matplotlib.patches.PathPatch(path,edgecolor='k',facecolor='w',lw=1,zorder=3)
 ax3.add_patch(patch)
 cbaxes = fig.add_axes([0.625, 0.86, 0.09, 0.02]) 
 cb = plt.colorbar(p,cax=cbaxes,orientation='horizontal',ticks=[0,10,20]) 
-cb.set_label(r'Elevation 2-$\sigma$',size=9,fontname='arial')
-cb.ax.tick_params(labelsize=9)
+cb.set_label(r'Elevation 2-$\sigma$'+'\n (m)',size=8,fontname='arial')
+cb.ax.tick_params(labelsize=8)
 
 
 plt.subplot(gs[3])
@@ -180,46 +184,80 @@ ymin1,ymax1 = plt.ylim()
 path = matplotlib.path.Path([[0.54*(xmax1-xmin1)+xmin,0.98*(ymax1-ymin1)+ymin1],
   			[0.98*(xmax1-xmin1)+xmin,0.98*(ymax1-ymin1)+ymin1],
   			[0.98*(xmax1-xmin1)+xmin,0.66*(ymax1-ymin1)+ymin1],
-  			[0.54*(xmax1-xmin1)+xmin,0.66*(ymax1-ymin1)+ymin1]])
+  			[0.54*(xmax1-xmin1)+xmin,0.66*(ymax1-ymin1)+ymin1],
+  			[0.54*(xmax1-xmin1)+xmin,0.98*(ymax1-ymin1)+ymin1]])
 patch = matplotlib.patches.PathPatch(path,edgecolor='k',facecolor='w',lw=1,zorder=3)
 ax3.add_patch(patch)
-plt.legend(loc=1,numpoints=1,frameon=False,labelspacing=0.07,handletextpad=0.5,handlelength=0.2,fontsize=9)
+plt.legend(loc=1,numpoints=1,frameon=False,labelspacing=0.07,handletextpad=0.5,handlelength=0.2,fontsize=8)
 ax3.plot([xmin1+0.6*(xmax1-xmin1),xmin+0.6*(xmax1-xmin1)+5e3],[ymin1+0.73*(ymax1-ymin1),ymin1+0.73*(ymax1-ymin1)],'k',linewidth=1.5,zorder=5)
 ax3.plot([xmin1+0.6*(xmax1-xmin1),xmin1+0.6*(xmax1-xmin1)],[ymin1+0.73*(ymax1-ymin1),ymin1+0.71*(ymax1-ymin1)],'k',linewidth=1.5,zorder=5)
 ax3.plot([xmin1+0.6*(xmax1-xmin1)+5e3,xmin1+0.6*(xmax1-xmin1)+5e3],[ymin1+0.73*(ymax1-ymin1),ymin1+0.71*(ymax1-ymin1)],'k',linewidth=1.5,zorder=5)
-ax3.text(xmin1+0.64*(xmax1-xmin1)+5e3,ymin1+0.7*(ymax1-ymin1),'5 km',fontsize=9,fontname='arial')
+ax3.text(xmin1+0.64*(xmax1-xmin1)+5e3,ymin1+0.7*(ymax1-ymin1),'5 km',fontsize=8,fontname='arial')
 
 plt.tight_layout()
 plt.subplots_adjust(hspace=0.05,wspace=0.05)
 plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+"_variability.pdf"),FORMAT='PDF',dpi=200)
 plt.close()
 
+# Plot trends
+if glacier == 'Helheim':
+  xzs,yzs,zsall,zsmean,zsstd,zscount,zstime = elevation.variability(glacier,time1,time2,data='TDX')
+
 zstrend = np.zeros_like(zsstd)
+zstrend_time1 = np.zeros_like(zsstd)
+zstrend_time2 = np.zeros_like(zsstd)
+zstrend_p = np.zeros_like(zsstd)
+zstrend_count = np.zeros_like(zsstd)
 zstrend[:,:] = float('nan')
+zstrend_p[:,:] = float('nan')
+ind = np.where((zstime > time1) & (zstime < time2))[0]
 for j in range(0,len(yzs)):
   for i in range(0,len(xzs)):
-    nonnan = np.where(~(np.isnan(zsall[j,i,:])))[0]
-    if (len(nonnan) > 3) and np.max(zstime[nonnan]) > 2014. and np.min(zstime[nonnan]) < 2012.:
-      p = np.polyfit(zstime[nonnan],zsall[j,i,nonnan],1)
-      zstrend[j,i] = p[0]
+    nonnan = np.where(~(np.isnan(zsall[j,i,ind])))[0]
+    zstrend_count = len(nonnan)
+    if len(nonnan) > 1:
+      if (np.floor(np.min(zstime[ind[nonnan]]))==time1) and np.ceil(np.max(zstime[ind[nonnan]]))==time2:
+        zstrend_time1[j,i] = np.min(zstime[ind[nonnan]])
+        zstrend_time2[j,i] = np.max(zstime[ind[nonnan]])
+        slope,intercept,r,p,std_err = stats.linregress(zstime[ind[nonnan]],zsall[j,i,ind[nonnan]])
+        zstrend[j,i] = slope
+        zstrend_p[j,i] = p
+ind = np.where(zstrend_p > 0.05)
+zstrend[ind] = float('nan')
 
 veltrend = np.zeros_like(velstd)
+veltrend_time1 = np.zeros_like(velstd)
+veltrend_time2 = np.zeros_like(velstd)
+veltrend_count = np.zeros_like(velstd)
+veltrend_p = np.zeros_like(velstd)
+veltrend_p[:,:] = float('nan')
 veltrend[:,:] = float('nan')
+ind = np.where((veltime > time1) & (veltime < time2))[0]
 for j in range(0,len(yvel)):
   for i in range(0,len(xvel)):
-    nonnan = np.where(~(np.isnan(velall[j,i,:])))[0]
-    if (len(nonnan) > 0.5*len(veltime)):
-      p = np.polyfit(veltime[nonnan,0],velall[j,i,nonnan],1)
-      veltrend[j,i] = p[0]
+    nonnan = np.where((~(np.isnan(velall[j,i,ind]))))[0]
+    veltrend_count[j,i] = len(nonnan)
+    if len(nonnan) > 1:
+      if (np.floor(np.min(veltime[ind[nonnan]]))==time1) and np.ceil(np.max(veltime[ind[nonnan]]))==time2:
+        slope,intercept,r,p,std_err = stats.linregress(veltime[ind[nonnan]],velall[j,i,ind[nonnan]])
+        veltrend[j,i] = slope
+        veltrend_p[j,i] = p
+        veltrend_time1[j,i] = np.min(veltime[ind[nonnan]])
+        veltrend_time2[j,i] = np.max(veltime[ind[nonnan]])
+ind = np.where(veltrend_p > 0.05)
+veltrend[ind] = float('nan')
 
 fig = plt.figure(figsize=(4,2.4))
 matplotlib.rc('font',family='Arial')
 gs = matplotlib.gridspec.GridSpec(1,2)
+cx = cubehelix.cmap(start=1.2,rot=-1.1,reverse=False,minLight=0.1,sat=2,nlev=8)
 
 plt.subplot(gs[0])
+matplotlib.rcParams['contour.negative_linestyle'] = 'solid'
 ax1 = plt.gca()
 plt.imshow(image[:,:,0],extent=[np.min(ximage),np.max(ximage),np.min(yimage),np.max(yimage)],cmap='Greys_r',origin='lower',clim=[0,0.6])
-p=plt.imshow(veltrend,extent=[np.min(xvel),np.max(xvel),np.min(yvel),np.max(yvel)],origin='lower',clim=[-100,5])
+norms = matplotlib.colors.BoundaryNorm(np.arange(-500,1,50),cx.N)
+p=plt.imshow(veltrend,extent=[np.min(xvel),np.max(xvel),np.min(yvel),np.max(yvel)],origin='lower',clim=[-500,100],cmap=cx,norm=norms)
 ax1.axes.set_xlim([xmin,xmax])
 ax1.axes.set_ylim([ymin,ymax])
 ax1.set_xticks([])
@@ -227,40 +265,42 @@ ax1.set_yticks([])
 xmin1,xmax1 = plt.xlim()
 ymin1,ymax1 = plt.ylim()
 path = matplotlib.path.Path([[0.49*(xmax1-xmin1)+xmin,0.98*(ymax1-ymin1)+ymin1],
-  			[0.98*(xmax1-xmin1)+xmin,0.98*(ymax1-ymin1)+ymin1],
-  			[0.98*(xmax1-xmin1)+xmin,0.66*(ymax1-ymin1)+ymin1],
-  			[0.49*(xmax1-xmin1)+xmin,0.66*(ymax1-ymin1)+ymin1]])
+  			[0.98*(xmax1-xmin1)+xmin1,0.98*(ymax1-ymin1)+ymin1],
+  			[0.98*(xmax1-xmin1)+xmin1,0.66*(ymax1-ymin1)+ymin1],
+  			[0.49*(xmax1-xmin1)+xmin1,0.66*(ymax1-ymin1)+ymin1],
+  			[0.49*(xmax1-xmin1)+xmin1,0.98*(ymax1-ymin1)+ymin1]])
 patch = matplotlib.patches.PathPatch(path,edgecolor='k',facecolor='w',lw=1,zorder=3)
 ax1.add_patch(patch)
 cbaxes = fig.add_axes([0.3, 0.86, 0.16, 0.02]) 
-cb = plt.colorbar(p,cax=cbaxes,orientation='horizontal',ticks=[-100,-50,0]) 
-cb.set_label('dv/dt \n (m/yr-2)',size=9,fontname='arial')
-cb.ax.tick_params(labelsize=9)
+cb = plt.colorbar(p,cax=cbaxes,orientation='horizontal',ticks=[-400,-200,0]) 
+cb.set_label('dv/dt \n (m yr$^{-2}$)',size=8,fontname='arial')
+cb.ax.tick_params(labelsize=8)
+ax1.text(0.05*(xmax1-xmin1)+xmin1,0.9*(ymax1-ymin1)+ymin1,'a',weight='bold',fontsize=9)
 
 plt.subplot(gs[1])
 ax2 = plt.gca()
 plt.imshow(image[:,:,0],extent=[np.min(ximage),np.max(ximage),np.min(yimage),np.max(yimage)],cmap='Greys_r',origin='lower',clim=[0,0.6])
-p=plt.imshow(zstrend,clim=[-10,5],extent=[np.min(xzs),np.max(xzs),np.min(yzs),np.max(yzs)],origin='lower',cmap='jet')
+p=plt.imshow(zstrend,extent=[np.min(xzs),np.max(xzs),np.min(yzs),np.max(yzs)],origin='lower',cmap=matplotlib.cm.get_cmap('RdBu_r',8),clim=[-8,8])
 ax2.set_xticks([])
 ax2.set_yticks([])
 ax2.axes.set_xlim([xmin,xmax])
 ax2.axes.set_ylim([ymin,ymax])
 xmin1,xmax1 = plt.xlim()
 ymin1,ymax1 = plt.ylim()
-path = matplotlib.path.Path([[0.49*(xmax1-xmin1)+xmin,0.98*(ymax1-ymin1)+ymin1],
+path = matplotlib.path.Path([[0.5*(xmax1-xmin1)+xmin,0.98*(ymax1-ymin1)+ymin1],
   			[0.98*(xmax1-xmin1)+xmin,0.98*(ymax1-ymin1)+ymin1],
   			[0.98*(xmax1-xmin1)+xmin,0.66*(ymax1-ymin1)+ymin1],
-  			[0.49*(xmax1-xmin1)+xmin,0.66*(ymax1-ymin1)+ymin1]])
+  			[0.5*(xmax1-xmin1)+xmin,0.66*(ymax1-ymin1)+ymin1],
+  			[0.5*(xmax1-xmin1)+xmin,0.98*(ymax1-ymin1)+ymin1]])
 patch = matplotlib.patches.PathPatch(path,edgecolor='k',facecolor='w',lw=1,zorder=3)
 ax2.add_patch(patch)
 cbaxes = fig.add_axes([0.76, 0.86, 0.16, 0.02]) 
-cb = plt.colorbar(p,cax=cbaxes,orientation='horizontal',ticks=[-10,-5,0,5]) 
-cb.set_label("dH/dt \n (m/yr)",size=9,fontname='arial')
-cb.ax.tick_params(labelsize=9)
+cb = plt.colorbar(p,cax=cbaxes,orientation='horizontal',ticks=[-8,-4,0,4,8]) 
+cb.set_label("dH/dt \n (m yr$^{-1}$)",size=8,fontname='arial')
+cb.ax.tick_params(labelsize=8)
+ax2.text(0.05*(xmax1-xmin1)+xmin1,0.9*(ymax1-ymin1)+ymin1,'b',weight='bold',fontsize=9)
 
 plt.tight_layout()
 plt.subplots_adjust(hspace=0.05,wspace=0.05)
-plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+"_trends.pdf"),FORMAT='PDF',dpi=200)
+plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+"_trends.pdf"),FORMAT='PDF',dpi=300)
 plt.close()
-
-

@@ -18,6 +18,37 @@ import scipy.signal as signal
 import shapely.geometry
 import scipy.ndimage
 
+def smith_db_query(xpts,ypts,glacier,verticaldatum='geoid',data='all',maxdist=200.):
+
+  '''
+  This code has not been fully developed. It will need to be improved 
+  if we're going to use it.
+  '''
+
+  if glacier == 'Helheim':
+    queryfile = os.path.join(os.getenv("DATA_HOME"),\
+    	"Elevation/Smith_db_queries/helheim_ptdb_20150921.mat")
+  elif glacier == 'Kanger':
+    queryfile = os.path.join(os.getenv("DATA_HOME"),\
+    	"Elevation/Smith_db_queries/helheim_ptdb_20150921.mat")
+
+  import h5py
+  f = h5py.File(queryfile, 'r')
+  key = f.keys()[0]
+  g = f[key]
+  names = g.keys()
+  #Limit to the ones we care about
+  names = ['x', 'y', 'z', 'time', 'sensor']
+  nc = len(names)
+  nr = g.get(names[0]).size
+  #Need float64 here for time ordinal
+  a = np.zeros((nr, nc), dtype=np.float64)
+  print "Importing h5 mat points to np array"
+  for i,name in enumerate(names):
+    a[:,i] = np.array(g.get(name))
+
+  return zpt,zptstd,time
+
 def gimp_at_pts(xpts,ypts,glacier,verticaldatum):
   
   '''
@@ -109,6 +140,7 @@ def atm(years='all',verticaldatum='geoid'):
     
   for DIR in DIRs:
     if (DIR.startswith('2') or DIR.startswith('1')) and ((years == 'all') or (DIR[0:4] in years)):
+      print "Loading ATM", DIR
       x=[]
       y=[]
       z=[]
@@ -138,7 +170,7 @@ def atm(years='all',verticaldatum='geoid'):
   elif verticaldatum=='ellipsoid':
     atm = atm
   else: 
-    print "Don't recognize that vertical datum, defaulting to geoid"
+    sys.exit("Don't recognize that vertical datum.")
     
   return atm
 
@@ -178,6 +210,7 @@ def atm_along_flowline(xpts,ypts,glacier,years='all',cutoff='none',maxdist=200,m
   R = len(xpts)
   for date in dates:
     z = np.zeros(R); z[:] = float('NaN')
+    zstd = np.zeros(R); zstd[:] = float('NaN')
     d = np.zeros(R); d[:] = float('NaN')
     for i in range(0,R):
       if method == 'closest':
@@ -192,6 +225,7 @@ def atm_along_flowline(xpts,ypts,glacier,years='all',cutoff='none',maxdist=200,m
         nonnan = np.where(~(np.isnan(data[date][ind,2])))[0]
         if len(nonnan) > 0.8*len(ind):
           z[i] = np.nanmean(data[date][ind,2])
+          zstd[i] = np.nanstd(data[date][ind,2])
     # Filter if desired
     if filt_len != 'none':
       cutoff=(1/filt_len)/(1/((dists[1]-dists[0])*2))
@@ -210,10 +244,11 @@ def atm_along_flowline(xpts,ypts,glacier,years='all',cutoff='none',maxdist=200,m
       termpos = np.interp(time,term_time,term_values)
       ind = np.where(dists > termpos)[0]
       z[ind] = float('NaN') 
+      zstd[ind] = float('NaN')
     
     # Save elevations if there are any
     if len(np.where(~(np.isnan(z)))[0]) > 0:
-      pts[date] = np.column_stack([xpts,ypts,z,d])
+      pts[date] = np.column_stack([xpts,ypts,z,zstd])
   
   if cutoff == 'terminus':
     print "Cleaning up DEM points by removing points in front of ice front."
@@ -247,16 +282,232 @@ def atm_at_pts(xpts,ypts,glacier,years='all',maxdist=200,verticaldatum='geoid',m
   dates = np.sort(atm.keys())
   time = np.zeros(len(dates))
   zpts = np.zeros([len(dates),len(xpts)])
+  zptstd = np.zeros([len(dates),len(xpts)])
   
   # Load date and data
   for i in range(0,len(dates)):
     date = dates[i]
     time[i] = fracyear.date_to_fracyear(float(date[0:4]),float(date[4:6]),float(date[6:8]))
     zpts[i,:] = atm[date][:,2]
+    zptstd[i,:] = atm[date][:,3]
 
-  return zpts,time
+  return zpts,zptstd,time
+
+def lvis(years='all',verticaldatum='geoid'):
+
+  '''
+  atm = atm(years='all',verticaldatum='geoid')
+  
+  Get ATM data for particular years.
+  
+  Inputs:
+  years: years that you want ATM data
+  verticaldatum: ellipsoid or geoid
+  
+  Outputs:
+  atm: dictionary of lvis surface elevations for years; column 1 is x coordinate, column 2 
+  		is y coordinate, column 3 is surface elevation according to the chosen vertical datum 
+  '''
+  
+  # Directory for LVIS
+  LVISDIR = os.path.join(os.getenv("DATA_HOME"),'Elevation/LVIS/HelheimKanger/')
+  DIRs = os.listdir(LVISDIR)
+  
+  lvis = {}
+  
+  # Load only desired data
+    
+  for DIR in DIRs:
+    if (DIR.startswith('2') or DIR.startswith('1')) and ((years == 'all') or (DIR[0:4] in years)):
+      print "Loading LVIS", DIR
+      x=[]
+      y=[]
+      z=[]
+      files = os.listdir(LVISDIR+DIR)
+      for file in files:
+        if not(file.endswith('.xml')):
+          try:
+            data=np.loadtxt(LVISDIR+DIR+'/'+file,comments='#')
+          except:
+            data=np.loadtxt(LVISDIR+DIR+'/'+file,comments='#',delimiter=',')
+          xfile = data[:,3]
+          yfile = data[:,4]
+          zfile = data[:,5]
+          x = np.hstack([x,xfile])
+          y = np.hstack([y,yfile])
+          z = np.hstack([z,zfile])
+      x2,y2 = coords.convert(x-360,y,4326,3413)
+      if DIR[0:4] in lvis.keys():
+        print "Already data from that year, consider changing how you have labeled the directories"
+      else:
+        lvis[DIR] = np.column_stack([x2,y2,z])
+  
+  # Choose vertical datum
+  if verticaldatum=='geoid':
+    for key in lvis.keys():
+      lvis[key][:,2] = coords.geoidheight(lvis[key][:,0],lvis[key][:,1],lvis[key][:,2])
+  elif verticaldatum=='ellipsoid':
+    lvis = lvis
+  else: 
+    sys.exit("Don't recognize that vertical datum.")
+    
+  return lvis
+  
+def lvis_along_flowline(xpts,ypts,glacier,years='all',cutoff='none',maxdist=200,method='closest',verticaldatum='geoid',filt_len='none'):
+  
+  '''
+  pts = lvis_along_flowline(xpts,ypts,glacier,years='all',cutoff='none',maxdist=200,verticaldatum='geoid')
+  
+  Get lvis surface elevations along a flowline. Select points that are within "maxdist" of the flowline.
+  
+  Inputs:
+  xpts,ypts: coordinates of flowline
+  glacier: glacier name
+  years: years that you want data
+  cutoff: cutoff surface elevations in front of glacier terminus (options: 'none' or 'terminus')
+  maxdist: maximum distance between lvis point and flowline point to include in output
+  verticaldatum: ellipsoid or geoid
+  
+  Outputs:
+  pts: dictionary of lvis points along flowline, maybe this should be changed? or you should 
+  just use "lvis_at_pts" which returns an array of surface elevations at the chosen points?
+  
+  '''
+  
+  # Get lvis data
+  data = lvis(years,verticaldatum)
+  
+  # Get terminus position if we want to throw data points out in front of terminus
+  dists = dist.transect(xpts,ypts)
+  if cutoff == 'terminus':
+    term_values, term_time = icefronts.distance_along_flowline(xpts,ypts,dists,glacier,'icefront')
+  
+  # Set up output as dictionary
+  pts = {}
+  
+  dates = data.keys()
+  R = len(xpts)
+  for date in dates:
+    z = np.zeros(R); z[:] = float('NaN')
+    zstd = np.zeros(R); zstd[:] = float('NaN')
+    d = np.zeros(R); d[:] = float('NaN')
+    for i in range(0,R):
+      if method == 'closest':
+        ind = np.argmin((xpts[i]-data[date][:,0])**2 + (ypts[i]-data[date][:,1])**2)
+        xlvis = data[date][ind,0]
+        ylvis = data[date][ind,1]
+        d[i] = dist.between_pts(xpts[i],ypts[i],xlvis,ylvis)
+        if d[i] < maxdist:
+          z[i] = data[date][ind,2]
+      elif method == 'average':
+        ind = np.where(np.sqrt((xpts[i]-data[date][:,0])**2 + (ypts[i]-data[date][:,1])**2)<maxdist)[0]
+        nonnan = np.where(~(np.isnan(data[date][ind,2])))[0]
+        if len(nonnan) > 0.8*len(ind):
+          z[i] = np.nanmean(data[date][ind,2])
+          zstd[i] = np.nanstd(data[date][ind,2])
+    # Filter if desired
+    if filt_len != 'none':
+      cutoff=(1/filt_len)/(1/((dists[1]-dists[0])*2))
+      b,a=signal.butter(4,cutoff,btype='low')
+      print "Filtering with a cutoff of ", filt_len
+      for i in range(0,len(dates)):
+        nonnan = np.where(~(np.isnan(z)))[0]
+        if len(nonnan) > 20:
+          z[nonnan]=signal.filtfilt(b,a,z[nonnan])
+        
+    if cutoff == 'terminus':
+      # Get fractional year
+      time = fracyear.date_to_fracyear(float(date[0:4]),float(date[4:6]),float(date[6:8]))
+    
+      # Get terminus position when LVIS was collected
+      termpos = np.interp(time,term_time,term_values)
+      ind = np.where(dists > termpos)[0]
+      z[ind] = float('NaN') 
+      zstd[ind] = float('NaN')
+    
+    # Save elevations if there are any
+    if len(np.where(~(np.isnan(z)))[0]) > 0:
+      pts[date] = np.column_stack([xpts,ypts,z,zstd])
+  
+  if cutoff == 'terminus':
+    print "Cleaning up DEM points by removing points in front of ice front."
+    print "You can change this setting by setting `cutoff = 'none'.'"
+	    
+  return pts
+  
+def lvis_at_pts(xpts,ypts,glacier,years='all',maxdist=200,verticaldatum='geoid',method='average',cutoff='none'):
+
+  '''
+  zpts,time = lvis_at_pts(xpts,ypts,glacier,years='all',maxdist=200,verticaldatum='geoid')
+  
+  Find LVIS surface elevations at xpts,ypts.
+  
+  Inputs:
+  xpts,ypts: desired coordinates for LVIS surface elevations
+  glacier: glacier name
+  years: years that you want data
+  maxdist: maximum allowable distance between point and LVIS data
+  verticaldatum: ellipsoid or geoid
+  
+  Outputs:
+  zpts: array of surface elevations at xpts,ypts
+  time: time for each array
+  '''
+
+  # Get lvis data
+  lvis = lvis_along_flowline(xpts,ypts,glacier,years=years,maxdist=maxdist,cutoff='none',verticaldatum=verticaldatum,method=method)
+  
+  # Get dates
+  dates = np.sort(lvis.keys())
+  time = np.zeros(len(dates))
+  zpts = np.zeros([len(dates),len(xpts)])
+  zptstd = np.zeros([len(dates),len(xpts)])
+  
+  # Load date and data
+  for i in range(0,len(dates)):
+    date = dates[i]
+    time[i] = fracyear.date_to_fracyear(float(date[0:4]),float(date[4:6]),float(date[6:8]))
+    zpts[i,:] = lvis[date][:,2]
+    zptstd[i,:] = lvis[date][:,3]
+
+  return zpts,zptstd,time
+
+def dem_error(glacier,date,sensor):
+  
+  '''
+  error = dem_error(glacier,date,sensor)
+  
+  Get absolute median error from the co-registration for the DEM on date "date".
+  
+  Inputs:
+  glacier: glacier name
+  date: date for error
+  sensor: sensor name (Worldview, TDX, Spirit)
+  
+  Outputs:
+  error: error value for chosen date and sensor combination
+  '''
+  
+  if sensor == 'SPIRIT':
+    error = 4.0
+  else:
+    if sensor == 'TDX':
+      file = os.path.join(os.getenv("DATA_HOME"),'Elevation/TDX/'+glacier+'/'+glacier+'_TDM_align_results.txt')
+    elif sensor == 'WV':
+      file = os.path.join(os.getenv("DATA_HOME"),'Elevation/Worldview/'+glacier+'/'+glacier+'_align_results.txt')
+
+    fid = open(file)
+    lines = fid.readlines()
+    for line in lines:
+      p = line.split()
+      if p[0][0:13] == str(date):
+        error = float(p[-1])
+         
+  return error
    
-def dem_grid(glacier,xmin=-np.Inf,xmax=np.Inf,ymin=-np.Inf,ymax=np.Inf,resolution=32,data='all',verticaldatum='geoid',years='all',method='linear'):
+def dem_grid(glacier,xmin=-np.Inf,xmax=np.Inf,ymin=-np.Inf,ymax=np.Inf,
+		resolution=32,data='all',verticaldatum='geoid',years='all',method='linear',
+		return_error=False):
 
   '''
   x,y,zs_nonnan,time_nonnan=dem_grid(glacier,xmin=0,xmax=0,ymin=0,ymax=0,resolution=32,data='all',verticaldatum='geoid')
@@ -265,9 +516,10 @@ def dem_grid(glacier,xmin=-np.Inf,xmax=np.Inf,ymin=-np.Inf,ymax=np.Inf,resolutio
   
   Inputs
   xmin,xmax,ymin,ymax: extent for output grids
-  data: type of data you want (Worldview, TDX, SPIRIT, or all)
+  data: type of data you want (WV, TDX, SPIRIT, or all)
   glacier: Kanger or Helheim
   verticaldatum: ellipsoid or geoid
+  return_error: return median co-registration errors if set to true
   
   Output: 
   x,y,zs_nonnan,time_nonnan: numpy array of surface elevations on the grid x,y for times_nonnan
@@ -304,21 +556,21 @@ def dem_grid(glacier,xmin=-np.Inf,xmax=np.Inf,ymin=-np.Inf,ymax=np.Inf,resolutio
   
   # For Worldview data...
   dates=[]
-  if ('Worldview' in data) or (data == 'all'):
+  if ('WV' in data) or (data == 'all'):
     for DIR in WVDIRs:
-      if (DIR[0:8] not in dates) and (DIR.startswith('2')) and (DIR.endswith(filestring)):
+      if (DIR[0:13] not in dates) and (DIR.startswith('2')) and (DIR.endswith(filestring)):
         wvxmin,wvxmax,wvymin,wvymax = geotiff.extent(WVDIR+DIR)
         wv_extent = shapely.geometry.Polygon([(wvxmin,wvymin),(wvxmin,wvymax),(wvxmax,wvymax),(wvxmax,wvymin)])
         if glacier_extent.intersects(wv_extent):
           if not(years) or (years=='all'):
-            dates.append(DIR[0:8])
+            dates.append(DIR[0:13])
           else:
             if len(years) == 4:
               if DIR[0:4] in years:
-                dates.append(DIR[0:8])
+                dates.append(DIR[0:13])
             else:
               if DIR[0:8] in years:
-                dates.append(DIR[0:8])
+                dates.append(DIR[0:13])
   # For TDX data...
   if ('TDX' in data) or (data == 'all'):
     for DIR in TDXDIRs:
@@ -327,14 +579,14 @@ def dem_grid(glacier,xmin=-np.Inf,xmax=np.Inf,ymin=-np.Inf,ymax=np.Inf,resolutio
         td_extent = shapely.geometry.Polygon([(tdxmin,tdymin),(tdxmin,tdymax),(tdxmax,tdymax),(tdxmax,tdymin)])
         if glacier_extent.intersects(td_extent):
           if not(years) or (years=='all'):
-            dates.append(DIR[0:8])
+            dates.append(DIR[0:13])
           else:
             if len(years) == 4:
               if DIR[0:4] in years:
-                dates.append(DIR[0:8])
+                dates.append(DIR[0:13])
             else:
               if DIR[0:8] in years:
-                dates.append(DIR[0:8])
+                dates.append(DIR[0:813])
   # For SPIRIT data...              
   if ('SPIRIT' in data) or (data == 'all'):
     for DIR in SPIRITDIRs:
@@ -343,19 +595,20 @@ def dem_grid(glacier,xmin=-np.Inf,xmax=np.Inf,ymin=-np.Inf,ymax=np.Inf,resolutio
         td_extent = shapely.geometry.Polygon([(tdxmin,tdymin),(tdxmin,tdymax),(tdxmax,tdymax),(tdxmax,tdymin)])
         if glacier_extent.intersects(td_extent):
           if not(years) or (years=='all'):
-            dates.append(DIR[0:8])
+            dates.append(DIR[0:13])
           else:
             if len(years) == 4:
               if DIR[0:4] in years:
-                dates.append(DIR[0:8])
+                dates.append(DIR[0:13])
             else:
               if DIR[0:8] in years:
-                dates.append(DIR[0:8])
+                dates.append(DIR[0:13])
 
   # Load data
   time = np.zeros(len(dates))
   zs = np.zeros([ny,nx,len(time)])
   zs[:,:] = float('NaN')
+  error = np.zeros(len(dates))
   for i in range(0,len(dates)):
     date = dates[i]
     n = 1 # Count number of files for that date
@@ -366,10 +619,13 @@ def dem_grid(glacier,xmin=-np.Inf,xmax=np.Inf,ymin=-np.Inf,ymax=np.Inf,resolutio
         print "Loading ", DIR
         if os.path.isfile(WVDIR+DIR):
           xwv,ywv,zwv = geotiff.read(WVDIR+DIR) 
+          error[i] = dem_error(glacier,date,'WV')
         elif os.path.isfile(TDXDIR+DIR):
           xwv,ywv,zwv = geotiff.read(TDXDIR+DIR) 
+          error[i] = dem_error(glacier,date,'TDX')
         else:
           xwv,ywv,zwv = geotiff.read(SPIRITDIR+DIR)
+          error[i] = dem_error(glacier,date,'SPIRIT')
         
         # Interpolate onto output grid
         zwv_dem = scipy.interpolate.RegularGridInterpolator([ywv,xwv],zwv,bounds_error = False,method=method,fill_value=float('nan'))
@@ -396,14 +652,19 @@ def dem_grid(glacier,xmin=-np.Inf,xmax=np.Inf,ymin=-np.Inf,ymax=np.Inf,resolutio
     if len(np.where(~(np.isnan(zs[:,:,i])))[0]) > 5:
       nonnan.append(i)
   zs_nonnan = zs[:,:,nonnan]
-  time_nonnan = time[nonnan]    
+  time_nonnan = time[nonnan]
+  error_nonnan = error[nonnan]    
   
   # Sort by time
   sortind = np.argsort(time_nonnan)
   time_nonnan = time_nonnan[sortind]
   zs_nonnan = zs_nonnan[:,:,sortind]
-      
-  return x,y,zs_nonnan,time_nonnan
+  error_nonnan = error_nonnan[sortind]
+  
+  if return_error == False:    
+    return x,y,zs_nonnan,time_nonnan
+  else:
+    return x,y,zs_nonnan,time_nonnan,error_nonnan
 
 def dem_along_flowline(xpts,ypts,glacier,years='all',cutoff='terminus',verticaldatum='geoid',filt_len='none',method='linear'):
 
@@ -559,7 +820,7 @@ def dem_along_flowline(xpts,ypts,glacier,years='all',cutoff='terminus',verticald
   
   return zs,times
 
-def dem_at_pts(xpts,ypts,glacier,years='all',verticaldatum='geoid',cutoff='none',method='linear',radius=500):
+def dem_at_pts(xpts,ypts,glacier,years='all',verticaldatum='geoid',cutoff='none',method='linear',radius=200):
 
   '''
   zpts,time = dem_at_pts(xpts,ypts,glacier,
@@ -585,21 +846,19 @@ def dem_at_pts(xpts,ypts,glacier,years='all',verticaldatum='geoid',cutoff='none'
     wv,times = dem_along_flowline(xpts,ypts,glacier,years=years,cutoff=cutoff,verticaldatum=verticaldatum,method=method)
     time = times[:,0]
     zpts = wv
-    zpts_std = np.zeros([len(time),len(xpts)])
+    zpts_error = np.zeros([len(time)])
   elif method == 'average':
     xmin = np.min(xpts)-radius*3
     ymin = np.min(ypts)-radius*3
     xmax = np.max(xpts)+radius*3
     ymax = np.max(ypts)+radius*3
     
-    xwv,ywv,zwv,timewv = dem_grid(glacier,xmin,xmax,ymin,ymax,years='all',verticaldatum='geoid')
+    xwv,ywv,zwv,timewv,zpts_error = dem_grid(glacier,xmin,xmax,ymin,ymax,years='all',verticaldatum='geoid',return_error=True)
     N = len(timewv)
     
     time = timewv
     zpts = np.zeros([N,len(xpts)])
-    zpts_std = np.zeros([N,len(xpts)])
     zpts[:,:] = float('nan')
-    zpts_std[:,:] = float('nan')
     
     xwv_grid,ywv_grid = np.meshgrid(xwv,ywv) 
     xwv_flattened = xwv_grid.flatten()
@@ -609,14 +868,11 @@ def dem_at_pts(xpts,ypts,glacier,years='all',verticaldatum='geoid',cutoff='none'
       ind = np.where(np.sqrt((xpts[j] - xwv_flattened)**2+(ypts[j] - ywv_flattened)**2) < radius)[0]
       for i in range(0,N):
         nonnan = np.where(~(np.isnan(zwv[:,:,i].flatten()[ind])))[0]
-        print len(nonnan)/float(len(ind))
         if len(nonnan) > 0.9*len(ind):
           zpts[i,j] = np.nanmean(zwv[:,:,i].flatten()[ind])
-          zpts_std[i,j] = np.nanstd(zwv[:,:,i].flatten()[ind])
-      
-        
+
     
-  return zpts,zpts_std,time
+  return zpts,zpts_error,time
 
 def grid_near_time(time,glacier,verticaldatum='geoid'):
 
@@ -762,7 +1018,7 @@ def dem_continuous(glacier,date,verticaldatum='geoid',fillin=False,blur=False):
   
   return xg,yg,zs
   
-def dem_continuous_flowline(xf,yf,glacier,date,verticaldatum='geoid',fillin='none',filt_len='none'):
+def dem_continuous_flowline(xf,yf,dists,glacier,date,verticaldatum='geoid',fillin='none',filt_len='none'):
 
   '''
   zflow = dem_continuous_flowline(xf,yf,glacier,date,verticaldatum='geoid',fillin='none')
@@ -782,7 +1038,6 @@ def dem_continuous_flowline(xf,yf,glacier,date,verticaldatum='geoid',fillin='non
   
   # Filter flowline if filt_len is not set to none
   if filt_len != 'none':
-    print "fix this"
     cutoff=(1/filt_len)/(1/((dists[1]-dists[0])*2))
     b,a=signal.butter(4,cutoff,btype='low')
     zflow_filtered = signal.filtfilt(b,a,zflow)
@@ -797,7 +1052,7 @@ def variability(glacier,time1,time2,verticaldatum='geoid',resolution=32.,data='a
   '''
   
   if data == 'all':
-    data = ['TSX','WV']
+    data = ['TSX','WV','SPIRIT']
   
   if glacier == 'Helheim':
     xmin = 270000.0
@@ -820,9 +1075,11 @@ def variability(glacier,time1,time2,verticaldatum='geoid',resolution=32.,data='a
   xgrid,ygrid = np.meshgrid(x,y)
     
   WVDIR = os.path.join(os.getenv("DATA_HOME"),'Elevation/Worldview/'+glacier+'/')
-  TDXDIR = os.path.join(os.getenv("DATA_HOME"),'Elevation/TDX/'+glacier+'/')
   WVDIRs = os.listdir(WVDIR)
+  TDXDIR = os.path.join(os.getenv("DATA_HOME"),'Elevation/TDX/'+glacier+'/')
   TDXDIRs = os.listdir(TDXDIR)
+  SPIRITDIR = os.path.join(os.getenv("DATA_HOME"),'Elevation/SPIRIT/'+glacier+'/')
+  SPIRITDIRs = os.listdir(SPIRITDIR)
   
   # Find file ending based on whether we want elevation relative to geoid or ellipsoid
   if verticaldatum == 'geoid':
@@ -863,6 +1120,21 @@ def variability(glacier,time1,time2,verticaldatum='geoid',resolution=32.,data='a
             else:
               if DIR[0:8] in years:
                 dates.append(DIR[0:8])
+  if 'SPIRIT' in data:
+    for DIR in SPIRITDIRs:
+      if DIR.endswith(filestring):
+        sprxmin,sprxmax,sprymin,sprymax = geotiff.extent(SPIRITDIR+DIR)
+        spr_extent = shapely.geometry.Polygon([(sprxmin,sprymin),(sprxmin,sprymax),(sprxmax,sprymax),(sprxmax,sprymin)])
+        if glacier_extent.intersects(spr_extent):
+          if not(years) or (years=='all'):
+            dates.append(DIR[0:8])
+          else:
+            if len(years) == 4:
+              if DIR[0:4] in years:
+                dates.append(DIR[0:8])
+            else:
+              if DIR[0:8] in years:
+                dates.append(DIR[0:8])
  
   # Load data
   time = np.zeros(len(dates))
@@ -880,10 +1152,14 @@ def variability(glacier,time1,time2,verticaldatum='geoid',resolution=32.,data='a
           maskfile = WVDIR+date+'_mask.tif'
           xwv,ywv,zwv = geotiff.read(WVDIR+DIR) 
           zwv[zwv==0] = float('NaN')
-        else:
+        elif os.path.isfile(TDXDIR+DIR):
           maskfile = TDXDIR+date+'_mask.tif'
           xwv,ywv,zwv = geotiff.read(TDXDIR+DIR) 
           zwv[zwv==0] = float('NaN')
+        else:
+          maskfile = SPIRITDIR+date+'_mask.tif'
+          xwv,ywv,zwv = geotiff.read(SPIRITDIR+DIR) 
+          zwv[zwv==0] = float('NaN')          
         
         # Interpolate onto output grid
         zwv_dem = scipy.interpolate.RegularGridInterpolator([ywv,xwv],zwv,bounds_error = False,method='linear',fill_value=float('nan'))
