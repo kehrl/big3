@@ -85,7 +85,7 @@ def fluxgate_thinning(glacier,fluxgate_filename,bedsource='smith',dl=20.0):
       d = np.min(np.sqrt((x_in[i]-cresis_all[:,0])**2+(y_in[i]-cresis_all[:,1])**2))
       if d < 200.0:
         ind.append(i)       
-    zb_in[ind] = scipy.interpolate.griddata(cresis_all[:,0:2],cresis_all[:,2],(x_in[ind],y_in[ind]),method='cubic')
+    zb_in[ind] = scipy.interpolate.griddata(cresis_all[:,0:2],cresis_all[:,2],(x_in[ind],y_in[ind]))
     f = scipy.interpolate.interp1d(l_in[ind],zb_in[ind],kind='cubic',bounds_error=False)
     fex = extrap1d(f)
     zb_in[zb_in == 0] = fex(l_in[zb_in==0])
@@ -102,7 +102,7 @@ def fluxgate_thinning(glacier,fluxgate_filename,bedsource='smith',dl=20.0):
       d = np.min(np.sqrt((x_out[i]-cresis_all[:,0])**2+(y_out[i]-cresis_all[:,1])**2))
       if d < 200.0:
         ind.append(i)       
-    zb_out[ind] = scipy.interpolate.griddata(cresis_all[:,0:2],cresis_all[:,2],(x_out[ind],y_out[ind]),method='cubic')
+    zb_out[ind] = scipy.interpolate.griddata(cresis_all[:,0:2],cresis_all[:,2],(x_out[ind],y_out[ind]))
     f = scipy.interpolate.interp1d(l_out[ind],zb_out[ind],kind='cubic',bounds_error=False)
     fex = extrap1d(f)
     zb_out[zb_out == 0] = fex(l_out[zb_out==0])
@@ -113,11 +113,11 @@ def fluxgate_thinning(glacier,fluxgate_filename,bedsource='smith',dl=20.0):
 
     
   # Get surface elevations
-  zs_all,zs_std,ztime=elevation.dem_at_pts(np.r_[x_in,x_out],np.r_[y_in,y_out],glacier,verticaldatum='ellipsoid',method='linear')
+  zs_all,zs_error,ztime=elevation.dem_at_pts(np.r_[x_in,x_out],np.r_[y_in,y_out],glacier,verticaldatum='ellipsoid',method='linear')
   zs_all_in = np.array(zs_all[:,0:len(x_in)])
-  zs_std_in = np.array(zs_std[:,0:len(x_in)])
+  zs_error_in = np.array(zs_error[0:len(x_in)])
   zs_all_out = np.array(zs_all[:,len(x_in):])
-  zs_std_out = np.array(zs_all[:,len(x_in):])
+  zs_error_out = np.array(zs_all[len(x_in):])
   for i in range(0,len(ztime)):
     nonnan1 = np.where(zs_all_in[i,:])[0]
     nonnan2 = np.where(zs_all_out[i,:])[0]
@@ -133,8 +133,8 @@ def fluxgate_thinning(glacier,fluxgate_filename,bedsource='smith',dl=20.0):
   time = tpt_in
   dH = np.zeros([len(time),2])
   
-  # Anticipated error between surface elevations and/or bed DEM at fluxgate_in and 
-  error = np.nanstd(np.nanmean(zs_all_in,axis=1)-np.nanmean(zs_all_out,axis=1))/2
+  # Anticipated error between surface elevations and/or bed DEM 
+  error = np.nanstd(np.nanmean(zs_all_in,axis=1)-np.nanmean(zs_all_out,axis=1))
   
   # Get flux through upstream gate
   xperp = np.zeros(len(l_in))
@@ -162,9 +162,8 @@ def fluxgate_thinning(glacier,fluxgate_filename,bedsource='smith',dl=20.0):
       # Get surface elevation for that timestep
       vind = np.where(np.floor(ztime) == np.floor(tpt_in[i]))[0]
       if len(vind) < 1:
-        zs_in = np.nanmedian(zs_all_in,axis=0)
-      else:
-        zs_in = np.nanmean(zs_all_in[vind,:])
+        vind = np.where(abs(np.floor(ztime) - np.floor(tpt_in[i])) < 2)[0]
+      zs_in = np.nanmean(zs_all_in[vind,:])
       
       #f = scipy.interpolate.interp1d(l_in[nonnans],vperp_in[i,nonnans],kind='cubic')
       #vperp_in[i,nans] = f(l_in[nans])
@@ -203,9 +202,8 @@ def fluxgate_thinning(glacier,fluxgate_filename,bedsource='smith',dl=20.0):
       # Get surface elevation for that timestep
       vind = np.where(np.floor(ztime) == np.floor(tpt_out[i]))[0]
       if len(vind) < 1:
-        zs_out = np.nanmedian(zs_all_out,axis=0)
-      else:
-        zs_out = np.nanmean(zs_all_out[vind,:])
+        vind = np.where(abs(np.floor(ztime) - np.floor(tpt_out[i])) < 2)[0]
+      zs_out = np.nanmean(zs_all_out[vind,:])
       
       #f = scipy.interpolate.interp1d(l_out[nonnans],vperp_out[i,nonnans],kind='cubic')
       #vperp_out[i,nans] = f(l_out[nans])
@@ -234,7 +232,7 @@ def fluxgate_thinning(glacier,fluxgate_filename,bedsource='smith',dl=20.0):
   
   return time, dH
 
-def dem_thinning(glacier,x,y,zs,time,fluxgate_filename,type='rate'):
+def dem_thinning(glacier,x,y,zs,time,zserror,fluxgate_filename,type='rate'):
   
   '''
   Calculate the measured thinning rates in the fluxboxes so that we can compare the measured
@@ -267,7 +265,7 @@ def dem_thinning(glacier,x,y,zs,time,fluxgate_filename,type='rate'):
   
       # Find locations where we have thinning rates
       nonnan = np.where(~(np.isnan(zs_inside_t2-zs_inside_t1)))[0]    
-      if (len(nonnan) > 0.9*ninside) and (time[i]-time[j] > 11/365.0):
+      if (len(nonnan) > 0.9*ninside) and (time[i]-time[j] > 1/12.0):
         #dH_time_extent.append(float(len(nonnan))/float(ninside))
         # Calculate time as halfway between the two times
         dH_time_mid.append((time[i]+time[j])/2) # time
@@ -276,7 +274,7 @@ def dem_thinning(glacier,x,y,zs,time,fluxgate_filename,type='rate'):
         # Only calculate the average thinning rates if the measured thinning rates cover a 
         # sufficient area of the fluxbox and surface elevation profiles are more than a month apart.
         dH_ave.append(np.nanmean(zs_inside_t2-zs_inside_t1)/(time[i]-time[j])) # average thinning rate
-        dH_error.append(np.nanstd(zs_inside_t2-zs_inside_t1)) # standard deviation of thinning rates in box
+        dH_error.append(np.sqrt(zserror[i]**2+zserror[j]**2)/(time[i]-time[j])) # error according to co-registration 
         j = i
       else:
         if len(np.where(~(np.isnan(zs_inside_t1)))[0]) < 0.9*ninside or len(np.where(~(np.isnan(zs_inside_t1)))[0]) < len(np.where(~(np.isnan(zs_inside_t2)))[0]):
