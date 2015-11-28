@@ -1051,9 +1051,6 @@ def variability(glacier,time1,time2,verticaldatum='geoid',resolution=32.,data='a
   '''
   '''
   
-  if data == 'all':
-    data = ['TSX','WV','SPIRIT']
-  
   if glacier == 'Helheim':
     xmin = 270000.0
     xmax = 354900.0
@@ -1090,7 +1087,7 @@ def variability(glacier,time1,time2,verticaldatum='geoid',resolution=32.,data='a
   # Find dates where we have data in the desired region
   dates=[]
   glacier_extent = shapely.geometry.Polygon([(xmin,ymin),(xmin,ymax),(xmax,ymax),(xmax,ymin)])
-  if 'WV' in data:
+  if 'WV' in data or data=='all':
     for DIR in WVDIRs:
       if (DIR[0:8] not in dates) and DIR.startswith('2') and (DIR.endswith(filestring)):
         wvxmin,wvxmax,wvymin,wvymax = geotiff.extent(WVDIR+DIR)
@@ -1105,7 +1102,7 @@ def variability(glacier,time1,time2,verticaldatum='geoid',resolution=32.,data='a
             else:
               if DIR[0:8] in years:
                 dates.append(DIR[0:8])
-  if 'TDX' in data:
+  if 'TDX' in data or data='all':
     for DIR in TDXDIRs:
       if DIR.endswith(filestring):
         tdxmin,tdxmax,tdymin,tdymax = geotiff.extent(TDXDIR+DIR)
@@ -1120,7 +1117,7 @@ def variability(glacier,time1,time2,verticaldatum='geoid',resolution=32.,data='a
             else:
               if DIR[0:8] in years:
                 dates.append(DIR[0:8])
-  if 'SPIRIT' in data:
+  if 'SPIRIT' in data or data=='all':
     for DIR in SPIRITDIRs:
       if DIR.endswith(filestring):
         sprxmin,sprxmax,sprymin,sprymax = geotiff.extent(SPIRITDIR+DIR)
@@ -1156,6 +1153,7 @@ def variability(glacier,time1,time2,verticaldatum='geoid',resolution=32.,data='a
           maskfile = TDXDIR+date+'_mask.tif'
           xwv,ywv,zwv = geotiff.read(TDXDIR+DIR) 
           zwv[zwv==0] = float('NaN')
+          print "yes",date
         else:
           maskfile = SPIRITDIR+date+'_mask.tif'
           xwv,ywv,zwv = geotiff.read(SPIRITDIR+DIR) 

@@ -60,7 +60,7 @@ for j in range(0,nrow):
     date = fracyear.fracyear_to_date(timewv[wvind])
     shadeddem = dem_shading.set_shade(zwv[:,:,wvind],0,220)
     plt.imshow(shadeddem,extent=[np.min(xwv),np.max(xwv),np.min(ywv),np.max(ywv)],clim=[0,200],origin='lower')
-    plt.scatter(xf,yf,c=zabovefloat[:,wvind],s=3.0**2.0,cmap='gist_gray_r',edgecolors='none',vmin=-10,vmax=10)
+    #plt.scatter(xf,yf,c=zabovefloat[:,wvind],s=3.0**2.0,cmap='gist_gray_r',edgecolors='none',vmin=-10,vmax=10)
     plt.xlim([np.min(xwv),np.max(xwv)])
     plt.ylim([np.min(ywv),np.max(ywv)])
     plt.xticks([])

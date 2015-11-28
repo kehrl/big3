@@ -13,7 +13,7 @@ COAST=$HOME/Data/ShapeFiles/Coastlines/greenland_coast_wgs84.txt
 VELDATA=$HOME/Data/Velocity/Random/Greenland/track-07to10/vel_07to10_v.dat
 
 #R=-R-76/-10/59.3/83.9
-R=-R-60/56.7/14/79.7r
+R=-R-58/58.0/12/79.7r
 #JM2i
 J=-JA-45/70/2i
 B=-B0
@@ -36,23 +36,23 @@ grdimage vel2.grd -Ccolorscale.cpt $J $R -Q -K -V -O >> $FILE
 #psxy flowline.txt $R $J -O -V -K >> $FILE
 
 psxy $COAST -W1p $R $J $B -O -K -V >> $FILE
-psscale -D1.55i/0.45i/0.55i/0.1ih -Ccolorscale.cpt -B0 -Q -O -K -V >> $FILE
+psscale -D1.55i/0.47i/0.55i/0.1ih -Ccolorscale.cpt -B0 -Q -O -K -V >> $FILE
 
 
 psxy $R $J -Sc0.2 -W2p -Gred -V -O -K -P <<END>> $FILE
-#-33.0000 68.63333
+-33.0000 68.63333
 -38.2000 66.3500
 #-49.8333 69.1667
 END
 
 psxy $R $J -A -W1p -V -O -K -P <<END>> $FILE
--31.1 60.8
--31.7 59.3
+-31.1 61.6
+-31.7 60.3
 END
 
 psxy $R $J -A -W1p -V -O -K -P <<END>> $FILE
--35.1 61.2
--35.5 59.7
+-35.1 62.0
+-35.5 60.7
 END
 
 #psxy $R $J -W1p -V -O -K -P <<END>> $FILE
@@ -62,14 +62,14 @@ END
 
 
 pstext $R $J -O <<END>> $FILE
--38.5 62.9 11 0 0 TL Velocity 
--37.5 58.8 10 0 0 TL m/yr
--37.4 59.7 10 0 0 TL 10
--33.8 59.4 10 0 0 TL 1000
+-38.5 63.5 11 0 0 TL Velocity 
+-37.5 59.8 10 0 0 TL m/yr
+-37.4 60.7 10 0 0 TL 10
+-33.8 60.4 10 0 0 TL 1000
 #-90.5 80.5 14 1 1 TL a
-#-36 71 10 0 0 TL KL
-#-48 67 10 0 0 TL HH
--38.1 65.6 13 0 0 TL Helheim
+-31 68 13 0 0 TL KG
+#-48 66 10 0 0 TL HH
+-38.1 65.6 13 0 0 TL HH
 #-58 70 10 0 0 TL JK
 END
 

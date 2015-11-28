@@ -459,7 +459,7 @@ def variability(glacier,time1,time2):
   velgrid = np.zeros([ny,nx,nt])
   mask = np.zeros([ny,nx,nt])
   velgrid_mask = np.zeros([ny,nx,nt])
-  time = np.zeros([nt,1])
+  time = np.zeros(nt)
   ergrid = np.zeros([ny,nx,nt])
 
   # Load velocity and mask
@@ -519,7 +519,11 @@ def variability(glacier,time1,time2):
     for i in range(0,nx):
       nonnan = len(np.where(~(np.isnan(velgrid_mask[j,i,:])))[0])
       velcount[j,i] = nonnan          
-
+  
+  sortind = np.argsort(time)
+  velgrid_mask = velgrid_mask[:,:,sortind]
+  time = time[sortind]
+  
   return x,y,velgrid_mask,velmean,velstd,velcount,time
 
 #########################################################################################
@@ -775,7 +779,7 @@ def inversion_3D(glacier,x,y,time,dir_velocity_out='none',blur=False):
   
   return vx,vy
 
-def inversion_2D(x,y,d,glacier,file_velocity_in,dir_velocity_out,filt_len='none'):
+def inversion_2D(x,y,d,glacier,time,dir_velocity_out,filt_len='none'):
   
   xmin = np.min(x)-2.0e3
   xmax = np.max(x)+2.0e3
@@ -814,17 +818,17 @@ def inversion_2D(x,y,d,glacier,file_velocity_in,dir_velocity_out,filt_len='none'
   xv,yv,vv = geotiff.read(filename_vy+"-tile-0.tif")  
   
   fu = scipy.interpolate.RegularGridInterpolator((yu,xu),uu)
-  vx = f(x,y)
+  vx = fu((y,x))
   fv = scipy.interpolate.RegularGridInterpolator((yv,xv),vv)
-  vy = f(x,y)
+  vy = fv((y,x))
   
   vnonnan = np.sqrt(vx**2+vy**2)
   
   # Filter velocities
   if filt_len != 'none':
     cutoff=(1/filt_len)/(1/(np.diff(d[1:3])*2))
-    b,a=signal.butter(4,cutoff,btype='low')
-    filtered=signal.filtfilt(b,a,vnonnan)
+    b,a=scipy.signal.butter(4,cutoff,btype='low')
+    filtered=scipy.signal.filtfilt(b,a,vnonnan)
   else:
     filtered = np.array(vcomb)
 

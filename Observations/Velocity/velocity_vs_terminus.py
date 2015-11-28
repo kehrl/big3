@@ -122,6 +122,7 @@ xflux,yflux = fluxgate.fluxbox_geometry(glacier,"fluxgate3")
 
 xrac,yrac,smbrac,timerac = climate.racmo_at_pts(np.mean(xflux),np.mean(yflux),'smb',filt_len=14.0)
 xrac,yrac,runrac,timerac = climate.racmo_at_pts(np.mean(xflux),np.mean(yflux),'runoff',filt_len=14.0)
+xrac,yrac,t2mrac,timerac = climate.racmo_at_pts(np.mean(xflux),np.mean(yflux),'t2m',filt_len=14.0)
 xsif,ysif,sif,timesif = climate.SIF_at_pts(np.mean(xflux),np.mean(yflux),filt_len=14.)
 
 dH_time,dH_flux,dH_dem,dH_smb = fluxgate.compare_thinning_rates(dem_time,dem_dH,flux_time,flux_dH,timerac,smbrac,rho_i=900.0)
@@ -353,14 +354,14 @@ if plot_overview == 1:
   if normalized == 1:
     for i in range(0,len(dists_eul)):
       nonnan = np.where(~(np.isnan(vel_val[:,i])))[0]
-      plt.plot(vel_time[nonnan],(vel_val[nonnan,i]-vel_val[nonnan[0],i])/1e3,markoptions[i],color=coloptions[i],label='M'+'{0:02d}'.format(int(abs(dists_eul[i]))),linewidth=1,markersize=3)
+      plt.plot(vel_time[nonnan],(vel_val[nonnan,i]-vel_val[nonnan[0],i])/1e3,markoptions[i],color=coloptions[i],label=glacier[0]+'{0:02d}'.format(int(abs(dists_eul[i]))),linewidth=1,markersize=3)
     plt.yticks(range(-3,3,1),fontsize=8,fontname='Arial')
     if glacier == 'Kanger':
       plt.ylim([-1.5,3])
   else:
     for i in range(0,len(dists_eul)):
       nonnan = np.where(~(np.isnan(vel_val[:,i])))[0]
-      plt.plot(vel_time[nonnan],(vel_val[nonnan,i])/1e3,markoptions[i],color=coloptions[i],label='M'+'{0:02d}'.format(int(abs(dists_eul[i]))),markersize=3)
+      plt.plot(vel_time[nonnan],(vel_val[nonnan,i])/1e3,markoptions[i],color=coloptions[i],label=glacier[0]+'{0:02d}'.format(int(abs(dists_eul[i]))),markersize=3)
     plt.yticks(range(2,12),fontsize=8,fontname="Arial")
     if glacier == 'Helheim':
       plt.ylim([3.5,11])
@@ -598,9 +599,9 @@ if plot_overview == 1:
   for i in range(0,len(velocitypoints)):
     ax.plot(velocitypoints[i,0],velocitypoints[i,1],'o',color=coloptions[i],markersize=5)
     if i in [1,2,4]:
-      ax.text(velocitypoints[i,0]-3.8e3,velocitypoints[i,1]-1.5e3,'M'+'{0:02d}'.format(int(abs(dists_eul[i]))),fontsize=8,fontname='Arial')
+      ax.text(velocitypoints[i,0]-3.8e3,velocitypoints[i,1]-1.5e3,glacier[0]+'{0:02d}'.format(int(abs(dists_eul[i]))),fontsize=8,fontname='Arial')
     else:
-      ax.text(velocitypoints[i,0],velocitypoints[i,1]+0.75e3,'M'+'{0:02d}'.format(int(abs(dists_eul[i]))),fontsize=8,fontname='Arial')
+      ax.text(velocitypoints[i,0],velocitypoints[i,1]+0.75e3,glacier[0]+'{0:02d}'.format(int(abs(dists_eul[i]))),fontsize=8,fontname='Arial')
   ax.set_xticklabels([])
   ax.set_yticklabels([])
   ax.set_yticks([])
@@ -783,7 +784,7 @@ if plot_bed == 1:
   ax1.plot(dists/1e3,zb_morlighem,label='Morlighem',color='k',linewidth=1.5)
 
   # Plot Cresis data
-  colors=['b','c','g','y','orange','r','m']
+  colors=['b','c','g','y','orange','r',glacier[0]]
   if glacier == "Helheim":
     years = ['2001','2006b','2008b','2009','2012','2013','2014']
   elif glacier == "Kanger":

@@ -130,7 +130,14 @@ if plot_overview:
   #for i in range(0,len(dists_eul)):
   #  plt.plot([dists_eul[i],dists_eul[i]],[-1200,-200],c=coloptions[i],lw=0.75)
   plt.plot(dcresis/1e3,zcresis,'.',c='0.7',markersize=2.5,label='CreSIS picks')
-  plt.plot(dists/1e3,zb,color='k',linewidth=1.5,label='Bed')
+  if glacier == 'Helheim':
+    plt.plot(dists/1e3,zb,color='k',linewidth=1.5,label='Bed')
+  elif glacier == 'Kanger':
+    ind = np.argmin(abs(dists--5e3))
+    plt.plot(dists/1e3,zb,':',color='k',linewidth=1.5)
+    plt.plot(dists[0:ind]/1e3,zb[0:ind],color='k',linewidth=1.5,label='Bed')
+    plt.text(-3,-1050,'??',fontsize=8,fontname='arial')
+    plt.text(3.2,-500,'??',fontsize=8,fontname='arial')
   #plt.plot(dists/1e3,zb+50,'k--',lw=0.75)
   #plt.plot(dists/1e3,zb-50,'k--',lw=0.75)
   plt.xlabel('Distance from mean terminus (km)',fontsize=8)
