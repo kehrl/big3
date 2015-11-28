@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 # Inputs #
 ##########
 
-MESHNAME='MorlighemNew_SmoothedVelocity' 
+MESHNAME='DEM20120624Low' 
 
 # Directories
 DIRS=os.path.join(os.getenv("CODE_HOME"),"BigThreeGlaciers/Modeling/SolverFiles/Flowline/")
@@ -22,12 +22,12 @@ DIRR=os.path.join(os.getenv("MODEL_HOME"),"Helheim/Results/Flowline/"+MESHNAME+"
 DIRELMERLIB = os.path.join(os.getenv("CODE_HOME"),"BigThreeGlaciers/Modeling/Elmerlib/")
 
 # Solver file
-solverfile='flowline2.sif'
+solverfile='flowline4.sif'
+runname=solverfile[0:-4]
 
-#solverfile = 'flowline2.sif'
-#runname='flowline2'
-#solverfile='flowline4_lagrangian_nofree.sif'
-runname='flowline2'
+# Variables
+dt = 1/365.25
+totaldt = 10
 
 # Boundaries
 bbed=1
@@ -67,6 +67,8 @@ fid2 = open('temp.sif', 'w')
 lines=fid1.readlines()
 for line in lines:
   line=line.replace('Mesh_Input','{}'.format("../../../../../Models/Helheim/Meshes/Flowline/"+MESHNAME))
+  line=line.replace('totaldt','{}'.format(totaldt))
+  line=line.replace('$(dt)','{}'.format(dt))
   fid2.write(line)
 fid1.close()
 fid2.close()
@@ -80,7 +82,7 @@ fid = open(DIRS+"ELMERSOLVER_STARTINFO","w")
 fid.write('{}'.format('temp.sif'))
 fid.close()
 
-call(["mpirun","-n","4","elmersolver_mpi"])
+call(["mpiexec","-n","4","elmersolver_mpi"])
 
 ##############################
 # Load results from saveline #

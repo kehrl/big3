@@ -96,7 +96,7 @@ for regpar in regpars:
   fid2.close()
   del fid1, fid2
   call(["mpiexec","-np","4","elmersolver_mpi"])
-  os.system('rm temp.sif')
+  #os.system('rm temp.sif')
   
   ###############################################################################
   # Get number of simulations, cost value, and mean velocity difference between #

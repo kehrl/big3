@@ -38,9 +38,9 @@ Simulation
 
   Timestepping Method = "BDF"
   BDF Order = 1
-  Timestep Intervals = 365
+  Timestep Intervals = totaldt
   Output Intervals = 1        
-  Timestep Sizes = $(1/365)       
+  Timestep Sizes = $(dt)       
   
   Steady State Max Iterations = 5
   Steady State Min Iterations = 1

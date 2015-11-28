@@ -79,7 +79,7 @@ if not(os.path.isdir(DIRM)):
   os.makedirs(DIRM+"Inputs")
 
 # Flowline coordinates
-x,y,zb,dists = glacier_flowline.load(glacier,shapefilename=file_flowline_in,filt_len='none')
+x,y,zb,dists = glacier_flowline.load(glacier,shapefilename=file_flowline_in,filt_len='none',verticaldatum='geoid')
 
 # Surface elevations along flowline for chosen date
 zs = elevation.dem_continuous_flowline(x,y,dists,glacier,date,filt_len=filt_len,verticaldatum='geoid',fillin=True)
@@ -122,7 +122,7 @@ call(["ElmerGrid","2","4",file_mesh_out])
 ###################################################
 
 # Get velocity along flowline from velocity profiles
-dvel,vel=velocity.inversion_2D(flowline[:,1],flowline[:,2],flowline[:,0],glacier,time,DIRM+"Inputs/",filt_len)
+vel=velocity.inversion_2D(flowline[:,1],flowline[:,2],flowline[:,0],glacier,time,DIRM+"Inputs/",filt_len)
 
 #################################
 # Print out temperature profile #

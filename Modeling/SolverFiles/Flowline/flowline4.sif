@@ -1,10 +1,10 @@
 check keywords warn
 
-$name = "flowline3"
+$name = "flowline4"
 
 $yearinsec = 365.25*24*60*60
 $rhoi = 917.0/(1.0e6*yearinsec^2)   
-$rhow = 1025.0/(1.0e6*yearinsec^2) 
+$rhow = 1020.0/(1.0e6*yearinsec^2) 
 $gravity = -9.81*yearinsec^2
 $n = 3.0
 
@@ -21,7 +21,7 @@ $ function waterpressure(Z) {\
 }
 
 Header
-  Mesh DB "../../../../../Models/Helheim/Meshes/Flowline/DEM20110319Low" "Elmer"
+  Mesh DB "Mesh_Input" "Elmer"
 End
 
 Constants
@@ -39,9 +39,9 @@ Simulation
 
   Timestepping Method = "BDF"
   BDF Order = 1
-  Timestep Intervals = 50
+  Timestep Intervals = totaldt
   Output Intervals = 1        
-  Timestep Sizes = $(0.0027397260274)       
+  Timestep Sizes = $(dt)       
   
   Steady State Max Iterations = 5
   Steady State Min Iterations = 1
@@ -49,8 +49,8 @@ Simulation
   Max Output Level = 3
   Output File = File "$name".result"
   
-  !Restart File = "flowline1.result"
-  !Restart Position = 0
+  Restart File = "flowline1.result"
+  Restart Position = 0
 End
 
 !---------------------------------------------------
@@ -84,6 +84,15 @@ Body 3
   Initial Condition = 3
 End
 
+!! Calving front
+Body 4
+  Name= "calving front"
+  Equation = 1
+  Material = 1
+  Body Force = 3
+  Initial Condition = 4
+End
+
 !---------------------------------------------------
 !---------------- INITIAL CONDITIONS ---------------
 !---------------------------------------------------
@@ -114,11 +123,19 @@ Initial Condition 3
   Mesh Update 2 = Real 0.0e0
 End
 
+Initial Condition 4
+  CalvingFront = Variable Coordinate 1
+    Real Procedure "USF_Calving.so" "XCalvingFrontIni"
+  CalvingFrontIni = Equals Coordinate 1
+  Mesh Update 1 = Real 0.0e0
+  Mesh Update 2 = Real 0.0e0
+End
+
 !---------------------------------------------------
 !---------------- BODY FORCES ----------------------
 !---------------------------------------------------
 
-!! Glacier
+! Glacier
 Body Force 1
   ! Shape factor
   !Flow BodyForce 1 = Variable Coordinate 1
@@ -146,17 +163,18 @@ Body Force 1
   Lateral Friction Exponent = Real $(1.0/n)
   Flow Solver Name = String Flow Solution
   
-  ! Lateral convergence, according to Todd 2014
+  ! Lateral convergence from Todd et al, 2014
   Pressure Load = Variable Coordinate 1
     Real Procedure "Flowline.so" "LateralConvergence"
 End
 
-!! Surface
+! Surface
 Body Force 2
   Zs Top Accumulation Flux 1 = Real 0.0e0
   Zs Top Accumulation Flux 2 = Real 0.0e0
 End
 
+! Bed
 Body Force 3
   Zs Bottom Accumulation = Real 0.0e0
 End
@@ -247,6 +265,10 @@ Solver 5
   
   Exported Variable 1 = Flow Solution Loads[Stress Vector:2 CEQ Residual:1] 
   Exported Variable 2 = -dofs 1 "Bedrock"
+  Exported Variable 3 = "CalvingFront"
+  Exported Variable 3 DOFs = 1
+  Exported Variable 4 = "CalvingFrontIni"
+  Exported Variable 4 DOFs = 1
 End
 
 Solver 6
@@ -450,7 +472,7 @@ Boundary Condition 1
     Real Procedure "ElmerIceUSF" "SeaSpring"  
   Compute Sea Spring = Logical True
   
-  Mesh Update 1 = Real 0.0
+  ! Mesh Update 1 = Real 0.0
   Mesh Update 2 = Variable Zs Bottom
     Real Procedure "ElmerIceUSF" "ZsBottomMzsIni"
 
@@ -464,7 +486,7 @@ Boundary Condition 2
   Body ID = 2
   Shape Surface = Logical True
   
-  Mesh Update 1 = Real 0.0e0
+  ! Mesh Update 1 = Real 0.0e0
   Mesh Update 2 = Variable Zs Top
     Real Procedure "ElmerIceUSF" "ZsTopMzsIni"
   
@@ -485,13 +507,15 @@ End
 
 Boundary Condition 4
   Name = "Calving front"
+  CalvingMask = Logical True
   Target Boundaries(1) = 2
   Flow Force BC = Logical True  
   
   External Pressure = Variable Coordinate 2 !we are in MPa units
     Real MATC "-1.0*waterpressure(tx)*1.0E-06"
     
-  Mesh Update 1 = Real 0.0e0
+  Mesh Update 1 = Variable Coordinate 1
+    Real Procedure "USF_Calving.so" "Advance"
 
   Save Line = Logical True
 End

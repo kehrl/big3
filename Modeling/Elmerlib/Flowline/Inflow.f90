@@ -25,7 +25,7 @@ Function Inflow (Model, nodenumber, dumy) RESULT(vel)
    	LOGICAL :: FirsttimeInflow=.True.
      
     ! Save data for future use    
-   	SAVE FirsttimeInflow,Firsttime2,dv,us,df,zb,zs
+   	SAVE FirsttimeInflow,dv,us,df,zb,zs
 	
 	! Load data
    	if (FirsttimeInflow) then

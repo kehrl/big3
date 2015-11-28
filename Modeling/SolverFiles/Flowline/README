@@ -12,6 +12,16 @@ flowline2.sif
 - flowline1.sif
 - adds free surface to surface
 
+flowline3.sif 
+- TRANSIENT
+- flowline2.sif
+- adds free surface to bottom, buoyancy solver, grounding line dynamics
+
+flowlin4.sif
+- TRANSIENT
+- flowline3.sif
+- adds free surface to calving front
+
 robin_beta.sif
 - basal inversions using the robin beta method
 - shape factor implemented
