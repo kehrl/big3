@@ -7,8 +7,8 @@ import os
 
 glacier = "Helheim"
 #TOPDIR = "/Volumes/insar4/ian/TSX/Helheim/DEM/fromDana/"
-TOPDIR = os.path.join("/Volumes/kehrl/Bigtmp/TDX/fromDana/")
-OUTDIR =  os.path.join("/Volumes/kehrl/Bigtmp/shean_tdx/")
+TOPDIR = os.path.join("/home/laurak/bigtmp/shean_TDM_kanger/")
+OUTDIR =  os.path.join("/home/laurak/bigtmp/shean_TDM_kanger/mosaics/")
 
 # Get list of directories
 dirs = os.listdir(TOPDIR)
@@ -17,14 +17,14 @@ dirs = os.listdir(TOPDIR)
 tracklist = []
 for dir in dirs:
   # Check if it is a track directory. If so, convert file to EPSG 3413
-  if os.path.isdir(TOPDIR+dir):
+  if os.path.isdir(TOPDIR+dir) and dir.startswith('1'):
     files = os.listdir(TOPDIR+dir)
     for file in files:
       if file.endswith('_DEM.ras'):
         newfile = OUTDIR+file[25:33]+'_'+file[34:38]+'_'+dir[0:7]+'_'+file[41:-4]+'.tif'
         if not(os.path.isfile(newfile)):
           os.system("gdalwarp -t_srs '+proj=stere +lat_0=90 +lat_ts=70 +lon_0=-45 +k=1 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs' -et 0.0 -r cubic -co TILED=YES -co COMPRESS=LZW -co BIGTIFF=IF_SAFER "+TOPDIR+dir+'/'+file+' '+newfile)
-          os.system('gdaladdo.py '+newfile)
+          #os.system('gdaladdo.py '+newfile)
     if (dir[0:7] not in tracklist):
       tracklist.append(dir[0:7])
 
