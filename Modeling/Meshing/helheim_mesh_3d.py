@@ -36,7 +36,7 @@ parser.add_argument("-bmodel", dest="bedmodel", required = False,default='aniso'
 parser.add_argument("-bsmooth", dest="bedsmooth", type=int,required = False,\
 			default=4,help = "Smoothness of bed (1-8).")
 parser.add_argument("-lc", dest="lc", type=int,required = False,\
-			default=[500,1000,2000,5000],\
+			default=[1000,1000,3000,5000],\
 			help = "Four numbers that define the mesh resolution for grounding-line (500 m),channels (1000 m),regions near channels (2000 m), and entire mesh (5000 m).")
 parser.add_argument("-extrude", dest="extrude", type=int,required = False,\
 			default=5,\

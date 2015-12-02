@@ -27,13 +27,16 @@ parser.add_argument("-mesh", dest="meshname", required = True,
         help = "Name of mesh.")
 parser.add_argument("-n", dest="npartitions", required = True,
         help = "Number of partitions.")
-parser.add_argument("-regpar", dest="regpars", required = False,
+parser.add_argument("-regpar", dest="regpar", required = False,
 		default='1e10',help = "Regularization parameter.")
+parser.add_argument("-method", dest="method", required = False,
+		default='adjoint',help = "adjoint or robin.")
 
 args, _ = parser.parse_known_args(sys.argv)
 RES = args.meshname
 partitions = args.npartitions
-regpars = args.regpars
+regpar = args.regpar
+method = args.method
 
 # Model Resolution
 glacier = 'Helheim'
@@ -57,20 +60,7 @@ del input_files
 # Boundary numbers 
 bbed=3
 bsurf=4
-runname="beta"
-
-# Regularization parameters (lambda)
-#regpars=['1e10','1e8','1e9','1e11','1e12','1e7','1e13','1e14']
-regpars=['1e10']
-
-# Mesh files for making pretty graphs
-extent = np.genfromtxt(Inputs+"mesh_extent.dat")
-hole1 = np.genfromtxt(Inputs+"mesh_hole1.dat")
-hole2 = np.genfromtxt(Inputs+"mesh_hole2.dat")
-holes = []
-holes.append({'xy': np.array(hole1[:,0:2])})
-holes.append({'xy': np.array(hole2[:,0:2])})
-del hole1, hole2
+runname=method+"_beta"
 
 ############################################################
 # Run inversion solver file for different values of lambda #
@@ -79,67 +69,67 @@ del hole1, hole2
 print "\n## Running elmer inversion code ##\n"
 
 fid = open(DIRS+"ELMERSOLVER_STARTINFO","w")
-fid.write('robin_beta_temp.sif')
+fid.write('temp.sif')
 fid.close()
 
 fid_info = open(DIRR+"summary.dat","a")
 fid_info.write('Lambda Nsim Cost Norm RelPrec_G \n')
 fid_info.close()
-n=-1
-for regpar in regpars:
-  for filename in glob.glob(DIRM+"elmer/robin_beta*"):
-    os.remove(filename)
-  n=n+1
-  os.chdir(DIRS)
-  fid1 = open('robin_beta_temperature.sif', 'r')
-  fid2 = open('robin_beta_temp.sif', 'w')
-  lines=fid1.readlines()
-  for line in lines:
-    line=line.replace('$Lambda=1.0e10', '$Lambda={}'.format(regpar))
-    line=line.replace('Low','{}'.format(RES))
-    fid2.write(line)
-  fid1.close()
-  fid2.close()
-  del fid1, fid2
-  call(["mpiexec","-np",partitions,"elmersolver_mpi"])
-  os.system('rm robin_beta_temp.sif')
+
+#for filename in glob.glob(DIRM+"elmer/robin_beta*"):
+#  os.remove(filename)
+os.chdir(DIRS)
+fid1 = open(method+'_beta.sif', 'r')
+fid2 = open('temp.sif', 'w')
+lines=fid1.readlines()
+for line in lines:
+  line=line.replace('$Lambda=1.0e10', '$Lambda={}'.format(regpar))
+  line=line.replace('Mesh_Input','{}'.format("../../../../../Models/Helheim/Meshes/3D/"+RES))
+  fid2.write(line)
+fid1.close()
+fid2.close()
+del fid1, fid2
+call(["mpiexec","-np",partitions,"elmersolver_mpi"])
+os.system('rm temp.sif')
   
-  #####################################
-  # Write cost values to summary file #
-  ##################################### 
-  fid = open(DIRS+"cost_robin_beta.dat","r")
-  lines = fid.readlines()
-  line=lines[-1]
-  p=line.split()
-  nsim = float(p[0])
-  cost1 = float(p[1])
-  cost2 = float(p[2])
-  norm = float(p[3]) 
-  fid.close()
-  fid_info = open(DIRR+"summary.dat","a")
-  fid_info.write('{} {} {} {} {}\n'.format(regpar,nsim,cost1,cost2,norm))
-  fid_info.close()
-  del fid
-  
-  #######################################
-  # Combine elmer results into one file #
-  #######################################
-  bed = elmer_read.saveline_boundary(DIRM+"/elmer/",runname,bbed)
-  surf = elmer_read.saveline_boundary(DIRM+"/elmer/",runname,bsurf)
-  
-  os.rename(DIRM+"/elmer/"+runname+".dat",DIRR+runname+"_"+regpar+".dat")
-  os.rename(DIRM+"/elmer/"+runname+".dat.names",DIRR+runname+"_"+regpar+".dat.names")
-  os.rename(DIRS+"M1QN3_robin_beta.out",DIRR+"M1QN3_"+regpar+".out")
-  os.rename(DIRS+"gradientnormadjoint_robin_beta.dat",DIRR+"gradient_"+regpar+".dat")
-  os.rename(DIRS+"cost_robin_beta.dat",DIRR+"cost_"+regpar+".dat")
-  
-  names = os.listdir(DIRM+"/elmer")
-  os.chdir(DIRM+"/elmer")
-  if not os.path.exists(DIRR+"lambda_"+regpar):
-    os.makedirs(DIRR+"lambda_"+regpar)
-  for name in names:
-    if name.endswith('vtu') and name.startswith('robin'):
-      os.rename(name,DIRR+"lambda_"+regpar+"/"+name)
+#####################################
+# Write cost values to summary file #
+##################################### 
+
+fid = open(DIRS+"cost_"+method+"_beta.dat","r")
+lines = fid.readlines()
+line=lines[-1]
+p=line.split()
+nsim = float(p[0])
+cost1 = float(p[1])
+cost2 = float(p[2])
+norm = float(p[3]) 
+fid.close()
+fid_info = open(DIRR+"summary.dat","a")
+fid_info.write('{} {} {} {} {}\n'.format(regpar,nsim,cost1,cost2,norm))
+fid_info.close()
+del fid
+
+#######################################
+# Combine elmer results into one file #
+#######################################
+
+bed = elmer_read.saveline_boundary(DIRM+"/elmer/",runname,bbed)
+surf = elmer_read.saveline_boundary(DIRM+"/elmer/",runname,bsurf)
+
+os.rename(DIRM+"/elmer/"+runname+".dat",DIRR+runname+method+"_"+regpar+"_beta.dat")
+os.rename(DIRM+"/elmer/"+runname+".dat.names",DIRR+runname++method+"_"+regpar+"_beta.dat.names")
+os.rename(DIRS+"M1QN3_"+method+"_beta.out",DIRR+"M1QN3_"+method+"_"+regpar+"_beta.out")
+os.rename(DIRS+"gradientnormadjoint_"+method+"_beta.dat",DIRR+"gradient_"+method+"_"+regpar+"_beta.dat")
+os.rename(DIRS+"cost_"+method+"_beta.dat",DIRR+"cost_"+method+"_"+regpar+"_beta.dat")
+
+names = os.listdir(DIRM+"/elmer")
+os.chdir(DIRM+"/elmer")
+if not os.path.exists(DIRR+"lambda_"+regpar):
+  os.makedirs(DIRR+"lambda_"+regpar)
+for name in names:
+  if name.endswith('vtu') and name.startswith(method):
+    os.rename(name,DIRR+"lambda_"+regpar+"/"+name)
   
   
 ################################
