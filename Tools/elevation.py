@@ -1102,7 +1102,7 @@ def variability(glacier,time1,time2,verticaldatum='geoid',resolution=32.,data='a
             else:
               if DIR[0:8] in years:
                 dates.append(DIR[0:8])
-  if 'TDX' in data or data='all':
+  if 'TDX' in data or data=='all':
     for DIR in TDXDIRs:
       if DIR.endswith(filestring):
         tdxmin,tdxmax,tdymin,tdymax = geotiff.extent(TDXDIR+DIR)
