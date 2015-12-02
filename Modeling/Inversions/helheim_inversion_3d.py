@@ -118,7 +118,7 @@ bed = elmer_read.saveline_boundary(DIRM+"/elmer/",runname,bbed)
 surf = elmer_read.saveline_boundary(DIRM+"/elmer/",runname,bsurf)
 
 os.rename(DIRM+"/elmer/"+runname+".dat",DIRR+runname+method+"_"+regpar+"_beta.dat")
-os.rename(DIRM+"/elmer/"+runname+".dat.names",DIRR+runname++method+"_"+regpar+"_beta.dat.names")
+os.rename(DIRM+"/elmer/"+runname+".dat.names",DIRR+runname+method+"_"+regpar+"_beta.dat.names")
 os.rename(DIRS+"M1QN3_"+method+"_beta.out",DIRR+"M1QN3_"+method+"_"+regpar+"_beta.out")
 os.rename(DIRS+"gradientnormadjoint_"+method+"_beta.dat",DIRR+"gradient_"+method+"_"+regpar+"_beta.dat")
 os.rename(DIRS+"cost_"+method+"_beta.dat",DIRR+"cost_"+method+"_"+regpar+"_beta.dat")
