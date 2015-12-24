@@ -130,6 +130,14 @@ End
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!! Navier-Stokes Solution
+
+!Solver 1
+!  Exec Solver = Before simulation
+!  Equation = "MapCoordinate"
+!  Procedure = "StructuredMeshMapper" "StructuredMeshMapper"
+!  Active Coordinate = Integer 3
+!End
+
 Solver 1
   Equation = "Navier-Stokes"
   

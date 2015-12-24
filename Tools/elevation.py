@@ -482,7 +482,7 @@ def dem_error(glacier,date,sensor):
   Inputs:
   glacier: glacier name
   date: date for error
-  sensor: sensor name (Worldview, TDX, Spirit)
+  sensor: sensor name (Worldview, TDM, Spirit)
   
   Outputs:
   error: error value for chosen date and sensor combination
@@ -491,8 +491,8 @@ def dem_error(glacier,date,sensor):
   if sensor == 'SPIRIT':
     error = 4.0
   else:
-    if sensor == 'TDX':
-      file = os.path.join(os.getenv("DATA_HOME"),'Elevation/TDX/'+glacier+'/'+glacier+'_TDM_align_results.txt')
+    if sensor == 'TDM':
+      file = os.path.join(os.getenv("DATA_HOME"),'Elevation/TDM/'+glacier+'/'+glacier+'_TDM_align_results.txt')
     elif sensor == 'WV':
       file = os.path.join(os.getenv("DATA_HOME"),'Elevation/Worldview/'+glacier+'/'+glacier+'_align_results.txt')
 
@@ -516,7 +516,7 @@ def dem_grid(glacier,xmin=-np.Inf,xmax=np.Inf,ymin=-np.Inf,ymax=np.Inf,
   
   Inputs
   xmin,xmax,ymin,ymax: extent for output grids
-  data: type of data you want (WV, TDX, SPIRIT, or all)
+  data: type of data you want (WV, TDM, SPIRIT, or all)
   glacier: Kanger or Helheim
   verticaldatum: ellipsoid or geoid
   return_error: return median co-registration errors if set to true
@@ -537,8 +537,8 @@ def dem_grid(glacier,xmin=-np.Inf,xmax=np.Inf,ymin=-np.Inf,ymax=np.Inf,
   WVDIR = os.path.join(os.getenv("DATA_HOME"),'Elevation/Worldview/'+glacier+'/')
   WVDIRs = os.listdir(WVDIR)
   
-  TDXDIR = os.path.join(os.getenv("DATA_HOME"),'Elevation/TDX/'+glacier+'/')
-  TDXDIRs = os.listdir(TDXDIR)
+  TDMDIR = os.path.join(os.getenv("DATA_HOME"),'Elevation/TDM/'+glacier+'/')
+  TDMDIRs = os.listdir(TDMDIR)
   
   SPIRITDIR = os.path.join(os.getenv("DATA_HOME"),'Elevation/SPIRIT/'+glacier+'/')
   SPIRITDIRs = os.listdir(SPIRITDIR)
@@ -571,11 +571,11 @@ def dem_grid(glacier,xmin=-np.Inf,xmax=np.Inf,ymin=-np.Inf,ymax=np.Inf,
             else:
               if DIR[0:8] in years:
                 dates.append(DIR[0:13])
-  # For TDX data...
-  if ('TDX' in data) or (data == 'all'):
-    for DIR in TDXDIRs:
+  # For TDM data...
+  if ('TDM' in data) or (data == 'all'):
+    for DIR in TDMDIRs:
       if DIR.endswith(filestring):
-        tdxmin,tdxmax,tdymin,tdymax = geotiff.extent(TDXDIR+DIR)
+        tdxmin,tdxmax,tdymin,tdymax = geotiff.extent(TDMDIR+DIR)
         td_extent = shapely.geometry.Polygon([(tdxmin,tdymin),(tdxmin,tdymax),(tdxmax,tdymax),(tdxmax,tdymin)])
         if glacier_extent.intersects(td_extent):
           if not(years) or (years=='all'):
@@ -591,9 +591,9 @@ def dem_grid(glacier,xmin=-np.Inf,xmax=np.Inf,ymin=-np.Inf,ymax=np.Inf,
   if ('SPIRIT' in data) or (data == 'all'):
     for DIR in SPIRITDIRs:
       if DIR.endswith(spiritstring):
-        tdxmin,tdxmax,tdymin,tdymax = geotiff.extent(SPIRITDIR+DIR)
-        td_extent = shapely.geometry.Polygon([(tdxmin,tdymin),(tdxmin,tdymax),(tdxmax,tdymax),(tdxmax,tdymin)])
-        if glacier_extent.intersects(td_extent):
+        sprxmin,sprxmax,sprymin,sprymax = geotiff.extent(SPIRITDIR+DIR)
+        spr_extent = shapely.geometry.Polygon([(sprxmin,sprymin),(sprxmin,sprymax),(sprxmax,sprymax),(sprxmax,sprymin)])
+        if glacier_extent.intersects(spr_extent):
           if not(years) or (years=='all'):
             dates.append(DIR[0:13])
           else:
@@ -614,15 +614,15 @@ def dem_grid(glacier,xmin=-np.Inf,xmax=np.Inf,ymin=-np.Inf,ymax=np.Inf,
     n = 1 # Count number of files for that date
     ngrid = np.ones([ny,nx])
     time[i] = fracyear.date_to_fracyear(int(date[0:4]),int(date[4:6]),float(date[6:8]))
-    for DIR in np.r_[TDXDIRs,WVDIRs,SPIRITDIRs]:
+    for DIR in np.r_[TDMDIRs,WVDIRs,SPIRITDIRs]:
       if DIR.startswith(date) and (DIR.endswith(filestring) or DIR.endswith(spiritstring)):
         print "Loading ", DIR
         if os.path.isfile(WVDIR+DIR):
           xwv,ywv,zwv = geotiff.read(WVDIR+DIR) 
           error[i] = dem_error(glacier,date,'WV')
-        elif os.path.isfile(TDXDIR+DIR):
-          xwv,ywv,zwv = geotiff.read(TDXDIR+DIR) 
-          error[i] = dem_error(glacier,date,'TDX')
+        elif os.path.isfile(TDMDIR+DIR):
+          xwv,ywv,zwv = geotiff.read(TDMDIR+DIR) 
+          error[i] = dem_error(glacier,date,'TDM')
         else:
           xwv,ywv,zwv = geotiff.read(SPIRITDIR+DIR)
           error[i] = dem_error(glacier,date,'SPIRIT')
@@ -680,8 +680,8 @@ def dem_along_flowline(xpts,ypts,glacier,years='all',cutoff='terminus',verticald
   WVDIR = os.path.join(os.getenv("DATA_HOME"),"Elevation/Worldview/"+glacier+"/")
   WVDIRs = os.listdir(WVDIR)
   
-  TDXDIR = os.path.join(os.getenv("DATA_HOME"),"Elevation/TDX/"+glacier+"/")
-  TDXDIRs = os.listdir(TDXDIR)
+  TDMDIR = os.path.join(os.getenv("DATA_HOME"),"Elevation/TDM/"+glacier+"/")
+  TDMDIRs = os.listdir(TDMDIR)
   
   SPIRITDIR = os.path.join(os.getenv("DATA_HOME"),"Elevation/SPIRIT/"+glacier+"/")
   SPIRITDIRs = os.listdir(SPIRITDIR)
@@ -719,10 +719,10 @@ def dem_along_flowline(xpts,ypts,glacier,years='all',cutoff='terminus',verticald
           else:
             if DIR[0:8] in years:
               dates.append(DIR[0:8])
-  # For TDX...
-  for DIR in TDXDIRs:
+  # For TDM...
+  for DIR in TDMDIRs:
     if DIR.endswith(filestring):
-      xmin,xmax,ymin,ymax = geotiff.extent(TDXDIR+DIR)
+      xmin,xmax,ymin,ymax = geotiff.extent(TDMDIR+DIR)
       within = np.where((xpts > xmin) & (xpts < xmax) & (ypts > ymin) & (ypts < ymax))[0]
       if len(within) > 0:
         if not(years) or (years=='all'):
@@ -760,13 +760,13 @@ def dem_along_flowline(xpts,ypts,glacier,years='all',cutoff='terminus',verticald
     date = dates[i]
     times[i,0] = fracyear.date_to_fracyear(float(date[0:4]),float(date[4:6]),float(date[6:]))
     times[i,1] = date
-    for DIR in np.r_[TDXDIRs,WVDIRs,SPIRITDIRs]:
+    for DIR in np.r_[TDMDIRs,WVDIRs,SPIRITDIRs]:
       if DIR.startswith(date) and (DIR.endswith(filestring) or DIR.endswith(spiritstring)): 
         #print "Loading data from "+DIR+"\n"
         if os.path.isfile(WVDIR+DIR):
           x,y,z = geotiff.read(WVDIR+DIR)
-        elif os.path.isfile(TDXDIR+DIR):
-          x,y,z = geotiff.read(TDXDIR+DIR)
+        elif os.path.isfile(TDMDIR+DIR):
+          x,y,z = geotiff.read(TDMDIR+DIR)
         else:
           x,y,z = geotiff.read(SPIRITDIR+DIR)
 
@@ -820,11 +820,12 @@ def dem_along_flowline(xpts,ypts,glacier,years='all',cutoff='terminus',verticald
   
   return zs,times
 
-def dem_at_pts(xpts,ypts,glacier,years='all',verticaldatum='geoid',cutoff='none',method='linear',radius=200):
+def dem_at_pts(xpts,ypts,glacier,years='all',verticaldatum='geoid',cutoff='none',method='linear',radius=200,data='all'):
 
   '''
-  zpts,time = dem_at_pts(xpts,ypts,glacier,
-  				years='all',verticaldatum='geoid')
+  zpts,zpts_error,time = dem_at_pts(xpts,ypts,glacier,years='all',
+  	verticaldatum='geoid',cutoff='none',method='linear',radius=200,data='all'):
+
   
   Interpolates worldview surface elevations to points xpts,ypts.
   
@@ -836,6 +837,7 @@ def dem_at_pts(xpts,ypts,glacier,years='all',verticaldatum='geoid',cutoff='none'
   cutoff: cutoff elevations in front of terminus ('terminus' or 'none')
   method: 'linear' extrapolation or 'average' value for a region defined by radius
   radius: radius for average value (only necessary if method is 'average')
+  data: all, WV, TDM, or SPIRIT
   
   Outputs:
   zpts: array of surface elevations for points xpts,ypts
@@ -853,7 +855,7 @@ def dem_at_pts(xpts,ypts,glacier,years='all',verticaldatum='geoid',cutoff='none'
     xmax = np.max(xpts)+radius*3
     ymax = np.max(ypts)+radius*3
     
-    xwv,ywv,zwv,timewv,zpts_error = dem_grid(glacier,xmin,xmax,ymin,ymax,years='all',verticaldatum='geoid',return_error=True)
+    xwv,ywv,zwv,timewv,zpts_error = dem_grid(glacier,xmin,xmax,ymin,ymax,years='all',verticaldatum='geoid',return_error=True,data=data)
     N = len(timewv)
     
     time = timewv
@@ -893,8 +895,8 @@ def grid_near_time(time,glacier,verticaldatum='geoid'):
   # Worldview data
   WVDIR = os.path.join(os.getenv("DATA_HOME"),"Elevation/Worldview/"+glacier+"/")
   WVDIRs = os.listdir(WVDIR)
-  TDXDIR = os.path.join(os.getenv("DATA_HOME"),"Elevation/TDX/"+glacier+"/")
-  TDXDIRs = os.listdir(TDXDIR)
+  TDMDIR = os.path.join(os.getenv("DATA_HOME"),"Elevation/TDM/"+glacier+"/")
+  TDMDIRs = os.listdir(TDMDIR)
 
 
   # Find file ending based on whether we want elevation relative to geoid or ellipsoid
@@ -911,12 +913,12 @@ def grid_near_time(time,glacier,verticaldatum='geoid'):
       if abs(demtime-time) < abs(besttime-time):
         besttime = demtime
         bestfile = WVDIR+DIR
-  for DIR in TDXDIRs:
+  for DIR in TDMDIRs:
     if DIR.startswith('2') and DIR.endswith(filestring):
       demtime = fracyear.date_to_fracyear(int(DIR[0:4]),int(DIR[4:6]),int(DIR[6:8]))
       if abs(demtime-time) < abs(besttime-time):
         besttime = demtime
-        bestfile = TDXDIR+DIR
+        bestfile = TDMDIR+DIR
        
   x,y,zs = geotiff.read(bestfile)
 
@@ -974,7 +976,7 @@ def dem_continuous(glacier,date,verticaldatum='geoid',fillin=False,blur=False):
   # Directories for high res DEMs
   OUTDIR = os.path.join(os.getenv("DATA_HOME"),"Elevation/MosaicDEMs/"+glacier+"/")
   WVDIR = os.path.join(os.getenv("DATA_HOME"),"Elevation/Worldview/"+glacier+"/")
-  TDXDIR = os.path.join(os.getenv("DATA_HOME"),"Elevation/Worldview/"+glacier+"/")
+  TDMDIR = os.path.join(os.getenv("DATA_HOME"),"Elevation/Worldview/"+glacier+"/")
   
   # Select dates for worldview images 
   if glacier == 'Helheim':
@@ -1073,8 +1075,8 @@ def variability(glacier,time1,time2,verticaldatum='geoid',resolution=32.,data='a
     
   WVDIR = os.path.join(os.getenv("DATA_HOME"),'Elevation/Worldview/'+glacier+'/')
   WVDIRs = os.listdir(WVDIR)
-  TDXDIR = os.path.join(os.getenv("DATA_HOME"),'Elevation/TDX/'+glacier+'/')
-  TDXDIRs = os.listdir(TDXDIR)
+  TDMDIR = os.path.join(os.getenv("DATA_HOME"),'Elevation/TDM/'+glacier+'/')
+  TDMDIRs = os.listdir(TDMDIR)
   SPIRITDIR = os.path.join(os.getenv("DATA_HOME"),'Elevation/SPIRIT/'+glacier+'/')
   SPIRITDIRs = os.listdir(SPIRITDIR)
   
@@ -1102,11 +1104,11 @@ def variability(glacier,time1,time2,verticaldatum='geoid',resolution=32.,data='a
             else:
               if DIR[0:8] in years:
                 dates.append(DIR[0:8])
-  if 'TDX' in data or data=='all':
-    for DIR in TDXDIRs:
+  if 'TDM' in data or data=='all':
+    for DIR in TDMDIRs:
       if DIR.endswith(filestring):
-        tdxmin,tdxmax,tdymin,tdymax = geotiff.extent(TDXDIR+DIR)
-        td_extent = shapely.geometry.Polygon([(tdxmin,tdymin),(tdxmin,tdymax),(tdxmax,tdymax),(tdxmax,tdymin)])
+        TDMmin,TDMmax,tdymin,tdymax = geotiff.extent(TDMDIR+DIR)
+        td_extent = shapely.geometry.Polygon([(TDMmin,tdymin),(TDMmin,tdymax),(TDMmax,tdymax),(TDMmax,tdymin)])
         if glacier_extent.intersects(td_extent):
           if not(years) or (years=='all'):
             dates.append(DIR[0:8])
@@ -1142,18 +1144,17 @@ def variability(glacier,time1,time2,verticaldatum='geoid',resolution=32.,data='a
     n = 1 # Count number of files for that date
     ngrid = np.ones([ny,nx])
     time[i] = fracyear.date_to_fracyear(int(date[0:4]),int(date[4:6]),float(date[6:8]))
-    for DIR in np.r_[TDXDIRs,WVDIRs]:
+    for DIR in np.r_[TDMDIRs,WVDIRs]:
       if DIR.startswith(date) and DIR.endswith(filestring): 
         # Read file
         if  os.path.isfile(WVDIR+DIR):
           maskfile = WVDIR+date+'_mask.tif'
           xwv,ywv,zwv = geotiff.read(WVDIR+DIR) 
           zwv[zwv==0] = float('NaN')
-        elif os.path.isfile(TDXDIR+DIR):
-          maskfile = TDXDIR+date+'_mask.tif'
-          xwv,ywv,zwv = geotiff.read(TDXDIR+DIR) 
+        elif os.path.isfile(TDMDIR+DIR):
+          maskfile = TDMDIR+date+'_mask.tif'
+          xwv,ywv,zwv = geotiff.read(TDMDIR+DIR) 
           zwv[zwv==0] = float('NaN')
-          print "yes",date
         else:
           maskfile = SPIRITDIR+date+'_mask.tif'
           xwv,ywv,zwv = geotiff.read(SPIRITDIR+DIR) 

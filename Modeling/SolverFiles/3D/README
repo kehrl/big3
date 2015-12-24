@@ -1,3 +1,8 @@
+TO DO:
+(1) switch to StructuredMeshMapper, will need to fix boundary numbers?
+(2) set up StructuredMeshMapper to update after every timestep in transient simulation
+
+
 (1) FIX/CHECK SIA - maybe not doing it the best way right now - 
 should I be pulling thickness and height from mesh rather than from original data?
 (it doesn't really matter, but first approach might be more sound)

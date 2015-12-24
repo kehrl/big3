@@ -64,90 +64,97 @@ flux_time_K,flux_dH_K = fluxgate.fluxgate_thinning('Kanger',"fluxgate3",bedsourc
 wv_time_K,wv_dH_K = fluxgate.dem_thinning('Kanger',xwv_K,ywv_K,zwv_K,timewv_K,errorwv_K,"fluxgate3")
 dH_time_K,dH_flux_K,dH_dem_K,dH_smb_K = fluxgate.compare_thinning_rates(wv_time_K,wv_dH_K,flux_time_K,flux_dH_K,timerac_K,smbrac_K,rho_i=900.0)
 
-plt.figure(figsize=(3,3))
+plt.figure(figsize=(2.7,2.7))
 matplotlib.rc('font',family='Arial')
 plt.plot([-100,100],[-100,100],c='k',lw=1)
 plt.errorbar(dH_dem_K[:,0],dH_flux_K[:,0],yerr=dH_flux_K[:,1],xerr=dH_dem_K[:,1],fmt='o',color='0.7',markersize=3,zorder=3,label='Kanger')
 plt.errorbar(dH_dem_H[:,0],dH_flux_H[:,0],yerr=dH_flux_H[:,1],xerr=dH_dem_H[:,1],fmt='ko',markersize=3,zorder=3,label='Helheim')
-plt.xticks(np.arange(-100,120,20),fontsize=8)
-plt.yticks(np.arange(-100,120,20),fontsize=8)
+plt.xticks(np.arange(-120,120,40),fontsize=10)
+plt.yticks(np.arange(-120,120,40),fontsize=10)
 plt.ylim([-100,80])
 plt.xlim([-100,80])
-plt.ylabel('Flux thinning rate (m/yr)',fontsize=8)
-plt.xlabel('DEM thinning rate (m/yr)',fontsize=8)
+plt.ylabel('Flux dH/dt (m yr$^{-1}$)',fontsize=11)
+plt.xlabel('DEM dH/dt (m yr$^{-1}$)',fontsize=11)
 plt.tight_layout()
-plt.legend(loc=4,numpoints=1,fontsize=8)
-plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/"+"Thinning_comparison.pdf"),FORMAT='PDF')
+plt.legend(loc=4,borderpad=0.3,fontsize=10,numpoints=1,handlelength=0.7,labelspacing=0.05,columnspacing=0.7,handletextpad=0.5)
+plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/"+"Thinning_comparison.pdf"),FORMAT='PDF',dpi=600)
 plt.close()
 
 plt.figure(figsize=(3,3))
 matplotlib.rc('font',family='Arial')
 plt.plot([0,0],[-150,150],'k')
 plt.plot([-4,4],[0,0],'k')
-interped = np.interp(flux_time_H,terminus_time_H,terminus_val_H)
-plt.errorbar(interped/1e3,flux_dH_H[:,0],fmt='o',yerr=flux_dH_H[:,1],markersize=3,c='k',label='Flux')
-interped = np.interp(wv_time_H[:,0],terminus_time_H,terminus_val_H)
-plt.errorbar(interped/1e3,wv_dH_H[:,0],fmt='o',yerr=wv_dH_H[:,1],markersize=3,c='r',label='DEM')
-plt.xlabel('Terminus position (km)',fontsize=8)
-plt.ylabel('Thinning rate (m/yr)',fontsize=8)
-plt.yticks(np.arange(-150,200,75),fontsize=8)
-plt.xticks(np.arange(-4,5,1),fontsize=8)
+plt.errorbar(-200,-200,fmt='ko',markersize=3,label='Flux')
+plt.errorbar(-200,-200,fmt='k^',markersize=3,label='DEM')
+years = range(2008,2016)
+colors=['b','skyblue','g','limegreen','gold','orange','r','maroon']
+n=0
+for year in years:
+  ind = np.where(np.floor(flux_time_H)==year)[0]
+  interped = np.interp(flux_time_H[ind],terminus_time_H,terminus_val_H)
+  plt.errorbar(interped/1e3,flux_dH_H[ind,0],fmt='o',yerr=flux_dH_H[ind,1],markersize=3,c=colors[n])
+  ind = np.where(np.floor(wv_time_H)==year)[0]
+  for i in ind:
+    time = np.arange(wv_time_H[i,0]-wv_time_H[i,1],wv_time_H[i,0]+wv_time_H[i,1],1/365.25)
+    interped = np.interp(time,terminus_time_H,terminus_val_H)
+    plt.errorbar(np.mean(interped)/1e3,wv_dH_H[i,0],fmt='^',yerr=wv_dH_H[i,1],markersize=3,c=colors[n])
+  plt.plot(-200,-200,'s',markersize=3,color=colors[n],label=year)
+  n=n+1
+n=0
+for year in years:
+  ind = np.where(np.floor(flux_time_H)==year)[0]
+  interped = np.interp(flux_time_H[ind],terminus_time_H,terminus_val_H)
+  plt.plot(interped/1e3,flux_dH_H[ind,0],'o',markersize=3,c=colors[n])
+  ind = np.where(np.floor(wv_time_H)==year)[0]
+  for i in ind:
+    time = np.arange(wv_time_H[i,0]-wv_time_H[i,1],wv_time_H[i,0]+wv_time_H[i,1],1/365.25)
+    interped = np.interp(time,terminus_time_H,terminus_val_H)
+    plt.plot(np.mean(interped)/1e3,wv_dH_H[i,0],'^',markersize=3,c=colors[n])
+  n=n+1
+plt.errorbar(-200,-200,fmt='w.',label=' ')
+plt.errorbar(-200,-200,fmt='w.',label=' ')
+plt.xlabel('Terminus position (km)',fontsize=11)
+plt.ylabel('dH/dt (m yr$^{-1}$)',fontsize=11)
+plt.yticks(np.arange(-120,200,60),fontsize=11)
+plt.xticks(np.arange(-4,5,1),fontsize=11)
 plt.xlim([-2,2])
-plt.ylim([-150,150])
-plt.legend(loc=2,fontsize=8,numpoints=1)
+plt.ylim([-130,130])
+plt.legend(loc=2,fontsize=11,numpoints=1,ncol=3,handlelength=0.2,handletextpad=0.5,labelspacing=0.2,columnspacing=0.8)
 plt.tight_layout()
-plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/Helheim_terminus_thinning.pdf"),FORMAT='PDF')
+plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/Helheim_terminus_thinning.pdf"),FORMAT='PDF',dpi=600)
 plt.close()
 
 plt.figure(figsize=(3,3))
 matplotlib.rc('font',family='Arial')
 plt.plot([0,0],[-150,150],'k')
 plt.plot([-4,4],[0,0],'k')
-interped = np.interp(flux_time_K,terminus_time_K,terminus_val_K)
-plt.errorbar(interped/1e3,flux_dH_K[:,0],fmt='o',yerr=flux_dH_K[:,1],markersize=3,c='k',label='Flux')
-interped = np.interp(wv_time_K[:,0],terminus_time_K,terminus_val_K)
-plt.errorbar(interped/1e3,wv_dH_K[:,0],fmt='o',yerr=wv_dH_K[:,1],markersize=3,c='r',label='DEM')
-plt.xlabel('Terminus position (km)',fontsize=8)
-plt.ylabel('Thinning rate (m/yr)',fontsize=8)
-plt.yticks(np.arange(-150,200,75),fontsize=8)
-plt.xticks(np.arange(-4,5,1),fontsize=8)
-plt.xlim([-2,2])
-plt.ylim([-150,150])
-plt.legend(loc=2,fontsize=8,numpoints=1)
+plt.errorbar(-200,-200,fmt='ko',markersize=3,label='Flux')
+plt.errorbar(-200,-200,fmt='k^',markersize=3,label='DEM')
+years = range(2008,2016)
+colors=['b','skyblue','g','limegreen','gold','orange','r','maroon']
+n=0
+for year in years:
+  ind = np.where(np.floor(flux_time_K)==year)[0]
+  interped = np.interp(flux_time_K[ind],terminus_time_K,terminus_val_K)
+  plt.errorbar(interped/1e3,flux_dH_K[ind,0],fmt='o',yerr=flux_dH_K[ind,1],markersize=3,c=colors[n])
+  ind = np.where(np.floor(wv_time_K)==year)[0]
+  for i in ind:
+    time = np.arange(wv_time_K[i,0]-wv_time_K[i,1],wv_time_K[i,0]+wv_time_K[i,1],1/365.25)
+    interped = np.interp(time,terminus_time_K,terminus_val_K)
+    plt.errorbar(np.mean(interped)/1e3,wv_dH_K[i,0],fmt='^',yerr=wv_dH_K[i,1],markersize=3,c=colors[n])
+  plt.plot(-200,-200,'s',markersize=3,color=colors[n],label=year)
+  n=n+1
+plt.errorbar(-200,-200,fmt='w.',label=' ')
+plt.errorbar(-200,-200,fmt='w.',label=' ')
+plt.xlabel('Terminus position (km)',fontsize=11)
+plt.ylabel('dH/dt (m yr$^{-1}$)',fontsize=11)
+plt.yticks(np.arange(-80,200,40),fontsize=11)
+plt.xticks(np.arange(-4,5,1),fontsize=11)
+plt.xlim([-4,4])
+plt.ylim([-80,80])
+plt.legend(loc=2,fontsize=11,numpoints=1,ncol=3,handlelength=0.2,handletextpad=0.5,labelspacing=0.2,columnspacing=0.8)
 plt.tight_layout()
-plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/Kanger_terminus_thinning.pdf"),FORMAT='PDF')
+plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/Kanger_terminus_thinning.pdf"),FORMAT='PDF',dpi=600)
 plt.close()
 
 
-####################################################################
-# OK. Let's try to really compare DEM and inferred thinning rates. #
-####################################################################
-
-time1 = 2008.5
-time2 = 2015.5
-plt.figure(figsize=(6.5,6.5))
-
-ax = plt.gca()
-nonnan = np.where(~(np.isnan(flux_dH_gate3[:,0])))[0]
-plt.errorbar(wv_time_gate3[:,0],wv_dH_gate3[:,0],xerr=wv_time_gate3[:,1],yerr=wv_dH_gate3[:,1],fmt='o',c='r',markersize=3)
-plt.errorbar(flux_time_gate3[nonnan],flux_dH_gate3[nonnan,0],yerr=flux_dH_gate3[nonnan,1],fmt='o-',color='k',markersize=3)
-#plt.plot(flux_time_gate3_cresis,flux_dH_gate3_cresis[:,0],'g+',markersize=3)
-x_formatter = matplotlib.ticker.ScalarFormatter(useOffset=False)
-ax.xaxis.set_major_formatter(x_formatter)
-
-nonnan = np.where(~(np.isnan(flux_dH_gate3[:,0])))[0]
-plt.errorbar(wv_time_gate1[:,0],wv_dH_gate1[:,0],xerr=wv_time_gate1[:,1],yerr=wv_dH_gate1[:,1],fmt='o',c='r',markersize=3)
-plt.errorbar(flux_time_gate1[nonnan],flux_dH_gate1[nonnan,0],flux_dH_gate1[nonnan,1],fmt='o',color='m',markersize=3)
-plt.xlim([time1,time2])
-
-plt.figure()
-plt.plot([-150,80],[-150,80],'k--',lw=1.5)
-plt.errorbar(dH_dem_gate1[:,0],dH_flux_gate1[:,0],xerr=dH_dem_gate1[:,1],yerr=dH_flux_gate1[:,1],fmt='go')
-plt.errorbar(dH_dem_gate3[:,0]*10,dH_flux_gate3[:,0],xerr=dH_dem_gate3[:,1],yerr=dH_flux_gate3[:,1],fmt='ro')
-plt.gca().set_aspect('equal', adjustable='box')
-plt.xlim([-120,80])
-plt.ylim([-120,80])
-plt.xlabel('DEM thinning rate (m/yr)',fontsize=10)
-plt.ylabel('Velocity thinning rate (m/yr)',fontsize=10)
-plt.xticks(np.arange(-100,120,40),fontsize=10)
-plt.yticks(np.arange(-100,120,40),fontsize=10)

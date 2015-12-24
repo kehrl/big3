@@ -135,6 +135,7 @@ for name in names:
 ################################
 # Output friction coefficients #
 ################################
+
 #Linear Beta square
 fid = open(Inputs+"beta_linear.xyz",'w')
 fid.write('{0}\n'.format(len(bed['node'])))

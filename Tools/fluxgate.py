@@ -147,6 +147,7 @@ def fluxgate_thinning(glacier,fluxgate_filename,bedsource='smith',dl=20.0):
   vperp_in = abs(xperp*vxpt_in+yperp*vypt_in)
   vperp_in[:,0] = 0.0
   vperp_in[:,-1] = 0.0
+  #vperp_in = vpt_in
   Q_in = np.zeros_like(vperp_in) # actual fluxes
   Q_in[:,:] = 'NaN'
   Q_in_max = np.zeros_like(vperp_in) # large possible flux given the errors
@@ -160,10 +161,15 @@ def fluxgate_thinning(glacier,fluxgate_filename,bedsource='smith',dl=20.0):
       nonnans = np.where(~(np.isnan(vperp_in[i,:])))[0]
       
       # Get surface elevation for that timestep
-      vind = np.where(np.floor(ztime) == np.floor(tpt_in[i]))[0]
+      vind = np.where(abs(ztime - tpt_in[i]) < 0.5)[0]
       if len(vind) < 1:
-        vind = np.where(abs(np.floor(ztime) - np.floor(tpt_in[i])) < 2)[0]
-      zs_in = np.nanmean(zs_all_in[vind,:])
+        vind = np.where(abs(ztime - tpt_in[i]) < 1)[0]
+      zs_in = np.nanmean(zs_all_in[vind,:],axis=0)
+      #zs_in = np.zeros(len(l_in))
+      #for j in range(0,len(l_in)):
+      #  nonnan = np.where(~(np.isnan(zs_all_in[:,j])))[0]
+      #  zs_in[j] = np.interp(tpt_in[i],ztime[nonnan],zs_all_in[nonnan,j])
+
       
       #f = scipy.interpolate.interp1d(l_in[nonnans],vperp_in[i,nonnans],kind='cubic')
       #vperp_in[i,nans] = f(l_in[nans])
@@ -187,6 +193,7 @@ def fluxgate_thinning(glacier,fluxgate_filename,bedsource='smith',dl=20.0):
   vperp_out = abs(xperp*vxpt_out+yperp*vypt_out)
   vperp_out[:,0] = 0.0
   vperp_out[:,-1] = 0.0
+  #vperp_out = vpt_out
   Q_out = np.zeros_like(vperp_out)
   Q_out[:,:] = float('NaN')
   Q_out_max = np.zeros_like(vperp_out)
@@ -200,10 +207,14 @@ def fluxgate_thinning(glacier,fluxgate_filename,bedsource='smith',dl=20.0):
       nonnans = np.where(~(np.isnan(vperp_out[i,:])))[0]
 
       # Get surface elevation for that timestep
-      vind = np.where(np.floor(ztime) == np.floor(tpt_out[i]))[0]
+      vind = np.where(abs(ztime - tpt_out[i]) < 0.5)[0]
       if len(vind) < 1:
-        vind = np.where(abs(np.floor(ztime) - np.floor(tpt_out[i])) < 2)[0]
-      zs_out = np.nanmean(zs_all_out[vind,:])
+        vind = np.where(abs(ztime - tpt_out[i]) < 1)[0]
+      zs_out = np.nanmean(zs_all_out[vind,:],axis=0)
+      #zs_out = np.zeros(len(l_out))
+      #for j in range(0,len(l_out)):
+      #  nonnan = np.where(~(np.isnan(zs_all_out[:,j])))[0]
+      #  zs_out[j] = np.interp(tpt_out[i],ztime[nonnan],zs_all_out[nonnan,j])
       
       #f = scipy.interpolate.interp1d(l_out[nonnans],vperp_out[i,nonnans],kind='cubic')
       #vperp_out[i,nans] = f(l_out[nans])
