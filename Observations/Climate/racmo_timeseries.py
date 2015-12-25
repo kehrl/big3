@@ -3,13 +3,10 @@
 # LMK, UW, 9/16/2015
 
 import os
-import sys
 import numpy as np
-sys.path.append(os.path.join(os.getenv("CODE_HOME"),"Util/Modules"))
-sys.path.append(os.path.join(os.getenv("CODE_HOME"),"BigThreeGlaciers/Tools"))
-import climate, glacier_flowline,icefronts, velocity
+import climlib, glaclib,icefrontlib, vellib, datelib
 import matplotlib.pyplot as plt
-import matplotlib, fracyear
+import matplotlib
 from matplotlib.ticker import AutoMinorLocator
 
 #################################################################################
@@ -18,22 +15,22 @@ from matplotlib.ticker import AutoMinorLocator
 D = 10.0e3 # m inland from average terminus position
 
 # Helheim:
-xH,yH,zbH,distsH = glacier_flowline.load('Helheim')
+xH,yH,zbH,distsH = glaclib.load_flowline('Helheim')
 ind = np.argmin(abs(distsH+D))
 xptH = xH[ind]
 yptH = yH[ind]
-terminus_valH,terminus_timeH = icefronts.distance_along_flowline(xH,yH,distsH,'Helheim',type='icefront')
-vel_valH,vel_timeH,vel_errorH = velocity.velocity_at_eulpoints(xptH,yptH,'Helheim',data='TSX')
+terminus_valH,terminus_timeH = icefrontlib.distance_along_flowline(xH,yH,distsH,'Helheim',type='icefront')
+vel_valH,vel_timeH,vel_errorH = vellib.velocity_at_eulpoints(xptH,yptH,'Helheim',data='TSX')
 
 del xH,yH,zbH,distsH,ind
 
 # Kanger:
-xK,yK,zbK,distsK = glacier_flowline.load('Kanger')
+xK,yK,zbK,distsK = glaclib.load_flowline('Kanger')
 ind = np.argmin(abs(distsK+D))
 xptK = xK[ind]
 yptK = yK[ind]
-terminus_valK,terminus_timeK = icefronts.distance_along_flowline(xK,yK,distsK,'Kanger',type='icefront')
-vel_valK,vel_timeK,vel_errorK = velocity.velocity_at_eulpoints(xptK,yptK,'Kanger',data='TSX')
+terminus_valK,terminus_timeK = icefrontlib.distance_along_flowline(xK,yK,distsK,'Kanger',type='icefront')
+vel_valK,vel_timeK,vel_errorK = vellib.velocity_at_eulpoints(xptK,yptK,'Kanger',data='TSX')
 
 del xK,yK,zbK,distsK,ind
 
@@ -44,18 +41,18 @@ del xK,yK,zbK,distsK,ind
 filt_len = 31.0 # filter length in days for timeseries
 
 # Kanger
-xracK,yracK,runoffK,timeK = climate.racmo_at_pts(xptK,yptK,'runoff',filt_len=filt_len)
-xracK,yracK,zsK,timeKz = climate.racmo_at_pts(xptK,yptK,'zs',filt_len='none')
-xracK,yracK,t2mK,timeK = climate.racmo_at_pts(xptK,yptK,'t2m',filt_len=filt_len)
-xracK,yracK,smbK,timeK = climate.racmo_at_pts(xptK,yptK,'smb',filt_len=filt_len)
-xracK,yracK,precipK,timeK = climate.racmo_at_pts(xptK,yptK,'precip',filt_len=filt_len)
+xracK,yracK,runoffK,timeK = climlib.racmo_at_pts(xptK,yptK,'runoff',filt_len=filt_len)
+xracK,yracK,zsK,timeKz = climlib.racmo_at_pts(xptK,yptK,'zs',filt_len='none')
+xracK,yracK,t2mK,timeK = climlib.racmo_at_pts(xptK,yptK,'t2m',filt_len=filt_len)
+xracK,yracK,smbK,timeK = climlib.racmo_at_pts(xptK,yptK,'smb',filt_len=filt_len)
+xracK,yracK,precipK,timeK = climlib.racmo_at_pts(xptK,yptK,'precip',filt_len=filt_len)
 
 # Helheim
-xracH,yracH,runoffH,timeH = climate.racmo_at_pts(xptH,yptH,'runoff',filt_len=filt_len)
-xracH,yracH,zsH,timeHz = climate.racmo_at_pts(xptH,yptH,'zs',filt_len='none')
-xracH,yracH,t2mH,timeH = climate.racmo_at_pts(xptH,yptH,'t2m',filt_len=filt_len)
-xracH,yracH,smbH,timeH = climate.racmo_at_pts(xptH,yptH,'smb',filt_len=filt_len)
-xracH,yracH,precipH,timeH = climate.racmo_at_pts(xptH,yptH,'precip',filt_len=filt_len)
+xracH,yracH,runoffH,timeH = climlib.racmo_at_pts(xptH,yptH,'runoff',filt_len=filt_len)
+xracH,yracH,zsH,timeHz = climlib.racmo_at_pts(xptH,yptH,'zs',filt_len='none')
+xracH,yracH,t2mH,timeH = climlib.racmo_at_pts(xptH,yptH,'t2m',filt_len=filt_len)
+xracH,yracH,smbH,timeH = climlib.racmo_at_pts(xptH,yptH,'smb',filt_len=filt_len)
+xracH,yracH,precipH,timeH = climlib.racmo_at_pts(xptH,yptH,'precip',filt_len=filt_len)
 
 #############
 # Make plot #
@@ -102,13 +99,13 @@ plt.close()
 # Quantify beginning and end of melt season for each year #
 ###########################################################
 
-yH_t2m,day1H_t2m,day2H_t2m,meltlengthH_t2m,totalH_t2m = climate.seasonlength(timeH,t2mH,'t2m')
-yH_runoff,day1H_runoff,day2H_runoff,meltlengthH_runoff,totalH_runoff = climate.seasonlength(timeH,runoffH,'runoff')
-yH_smb,day1H_smb,day2_smb,meltlengthH_smb,totalH_smb = climate.seasonlength(timeH,smbH,'smb')
+yH_t2m,day1H_t2m,day2H_t2m,meltlengthH_t2m,totalH_t2m = climlib.seasonlength(timeH,t2mH,'t2m')
+yH_runoff,day1H_runoff,day2H_runoff,meltlengthH_runoff,totalH_runoff = climlib.seasonlength(timeH,runoffH,'runoff')
+yH_smb,day1H_smb,day2_smb,meltlengthH_smb,totalH_smb = climlib.seasonlength(timeH,smbH,'smb')
 
-yK_t2m,day1K_t2m,day2K_t2m,meltlengthK_t2m,totalK_t2m = climate.seasonlength(timeK,t2mK,'t2m')
-yK_runoff,day1K_runoff,day2K_runoff,meltlengthK_runoff,totalK_runoff = climate.seasonlength(timeK,runoffK,'runoff')
-yK_smb,day1K_smb,day2_smb,meltlengthK_smb,totalK_smb = climate.seasonlength(timeK,smbH,'smb')
+yK_t2m,day1K_t2m,day2K_t2m,meltlengthK_t2m,totalK_t2m = climlib.seasonlength(timeK,t2mK,'t2m')
+yK_runoff,day1K_runoff,day2K_runoff,meltlengthK_runoff,totalK_runoff = climlib.seasonlength(timeK,runoffK,'runoff')
+yK_smb,day1K_smb,day2_smb,meltlengthK_smb,totalK_smb = climlib.seasonlength(timeK,smbH,'smb')
 
 ###########################################
 # Terminus position, velocity, and runoff #

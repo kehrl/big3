@@ -1,9 +1,7 @@
 import os
 import sys
 import numpy as np
-sys.path.append(os.path.join(os.getenv("CODE_HOME"),"Util/Modules"))
-sys.path.append(os.path.join(os.getenv("CODE_HOME"),"BigThreeGlaciers/Tools"))
-import elevation, geotiff, fracyear, icemask,flotation
+import zslib, geotifflib, datelib, masklib, floatlib
 import matplotlib.pyplot as plt
 import matplotlib
 
@@ -28,10 +26,10 @@ elif glacier == 'Helheim':
   ymax = -2552000.
 
 # DEMs
-xdem,ydem,zdem,timedem,errordem = elevation.dem_grid(glacier,xmin,xmax,ymin,ymax,years='all',verticaldatum='geoid',return_error=True)
+xdem,ydem,zdem,timedem,errordem = zslib.dem_grid(glacier,xmin,xmax,ymin,ymax,years='all',verticaldatum='geoid',return_error=True)
 
 # Mask
-xmask,ymask,zmask=icemask.load_grid(glacier,np.min(xdem),np.max(xdem),np.min(ydem),np.max(ydem),32)
+xmask,ymask,zmask=masklib.load_grid(glacier,np.min(xdem),np.max(xdem),np.min(ydem),np.max(ydem),32)
 
 ######################
 # Get Landsat images #
@@ -39,11 +37,11 @@ xmask,ymask,zmask=icemask.load_grid(glacier,np.min(xdem),np.max(xdem),np.min(yde
 
 # Image for plotting
 if glacier == "Helheim":
-  imagetime = fracyear.date_to_fracyear(2014,7,4)
-  ximage,yimage,image = geotiff.readrgb(os.path.join(os.getenv("DATA_HOME"),"Imagery/Landsat/Helheim/TIF/20140704140535_LC82330132014185LGN00.tif"))
+  imagetime = datelib.date_to_fracyear(2014,7,4)
+  ximage,yimage,image = geotifflib.readrgb(os.path.join(os.getenv("DATA_HOME"),"Imagery/Landsat/Helheim/TIF/20140704140535_LC82330132014185LGN00.tif"))
 elif glacier == "Kanger":
-  imagetime = fracyear.date_to_fracyear(2014,7,6)
-  ximage,yimage,image = geotiff.readrgb(os.path.join(os.getenv("DATA_HOME"),"Imagery/Landsat/Kanger/TIF/20140706135251_LC82310122014187LGN00.tif"))
+  imagetime = datelib.date_to_fracyear(2014,7,6)
+  ximage,yimage,image = geotifflib.readrgb(os.path.join(os.getenv("DATA_HOME"),"Imagery/Landsat/Kanger/TIF/20140706135251_LC82310122014187LGN00.tif"))
 
 ###############################
 # Choose DEMs for subtraction #
@@ -51,28 +49,28 @@ elif glacier == "Kanger":
 
 if glacier == 'Helheim':
   time1 = [2013,2,9]
-  ind1 = np.argmin(abs(fracyear.date_to_fracyear(time1[0],time1[1],time1[2])-timedem))
+  ind1 = np.argmin(abs(datelib.date_to_fracyear(time1[0],time1[1],time1[2])-timedem))
   time2 = [2013,10,31]
-  ind2 = np.argmin(abs(fracyear.date_to_fracyear(time2[0],time2[1],time2[2])-timedem))
+  ind2 = np.argmin(abs(datelib.date_to_fracyear(time2[0],time2[1],time2[2])-timedem))
   time3 = [2012,3,16]
-  ind3 = np.argmin(abs(fracyear.date_to_fracyear(time3[0],time3[1],time3[2])-timedem))
+  ind3 = np.argmin(abs(datelib.date_to_fracyear(time3[0],time3[1],time3[2])-timedem))
   time4 = [2012,12,5]
-  ind4 = np.argmin(abs(fracyear.date_to_fracyear(time4[0],time4[1],time4[2])-timedem))
+  ind4 = np.argmin(abs(datelib.date_to_fracyear(time4[0],time4[1],time4[2])-timedem))
 elif glacier == 'Kanger':
   time1 = [2012,5,22]
   time2 = [2012,12,17]
   time3 = [2012,5,22]
   time4 = [2012,12,17]
-  ind1 = np.argmin(abs(fracyear.date_to_fracyear(time1[0],time1[1],time1[2])-timedem))
-  ind2 = np.argmin(abs(fracyear.date_to_fracyear(time2[0],time2[1],time2[2])-timedem))
-  ind3 = np.argmin(abs(fracyear.date_to_fracyear(time3[0],time3[1],time3[2])-timedem))
-  ind4 = np.argmin(abs(fracyear.date_to_fracyear(time4[0],time4[1],time4[2])-timedem))
+  ind1 = np.argmin(abs(datelib.date_to_fracyear(time1[0],time1[1],time1[2])-timedem))
+  ind2 = np.argmin(abs(datelib.date_to_fracyear(time2[0],time2[1],time2[2])-timedem))
+  ind3 = np.argmin(abs(datelib.date_to_fracyear(time3[0],time3[1],time3[2])-timedem))
+  ind4 = np.argmin(abs(datelib.date_to_fracyear(time4[0],time4[1],time4[2])-timedem))
 
 ########################################################
 # Find out if flotation condition changed between DEMs #
 ########################################################
 
-xf,yf,zabovefloat = flotation.extent(xdem,ydem,zdem[:,:,[ind1,ind2]],timedem[[ind1,ind2]],glacier,rho_i=917.0,rho_sw=1020.0,bedsource='cresis',verticaldatum='geoid')
+xf,yf,zabovefloat = floatlib.extent(xdem,ydem,zdem[:,:,[ind1,ind2]],timedem[[ind1,ind2]],glacier,rho_i=917.0,rho_sw=1020.0,bedsource='cresis',verticaldatum='geoid')
 
 cutoff = 0.
 floatcond = np.zeros(len(xf))

@@ -5,48 +5,44 @@
 
 import os
 import sys
-sys.path.append(os.path.join(os.getenv("CODE_HOME"),"Util/Modules/"))
-sys.path.append(os.path.join(os.getenv("CODE_HOME"),"BigThreeGlaciers/Tools/"))
-import glacier_flowline, elevation, icefronts, fluxgate, climate
+import glaclib, zslib, icefrontlib, fluxlib, climlib
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import matplotlib.cm as cmx
 import matplotlib
-import geotiff
- 
 
 ###########
 # WV DEMs #
 ###########
 
 # Load DEMs	
-xwv_H,ywv_H,zwv_H,timewv_H,errorwv_H = elevation.dem_grid('Helheim',285000.0,320000.0,-2588000.0,-2566000.0,years='all',verticaldatum='ellipsoid',method='nearest',return_error=True)
-xwv_K,ywv_K,zwv_K,timewv_K,errorwv_K = elevation.dem_grid('Kanger',449800.0,503000.0,-2302000.0,-2266000.0,years='all',verticaldatum='ellipsoid',method='nearest',return_error=True)
+xwv_H,ywv_H,zwv_H,timewv_H,errorwv_H = zslib.dem_grid('Helheim',285000.0,320000.0,-2588000.0,-2566000.0,years='all',verticaldatum='ellipsoid',method='nearest',return_error=True)
+xwv_K,ywv_K,zwv_K,timewv_K,errorwv_K = zslib.dem_grid('Kanger',449800.0,503000.0,-2302000.0,-2266000.0,years='all',verticaldatum='ellipsoid',method='nearest',return_error=True)
 
 ###########################
 # Load terminus positions #
 ###########################
 
-x_H,y_H,zb_H,dists_H = glacier_flowline.load('Helheim',shapefilename='flowline_flightline')
-x_K,y_K,zb_K,dists_K = glacier_flowline.load('Kanger')
+x_H,y_H,zb_H,dists_H = glaclib.load_flowline('Helheim',shapefilename='flowline_flightline')
+x_K,y_K,zb_K,dists_K = glaclib.load_flowline('Kanger')
 
-terminus_val_H, terminus_time_H = icefronts.distance_along_flowline(x_H,y_H,dists_H,'Helheim',type='icefront',time1=2008.,time2=2016.)
-terminus_val_K, terminus_time_K = icefronts.distance_along_flowline(x_K,y_K,dists_K,'Kanger',type='icefront',time1=2008.,time2=2016.)
+terminus_val_H, terminus_time_H = icefrontlib.distance_along_flowline(x_H,y_H,dists_H,'Helheim',type='icefront',time1=2008.,time2=2016.)
+terminus_val_K, terminus_time_K = icefrontlib.distance_along_flowline(x_K,y_K,dists_K,'Kanger',type='icefront',time1=2008.,time2=2016.)
 
 ##################
 # Load fluxgates #
 ##################
 
-xgate_H,ygate_H = fluxgate.fluxbox_geometry('Helheim',"fluxgate3")
-xgate_K,ygate_K = fluxgate.fluxbox_geometry('Kanger',"fluxgate3")
+xgate_H,ygate_H = fluxlib.fluxbox_geometry('Helheim',"fluxgate3")
+xgate_K,ygate_K = fluxlib.fluxbox_geometry('Kanger',"fluxgate3")
 
 ##################
 # SMB from RACMO #
 ##################
 
-xrac_H,yrac_H,smbrac_H,timerac_H = climate.racmo_at_pts(np.mean(xgate_H),np.mean(ygate_H),'smb',filt_len='none')
-xrac_K,yrac_K,smbrac_K,timerac_K = climate.racmo_at_pts(np.mean(xgate_K),np.mean(ygate_K),'smb',filt_len='none')
+xrac_H,yrac_H,smbrac_H,timerac_H = climlib.racmo_at_pts(np.mean(xgate_H),np.mean(ygate_H),'smb',filt_len='none')
+xrac_K,yrac_K,smbrac_K,timerac_K = climlib.racmo_at_pts(np.mean(xgate_K),np.mean(ygate_K),'smb',filt_len='none')
 
 
 ###############################################
@@ -54,15 +50,15 @@ xrac_K,yrac_K,smbrac_K,timerac_K = climate.racmo_at_pts(np.mean(xgate_K),np.mean
 ###############################################
 
 # Helheim
-flux_time_H,flux_dH_H = fluxgate.fluxgate_thinning('Helheim',"fluxgate3",bedsource='smith')
-wv_time_H,wv_dH_H = fluxgate.dem_thinning('Helheim',xwv_H,ywv_H,zwv_H,timewv_H,errorwv_H,"fluxgate3")
-dH_time_H,dH_flux_H,dH_dem_H,dH_smb_H= fluxgate.compare_thinning_rates(wv_time_H,wv_dH_H,flux_time_H,flux_dH_H,timerac_H,smbrac_H,rho_i=900.0)
+flux_time_H,flux_dH_H = fluxlib.fluxgate_thinning('Helheim',"fluxgate3",bedsource='smith')
+wv_time_H,wv_dH_H = fluxlib.dem_thinning('Helheim',xwv_H,ywv_H,zwv_H,timewv_H,errorwv_H,"fluxgate3")
+dH_time_H,dH_flux_H,dH_dem_H,dH_smb_H= fluxlib.compare_thinning_rates(wv_time_H,wv_dH_H,flux_time_H,flux_dH_H,timerac_H,smbrac_H,rho_i=900.0)
 
 
 # Kanger
-flux_time_K,flux_dH_K = fluxgate.fluxgate_thinning('Kanger',"fluxgate3",bedsource='cresis')
-wv_time_K,wv_dH_K = fluxgate.dem_thinning('Kanger',xwv_K,ywv_K,zwv_K,timewv_K,errorwv_K,"fluxgate3")
-dH_time_K,dH_flux_K,dH_dem_K,dH_smb_K = fluxgate.compare_thinning_rates(wv_time_K,wv_dH_K,flux_time_K,flux_dH_K,timerac_K,smbrac_K,rho_i=900.0)
+flux_time_K,flux_dH_K = fluxlib.fluxgate_thinning('Kanger',"fluxgate3",bedsource='cresis')
+wv_time_K,wv_dH_K = fluxlib.dem_thinning('Kanger',xwv_K,ywv_K,zwv_K,timewv_K,errorwv_K,"fluxgate3")
+dH_time_K,dH_flux_K,dH_dem_K,dH_smb_K = fluxlib.compare_thinning_rates(wv_time_K,wv_dH_K,flux_time_K,flux_dH_K,timerac_K,smbrac_K,rho_i=900.0)
 
 plt.figure(figsize=(2.7,2.7))
 matplotlib.rc('font',family='Arial')

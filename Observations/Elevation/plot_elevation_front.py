@@ -5,9 +5,7 @@
 
 import os
 import sys
-sys.path.append(os.path.join(os.getenv("CODE_HOME"),"Util/Modules/"))
-sys.path.append(os.path.join(os.getenv("CODE_HOME"),"BigThreeGlaciers/Tools/"))
-import glacier_flowline, elevation, icefronts, fracyear, flotation, dem_shading
+import zslib, datelib, floatlib, demshadelib
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
@@ -30,10 +28,10 @@ elif glacier == 'Kanger':
   ymax = -2285000.0
 
 # Load worldview DEMs
-xwv,ywv,zwv,timewv = elevation.dem_grid(glacier,xmin,xmax,ymin,ymax,years='all',resolution=32,verticaldatum='geoid')
+xwv,ywv,zwv,timewv = zslib.dem_grid(glacier,xmin,xmax,ymin,ymax,years='all',resolution=32,verticaldatum='geoid')
 
 # Calculate height above flotation at CreSIS radar picks
-xf,yf,zabovefloat = flotation.extent(xwv,ywv,zwv,timewv,glacier,rho_i=917.0,rho_sw=1020.0,bedsource='cresis',verticaldatum='geoid')
+xf,yf,zabovefloat = floatlib.extent(xwv,ywv,zwv,timewv,glacier,rho_i=917.0,rho_sw=1020.0,bedsource='cresis',verticaldatum='geoid')
 
 # Length of plot
 N = len(timewv)
@@ -57,8 +55,8 @@ for j in range(0,nrow):
   for i in range(0,len(np.where(np.floor(timewv)==year)[0])):
     plt.subplot(gs[j,i])
     wvind = np.where(np.floor(timewv)==year)[0][i]
-    date = fracyear.fracyear_to_date(timewv[wvind])
-    shadeddem = dem_shading.set_shade(zwv[:,:,wvind],0,220)
+    date = datelib.fracyear_to_date(timewv[wvind])
+    shadeddem = demshadelib..set_shade(zwv[:,:,wvind],0,220)
     plt.imshow(shadeddem,extent=[np.min(xwv),np.max(xwv),np.min(ywv),np.max(ywv)],clim=[0,200],origin='lower')
     #plt.scatter(xf,yf,c=zabovefloat[:,wvind],s=3.0**2.0,cmap='gist_gray_r',edgecolors='none',vmin=-10,vmax=10)
     plt.xlim([np.min(xwv),np.max(xwv)])

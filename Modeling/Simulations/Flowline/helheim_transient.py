@@ -4,8 +4,7 @@ import os
 import sys
 from subprocess import call
 import shutil, glob
-sys.path.append(os.path.join(os.getenv("CODE_HOME"),"Util/Modules"))
-import elmer_read
+import elmerreadlib
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -16,7 +15,7 @@ import matplotlib.pyplot as plt
 MESHNAME='DEM20120624Low' 
 
 # Directories
-DIRS=os.path.join(os.getenv("CODE_HOME"),"BigThreeGlaciers/Modeling/SolverFiles/Flowline/")
+DIRS=os.path.join(os.getenv("CODE_HOME"),"big3/modeling/solverfiles/flowline/")
 DIRM=os.path.join(os.getenv("MODEL_HOME"),"Helheim/Meshes/Flowline/"+MESHNAME+"/")
 DIRR=os.path.join(os.getenv("MODEL_HOME"),"Helheim/Results/Flowline/"+MESHNAME+"/")
 DIRELMERLIB = os.path.join(os.getenv("CODE_HOME"),"BigThreeGlaciers/Modeling/Elmerlib/")
@@ -87,10 +86,10 @@ call(["mpiexec","-n","4","elmersolver_mpi"])
 ##############################
 # Load results from saveline #
 ##############################
-bed = elmer_read.saveline_boundary(DIRM+"Elmer",runname,bbed)
-surf = elmer_read.saveline_boundary(DIRM+"Elmer",runname,bsurf)
-surf1 = elmer_read.saveline_boundary(DIRM+"Elmer",'flowline1',bsurf)
-terminus = elmer_read.saveline_boundary(DIRM+"Elmer",runname,bcalve)
+bed = elmerreadlib.saveline_boundary(DIRM+"Elmer",runname,bbed)
+surf = elmerreadlib.saveline_boundary(DIRM+"Elmer",runname,bsurf)
+surf1 = elmerreadlib.saveline_boundary(DIRM+"Elmer",'flowline1',bsurf)
+terminus = elmerreadlib.saveline_boundary(DIRM+"Elmer",runname,bcalve)
 
 coord1=np.sort(surf['coord1'][np.where(surf['timestep'] == 1)])
 elevation=np.zeros([len(coord1),np.max(surf['timestep'])])

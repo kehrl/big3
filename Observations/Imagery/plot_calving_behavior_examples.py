@@ -1,14 +1,14 @@
 import os
 import sys
 import numpy as np
-sys.path.append(os.path.join(os.getenv("CODE_HOME"),"Util/Modules"))
-sys.path.append(os.path.join(os.getenv("CODE_HOME"),"BigThreeGlaciers/Tools"))
-import geotiff
+import geotifflib
+import matplotlib.pyplot as plt
+import matplotlib
 
 LANDSATDIR = os.path.join(os.getenv("DATA_HOME"),"Imagery/Landsat/Helheim/TIF/")
 
-xtab,ytab,ztab = geotiff.readrgb(LANDSATDIR+"20140307140010_LC82320132014066LGN00.tif")
-xnon,ynon,znon = geotiff.readrgb(LANDSATDIR+"20140501140530_LC82330132014121LGN00.tif")
+xtab,ytab,ztab = geotifflib.readrgb(LANDSATDIR+"20140307140010_LC82320132014066LGN00.tif")
+xnon,ynon,znon = geotifflib.readrgb(LANDSATDIR+"20140501140530_LC82330132014121LGN00.tif")
 
 xmin = 305000.0
 xmax = 314000.0

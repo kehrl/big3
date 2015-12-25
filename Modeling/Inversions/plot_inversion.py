@@ -3,9 +3,7 @@
 
 import sys
 import os
-sys.path.append(os.path.join(os.getenv("CODE_HOME"),"Util/Modules"))
-sys.path.append(os.path.join(os.getenv("CODE_HOME"),"Helheim/Tools"))
-import elmer_read
+import elmerreadlib
 import matplotlib.pyplot as plt
 import matplotlib
 import pylab
@@ -29,25 +27,25 @@ holes=[hole1,hole2]
 
 if len(regpar) == 3:
   # Load data for first regularization parameter
-  bed_3D_1 = elmer_read.saveline_boundary(DIRR,"beta_"+regpar[0]+".dat",bbed)
-  surf_3D_1 = elmer_read.saveline_boundary(DIRR,"beta_"+regpar[0]+".dat",bsur)
-  taub_3D_1=elmer_read.grid3d(bed_3D_1,'taub',holes,extent)
-  vel_3D_1=elmer_read.grid3d(surf_3D_1,'vel',holes,extent)
-  vel_3D_1_1=elmer_read.grid3d(surf_3D_1,'velmes',holes,extent)
+  bed_3D_1 = elmerreadlib.saveline_boundary(DIRR,"beta_"+regpar[0]+".dat",bbed)
+  surf_3D_1 = elmerreadlib.saveline_boundary(DIRR,"beta_"+regpar[0]+".dat",bsur)
+  taub_3D_1=elmerreadlib.grid3d(bed_3D_1,'taub',holes,extent)
+  vel_3D_1=elmerreadlib.grid3d(surf_3D_1,'vel',holes,extent)
+  vel_3D_1_1=elmerreadlib.grid3d(surf_3D_1,'velmes',holes,extent)
 
   # Load data for second
-  bed_3D_2 = elmer_read.saveline_boundary(DIRR,"beta_"+regpar[1]+".dat",bbed)
-  surf_3D_2 = elmer_read.saveline_boundary(DIRR,"beta_"+regpar[1]+".dat",bsur)
-  taub_3D_2=elmer_read.grid3d(bed_3D_2,'taub',holes,extent)
-  vel_3D_2=elmer_read.grid3d(surf_3D_2,'vel',holes,extent)
-  vel_3D_1_2=elmer_read.grid3d(surf_3D_2,'velmes',holes,extent)
+  bed_3D_2 = elmerreadlib.saveline_boundary(DIRR,"beta_"+regpar[1]+".dat",bbed)
+  surf_3D_2 = elmerreadlib.saveline_boundary(DIRR,"beta_"+regpar[1]+".dat",bsur)
+  taub_3D_2=elmerreadlib.grid3d(bed_3D_2,'taub',holes,extent)
+  vel_3D_2=elmerreadlib.grid3d(surf_3D_2,'vel',holes,extent)
+  vel_3D_1_2=elmerreadlib.grid3d(surf_3D_2,'velmes',holes,extent)
 
   # Load data for third
-  bed_3D_3 = elmer_read.saveline_boundary(DIRR,"beta_"+regpar[2]+".dat",bbed)
-  surf_3D_3 = elmer_read.saveline_boundary(DIRR,"beta_"+regpar[2]+".dat",bsur)
-  taub_3D_3= elmer_read.grid3d(bed_3D_3,'taub',holes,extent)
-  vel_3D_3 = elmer_read.grid3d(surf_3D_3,'vel',holes,extent)
-  vel_3D_1_3 = elmer_read.grid3d(surf_3D_3,'velmes',holes,extent)
+  bed_3D_3 = elmerreadlib.saveline_boundary(DIRR,"beta_"+regpar[2]+".dat",bbed)
+  surf_3D_3 = elmerreadlib.saveline_boundary(DIRR,"beta_"+regpar[2]+".dat",bsur)
+  taub_3D_3= elmerreadlib.grid3d(bed_3D_3,'taub',holes,extent)
+  vel_3D_3 = elmerreadlib.grid3d(surf_3D_3,'vel',holes,extent)
+  vel_3D_1_3 = elmerreadlib.grid3d(surf_3D_3,'velmes',holes,extent)
 
   fig=plt.figure(figsize=(7,4.5))
   

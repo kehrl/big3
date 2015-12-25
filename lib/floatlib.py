@@ -8,10 +8,7 @@
 # LMK, UW, 9/2/2015
 
 import os
-import sys
-sys.path.append(os.path.join(os.getenv("CODE_HOME"),"Util/Modules/"))
-sys.path.append(os.path.join(os.getenv("CODE_HOME"),"BigThreeGlaciers/Tools/"))
-import elevation, icefronts, elmer_mesh, coords, glacier_extent, bed
+import glaclib, bedlib
 import numpy as np
 import scipy.interpolate
 from matplotlib import path
@@ -111,7 +108,7 @@ def extent(xs,ys,zs,ztime,glacier,rho_i=917.0,rho_sw=1020.0,bedsource='cresis',v
   work for cresis radar picks.
   
   Inputs:
-  xs,ys,zs,time from elevation.dem_grid
+  xs,ys,zs,time from zslib.dem_grid
   glacier: name of glacier
   rho_i: ice density
   rho_sw: seawater density
@@ -123,8 +120,8 @@ def extent(xs,ys,zs,ztime,glacier,rho_i=917.0,rho_sw=1020.0,bedsource='cresis',v
   
   # Find bed elevations
   if bedsource=='cresis':
-    cresis = bed.cresis('all',glacier,verticaldatum,cleanup=True)
-    cresis2001 = bed.cresis('2001',glacier,verticaldatum)
+    cresis = bedlib.cresis('all',glacier,verticaldatum,cleanup=True)
+    cresis2001 = bedlib.cresis('2001',glacier,verticaldatum)
     cresis = np.row_stack([cresis[cresis[:,2]<-50.0,:],cresis2001[cresis2001[:,2]<-50.0,:]])
   else:
     print "need to work on morlighem"
@@ -145,10 +142,10 @@ def extent(xs,ys,zs,ztime,glacier,rho_i=917.0,rho_sw=1020.0,bedsource='cresis',v
   
     # Get glacier extent so we're only checking if the glacier is floating where there is glacier ice
     if N == 1: # no iteration if only one DEM
-      extent = glacier_extent.load(glacier,ztime)
+      extent = glaclib.load_extent(glacier,ztime)
       dem = scipy.interpolate.RegularGridInterpolator([ys,xs],zs[:,:],bounds_error = False,method='linear',fill_value=float('nan')) 
     else:
-      extent = glacier_extent.load(glacier,ztime[i])
+      extent = glaclib.load_extent(glacier,ztime[i])
       dem = scipy.interpolate.RegularGridInterpolator([ys,xs],zs[:,:,i],bounds_error = False,method='linear',fill_value=float('nan')) 
     
     # Check what points are located on glacier ice

@@ -1,12 +1,10 @@
 import os
 import sys
 import numpy as np
-sys.path.append(os.path.join(os.getenv("CODE_HOME"),"Util/Modules"))
-sys.path.append(os.path.join(os.getenv("CODE_HOME"),"BigThreeGlaciers/Tools"))
 sys.path.append(os.path.join(os.getenv("CODE_HOME"),"Modules/demtools"))
-import velocity, icefronts, bed, glacier_flowline, elevation, flotation
+import glaclib, zslib, floatlib, datelib, demshadelib
 import matplotlib.pyplot as plt
-import matplotlib, geotiff, fracyear, dem_shading, scipy
+import matplotlib, scipy
 from matplotlib.ticker import AutoMinorLocator
 import scipy.signal as signal
 import gmtColormap, subprocess
@@ -39,20 +37,20 @@ elif glacier == 'Kanger':
 # Flowline #
 ############
 
-x,y,zb,dists = glacier_flowline.load(glacier,shapefilename='flowline_flightline',filt_len=2.0e3)
+x,y,zb,dists = glaclib.load_flowline(glacier,shapefilename='flowline_flightline',filt_len=2.0e3)
 
 ############
 # Get DEMs #
 ############
 
-xdem,ydem,zdem,timedem,errordem = elevation.dem_grid(glacier,xmin,xmax,ymin,ymax,
+xdem,ydem,zdem,timedem,errordem = zslib.dem_grid(glacier,xmin,xmax,ymin,ymax,
 	years='all',verticaldatum='geoid',return_error=True)
 
 for i in range(0,len(timedem)):
 
   plt.figure(figsize=(8,4))
   plt.subplot(121)
-  plt.imshow(dem_shading.hillshade(zdem[:,:,i]),extent=[xmin,xmax,ymin,ymax],origin='lower',cmap='Greys_r')
+  plt.imshow(demshadelib.hillshade(zdem[:,:,i]),extent=[xmin,xmax,ymin,ymax],origin='lower',cmap='Greys_r')
   plt.imshow((zdem[:,:,i]),extent=[xmin,xmax,ymin,ymax],origin='lower',clim=[0,400],cmap='cpt_rainbow',alpha=0.6)
   plt.plot(x,y,'w')
   plt.xlim([xmin,xmax])
@@ -65,13 +63,13 @@ for i in range(0,len(timedem)):
   plt.plot(dists/1e3,zb,'k',lw=1.5)
   f=scipy.interpolate.RegularGridInterpolator((ydem,xdem),zdem[:,:,i],bounds_error = False,method='linear',fill_value=float('nan'))
   plt.plot(dists/1e3,f((y,x)),'k')
-  plt.plot(dists/1e3,flotation.shelfbase(f(((y,x)))),'k')
+  plt.plot(dists/1e3,floatlib.shelfbase(f(((y,x)))),'k')
   plt.xlim([-5,5])
   if glacier == 'Helheim':
     plt.ylim([-800,200])
   elif glacier == 'Kanger':
     plt.ylim([-1000,200])
-  year,month,day=fracyear.fracyear_to_date(timedem[i])
+  year,month,day=datelib.fracyear_to_date(timedem[i])
   plt.title(str(year)+'-'+str(month)+'-'+str(day))
   
   plt.tight_layout()

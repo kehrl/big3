@@ -6,17 +6,11 @@
 # LMK, UW, 5/18/2015
 
 import os
-import sys
-sys.path.append(os.path.join(os.getenv("CODE_HOME"),"Util/Modules"))
-sys.path.append(os.path.join(os.getenv("CODE_HOME"),"BigThreeGlaciers/Tools"))
-import geotiff
 import numpy as np
-import bed, dist, elevation
+import bedlib, distlib, zslib, meshlib
 import matplotlib
 import matplotlib.pyplot as plt
 import scipy.interpolate as interpolate
-import elmer_mesh as mesh
-
 
 ##########
 # Inputs #
@@ -39,21 +33,21 @@ elif glacier == 'Kanger':
 DIRX=os.path.join(os.getenv("DATA_HOME"),"ShapeFiles/Glaciers/3D/"+glacier+"/")
 
 # Mesh extent
-#exterior = mesh.shp_to_xy(DIRX+"glacier_extent_normal")
-#exterior_nofront = mesh.shp_to_xy(DIRX+"glacier_extent_nofront")
+#exterior = meshlib.shp_to_xy(DIRX+"glacier_extent_normal")
+#exterior_nofront = meshlib.shp_to_xy(DIRX+"glacier_extent_nofront")
 
 # Load CreSIS radar picks
-cresis_2001 = bed.cresis('2001',glacier,verticaldatum='geoid')
-cresis_all = bed.cresis('all',glacier,verticaldatum='geoid')
+cresis_2001 = bedlib.cresis('2001',glacier,verticaldatum='geoid')
+cresis_all = bedlib.cresis('all',glacier,verticaldatum='geoid')
 ind = np.where(cresis_all[:,2] < 0)[0]
 
 # Load CreSIS grid
-xCre,yCre,zCre = bed.cresis_grid(glacier,verticaldatum='geoid')
+xCre,yCre,zCre = bedlib.cresis_grid(glacier,verticaldatum='geoid')
 
 # Morlighem bed
-xMor,yMor,zMor = bed.morlighem_grid(xmin,xmax,ymin,ymax,'geoid')
-cresis_all_zMor = bed.morlighem_pts(cresis_all[ind,0],cresis_all[ind,1],glacier,'geoid')
-cresis_2001_zMor = bed.morlighem_pts(cresis_2001[:,0],cresis_2001[:,1],glacier,'geoid')
+xMor,yMor,zMor = bedlib.morlighem_grid(xmin,xmax,ymin,ymax,'geoid')
+cresis_all_zMor = bedlib.morlighem_pts(cresis_all[ind,0],cresis_all[ind,1],glacier,'geoid')
+cresis_2001_zMor = bedlib.morlighem_pts(cresis_2001[:,0],cresis_2001[:,1],glacier,'geoid')
 
 # Make some plots
 plt.figure(1)
@@ -124,15 +118,15 @@ for j in range(0,len(transects)):
   sortind = ((np.argsort(ytemp)))
   xtemp = xtemp[sortind]
   ytemp = ytemp[sortind]
-  dtemp = dist.transect(xtemp,ytemp)
+  dtemp = distlib.transect(xtemp,ytemp)
   dists = dtemp[1:-1]
 
   # Get morlighem bed
   cut_dMor = np.linspace(0,dtemp[-1],dtemp[-1]/150.0)
   cut_xMor= np.interp(cut_dMor,dtemp,xtemp)
   cut_yMor = np.interp(cut_dMor,dtemp,ytemp)
-  cut_zMor = bed.morlighem_pts(cut_xMor,cut_yMor,glacier,'geoid')
-  cut_cresis_grid = bed.cresis_grid_pts(cut_xMor,cut_yMor,glacier,'geoid')
+  cut_zMor = bedlib.morlighem_pts(cut_xMor,cut_yMor,glacier,'geoid')
+  cut_cresis_grid = bedlib.cresis_grid_pts(cut_xMor,cut_yMor,glacier,'geoid')
   del xtemp,ytemp,dtemp
 
   # Get 2001 Cresis point
@@ -156,7 +150,7 @@ for j in range(0,len(transects)):
   cut_cresis_other = np.array(cut_cresis_other)  
   
   # Get worldview surface elevations
-  zs,time = elevation.worldview_at_pts(cut_xMor,cut_yMor,glacier,years='all',verticaldatum='geoid')
+  zs,time = zslib.worldview_at_pts(cut_xMor,cut_yMor,glacier,years='all',verticaldatum='geoid')
   
   plt.figure(1)
   plt.plot(cut_xMor,cut_yMor,color=coloroptions[j],linewidth=1.5)

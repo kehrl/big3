@@ -5,11 +5,9 @@
 import os
 import sys
 import numpy as np
-sys.path.append(os.path.join(os.getenv("CODE_HOME"),"Util/Modules"))
-sys.path.append(os.path.join(os.getenv("CODE_HOME"),"BigThreeGlaciers/Tools"))
-import coords, elevation, flotation
+import coordlib, geotifflib
+import zslib, floatlib
 import scipy.interpolate
-import geotiff
 
 def cresis(year,glacier,verticaldatum='geoid',cleanup=True):
 
@@ -43,9 +41,9 @@ def cresis(year,glacier,verticaldatum='geoid',cleanup=True):
     y=data[:,0]
     x=data[:,1]
     H=data[:,3]
-    x2,y2 = coords.convert(x,y,4326,3413)
+    x2,y2 = coordlib.convert(x,y,4326,3413)
     
-    surf = elevation.atm('2001','ellipsoid')
+    surf = zslib.atm('2001','ellipsoid')
     if glacier == 'Helheim':
       zs = scipy.interpolate.griddata(surf['20010521'][:,0:2],surf['20010521'][:,2],np.column_stack([x2,y2]),method='nearest')
       dates = np.ones(len(x2))*20010521
@@ -93,7 +91,7 @@ def cresis(year,glacier,verticaldatum='geoid',cleanup=True):
     zs=np.array(zs)
     dates=np.array(dates)
     
-    x2,y2 = coords.convert(x,y,4326,3413)
+    x2,y2 = coordlib.convert(x,y,4326,3413)
     
     if glacier == 'Helheim':
       # Radar picks to toss, if cleanup is set to true. The indices are for the Helheim 
@@ -104,7 +102,7 @@ def cresis(year,glacier,verticaldatum='geoid',cleanup=True):
       		range(53713,53793),range(53974,53987),range(56646,56726),range(64006,64013),range(61237,61529),range(61745,62000),range(68541,68810),\
       		range(69202,69475),range(75645,75904),range(77285,77538),range(77728,77970)] 
         # Find locations where ice is floating so we can toss those out
-        floatind = np.where(coords.geoidheight(x2,y2,zs) < flotation.height(coords.geoidheight(x2,y2,zb),rho_i=917.,rho_sw=1025.))[0]
+        floatind = np.where(coordlib.geoidheight(x2,y2,zs) < floatlib.height(coordlib.geoidheight(x2,y2,zb),rho_i=917.,rho_sw=1025.))[0]
         badind = np.union1d(badind,floatind)
       else: 
         badind = []
@@ -141,7 +139,7 @@ def cresis(year,glacier,verticaldatum='geoid',cleanup=True):
         		range(39150,39210),range(40471,40550),range(23853,23860),
         		range(36055,36095)] 
         # Find locations where ice is floating so we can toss those out
-        floatind = np.where(coords.geoidheight(x2,y2,zs) < flotation.height(coords.geoidheight(x2,y2,zb),rho_i=910.,rho_sw=1025.))[0]
+        floatind = np.where(coordlib.geoidheight(x2,y2,zs) < floatlib.height(coordlib.geoidheight(x2,y2,zb),rho_i=910.,rho_sw=1025.))[0]
         badind = np.union1d(badind,floatind)
       else: 
         badind = []
@@ -169,8 +167,8 @@ def cresis(year,glacier,verticaldatum='geoid',cleanup=True):
   
   # Select what reference we want for the elevation  
   if verticaldatum == "geoid":
-    zb = coords.geoidheight(x2,y2,zb)
-    zs = coords.geoidheight(x2,y2,zs)
+    zb = coordlib.geoidheight(x2,y2,zb)
+    zs = coordlib.geoidheight(x2,y2,zs)
   elif verticaldatum == "ellipsoid":
     zb = zb
     zs = zs
@@ -227,7 +225,7 @@ def cresis_grid(glacier,verticaldatum='geoid'):
   
   if verticaldatum == 'geoid':
     x_grid,y_grid = np.meshgrid(x,y)
-    geoidheight = coords.geoidheight(x_grid.flatten(),y_grid.flatten(),grid.flatten())
+    geoidheight = coordlib.geoidheight(x_grid.flatten(),y_grid.flatten(),grid.flatten())
     grid = np.reshape(geoidheight,(ny,nx))
   elif verticaldatum == 'ellipsoid':
     grid = grid
@@ -319,7 +317,7 @@ def morlighem_grid(xmin=-np.inf,xmax=np.inf,ymin=-np.inf,ymax=np.Inf,verticaldat
 
   # Load Bed DEM
   file = os.path.join(os.getenv("DATA_HOME"),"Bed/Morlighem_2014/MCdataset-2015-04-27.tif")
-  [xb,yb,zb]=geotiff.read(file,xmin,xmax,ymin,ymax)
+  [xb,yb,zb]=geotifflib.read(file,xmin,xmax,ymin,ymax)
   zb[zb==-9999] = 'NaN'
   
   # Morlighem bed DEM is given as elevation above mean sea level (at geoid). So we need
@@ -327,7 +325,7 @@ def morlighem_grid(xmin=-np.inf,xmax=np.inf,ymin=-np.inf,ymax=np.Inf,verticaldat
   if verticaldatum == "ellipsoid":
     # Load Geoid 
     file = os.path.join(os.getenv("DATA_HOME"),"Bed/Morlighem_2014/geoid.tif")
-    [xg,yg,zg]=geotiff.read(file,xmin,xmax,ymin,ymax)
+    [xg,yg,zg]=geotifflib.read(file,xmin,xmax,ymin,ymax)
     bed = zb+zg
   elif verticaldatum == "geoid":
     bed = zb
@@ -375,7 +373,7 @@ def smith_grid(glacier,xmin=-np.Inf,xmax=np.Inf,ymin=-np.Inf,ymax=np.Inf,grid='u
   z = data[:,1+smoothing]
 
   if verticaldatum == 'geoid':
-    z = coords.geoidheight(x,y,z)
+    z = coordlib.geoidheight(x,y,z)
   elif verticaldatum == 'ellipsoid':
     z = z
   else:
@@ -428,7 +426,7 @@ def smith_at_pts(xpts,ypts,glacier,model='aniso',smoothing=1,verticaldatum='geoi
   # Now fix the vertical datum. We didn't fix it in the call to "smith_grid" because we would 
   # have had to calculate the geoid height at more points. This saves a bit of time.
   if verticaldatum == 'geoid':
-    zbed_interp = coords.geoidheight(xpts,ypts,zbed_interp)
+    zbed_interp = coordlib.geoidheight(xpts,ypts,zbed_interp)
   elif verticaldatum == 'ellipsoid':
     zbed_interp = zbed_interp
   else:

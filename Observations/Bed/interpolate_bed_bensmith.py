@@ -1,13 +1,8 @@
 import os
-import sys
-sys.path.append(os.path.join(os.getenv("CODE_HOME"),"Util/Modules"))
-sys.path.append(os.path.join(os.getenv("CODE_HOME"),"BigThreeGlaciers/Tools"))
-import geotiff
 import numpy as np
-import bed, dist, elevation, velocity, icefronts, crossovers
+import bedlib, crossoverlib, masklib
 import matplotlib
 import matplotlib.pyplot as plt
-import elmer_mesh, icemask
 
 glacier = 'Helheim'
 
@@ -37,7 +32,7 @@ vx_norm = np.array(vx/v)
 vy_norm = np.array(vy/v)
 
 # Load mask
-xmask,ymask,icemask = icemask.load(glacier,np.min(x),np.max(x),np.min(y),np.max(y),500.0,ice=0)
+xmask,ymask,icemask = masklib.load(glacier,np.min(x),np.max(x),np.min(y),np.max(y),500.0,ice=0)
 
 # Fill in unknown azimuths
 xgrid,ygrid = np.meshgrid(x,y)
@@ -59,11 +54,11 @@ vymask = np.array(vy_norm)
 vymask[icemask==1] = 0.0
 
 # Load bed measurements
-cresis_2001 = bed.cresis('2001',glacier,verticaldatum='ellipsoid')
-cresis_composite = bed.cresis('all',glacier,verticaldatum='ellipsoid')
+cresis_2001 = bedlib.cresis('2001',glacier,verticaldatum='ellipsoid')
+cresis_composite = bedlib.cresis('all',glacier,verticaldatum='ellipsoid')
 
 cresis = np.row_stack([cresis_2001,cresis_composite])
 
-xcrossnew,ycrossnew,zcross1new,zcross2new,zcrossdiffnew = crossovers.find(cresis[:,0],cresis[:,1],cresis[:,2],maxdist=100)
-xcrossnew,ycrossnew,tcross1new,tcross2new,tcrossdiffnew = crossovers.find(cresis[:,0],cresis[:,1],cresis[:,3],maxdist=100)
+xcrossnew,ycrossnew,zcross1new,zcross2new,zcrossdiffnew = crossoverlib.find(cresis[:,0],cresis[:,1],cresis[:,2],maxdist=100)
+xcrossnew,ycrossnew,tcross1new,tcross2new,tcrossdiffnew = crossoverlib.find(cresis[:,0],cresis[:,1],cresis[:,3],maxdist=100)
 

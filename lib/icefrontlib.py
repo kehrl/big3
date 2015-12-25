@@ -5,9 +5,8 @@
 
 import os
 import sys
-sys.path.append(os.path.join(os.getenv("CODE_HOME"),"Util/Modules"))
 import shapefile
-import fracyear
+import datelib
 from shapely.geometry import LineString
 import numpy as np
 from subprocess import call
@@ -112,19 +111,19 @@ def distance_along_flowline(x,y,dists,glacier,type='icefront',imagesource=False,
         
         # Time of that terminus position
         if ("TSX" in file) or ("moon" in file):
-          terminus_time.append(fracyear.doy_to_fracyear(float(file[0:4]),float(file[5:8])))
+          terminus_time.append(datelib.doy_to_fracyear(float(file[0:4]),float(file[5:8])))
           sensorname.append('TSX')
         elif ("ASTER" in file):
-          terminus_time.append(fracyear.date_to_fracyear(float(file[0:4]),float(file[5:7]),float(file[8:10])))
+          terminus_time.append(datelib.date_to_fracyear(float(file[0:4]),float(file[5:7]),float(file[8:10])))
           sensorname.append('ASTER')
         elif ("Landsat7" in file):
-          terminus_time.append(fracyear.date_to_fracyear(float(file[0:4]),float(file[5:7]),float(file[8:10])))
+          terminus_time.append(datelib.date_to_fracyear(float(file[0:4]),float(file[5:7]),float(file[8:10])))
           sensorname.append('Landsat7')
         elif ("Landsat" in file):
-          terminus_time.append(fracyear.date_to_fracyear(float(file[0:4]),float(file[5:7]),float(file[8:10])))
+          terminus_time.append(datelib.date_to_fracyear(float(file[0:4]),float(file[5:7]),float(file[8:10])))
           sensorname.append('Landsat8')
         elif ("WV" in file):
-          terminus_time.append(fracyear.date_to_fracyear(float(file[0:4]),float(file[5:7]),float(file[8:10])))
+          terminus_time.append(datelib.date_to_fracyear(float(file[0:4]),float(file[5:7]),float(file[8:10])))
           sensorname.append('WV')
         else:
           sys.exit("Don't know that date format for "+file)
@@ -201,7 +200,7 @@ def position(x,y,dists,glacier,time):
   terminus_val,terminus_time = distance_along_flowline(x,y,dists,glacier,type='icefront')
   
   if len(time) > 1:
-    time = fracyear.date_to_fracyear(time[0],time[1],time[2])
+    time = datelib.date_to_fracyear(time[0],time[1],time[2])
   
   # Interpolate terminus position for the time
   terminus = np.interp(time,terminus_time,terminus_val)
@@ -237,9 +236,9 @@ def load_all(time1,time2,glacier,type='icefront'):
     if file.endswith('.shp') and (not "moon" in file):
       # Time of that terminus position
       if ("TSX" in file) or ("moon" in file):
-        time = fracyear.doy_to_fracyear(float(file[0:4]),float(file[5:8]))
+        time = datelib.doy_to_fracyear(float(file[0:4]),float(file[5:8]))
       elif ("ASTER" in file) or ("Landsat" in file) or ("WV" in file):
-        time = fracyear.date_to_fracyear(float(file[0:4]),float(file[5:7]),float(file[8:10]))
+        time = datelib.date_to_fracyear(float(file[0:4]),float(file[5:7]),float(file[8:10]))
       if (time > time1) and (time < time2):
         termt.append(time)
         shapefiles.append(file)
@@ -296,13 +295,13 @@ def near_time(time,glacier,type='all'):
     if file.endswith('.shp') and (not "moon" in file):
       # Time of that terminus position
       if ("TSX" in file) and ("TSX" in type):
-        icetime = fracyear.doy_to_fracyear(float(file[0:4]),float(file[5:8]))
+        icetime = datelib.doy_to_fracyear(float(file[0:4]),float(file[5:8]))
       elif ("ASTER" in file) and ("ASTER" in type):
-        icetime = fracyear.date_to_fracyear(float(file[0:4]),float(file[5:7]),float(file[8:10]))
+        icetime = datelib.date_to_fracyear(float(file[0:4]),float(file[5:7]),float(file[8:10]))
       elif ("Landsat" in file) and ("Landsat" in type):
-        icetime = fracyear.date_to_fracyear(float(file[0:4]),float(file[5:7]),float(file[8:10]))
+        icetime = datelib.date_to_fracyear(float(file[0:4]),float(file[5:7]),float(file[8:10]))
       elif ("WV" in file) and ("WV" in file):
-        icetime = fracyear.date_to_fracyear(float(file[0:4]),float(file[5:7]),float(file[8:10]))
+        icetime = datelib.date_to_fracyear(float(file[0:4]),float(file[5:7]),float(file[8:10]))
       if abs(icetime-time) < min_diff:
         best_x = np.zeros(0)
         best_y = np.zeros(0)
@@ -350,9 +349,9 @@ def calving(glacier):
       type.append(p[1])
       file.append(p[0])
       if p[1] == 'Landsat' or p[1] == 'Worldview':
-        time.append(fracyear.date_to_fracyear(float(p[0][0:4]),float(p[0][5:7]),float(p[0][8:10])))
+        time.append(datelib.date_to_fracyear(float(p[0][0:4]),float(p[0][5:7]),float(p[0][8:10])))
       elif p[1] == 'TSX':
-        time.append(fracyear.doy_to_fracyear(float(p[0][0:4]),float(p[0][5:8])))
+        time.append(datelib.doy_to_fracyear(float(p[0][0:4]),float(p[0][5:8])))
       else:
         print "Not working, check ", p[0]
   

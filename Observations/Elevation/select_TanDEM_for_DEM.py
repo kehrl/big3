@@ -5,14 +5,11 @@
 # LMK, UW, 8/16/2015
 
 import openpyxl
-import os,sys
+import os
 import numpy as np
-sys.path.append(os.path.join(os.getenv("CODE_HOME"),"Util/Modules"))
-sys.path.append(os.path.join(os.getenv("CODE_HOME"),"BigThreeGlaciers/Tools"))
-import fracyear
+import datelib, glaclib, icefrontlib
 import shapefile, shapely.geometry
 import matplotlib.pyplot as plt, matplotlib
-import glacier_flowline, icefronts
 
 # Choose glacier (Kanger, Helheim, Jak)
 glacier = 'Helheim'
@@ -121,7 +118,7 @@ relorbit_cand = relorbit[cand_ind]
 absorbit_cand = absorbit[cand_ind]
 date_cand = date[cand_ind,:]
 scenenum_cand = scenenum[cand_ind]
-fracyear_cand = fracyear.date_to_fracyear(date[cand_ind,0],date[cand_ind,1],date[cand_ind,2])
+fracyear_cand = datelib.date_to_fracyear(date[cand_ind,0],date[cand_ind,1],date[cand_ind,2])
 location_cand = np.array(location)[cand_ind]
 order_cand = order[cand_ind]
 print len(cand_ind)
@@ -147,7 +144,7 @@ recs = stereopairs.records()
 for i in range(0,len(shapes)):
   polygon = shapely.geometry.asShape(shapes[i])
   if polygon.contains(pt):
-    stereopair_dates.append(fracyear.date_to_fracyear(float(recs[i][1][0:4]),float(recs[i][1][5:7]),float(recs[i][1][8:10])))
+    stereopair_dates.append(datelib.date_to_fracyear(float(recs[i][1][0:4]),float(recs[i][1][5:7]),float(recs[i][1][8:10])))
 
 monopair_dates = []
 shapes = monopairs.shapes()
@@ -155,7 +152,7 @@ recs = monopairs.records()
 for i in range(0,len(shapes)):
   polygon = shapely.geometry.asShape(shapes[i])
   if polygon.contains(pt):
-    monopair_dates.append(fracyear.date_to_fracyear(float(str(recs[i][2])[0:4]),float(str(recs[i][2])[4:6]),float(str(recs[i][2])[6:8])))
+    monopair_dates.append(datelib.date_to_fracyear(float(str(recs[i][2])[0:4]),float(str(recs[i][2])[4:6]),float(str(recs[i][2])[6:8])))
 
 plt.figure()
 for day in fracyear_cand:
@@ -170,7 +167,7 @@ plt.plot([stereopair_dates[0],stereopair_dates[0]],[-4,4],'b',linewidth=1.5,labe
 plt.plot([fracyear_cand[0],fracyear_cand[0]],[0,0],'g',linewidth=2,label='TDM Order')
 plt.plot([fracyear_cand[order_cand==1],fracyear_cand[order_cand==1]],[-4,4],'g',linewidth=2)
 try:
-  x,y,zb,dists = glacier_flowline.load(glacier)
+  x,y,zb,dists = glaclib.load_flowline(glacier)
   terminus_val, terminus_time = icefronts.distance_along_flowline(x,y,dists,glacier,type='icefront')
   plt.plot(terminus_time,terminus_val/1000,'k.')
 except:

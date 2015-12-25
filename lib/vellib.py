@@ -20,9 +20,7 @@ import math
 import sys
 import scipy.interpolate
 import numpy as np
-sys.path.append(os.path.join(os.getenv("CODE_HOME"),"Util/Modules"))
-sys.path.append(os.path.join(os.getenv("CODE_HOME"),"BigThreeGlaciers/Tools"))
-import geodat, icefronts, dist, geotiff, fracyear, icemask
+import geodatlib, icefrontlib, geotifflib, datelib, masklib
 
 #########################################################################################
 def convert_binary_to_geotiff(glacier):
@@ -30,7 +28,7 @@ def convert_binary_to_geotiff(glacier):
   '''
 I'm getting tired of unpacking Ian's binary velocity files every time 
 I need to use them, so I've set up a script to convert all of them to 
-geotiff. Then the "geodat" module checks to see if there are geotiffs 
+geotifflib. Then the "geodat" module checks to see if there are geotiffs 
 before unpacking the binary files.
   '''
 
@@ -44,19 +42,19 @@ before unpacking the binary files.
     if file.startswith('track'):
       print file
       # Load binary data
-      x,y,v,vx,vy,ex,ey,time,interval = geodat.readbinary(DIRTOP_TSX+file+"/mosaicOffsets",nodatavalue=-2.0e9)
+      x,y,v,vx,vy,ex,ey,time,interval = geodatlib.readbinary(DIRTOP_TSX+file+"/mosaicOffsets",nodatavalue=-2.0e9)
 
-      year,month,day = fracyear.fracyear_to_date(time)
+      year,month,day = datelib.fracyear_to_date(time)
     
       # Set up date label for geotiff file
       date = "%04d%02d%02d" % (year,month,day)
     
       # Save as geotiff
-      geotiff.write_from_grid(x,y,np.flipud(v),-2.0e9,DIRTOP_TSX+"TIF/"+file+"_"+date+"_v.tif")
-      geotiff.write_from_grid(x,y,np.flipud(vx),-2.0e9,DIRTOP_TSX+"TIF/"+file+"_"+date+"_vx.tif")
-      geotiff.write_from_grid(x,y,np.flipud(vy),-2.0e9,DIRTOP_TSX+"TIF/"+file+"_"+date+"_vy.tif")
-      geotiff.write_from_grid(x,y,np.flipud(ex),-2.0e9,DIRTOP_TSX+"TIF/"+file+"_"+date+"_ex.tif")
-      geotiff.write_from_grid(x,y,np.flipud(ey),-2.0e9,DIRTOP_TSX+"TIF/"+file+"_"+date+"_ey.tif")
+      geotifflib.write_from_grid(x,y,np.flipud(v),-2.0e9,DIRTOP_TSX+"TIF/"+file+"_"+date+"_v.tif")
+      geotifflib.write_from_grid(x,y,np.flipud(vx),-2.0e9,DIRTOP_TSX+"TIF/"+file+"_"+date+"_vx.tif")
+      geotifflib.write_from_grid(x,y,np.flipud(vy),-2.0e9,DIRTOP_TSX+"TIF/"+file+"_"+date+"_vy.tif")
+      geotifflib.write_from_grid(x,y,np.flipud(ex),-2.0e9,DIRTOP_TSX+"TIF/"+file+"_"+date+"_ex.tif")
+      geotifflib.write_from_grid(x,y,np.flipud(ey),-2.0e9,DIRTOP_TSX+"TIF/"+file+"_"+date+"_ey.tif")
   
   # RADARSAT files    
   files = os.listdir(DIRTOP_RADARSAT)
@@ -64,15 +62,15 @@ before unpacking the binary files.
     if file.startswith('winter'):
       print file
       # Load binary data
-      x,y,v,vx,vy,ex,ey,time,interval = geodat.readbinary(DIRTOP_RADARSAT+file+"/mosaicOffsets")
+      x,y,v,vx,vy,ex,ey,time,interval = geodatlib.readbinary(DIRTOP_RADARSAT+file+"/mosaicOffsets")
     
       # Save as geotiff
 
-      geotiff.write_from_grid(x,y,np.flipud(v),-2.0e9,DIRTOP_RADARSAT+"TIF/"+file+"_v.tif")
-      geotiff.write_from_grid(x,y,np.flipud(vx),-2.0e9,DIRTOP_RADARSAT+"TIF/"+file+"_vx.tif")
-      geotiff.write_from_grid(x,y,np.flipud(vy),-2.0e9,DIRTOP_RADARSAT+"TIF/"+file+"_vy.tif")
-      geotiff.write_from_grid(x,y,np.flipud(ex),-2.0e9,DIRTOP_RADARSAT+"TIF/"+file+"_ex.tif")
-      geotiff.write_from_grid(x,y,np.flipud(ey),-2.0e9,DIRTOP_RADARSAT+"TIF/"+file+"_ey.tif")
+      geotifflib.write_from_grid(x,y,np.flipud(v),-2.0e9,DIRTOP_RADARSAT+"TIF/"+file+"_v.tif")
+      geotifflib.write_from_grid(x,y,np.flipud(vx),-2.0e9,DIRTOP_RADARSAT+"TIF/"+file+"_vx.tif")
+      geotifflib.write_from_grid(x,y,np.flipud(vy),-2.0e9,DIRTOP_RADARSAT+"TIF/"+file+"_vy.tif")
+      geotifflib.write_from_grid(x,y,np.flipud(ex),-2.0e9,DIRTOP_RADARSAT+"TIF/"+file+"_ex.tif")
+      geotifflib.write_from_grid(x,y,np.flipud(ey),-2.0e9,DIRTOP_RADARSAT+"TIF/"+file+"_ey.tif")
       
   return 1
     
@@ -139,7 +137,7 @@ def velocity_at_eulpoints(xpt,ypt,glacier,data='all',xy_velocities='False'):
   count=0
   
   for i in range(0,len(files)):
-    x,y,v,vx,vy,ex,ey,time,interval = geodat.readvelocity(''.join(dirs[i]),''.join(files[i]),"mosaicOffsets")
+    x,y,v,vx,vy,ex,ey,time,interval = geodatlib.readvelocity(''.join(dirs[i]),''.join(files[i]),"mosaicOffsets")
     if 'winter' in files[i]:
       time = float('20'+files[i][-2:])
     times[count]=time
@@ -206,7 +204,7 @@ def velocity_along_flowline(xf,yf,dists,glacier,cutoff='terminus',data='all'):
   # Load terminus profiles so we can cutoff velocities in front of the terminus #
   ###############################################################################
 
-  term_values, term_time = icefronts.distance_along_flowline(xf,yf,dists,glacier,type='icefront')
+  term_values, term_time = icefrontlib.distance_along_flowline(xf,yf,dists,glacier,type='icefront')
   
   ###################
   # Load velocities #
@@ -237,7 +235,7 @@ def velocity_along_flowline(xf,yf,dists,glacier,cutoff='terminus',data='all'):
   termini=np.zeros(m)
   count=0
   for i in range(0,len(files)):
-    x,y,v,vx,vy,ex,ey,time,interval = geodat.readvelocity(''.join(dirs[i]),''.join(files[i]),"mosaicOffsets")
+    x,y,v,vx,vy,ex,ey,time,interval = geodatlib.readvelocity(''.join(dirs[i]),''.join(files[i]),"mosaicOffsets")
     if 'winter' in files[i]:
       time = float('20'+files[i][-2:])
     times[count]=time
@@ -294,7 +292,7 @@ def velocity_at_lagpoints(xf,yf,dists,pts,glacier,data='all'):
   # Load terminus positions #
   ###########################
   
-  term_values, term_time = icefronts.distance_along_flowline(xf,yf,dists,glacier,type='icefront')
+  term_values, term_time = icefrontlib.distance_along_flowline(xf,yf,dists,glacier,type='icefront')
   
   ###################
   # LOAD velocities #
@@ -335,7 +333,7 @@ def velocity_at_lagpoints(xf,yf,dists,pts,glacier,data='all'):
   termini = np.zeros([m])
   count=0
   for i in range(0,len(files)):
-    x,y,v,vx,vy,ex,ey,time,interval = geodat.readvelocity(''.join(dirs[i]),''.join(files[i]),"mosaicOffsets")
+    x,y,v,vx,vy,ex,ey,time,interval = geodatlib.readvelocity(''.join(dirs[i]),''.join(files[i]),"mosaicOffsets")
     if 'winter' in files[i]:
       time = float('20'+files[i][-2:])
     times[count]=time
@@ -403,7 +401,7 @@ def tsx_near_time(time,glacier,just_filename = False):
   min_diff = 1.0
   for DIR in DIRs:
     if DIR.startswith('track'):
-      tsx_time,interval = geodat.readtime(DIR_TSX+DIR+"/mosaicOffsets")
+      tsx_time,interval = geodatlib.readtime(DIR_TSX+DIR+"/mosaicOffsets")
       if abs(tsx_time-time) < min_diff:
         min_diff = abs(tsx_time-time)
         best_time = tsx_time
@@ -411,11 +409,11 @@ def tsx_near_time(time,glacier,just_filename = False):
 
   
   if just_filename:
-    year,month,day = fracyear.fracyear_to_date(best_time)
+    year,month,day = datelib.fracyear_to_date(best_time)
     return DIR_TSX+'TIF/'+best_track+'_'+"%04d%02d%02d" % (year,month,day),best_time
   else:
     # Return the closest velocity profile
-    x,y,v,vx,vy,ex,ey,time,interval = geodat.readvelocity(DIR_TSX,best_track,"/mosaicOffsets")
+    x,y,v,vx,vy,ex,ey,time,interval = geodatlib.readvelocity(DIR_TSX,best_track,"/mosaicOffsets")
     return x,y,vx,vy,v,time
 
 
@@ -468,9 +466,9 @@ def variability(glacier,time1,time2):
     DIR=DIRs[j]
     if DIR.startswith('track'):
       # Load velocity
-      x1,y1,v1,vx1,vy1,ex1,ey1,time1,interval1 = geodat.readvelocity(DIR_TSX,DIR,"mosaicOffsets")
+      x1,y1,v1,vx1,vy1,ex1,ey1,time1,interval1 = geodatlib.readvelocity(DIR_TSX,DIR,"mosaicOffsets")
       time[count] = time1
-      year,month,day = fracyear.fracyear_to_date(time1)
+      year,month,day = datelib.fracyear_to_date(time1)
       
       xind1 = np.argmin(abs(x1-xmin))
       xind2 = np.argmin(abs(x1-xmax))+1
@@ -493,10 +491,10 @@ def variability(glacier,time1,time2):
       date = "%04d%02d%02d" % (year,month,day)
       maskfile = DIR_TSX+'TIF/'+DIR+'_'+date+'_'+'mask.tif'
       if os.path.isfile(maskfile):
-        xmask,ymask,mask[:,:,count] = geotiff.read(maskfile)
+        xmask,ymask,mask[:,:,count] = geotifflib.read(maskfile)
       else:
-        xmask,ymask,mask[:,:,count] = icemask.load_grid(glacier,xmin,xmax,ymin,ymax,dx,icefront_time=time1)
-        geotiff.write_from_grid(xmask,ymask,np.flipud(mask[:,:,count]),float('nan'),maskfile)
+        xmask,ymask,mask[:,:,count] = masklib.load_grid(glacier,xmin,xmax,ymin,ymax,dx,icefront_time=time1)
+        geotifflib.write_from_grid(xmask,ymask,np.flipud(mask[:,:,count]),float('nan'),maskfile)
       
       velgrid_mask[:,:,count] = np.array(velgrid[:,:,count])
       velgrid_mask[mask[:,:,count]==1,count] = float('nan')
@@ -563,7 +561,7 @@ def divergence_at_eulpoints(xpt,ypt):
   for j in range(0,len(DIRs)):
     DIR=DIRs[j]
     if DIR.startswith('track'):
-      x,y,v,vx,vy,ex,ey,time,interval = geodat.readvelocity(DIR_TSX,DIR,"mosaicOffsets")
+      x,y,v,vx,vy,ex,ey,time,interval = geodatlib.readvelocity(DIR_TSX,DIR,"mosaicOffsets")
       tpt[count]=time
       
       for i in range(0,n):
@@ -624,7 +622,7 @@ def divergence_at_eulpoints(xpt,ypt):
     if DIR.startswith('winter'):
       print "Loading ",dir
       infile=DIR_RADARSAT+DIR
-      x,y,v,vx,vy,ex,ey,time,interval = geodat.readvelocity(DIR_RADARSAT,DIR,"mosaicOffsets")
+      x,y,v,vx,vy,ex,ey,time,interval = geodatlib.readvelocity(DIR_RADARSAT,DIR,"mosaicOffsets")
       tpt[count] = float('20'+DIR[9:])
       
       for i in range(0,n):
@@ -710,7 +708,7 @@ def inversion_3D(glacier,x,y,time,dir_velocity_out='none',blur=False):
   filename1,time1 = tsx_near_time(time,glacier,just_filename=True)
   filename2,time2 = tsx_near_time(time-0.1,glacier,just_filename=True)
   filename3,time3 = tsx_near_time(time+0.1,glacier,just_filename=True)
-  year,month,day = fracyear.fracyear_to_date(time1)
+  year,month,day = datelib.fracyear_to_date(time1)
   date = "%04d%02d%02d" % (year,month,day)
   
   files_vx = ' '+filename1+'_vx.tif'+' '+filename2+'_vx.tif'+\
@@ -729,8 +727,8 @@ def inversion_3D(glacier,x,y,time,dir_velocity_out='none',blur=False):
     os.system('dem_mosaic --hole-fill-length 5 --t_projwin '+str(xmin)+' '+str(ymin)+' '+str(xmax)+\
   		' '+str(ymax)+' --priority-blending-length 10 -o'+filename_vy+files_vy)
   
-  xu,yu,uu = geotiff.read(filename_vx+"-tile-0.tif")
-  xv,yv,vv = geotiff.read(filename_vy+"-tile-0.tif")
+  xu,yu,uu = geotifflib.read(filename_vx+"-tile-0.tif")
+  xv,yv,vv = geotifflib.read(filename_vy+"-tile-0.tif")
   
   if blur == True:
     print "Blurring DEM over 17 pixels (roughly 500 m in each direction)..."
@@ -795,7 +793,7 @@ def inversion_2D(x,y,d,glacier,time,dir_velocity_out,filt_len='none'):
   filename1,time1 = tsx_near_time(time,glacier,just_filename=True)
   filename2,time2 = tsx_near_time(time-0.1,glacier,just_filename=True)
   filename3,time3 = tsx_near_time(time+0.1,glacier,just_filename=True)
-  year,month,day = fracyear.fracyear_to_date(time1)
+  year,month,day = datelib.fracyear_to_date(time1)
   date = "%04d%02d%02d" % (year,month,day)
   
   files_vx = ' '+filename1+'_vx.tif'+' '+filename2+'_vx.tif'+\
@@ -814,8 +812,8 @@ def inversion_2D(x,y,d,glacier,time,dir_velocity_out,filt_len='none'):
     os.system('dem_mosaic --t_projwin '+str(xmin)+' '+str(ymin)+' '+str(xmax)+\
   		' '+str(ymax)+' --priority-blending-length 10 -o'+filename_vy+files_vy)
   
-  xu,yu,uu = geotiff.read(filename_vx+"-tile-0.tif")
-  xv,yv,vv = geotiff.read(filename_vy+"-tile-0.tif")  
+  xu,yu,uu = geotifflib.read(filename_vx+"-tile-0.tif")
+  xv,yv,vv = geotifflib.read(filename_vy+"-tile-0.tif")  
   
   fu = scipy.interpolate.RegularGridInterpolator((yu,xu),uu)
   vx = fu((y,x))

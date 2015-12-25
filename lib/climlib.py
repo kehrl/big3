@@ -1,11 +1,9 @@
 # This module deals with the climate products.
 
 import os
-import sys
 import numpy as np
-sys.path.append(os.path.join(os.getenv("CODE_HOME"),"Util/Modules"))
 import netCDF4, jdcal
-import coords, fracyear
+import coordlib, datelib
 import scipy.signal as signal
 
 def racmo_grid(xmin,xmax,ymin,ymax,variable,epsg=3413,maskvalues='ice'):
@@ -57,10 +55,10 @@ def racmo_grid(xmin,xmax,ymin,ymax,variable,epsg=3413,maskvalues='ice'):
     time = np.zeros(Nt1+Nt2)
     for i in range(0,Nt1):
       year,month,day,fracday = jdcal.jd2gcal(startday1950[0],startday1950[1]+daysfrom1950_1[i])
-      time[i] = fracyear.date_to_fracyear(year,month,day) 
+      time[i] = datelib.date_to_fracyear(year,month,day) 
     for i in range(0,Nt2):
       year,month,day,fracday = jdcal.jd2gcal(startday1950[0],startday1950[1]+daysfrom1950_2[i])
-      time[i+Nt1] = fracyear.date_to_fracyear(year,month,day)
+      time[i+Nt1] = datelib.date_to_fracyear(year,month,day)
   else:
     time = daysfrom1950_1 
     time = time[0:-71]
@@ -68,7 +66,7 @@ def racmo_grid(xmin,xmax,ymin,ymax,variable,epsg=3413,maskvalues='ice'):
     
   
   # Convert lat,lon to epsg 3413
-  xrac,yrac = coords.convert(lon,lat,4326,epsg)
+  xrac,yrac = coordlib.convert(lon,lat,4326,epsg)
 
   # Find x,y indices that fall within the desired grid and check to make sure that the chosen
   # indices fall on the ice mask (mask == 1) 
@@ -211,7 +209,7 @@ def seasonlength(time,values,variable):
     ind = np.where(np.floor(time) == year[i])[0]
     day1 = 0
     day2 = 0
-    yearlen = fracyear.date_to_doy(year[i],12,31)[1]
+    yearlen = datelib.date_to_doy(year[i],12,31)[1]
     # Get runoff values > 0 (which is when melt is happening)
     for j in range(0,len(ind)):
       if (values[ind[j]]) > threshold:
@@ -305,7 +303,7 @@ def SIF_at_pts(xpts,ypts,epsg=3413,filt_len='none'):
   
   lon_grid,lat_grid = np.meshgrid(lon,lat)
   
-  xsif,ysif = coords.convert(lon_grid,lat_grid,4326,epsg)
+  xsif,ysif = coordlib.convert(lon_grid,lat_grid,4326,epsg)
   
   # Find closest point 
   ind = np.where((mask[0,:,:] == 1) | (mask[0,:,:] == 8))

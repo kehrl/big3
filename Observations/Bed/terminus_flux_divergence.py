@@ -6,11 +6,8 @@
 import os
 import sys
 import numpy as np
-sys.path.append(os.path.join(os.getenv("CODE_HOME"),"Util/Modules"))
-sys.path.append(os.path.join(os.getenv("CODE_HOME"),"BigThreeGlaciers/Tools"))
-import helheim_velocity, helheim_icefronts, helheim_bed, helheim_elevation
+import vellib, icefrontlib, bedlib, zslib, distlib
 import matplotlib.pyplot as plt
-import geotiff, dist
 
 ##########
 # Inputs #
@@ -23,19 +20,19 @@ time2=2015
 #############
 
 # Load Helheim bed
-bed = helheim_bed.cresis('2001')
+bed = bedlib.cresis('2001')
 bed = bed[17:,:] #throw out points that don't follow a flowline
-dists = dist.transect(bed[:,0],bed[:,1])-5165 # Last value to offset distances so similar zero point as that in "velocity_vs_terminus"
+dists = distlib.transect(bed[:,0],bed[:,1])-5165 # Last value to offset distances so similar zero point as that in "velocity_vs_terminus"
 
 # Terminus positions
-term, termt = helheim_icefronts.distance_along_flowline(bed[:,0],bed[:,1],dists,'icefront')
-rift, riftt = helheim_icefronts.distance_along_flowline(bed[:,0],bed[:,1],dists,'rift')
+term, termt = icefrontlib.distance_along_flowline(bed[:,0],bed[:,1],dists,'icefront')
+rift, riftt = icefrontlib.distance_along_flowline(bed[:,0],bed[:,1],dists,'rift')
 
 # Load elevations
-elev,elevt = helheim_elevation.worldview_at_pts(bed[:,0],bed[:,1],32,[])
+elev,elevt = zslib.worldview_at_pts(bed[:,0],bed[:,1],32,[])
 
 # Calculate divergence
-v,vx,vy,divx,divy,vt = helheim_velocity.divergence_at_eulpoints(bed[:,0],bed[:,1])
+v,vx,vy,divx,divy,vt = vellib.divergence_at_eulpoints(bed[:,0],bed[:,1])
 indices = np.where((vt > time1) & (vt < time2))
 v=v[indices[0],:]
 vx=vx[indices[0],:]
@@ -167,7 +164,7 @@ for i in range(0,len(vt)):
 ###################
 
 floatH=(1.02/0.9)*abs(bed[:,2])+bed[:,2]
-morlighem = helheim_bed.morlighem(bed[:,0],bed[:,1])
+morlighem = bedlib.morlighem(bed[:,0],bed[:,1])
 morlighem[-41:]='NaN'
 
 # Plot estimated surface elevations

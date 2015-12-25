@@ -2,9 +2,7 @@
 
 import os
 import sys
-sys.path.append(os.path.join(os.getenv("CODE_HOME"),"Util/Modules/"))
-sys.path.append(os.path.join(os.getenv("CODE_HOME"),"BigThreeGlaciers/Tools/"))
-import glacier_flowline, elevation, icefronts, flotation, bed
+import glaclib, zslib, icefrontlib, floatlib, bedlib
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
@@ -20,11 +18,11 @@ from scipy import stats
 args = sys.argv
 glacier = args[1][:] # Options: Kanger, Helheim
 
-x,y,zb,dists = glacier_flowline.load(glacier,filt_len=2.0e3,verticaldatum='geoid',shapefilename='flowline_flightline',bedmodel='aniso',bedsmoothing=4)
+x,y,zb,dists = glaclib.load_flowline(glacier,filt_len=2.0e3,verticaldatum='geoid',shapefilename='flowline_flightline',bedmodel='aniso',bedsmoothing=4)
 
 dists_eul = -1.0*np.array([2.0,5.0,10.0,15.0,20.0]) # kilometers
 
-xref,yref,zref = elevation.gimp_grid(np.min(x)-10.0e3,np.max(x)+10.0e3,np.min(y)-10.0e3,np.max(y)+10.0e3,glacier,verticaldatum='geoid')
+xref,yref,zref = zslib.gimp_grid(np.min(x)-10.0e3,np.max(x)+10.0e3,np.min(y)-10.0e3,np.max(y)+10.0e3,glacier,verticaldatum='geoid')
 
 plot_overview = 1.
 plot_time = 1.
@@ -33,7 +31,7 @@ plot_time = 1.
 # Get terminus #
 ################
 
-terminus_val, terminus_time = icefronts.distance_along_flowline(x,y,dists,glacier,type='icefront')
+terminus_val, terminus_time = icefrontlib.distance_along_flowline(x,y,dists,glacier,type='icefront')
 
 ind=[]
 for i in range(0,len(dists_eul)):
@@ -43,21 +41,21 @@ for i in range(0,len(dists_eul)):
 # Get ATM data #
 ################
 
-atm_data = elevation.atm_along_flowline(x,y,glacier,'all',cutoff='none',maxdist=500,verticaldatum='geoid',filt_len='none')
-zpt_atm,zpstd_atm,time_atm = elevation.atm_at_pts(x[ind],y[ind],glacier,years='all',maxdist=250,verticaldatum='geoid',method='average')
+atm_data = zslib.atm_along_flowline(x,y,glacier,'all',cutoff='none',maxdist=500,verticaldatum='geoid',filt_len='none')
+zpt_atm,zpstd_atm,time_atm = zslib.atm_at_pts(x[ind],y[ind],glacier,years='all',maxdist=250,verticaldatum='geoid',method='average')
 
 ##############################
 # Get Worldview and TDX Data #
 ############################## 
 
-zs_dem,time_dem = elevation.dem_along_flowline(x,y,glacier,years='all',cutoff='none',verticaldatum='geoid',filt_len=0.5e3)
-zpt_wv,zpt_std,time_wv = elevation.dem_at_pts(x[ind],y[ind],glacier,years='all',verticaldatum='geoid',cutoff='terminus',method='average',radius=250)
+zs_dem,time_dem = zslib.dem_along_flowline(x,y,glacier,years='all',cutoff='none',verticaldatum='geoid',filt_len=0.5e3)
+zpt_wv,zpt_std,time_wv = zslib.dem_at_pts(x[ind],y[ind],glacier,years='all',verticaldatum='geoid',cutoff='terminus',method='average',radius=250)
 
 ############################
 # GIMP elevation at points #
 ############################
 
-gimp = elevation.gimp_at_pts(x[ind],y[ind],glacier,'geoid')
+gimp = zslib.gimp_at_pts(x[ind],y[ind],glacier,'geoid')
 
 #################################
 # Plot elevation along flowline #
@@ -72,9 +70,9 @@ if plot_overview:
     ind2 = np.where(time_dem[:,1] == 20141023)[0]
 
   # Get radar thicknesses close to flightline
-  cresis = bed.cresis('all',glacier)
+  cresis = bedlib.cresis('all',glacier)
   if glacier == 'Helheim':
-    cresis2001 = bed.cresis('2001',glacier)
+    cresis2001 = bedlib.cresis('2001',glacier)
     cresis = np.row_stack([cresis,cresis2001])
 
   cutoff = 200.
@@ -101,8 +99,8 @@ if plot_overview:
   #for i in range(0,len(dists_eul)):
   #  plt.plot([dists_eul[i],dists_eul[i]],[0,750],c=coloptions[i],lw=0.75)
   ax = plt.gca()
-  plt.plot(dists/1e3,flotation.height(zb),'k:',linewidth=1.5,label='Flotation')
-  #ax.fill_between(dists/1e3,flotation.height(zb-50), flotation.height(zb+50),
+  plt.plot(dists/1e3,floatlib.height(zb),'k:',linewidth=1.5,label='Flotation')
+  #ax.fill_between(dists/1e3,floatlib.height(zb-50), floatlib.height(zb+50),
   #    alpha=0.2,facecolor='0.7',edgecolor='0.7',antialiased=True)
   if glacier == 'Helheim':
     plt.plot(dists/1e3,atm_data['20010521'][:,2],'k',label='2001-05-21',lw=1.5)

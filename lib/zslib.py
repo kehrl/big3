@@ -9,11 +9,8 @@ LMK, UW, 11/12/2015
 import os
 import sys
 import numpy as np
-sys.path.append(os.path.join(os.getenv("CODE_HOME"),"Util/Modules"))
-sys.path.append(os.path.join(os.getenv("CODE_HOME"),"BigThreeGlaciers/Tools"))
-import icefronts, glacier_flowline, coords, icemask
-import coords, geotiff
-import scipy.interpolate, dist, fracyear
+import icefrontlib, coordlib, masklib, distlib,datelib, geotifflib
+import scipy.interpolate
 import scipy.signal as signal
 import shapely.geometry
 import scipy.ndimage
@@ -110,7 +107,7 @@ def gimp_grid(xmin,xmax,ymin,ymax,glacier,verticaldatum):
   file = os.path.join(os.getenv("DATA_HOME"),'Elevation/Gimp/'+subset+fileend)
     
   # Get GIMP DEM
-  [x,y,zs]=geotiff.read(file,xmin,xmax,ymin,ymax)
+  [x,y,zs]=geotifflib.read(file,xmin,xmax,ymin,ymax)
     
   return x,y,zs
 
@@ -157,7 +154,7 @@ def atm(years='all',verticaldatum='geoid'):
           x = np.hstack([x,xfile])
           y = np.hstack([y,yfile])
           z = np.hstack([z,zfile])
-      x2,y2 = coords.convert(x-360,y,4326,3413)
+      x2,y2 = coordlib.convert(x-360,y,4326,3413)
       if DIR[0:4] in atm.keys():
         print "Already data from that year, consider changing how you have labeled the directories"
       else:
@@ -166,7 +163,7 @@ def atm(years='all',verticaldatum='geoid'):
   # Choose vertical datum
   if verticaldatum=='geoid':
     for key in atm.keys():
-      atm[key][:,2] = coords.geoidheight(atm[key][:,0],atm[key][:,1],atm[key][:,2])
+      atm[key][:,2] = coordlib.geoidheight(atm[key][:,0],atm[key][:,1],atm[key][:,2])
   elif verticaldatum=='ellipsoid':
     atm = atm
   else: 
@@ -199,9 +196,9 @@ def atm_along_flowline(xpts,ypts,glacier,years='all',cutoff='none',maxdist=200,m
   data = atm(years,verticaldatum)
   
   # Get terminus position if we want to throw data points out in front of terminus
-  dists = dist.transect(xpts,ypts)
+  dists = distlib.transect(xpts,ypts)
   if cutoff == 'terminus':
-    term_values, term_time = icefronts.distance_along_flowline(xpts,ypts,dists,glacier,'icefront')
+    term_values, term_time = icefrontlib.distance_along_flowline(xpts,ypts,dists,glacier,'icefront')
   
   # Set up output as dictionary
   pts = {}
@@ -217,7 +214,7 @@ def atm_along_flowline(xpts,ypts,glacier,years='all',cutoff='none',maxdist=200,m
         ind = np.argmin((xpts[i]-data[date][:,0])**2 + (ypts[i]-data[date][:,1])**2)
         xatm = data[date][ind,0]
         yatm = data[date][ind,1]
-        d[i] = dist.between_pts(xpts[i],ypts[i],xatm,yatm)
+        d[i] = distlib.between_pts(xpts[i],ypts[i],xatm,yatm)
         if d[i] < maxdist:
           z[i] = data[date][ind,2]
       elif method == 'average':
@@ -238,7 +235,7 @@ def atm_along_flowline(xpts,ypts,glacier,years='all',cutoff='none',maxdist=200,m
         
     if cutoff == 'terminus':
       # Get fractional year
-      time = fracyear.date_to_fracyear(float(date[0:4]),float(date[4:6]),float(date[6:8]))
+      time = datelib.date_to_fracyear(float(date[0:4]),float(date[4:6]),float(date[6:8]))
     
       # Get terminus position when ATM was collected
       termpos = np.interp(time,term_time,term_values)
@@ -287,7 +284,7 @@ def atm_at_pts(xpts,ypts,glacier,years='all',maxdist=200,verticaldatum='geoid',m
   # Load date and data
   for i in range(0,len(dates)):
     date = dates[i]
-    time[i] = fracyear.date_to_fracyear(float(date[0:4]),float(date[4:6]),float(date[6:8]))
+    time[i] = datelib.date_to_fracyear(float(date[0:4]),float(date[4:6]),float(date[6:8]))
     zpts[i,:] = atm[date][:,2]
     zptstd[i,:] = atm[date][:,3]
 
@@ -336,7 +333,7 @@ def lvis(years='all',verticaldatum='geoid'):
           x = np.hstack([x,xfile])
           y = np.hstack([y,yfile])
           z = np.hstack([z,zfile])
-      x2,y2 = coords.convert(x-360,y,4326,3413)
+      x2,y2 = coordlib.convert(x-360,y,4326,3413)
       if DIR[0:4] in lvis.keys():
         print "Already data from that year, consider changing how you have labeled the directories"
       else:
@@ -345,7 +342,7 @@ def lvis(years='all',verticaldatum='geoid'):
   # Choose vertical datum
   if verticaldatum=='geoid':
     for key in lvis.keys():
-      lvis[key][:,2] = coords.geoidheight(lvis[key][:,0],lvis[key][:,1],lvis[key][:,2])
+      lvis[key][:,2] = coordlib.geoidheight(lvis[key][:,0],lvis[key][:,1],lvis[key][:,2])
   elif verticaldatum=='ellipsoid':
     lvis = lvis
   else: 
@@ -378,9 +375,9 @@ def lvis_along_flowline(xpts,ypts,glacier,years='all',cutoff='none',maxdist=200,
   data = lvis(years,verticaldatum)
   
   # Get terminus position if we want to throw data points out in front of terminus
-  dists = dist.transect(xpts,ypts)
+  dists = distlib.transect(xpts,ypts)
   if cutoff == 'terminus':
-    term_values, term_time = icefronts.distance_along_flowline(xpts,ypts,dists,glacier,'icefront')
+    term_values, term_time = icefrontlib.distance_along_flowline(xpts,ypts,dists,glacier,'icefront')
   
   # Set up output as dictionary
   pts = {}
@@ -396,7 +393,7 @@ def lvis_along_flowline(xpts,ypts,glacier,years='all',cutoff='none',maxdist=200,
         ind = np.argmin((xpts[i]-data[date][:,0])**2 + (ypts[i]-data[date][:,1])**2)
         xlvis = data[date][ind,0]
         ylvis = data[date][ind,1]
-        d[i] = dist.between_pts(xpts[i],ypts[i],xlvis,ylvis)
+        d[i] = distlib.between_pts(xpts[i],ypts[i],xlvis,ylvis)
         if d[i] < maxdist:
           z[i] = data[date][ind,2]
       elif method == 'average':
@@ -417,7 +414,7 @@ def lvis_along_flowline(xpts,ypts,glacier,years='all',cutoff='none',maxdist=200,
         
     if cutoff == 'terminus':
       # Get fractional year
-      time = fracyear.date_to_fracyear(float(date[0:4]),float(date[4:6]),float(date[6:8]))
+      time = datelib.date_to_fracyear(float(date[0:4]),float(date[4:6]),float(date[6:8]))
     
       # Get terminus position when LVIS was collected
       termpos = np.interp(time,term_time,term_values)
@@ -466,7 +463,7 @@ def lvis_at_pts(xpts,ypts,glacier,years='all',maxdist=200,verticaldatum='geoid',
   # Load date and data
   for i in range(0,len(dates)):
     date = dates[i]
-    time[i] = fracyear.date_to_fracyear(float(date[0:4]),float(date[4:6]),float(date[6:8]))
+    time[i] = datelib.date_to_fracyear(float(date[0:4]),float(date[4:6]),float(date[6:8]))
     zpts[i,:] = lvis[date][:,2]
     zptstd[i,:] = lvis[date][:,3]
 
@@ -559,7 +556,7 @@ def dem_grid(glacier,xmin=-np.Inf,xmax=np.Inf,ymin=-np.Inf,ymax=np.Inf,
   if ('WV' in data) or (data == 'all'):
     for DIR in WVDIRs:
       if (DIR[0:13] not in dates) and (DIR.startswith('2')) and (DIR.endswith(filestring)):
-        wvxmin,wvxmax,wvymin,wvymax = geotiff.extent(WVDIR+DIR)
+        wvxmin,wvxmax,wvymin,wvymax = geotifflib.extent(WVDIR+DIR)
         wv_extent = shapely.geometry.Polygon([(wvxmin,wvymin),(wvxmin,wvymax),(wvxmax,wvymax),(wvxmax,wvymin)])
         if glacier_extent.intersects(wv_extent):
           if not(years) or (years=='all'):
@@ -575,7 +572,7 @@ def dem_grid(glacier,xmin=-np.Inf,xmax=np.Inf,ymin=-np.Inf,ymax=np.Inf,
   if ('TDM' in data) or (data == 'all'):
     for DIR in TDMDIRs:
       if DIR.endswith(filestring):
-        tdxmin,tdxmax,tdymin,tdymax = geotiff.extent(TDMDIR+DIR)
+        tdxmin,tdxmax,tdymin,tdymax = geotifflib.extent(TDMDIR+DIR)
         td_extent = shapely.geometry.Polygon([(tdxmin,tdymin),(tdxmin,tdymax),(tdxmax,tdymax),(tdxmax,tdymin)])
         if glacier_extent.intersects(td_extent):
           if not(years) or (years=='all'):
@@ -591,7 +588,7 @@ def dem_grid(glacier,xmin=-np.Inf,xmax=np.Inf,ymin=-np.Inf,ymax=np.Inf,
   if ('SPIRIT' in data) or (data == 'all'):
     for DIR in SPIRITDIRs:
       if DIR.endswith(spiritstring):
-        sprxmin,sprxmax,sprymin,sprymax = geotiff.extent(SPIRITDIR+DIR)
+        sprxmin,sprxmax,sprymin,sprymax = geotifflib.extent(SPIRITDIR+DIR)
         spr_extent = shapely.geometry.Polygon([(sprxmin,sprymin),(sprxmin,sprymax),(sprxmax,sprymax),(sprxmax,sprymin)])
         if glacier_extent.intersects(spr_extent):
           if not(years) or (years=='all'):
@@ -613,18 +610,18 @@ def dem_grid(glacier,xmin=-np.Inf,xmax=np.Inf,ymin=-np.Inf,ymax=np.Inf,
     date = dates[i]
     n = 1 # Count number of files for that date
     ngrid = np.ones([ny,nx])
-    time[i] = fracyear.date_to_fracyear(int(date[0:4]),int(date[4:6]),float(date[6:8]))
+    time[i] = datelib.date_to_fracyear(int(date[0:4]),int(date[4:6]),float(date[6:8]))
     for DIR in np.r_[TDMDIRs,WVDIRs,SPIRITDIRs]:
       if DIR.startswith(date) and (DIR.endswith(filestring) or DIR.endswith(spiritstring)):
         print "Loading ", DIR
         if os.path.isfile(WVDIR+DIR):
-          xwv,ywv,zwv = geotiff.read(WVDIR+DIR) 
+          xwv,ywv,zwv = geotifflib.read(WVDIR+DIR) 
           error[i] = dem_error(glacier,date,'WV')
         elif os.path.isfile(TDMDIR+DIR):
-          xwv,ywv,zwv = geotiff.read(TDMDIR+DIR) 
+          xwv,ywv,zwv = geotifflib.read(TDMDIR+DIR) 
           error[i] = dem_error(glacier,date,'TDM')
         else:
-          xwv,ywv,zwv = geotiff.read(SPIRITDIR+DIR)
+          xwv,ywv,zwv = geotifflib.read(SPIRITDIR+DIR)
           error[i] = dem_error(glacier,date,'SPIRIT')
         
         # Interpolate onto output grid
@@ -697,9 +694,9 @@ def dem_along_flowline(xpts,ypts,glacier,years='all',cutoff='terminus',verticald
     sys.exit("Unknown vertical datum.")
   
   # Load ice front positions so we can toss data in front of terminus
-  dists = dist.transect(xpts,ypts)
+  dists = distlib.transect(xpts,ypts)
   if cutoff == 'terminus': 
-    term_values, term_time = icefronts.distance_along_flowline(xpts,ypts,dists,glacier,type='icefront')
+    term_values, term_time = icefrontlib.distance_along_flowline(xpts,ypts,dists,glacier,type='icefront')
   
   
 # Find dates where we have data in the desired region
@@ -707,7 +704,7 @@ def dem_along_flowline(xpts,ypts,glacier,years='all',cutoff='terminus',verticald
   #For Worldview...
   for DIR in WVDIRs:
     if (DIR[0:8] not in dates) and DIR.startswith('2') and DIR.endswith(filestring):
-      xmin,xmax,ymin,ymax = geotiff.extent(WVDIR+DIR)
+      xmin,xmax,ymin,ymax = geotifflib.extent(WVDIR+DIR)
       within = np.where((xpts > xmin) & (xpts < xmax) & (ypts > ymin) & (ypts < ymax))[0]
       if len(within) > 0:
         if not(years) or (years=='all'):
@@ -722,7 +719,7 @@ def dem_along_flowline(xpts,ypts,glacier,years='all',cutoff='terminus',verticald
   # For TDM...
   for DIR in TDMDIRs:
     if DIR.endswith(filestring):
-      xmin,xmax,ymin,ymax = geotiff.extent(TDMDIR+DIR)
+      xmin,xmax,ymin,ymax = geotifflib.extent(TDMDIR+DIR)
       within = np.where((xpts > xmin) & (xpts < xmax) & (ypts > ymin) & (ypts < ymax))[0]
       if len(within) > 0:
         if not(years) or (years=='all'):
@@ -737,7 +734,7 @@ def dem_along_flowline(xpts,ypts,glacier,years='all',cutoff='terminus',verticald
   # For SPIRIT...
   for DIR in SPIRITDIRs:
     if DIR.endswith(filestring):
-      xmin,xmax,ymin,ymax = geotiff.extent(SPIRIT+DIR)
+      xmin,xmax,ymin,ymax = geotifflib.extent(SPIRIT+DIR)
       within = np.where((xpts > xmin) & (xpts < xmax) & (ypts > ymin) & (ypts < ymax))[0]
       if len(within) > 0:
         if not(years) or (years=='all'):
@@ -758,17 +755,17 @@ def dem_along_flowline(xpts,ypts,glacier,years='all',cutoff='terminus',verticald
 
   for i in range(0,len(dates)):
     date = dates[i]
-    times[i,0] = fracyear.date_to_fracyear(float(date[0:4]),float(date[4:6]),float(date[6:]))
+    times[i,0] = datelib.date_to_fracyear(float(date[0:4]),float(date[4:6]),float(date[6:]))
     times[i,1] = date
     for DIR in np.r_[TDMDIRs,WVDIRs,SPIRITDIRs]:
       if DIR.startswith(date) and (DIR.endswith(filestring) or DIR.endswith(spiritstring)): 
         #print "Loading data from "+DIR+"\n"
         if os.path.isfile(WVDIR+DIR):
-          x,y,z = geotiff.read(WVDIR+DIR)
+          x,y,z = geotifflib.read(WVDIR+DIR)
         elif os.path.isfile(TDMDIR+DIR):
-          x,y,z = geotiff.read(TDMDIR+DIR)
+          x,y,z = geotifflib.read(TDMDIR+DIR)
         else:
-          x,y,z = geotiff.read(SPIRITDIR+DIR)
+          x,y,z = geotifflib.read(SPIRITDIR+DIR)
 
         dem = scipy.interpolate.RegularGridInterpolator([y,x],z,method=method)
     
@@ -780,7 +777,7 @@ def dem_along_flowline(xpts,ypts,glacier,years='all',cutoff='terminus',verticald
           zpts[ind] = dem(np.column_stack([ypts[ind],xpts[ind]]))
           
           # Get fractional year
-          time = fracyear.date_to_fracyear(float(date[0:4]),float(date[4:6]),float(date[6:8]))
+          time = datelib.date_to_fracyear(float(date[0:4]),float(date[4:6]),float(date[6:8]))
 
           if cutoff == 'terminus':
             # Get terminus position at time of worldview image
@@ -909,18 +906,18 @@ def grid_near_time(time,glacier,verticaldatum='geoid'):
   besttime = 0
   for DIR in WVDIRs:
     if DIR.startswith('2') and DIR.endswith(filestring):
-      demtime = fracyear.date_to_fracyear(int(DIR[0:4]),int(DIR[4:6]),int(DIR[6:8]))
+      demtime = datelib.date_to_fracyear(int(DIR[0:4]),int(DIR[4:6]),int(DIR[6:8]))
       if abs(demtime-time) < abs(besttime-time):
         besttime = demtime
         bestfile = WVDIR+DIR
   for DIR in TDMDIRs:
     if DIR.startswith('2') and DIR.endswith(filestring):
-      demtime = fracyear.date_to_fracyear(int(DIR[0:4]),int(DIR[4:6]),int(DIR[6:8]))
+      demtime = datelib.date_to_fracyear(int(DIR[0:4]),int(DIR[4:6]),int(DIR[6:8]))
       if abs(demtime-time) < abs(besttime-time):
         besttime = demtime
         bestfile = TDMDIR+DIR
        
-  x,y,zs = geotiff.read(bestfile)
+  x,y,zs = geotifflib.read(bestfile)
 
   return x,y,zs,besttime
 
@@ -1009,7 +1006,7 @@ def dem_continuous(glacier,date,verticaldatum='geoid',fillin=False,blur=False):
     os.system('dem_mosaic --t_projwin '+str(xmin)+' '+str(ymin)+' '+str(xmax)+\
   		' '+str(ymax)+' --priority-blending-length 40 -o'+filename+files)
   
-  xg,yg,zs = geotiff.read(filename+"-tile-0.tif")
+  xg,yg,zs = geotifflib.read(filename+"-tile-0.tif")
   
   if blur == True:
     print "Blurring DEM over 17 pixels (roughly 500 m in each direction)..."
@@ -1092,7 +1089,7 @@ def variability(glacier,time1,time2,verticaldatum='geoid',resolution=32.,data='a
   if 'WV' in data or data=='all':
     for DIR in WVDIRs:
       if (DIR[0:8] not in dates) and DIR.startswith('2') and (DIR.endswith(filestring)):
-        wvxmin,wvxmax,wvymin,wvymax = geotiff.extent(WVDIR+DIR)
+        wvxmin,wvxmax,wvymin,wvymax = geotifflib.extent(WVDIR+DIR)
         wv_extent = shapely.geometry.Polygon([(wvxmin,wvymin),(wvxmin,wvymax),(wvxmax,wvymax),(wvxmax,wvymin)])
         if glacier_extent.intersects(wv_extent):
           if not(years) or (years=='all'):
@@ -1107,7 +1104,7 @@ def variability(glacier,time1,time2,verticaldatum='geoid',resolution=32.,data='a
   if 'TDM' in data or data=='all':
     for DIR in TDMDIRs:
       if DIR.endswith(filestring):
-        TDMmin,TDMmax,tdymin,tdymax = geotiff.extent(TDMDIR+DIR)
+        TDMmin,TDMmax,tdymin,tdymax = geotifflib.extent(TDMDIR+DIR)
         td_extent = shapely.geometry.Polygon([(TDMmin,tdymin),(TDMmin,tdymax),(TDMmax,tdymax),(TDMmax,tdymin)])
         if glacier_extent.intersects(td_extent):
           if not(years) or (years=='all'):
@@ -1122,7 +1119,7 @@ def variability(glacier,time1,time2,verticaldatum='geoid',resolution=32.,data='a
   if 'SPIRIT' in data or data=='all':
     for DIR in SPIRITDIRs:
       if DIR.endswith(filestring):
-        sprxmin,sprxmax,sprymin,sprymax = geotiff.extent(SPIRITDIR+DIR)
+        sprxmin,sprxmax,sprymin,sprymax = geotifflib.extent(SPIRITDIR+DIR)
         spr_extent = shapely.geometry.Polygon([(sprxmin,sprymin),(sprxmin,sprymax),(sprxmax,sprymax),(sprxmax,sprymin)])
         if glacier_extent.intersects(spr_extent):
           if not(years) or (years=='all'):
@@ -1143,21 +1140,21 @@ def variability(glacier,time1,time2,verticaldatum='geoid',resolution=32.,data='a
     date = dates[i]
     n = 1 # Count number of files for that date
     ngrid = np.ones([ny,nx])
-    time[i] = fracyear.date_to_fracyear(int(date[0:4]),int(date[4:6]),float(date[6:8]))
+    time[i] = datelib.date_to_fracyear(int(date[0:4]),int(date[4:6]),float(date[6:8]))
     for DIR in np.r_[TDMDIRs,WVDIRs]:
       if DIR.startswith(date) and DIR.endswith(filestring): 
         # Read file
         if  os.path.isfile(WVDIR+DIR):
           maskfile = WVDIR+date+'_mask.tif'
-          xwv,ywv,zwv = geotiff.read(WVDIR+DIR) 
+          xwv,ywv,zwv = geotifflib.read(WVDIR+DIR) 
           zwv[zwv==0] = float('NaN')
         elif os.path.isfile(TDMDIR+DIR):
           maskfile = TDMDIR+date+'_mask.tif'
-          xwv,ywv,zwv = geotiff.read(TDMDIR+DIR) 
+          xwv,ywv,zwv = geotifflib.read(TDMDIR+DIR) 
           zwv[zwv==0] = float('NaN')
         else:
           maskfile = SPIRITDIR+date+'_mask.tif'
-          xwv,ywv,zwv = geotiff.read(SPIRITDIR+DIR) 
+          xwv,ywv,zwv = geotifflib.read(SPIRITDIR+DIR) 
           zwv[zwv==0] = float('NaN')          
         
         # Interpolate onto output grid
@@ -1180,10 +1177,10 @@ def variability(glacier,time1,time2,verticaldatum='geoid',resolution=32.,data='a
           
           # Set up mask file
           if os.path.isfile(maskfile):
-            xmask,ymask,mask[:,:,i] = geotiff.read(maskfile)
+            xmask,ymask,mask[:,:,i] = geotifflib.read(maskfile)
           else:
-            xmask,ymask,mask[:,:,i] = icemask.load_grid(glacier,xmin,xmax,ymin,ymax,dx,icefront_time=time[i])
-            geotiff.write_from_grid(xmask,ymask,np.flipud(mask[:,:,i]),float('nan'),maskfile)   
+            xmask,ymask,mask[:,:,i] = masklib.load_grid(glacier,xmin,xmax,ymin,ymax,dx,icefront_time=time[i])
+            geotifflib.write_from_grid(xmask,ymask,np.flipud(mask[:,:,i]),float('nan'),maskfile)   
     
     zs[zs==0] = 'NaN' 
       

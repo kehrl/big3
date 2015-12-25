@@ -7,15 +7,7 @@
 import os
 import sys
 import numpy as np
-sys.path.append(os.path.join(os.getenv("CODE_HOME"),"Util/Modules"))
-sys.path.append(os.path.join(os.getenv("CODE_HOME"),"BigThreeGlaciers/Tools"))
-import velocity, bed, elevation, fracyear, glacier_flowline, icefronts
-import elmer_mesh as mesh
-import dist
-import shapefactor,flowparameter
-import elmer_mesh as mesh
-import dist
-import shapefactor,flowparameter
+import vellib, bedlib, zslib, datelib, glaclib, icefrontlib, meshlib, distlib, shapefactorlib, flowparameterlib
 import subprocess, shutil
 import matplotlib.pyplot as plt
 from subprocess import call
@@ -37,14 +29,14 @@ rho_i = 917.0
 rho_sw = 1020.0
 
 # time for mesh
-time = fracyear.date_to_fracyear(int(date[0:4]),int(date[4:6]),int(date[6:8]))
+time = datelib.date_to_fracyear(int(date[0:4]),int(date[4:6]),int(date[6:8]))
 
 # Mesh name
 MESHNAME='DEM'+date+'Low'
 file_mesh_out="Elmer"
 
 # Import directories
-DIRS=os.path.join(os.getenv("CODE_HOME"),"BigThreeGlaciers/Modeling/SolverFiles/Flowline/")
+DIRS=os.path.join(os.getenv("CODE_HOME"),"big3/modeling/solverFiles/flowline/")
 DIRM=os.path.join(os.getenv("MODEL_HOME"),glacier+"/Meshes/Flowline/"+MESHNAME+"/")
 DIRR=os.path.join(os.getenv("MODEL_HOME"),glacier+"/Results/Flowline/"+MESHNAME+"/")
 
@@ -79,16 +71,16 @@ if not(os.path.isdir(DIRM)):
   os.makedirs(DIRM+"Inputs")
 
 # Flowline coordinates
-x,y,zb,dists = glacier_flowline.load(glacier,shapefilename=file_flowline_in,filt_len='none',verticaldatum='geoid')
+x,y,zb,dists = glaclib.load_flowline(glacier,shapefilename=file_flowline_in,filt_len='none',verticaldatum='geoid')
 
 # Surface elevations along flowline for chosen date
-zs = elevation.dem_continuous_flowline(x,y,dists,glacier,date,filt_len=filt_len,verticaldatum='geoid',fillin=True)
+zs = zslib.dem_continuous_flowline(x,y,dists,glacier,date,filt_len=filt_len,verticaldatum='geoid',fillin=True)
 
 # Terminus position for date
-terminus = icefronts.position(x,y,dists,glacier,[int(date[0:4]),int(date[4:6]),int(date[6:8])])
+terminus = icefrontlib.position(x,y,dists,glacier,[int(date[0:4]),int(date[4:6]),int(date[6:8])])
 
 # Create geo file for flowline
-flowline = mesh.xy_to_gmsh_box(x,y,dists,zb,zs,terminus,glacier,DIRM,file_mesh_out,lc,lc_d,layers,filt_len=filt_len,rho_i=rho_i,rho_sw=rho_sw)
+flowline = meshlib.xy_to_gmsh_box(x,y,dists,zb,zs,terminus,glacier,DIRM,file_mesh_out,lc,lc_d,layers,filt_len=filt_len,rho_i=rho_i,rho_sw=rho_sw)
 
 ##################################
 # Use MshGlacier to extrude mesh #
@@ -122,7 +114,7 @@ call(["ElmerGrid","2","4",file_mesh_out])
 ###################################################
 
 # Get velocity along flowline from velocity profiles
-vel=velocity.inversion_2D(flowline[:,1],flowline[:,2],flowline[:,0],glacier,time,DIRM+"Inputs/",filt_len)
+vel=vellib.inversion_2D(flowline[:,1],flowline[:,2],flowline[:,0],glacier,time,DIRM+"Inputs/",filt_len)
 
 #################################
 # Print out temperature profile #
@@ -153,7 +145,7 @@ for i in range(0,len(xdata)):
   ndata[colinds] = (tempdata[colinds,2]-bed[i])/height[i] #normalized value
 	
 # Compute distance along Kristin's temperature profile
-ddata = dist.transect(tempdata[:,0],tempdata[:,1])
+ddata = distlib.transect(tempdata[:,0],tempdata[:,1])
 
 # Compute distance between our flowline and Kristin's, so that we can adjust
 # the distance in Kristin's temperature profile so that it aligns
@@ -169,7 +161,7 @@ for i in range(0,len(flowline[:,0])):
   pts[layers*2*i:layers*2*(i+1),2]=np.linspace(flowline[i,3],flowline[i,4],layers*2)
 
 T = interpolate.griddata(np.column_stack([ddata,ndata]),tempdata[:,3],pts[:,0:2],method='linear')
-A = flowparameter.arrhenius(T)
+A = flowparameterlib.arrhenius(T)
 
 # Write out flow law parameter at each node
 nanind = np.where(np.isnan(A))
@@ -214,12 +206,12 @@ del fid, delta, dists_new,zb_new,ind,values
 ####################################################################################
 
 # Calculate width
-width = shapefactor.glacierwidth(flowline,file_rightside_in,file_leftside_in,filt_len)
+width = shapefactorlib.glacierwidth(flowline,file_rightside_in,file_leftside_in,filt_len)
 width = np.interp(flowlinenodes[:,0],flowline[:,0],width)
 thick = np.interp(flowlinenodes[:,0],flowline[:,0],flowline[:,4]-flowline[:,3])
 
 # Calculate dw/dx for mass input due to convergence
-dwdx = shapefactor.dwdx(flowlinenodes[:,0],width)
+dwdx = shapefactorlib.dwdx(flowlinenodes[:,0],width)
 
 # Write out width and dw/dx for elmersolver 
 R = len(width)
@@ -231,8 +223,6 @@ for i in range(0,R):
 fid.close()
 
 del thick, dwdx, R, fid
-
-del thick, dwdx, R
 
 #########################################################
 # Finally export coordinates of flowline for future use #
@@ -248,5 +238,5 @@ fid.close()
 del fid 
 
 # Save this file in MESH directory for future reference
-os.chdir(os.path.join(os.getenv("HOME"),"Code/BigThreeGlaciers/Modeling/Meshing/"))
+os.chdir(os.path.join(os.getenv("HOME"),"Code/big3/modeling/meshing/"))
 shutil.copy('helheim_mesh_2d.py',DIRM+'helheim_mesh_2d_'+MESHNAME+'.py')

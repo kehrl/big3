@@ -1,11 +1,9 @@
 import os
 import sys
 import numpy as np
-sys.path.append(os.path.join(os.getenv("CODE_HOME"),"Util/Modules"))
-sys.path.append(os.path.join(os.getenv("CODE_HOME"),"BigThreeGlaciers/Tools"))
-import velocity, icefronts, bed, glacier_flowline, elevation, fluxgate, flotation
+import vellib, bedlib, zslib, floatlib, geotifflib, datelib
 import matplotlib.pyplot as plt
-import matplotlib, geotiff, fracyear, dem_shading, icemask, glacier_extent
+import matplotlib
 from matplotlib.ticker import AutoMinorLocator
 import scipy.signal as signal
 from scipy import stats
@@ -40,25 +38,25 @@ elif glacier == 'Helheim':
 
 # Image for plotting
 if glacier == "Helheim":
-  imagetime = fracyear.date_to_fracyear(2014,7,4)
-  ximage,yimage,image = geotiff.readrgb(os.path.join(os.getenv("DATA_HOME"),"Imagery/Landsat/Helheim/TIF/20140704140535_LC82330132014185LGN00.tif"))
+  imagetime = datelib.date_to_fracyear(2014,7,4)
+  ximage,yimage,image = geotifflib.readrgb(os.path.join(os.getenv("DATA_HOME"),"Imagery/Landsat/Helheim/TIF/20140704140535_LC82330132014185LGN00.tif"))
 elif glacier == "Kanger":
-  imagetime = fracyear.date_to_fracyear(2014,7,6)
-  ximage,yimage,image = geotiff.readrgb(os.path.join(os.getenv("DATA_HOME"),"Imagery/Landsat/Kanger/TIF/20140706135251_LC82310122014187LGN00.tif"))
+  imagetime = datelib.date_to_fracyear(2014,7,6)
+  ximage,yimage,image = geotifflib.readrgb(os.path.join(os.getenv("DATA_HOME"),"Imagery/Landsat/Kanger/TIF/20140706135251_LC82310122014187LGN00.tif"))
 
 # Load bed
-xb,yb,zb = bed.morlighem_grid(xmin,xmax,ymin,ymax,verticaldatum='geoid')
-#xb,yb,zb = bed.smith_grid(glacier,xmin,xmax,ymin,ymax,verticaldatum='geoid',model='aniso',smoothing=4,grid='structured')
+xb,yb,zb = bedlib.morlighem_grid(xmin,xmax,ymin,ymax,verticaldatum='geoid')
+#xb,yb,zb = bedlib.smith_grid(glacier,xmin,xmax,ymin,ymax,verticaldatum='geoid',model='aniso',smoothing=4,grid='structured')
 
 # Load velocity variability
-xvel,yvel,velall,velmean,velstd,velcount,veltime = velocity.variability(glacier,time1,time2)
+xvel,yvel,velall,velmean,velstd,velcount,veltime = vellib.variability(glacier,time1,time2)
 
 # Load elevation variability
-xzs,yzs,zsall,zsmean,zsstd,zscount,zstime = elevation.variability(glacier,time1,time2)
+xzs,yzs,zsall,zsmean,zsstd,zscount,zstime = zslib.variability(glacier,time1,time2)
 
 # Find flotation conditions
-xwv,ywv,zwv,timewv = elevation.dem_grid(glacier,xmin,xmax,ymin,ymax,years='all',resolution=32,verticaldatum='geoid')
-xf,yf,zabovefloat = flotation.extent(xwv,ywv,zwv,timewv,glacier,rho_i=917.0,rho_sw=1020.0,bedsource='cresis',verticaldatum='geoid')
+xwv,ywv,zwv,timewv = zslib.dem_grid(glacier,xmin,xmax,ymin,ymax,years='all',resolution=32,verticaldatum='geoid')
+xf,yf,zabovefloat = floatlib.extent(xwv,ywv,zwv,timewv,glacier,rho_i=917.0,rho_sw=1020.0,bedsource='cresis',verticaldatum='geoid')
 
 cutoff = 5.
 floatcond = np.zeros(len(xf))
@@ -200,7 +198,7 @@ plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+"_variability.pdf")
 plt.close()
 
 # Plot trends
-# xzs,yzs,zsall,zsmean,zsstd,zscount,zstime = elevation.variability(glacier,time1,time2,data='TDM')
+# xzs,yzs,zsall,zsmean,zsstd,zscount,zstime = zslib.variability(glacier,time1,time2,data='TDM')
 
 zstrend = np.zeros_like(zsstd)
 zstrend_time1 = np.zeros_like(zsstd)

@@ -4,15 +4,13 @@
 # LMK, UW, 06/12/2014
 
 import os
-import sys
 import shutil
 import numpy as np
-sys.path.append(os.path.join(os.getenv("CODE_HOME"),"Util/Modules"))
 from subprocess import call
 import math
 import scipy.interpolate as interpolate
 import glob
-import elmer_read
+import elmerreadlib
 
 ##########
 # Inputs #
@@ -29,10 +27,10 @@ glacier = 'Helheim'
 regpars=['1e14']
 
 # Directories
-DIRS=os.path.join(os.getenv("CODE_HOME"),"BigThreeGlaciers/Modeling/SolverFiles/Flowline/")
+DIRS=os.path.join(os.getenv("CODE_HOME"),"big3/modeling/solverfiles/flowline/")
 DIRM=os.path.join(os.getenv("MODEL_HOME"),glacier+"/Meshes/Flowline/"+MESHNAME+"/")
 DIRR=os.path.join(os.getenv("MODEL_HOME"),glacier+"/Results/Flowline/"+MESHNAME+"/Inversion/")
-DIRELMERLIB = os.path.join(os.getenv("CODE_HOME"),"BigThreeGlaciers/Modeling/Elmerlib/")
+DIRELMERLIB = os.path.join(os.getenv("CODE_HOME"),"big3/modeling/elmerlib/")
 
 # Flowline
 file_flowline_in=DIRM+"Inputs/flowline.dat"
@@ -120,8 +118,8 @@ for regpar in regpars:
   # Save results into different files and directories #
   #####################################################
   
-  surf_bed = elmer_read.saveline_boundary(DIRM+"elmer/",runname,bbed)
-  surf_sur = elmer_read.saveline_boundary(DIRM+"elmer/",runname,bsurf)
+  surf_bed = elmerreadlib.saveline_boundary(DIRM+"elmer/",runname,bbed)
+  surf_sur = elmerreadlib.saveline_boundary(DIRM+"elmer/",runname,bsurf)
   
   os.rename(DIRM+"elmer/"+runname+".dat",DIRR+runname+"_"+regpar+".dat")
   os.rename(DIRM+"elmer/"+runname+".dat.names",DIRR+runname+"_"+regpar+".dat.names")

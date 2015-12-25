@@ -12,7 +12,7 @@ import glob
 MESHNAME='DEM20120624Low' 
 
 # Directories
-DIRS=os.path.join(os.getenv("CODE_HOME"),"BigThreeGlaciers/Modeling/SolverFiles/Flowline/")
+DIRS=os.path.join(os.getenv("CODE_HOME"),"big3/modeling/solverfiles/flowline/")
 DIRM=os.path.join(os.getenv("MODEL_HOME"),"Helheim/Meshes/Flowline/"+MESHNAME+"/")
 DIRR=os.path.join(os.getenv("MODEL_HOME"),"Helheim/Results//Flowline/")
 DIRELMERLIB = os.path.join(os.getenv("CODE_HOME"),"BigThreeGlaciers/Modeling/Elmerlib/")

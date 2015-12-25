@@ -9,9 +9,7 @@ LMK, UW, 9/15/2015
 '''
 
 import os
-import sys
-sys.path.append(os.path.join(os.getenv("CODE_HOME"),"Util/Modules"))
-import elmer_mesh, icefronts
+import meshlib, icefrontlib
 import matplotlib.path as path
 import numpy as np
 
@@ -59,7 +57,7 @@ def load_grid(glacier,xmin,xmax,ymin,ymax,dx,ice=0,icefront_time='none',icefront
   
   for file in files:
     if file.endswith('.shp') and 'hole' in file:
-      hole = elmer_mesh.shp_to_xy(DIR+file)
+      hole = meshlib.shp_to_xy(DIR+file)
       holepath = path.Path(hole[:,0:2])
       cond = holepath.contains_points(points)
       ind = np.where(cond==True)[0]
@@ -72,9 +70,9 @@ def load_grid(glacier,xmin,xmax,ymin,ymax,dx,ice=0,icefront_time='none',icefront
   if icefront_time !='none':
     xfjord = []
     yfjord = []
-    xfront,yfront,time = icefronts.near_time(icefront_time,glacier,type=icefront_type)
-    south = elmer_mesh.shp_to_xy(DIR+'icemask_southfjordwall.shp')
-    north = elmer_mesh.shp_to_xy(DIR+'icemask_northfjordwall.shp')
+    xfront,yfront,time = icefrontlib.near_time(icefront_time,glacier,type=icefront_type)
+    south = meshlib.shp_to_xy(DIR+'icemask_southfjordwall.shp')
+    north = meshlib.shp_to_xy(DIR+'icemask_northfjordwall.shp')
     if north[0,1] > north[-1,0]:
       north = np.flipud(north)
     if south[0,1] < south[-1,0]:
@@ -124,7 +122,7 @@ def load_points(glacier):
   n=0
   for file in files:
     if (file.endswith('.shp')) and ('hole' in file):
-      hole = elmer_mesh.shp_to_xy(DIR+file)
+      hole = meshlib.shp_to_xy(DIR+file)
       if n==0:
         pts = hole[:,0:2]  
       else:

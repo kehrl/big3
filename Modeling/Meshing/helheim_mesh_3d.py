@@ -6,15 +6,10 @@
 import os
 import shutil
 import sys
-sys.path.append(os.path.join(os.getenv("HOME"),"Code/Util/Modules"))
-sys.path.append(os.path.join(os.getenv("HOME"),"Code/BigThreeGlaciers/Tools"))
-import elmer_mesh as mesh
-import elmer_inversion
-import velocity, bed, elevation, fracyear, glacier_extent
+import vellib, datelib, glaclib, flowparameterlib, meshlib, inverselib
 from subprocess import call
 from scipy.interpolate import *
 import numpy as np
-import flowparameter
 import argparse
 
 ##########
@@ -24,7 +19,7 @@ import argparse
 # Get inputs to file
 parser = argparse.ArgumentParser()
 parser.add_argument("-mesh", dest="meshname", required = True,
-        help = "Name of mesh.")
+        help = "Name of meshlib.")
 parser.add_argument("-d", dest="date", required = True,
             help = "Date for mesh.")
 parser.add_argument("-n", dest="npartitions", required = True,
@@ -78,21 +73,21 @@ rho_i = 917.0
 rho_sw = 1020.0
 
 # Time
-time = fracyear.date_to_fracyear(int(date[0:4]),int(date[4:6]),int(date[6:8]))
+time = datelib.date_to_fracyear(int(date[0:4]),int(date[4:6]),int(date[6:8]))
 
 #################
 # Mesh Geometry #
 #################
 
 # Mesh exterior
-exterior = glacier_extent.load(glacier,time)
+exterior = glaclib.load_extent(glacier,time)
 np.savetxt(Inputs+"mesh_extent.dat",exterior[:,0:2])
 
 # Mesh holes
-hole1 = mesh.shp_to_xy(DIRX+"glacier_hole1")
+hole1 = meshlib.shp_to_xy(DIRX+"glacier_hole1")
 np.savetxt(Inputs+"mesh_hole1.dat",hole1[:,0:2])
 
-hole2 = mesh.shp_to_xy(DIRX+"glacier_hole2")
+hole2 = meshlib.shp_to_xy(DIRX+"glacier_hole2")
 np.savetxt(Inputs+"mesh_hole2.dat",hole2[:,0:2])
 
 # All holes
@@ -101,7 +96,7 @@ holes.append({'xy': hole1})
 holes.append({'xy': hole2})
 
 # Add locations for refinement
-refine = mesh.shp_to_xy(DIRX+"refine")
+refine = meshlib.shp_to_xy(DIRX+"refine")
 
 ###########
 # Outputs #
@@ -116,7 +111,7 @@ file_3d=os.path.join(DIRM+"Elmer")
 #############
 
 # Gmsh .geo file
-x,y,zbed,zsur = mesh.xy_to_gmsh_3d(glacier,date,exterior,holes,refine,DIRM,\
+x,y,zbed,zsur = meshlib.xy_to_gmsh_3d(glacier,date,exterior,holes,refine,DIRM,\
 		lc1,lc2,lc3,lc4,bedname,bedmodel,bedsmoothing,rho_i,rho_sw)
 
 # Create .msh file
@@ -141,7 +136,7 @@ call(["ElmerGrid","2","4","Elmer"])
 ##########################################
 
 # Output files for velocities in x,y directions (u,v)
-u,v = velocity.inversion_3D(glacier,x,y,time,Inputs)
+u,v = vellib.inversion_3D(glacier,x,y,time,Inputs)
 
 #########################################################################
 # Import mesh boundary, calculate flow parameter at mesh nodes, and use #
@@ -207,7 +202,7 @@ Temps_near = griddata(tempdata_normalized[:,0:3],tempdata_normalized[:,3],np.col
 
 nans=np.isnan(Temps_lin)
 Temps_lin[nans]=Temps_near[nans]
-Anodes=flowparameter.arrhenius(Temps_lin)
+Anodes=flowparameterlib.arrhenius(Temps_lin)
 
 # Write out flow law parameter at each node
 fid = open(Inputs+"flowparameters.dat","w")
@@ -222,7 +217,7 @@ del nans, kristin_file,Temps_near,fid,Temps_lin
 #################################################################
 
 frac = 0.5
-ub,vb,beta = elmer_inversion.guess_beta(x,y,zsur,zbed,u,v,frac)
+ub,vb,beta = inverselib.guess_beta(x,y,zsur,zbed,u,v,frac)
 
 # Write out basal velocities and initial guess for beta
 fidub = open(Inputs+"ubdem.xy","w")

@@ -7,13 +7,11 @@ import os
 import shutil
 import sys
 import numpy as np
-sys.path.append(os.path.join(os.getenv("CODE_HOME"),"Util/Modules"))
 from subprocess import call
 import math
 import glob
 import numpy as np
-import elmer_read 
-import elmer_mesh as mesh
+import elmerreadlib, meshlib
 import numpy as np
 import argparse
 
@@ -24,7 +22,7 @@ import argparse
 # Get inputs to file
 parser = argparse.ArgumentParser()
 parser.add_argument("-mesh", dest="meshname", required = True,
-        help = "Name of mesh.")
+        help = "Name of meshlib")
 parser.add_argument("-n", dest="npartitions", required = True,
         help = "Number of partitions.")
 parser.add_argument("-regpar", dest="regpar", required = False,
@@ -42,7 +40,7 @@ method = args.method
 glacier = 'Helheim'
 
 # Directories
-DIRS=os.path.join(os.getenv("CODE_HOME"),"BigThreeGlaciers/Modeling/SolverFiles/3D/")
+DIRS=os.path.join(os.getenv("CODE_HOME"),"big3/modeling/solverFiles/3D/")
 DIRM=os.path.join(os.getenv("MODEL_HOME"),glacier+"/Meshes/3D/"+RES+"/")
 DIRR=os.path.join(os.getenv("MODEL_HOME"),glacier+"/Results/3D/"+RES+"/Inversion/")
 DIRX=os.path.join(os.getenv("DATA_HOME"),"ShapeFiles/Glaciers/3D/"+glacier)
@@ -114,8 +112,8 @@ del fid
 # Combine elmer results into one file #
 #######################################
 
-bed = elmer_read.saveline_boundary(DIRM+"/elmer/",runname,bbed)
-surf = elmer_read.saveline_boundary(DIRM+"/elmer/",runname,bsurf)
+bed = elmerreadlib.saveline_boundary(DIRM+"/elmer/",runname,bbed)
+surf = elmerreadlib.saveline_boundary(DIRM+"/elmer/",runname,bsurf)
 
 os.rename(DIRM+"/elmer/"+runname+".dat",DIRR+runname+method+"_"+regpar+"_beta.dat")
 os.rename(DIRM+"/elmer/"+runname+".dat.names",DIRR+runname+method+"_"+regpar+"_beta.dat.names")

@@ -1,13 +1,11 @@
-# This file compares Helheim's terminus position to its velocity.
+# This file compares Helheim's terminus position to its vellib.
 
 import os
 import sys
 import numpy as np
-sys.path.append(os.path.join(os.getenv("CODE_HOME"),"Util/Modules"))
-sys.path.append(os.path.join(os.getenv("CODE_HOME"),"BigThreeGlaciers/Tools"))
-import velocity, icefronts, bed, glacier_flowline, elevation, fluxgate, flotation, climate
+import vellib, icefrontlib, bedlib, glaclib, zslib, fluxlib, floatlib, climlib, masklib, demshadelib, geotifflib, datelib
 import matplotlib.pyplot as plt
-import matplotlib, geotiff, fracyear, dem_shading, icemask, glacier_extent
+import matplotlib
 from matplotlib.ticker import AutoMinorLocator
 import scipy.signal as signal
 import cubehelix
@@ -53,20 +51,20 @@ plot_years = 1
 # Flowline #
 ############
 
-x,y,zb,dists = glacier_flowline.load(glacier,shapefilename='flowline_flightline',filt_len=2.0e3)
+x,y,zb,dists = glaclib.load_flowline(glacier,shapefilename='flowline_flightline',filt_len=2.0e3)
 
 ##################
 # Get ice fronts #
 ##################
 
-terminus_val, terminus_time = icefronts.distance_along_flowline(x,y,dists,glacier,type='icefront',time1=time1,time2=time2)
-rift_val, rift_time = icefronts.distance_along_flowline(x,y,dists,glacier,type='rift',time1=time1,time2=time2)
+terminus_val, terminus_time = icefrontlib.distance_along_flowline(x,y,dists,glacier,type='icefront',time1=time1,time2=time2)
+rift_val, rift_time = icefrontlib.distance_along_flowline(x,y,dists,glacier,type='rift',time1=time1,time2=time2)
 
 ########################
 # Get calving behavior #
 ########################
 
-calvingstyle = icefronts.calving(glacier)
+calvingstyle = icefrontlib.calving(glacier)
 
 ############################
 # Get velocities at points # 
@@ -79,11 +77,11 @@ for i in range(0,len(dists_eul)):
 
 # Load velocities for glacier and ice melange
 if lagrangian == 1:
-  vel_val,vel_time,vel_error,vel_dists,vel_x,vel_y = velocity.velocity_at_lagpoints(x,y,dists,dists_eul*1e3,glacier)
+  vel_val,vel_time,vel_error,vel_dists,vel_x,vel_y = vellib.velocity_at_lagpoints(x,y,dists,dists_eul*1e3,glacier)
 else:
-  vel_val,vel_time,vel_error = velocity.velocity_at_eulpoints(x[ind_eul],y[ind_eul],glacier)
+  vel_val,vel_time,vel_error = vellib.velocity_at_eulpoints(x[ind_eul],y[ind_eul],glacier)
 
-velmel_val,velmel_time,velmel_error,velmel_dists,velmel_x,velmel_y = velocity.velocity_at_lagpoints(x,y,dists,dists_mel*1e3,glacier)
+velmel_val,velmel_time,velmel_error,velmel_dists,velmel_x,velmel_y = vellib.velocity_at_lagpoints(x,y,dists,dists_mel*1e3,glacier)
 velocitypoints = np.column_stack([x[ind_eul],y[ind_eul]])
 
 # Chop to desired time interval
@@ -115,28 +113,28 @@ elif glacier == 'Kanger':
   ymin = -2302000.0
   ymax = -2266000.0
 
-xdem,ydem,zdem,timedem,errordem = elevation.dem_grid(glacier,xmin,xmax,ymin,ymax,years='all',verticaldatum='ellipsoid',return_error=True)
-dem_time,dem_dH = fluxgate.dem_thinning(glacier,xdem,ydem,zdem,timedem,errordem,"fluxgate3",type='rate')
-flux_time,flux_dH = fluxgate.fluxgate_thinning(glacier,"fluxgate3",bedsource=bedsource)
-xflux,yflux = fluxgate.fluxbox_geometry(glacier,"fluxgate3")
+xdem,ydem,zdem,timedem,errordem = zslib.dem_grid(glacier,xmin,xmax,ymin,ymax,years='all',verticaldatum='ellipsoid',return_error=True)
+dem_time,dem_dH = fluxlib.dem_thinning(glacier,xdem,ydem,zdem,timedem,errordem,"fluxgate3",type='rate')
+flux_time,flux_dH = fluxlib.fluxgate_thinning(glacier,"fluxgate3",bedsource=bedsource)
+xflux,yflux = fluxlib.fluxbox_geometry(glacier,"fluxgate3")
 
-xrac,yrac,smbrac,timerac = climate.racmo_at_pts(np.mean(xflux),np.mean(yflux),'smb',filt_len=14.0)
-xrac,yrac,runrac,timerac = climate.racmo_at_pts(np.mean(xflux),np.mean(yflux),'runoff',filt_len=14.0)
-xrac,yrac,zsrac,timeraczs = climate.racmo_at_pts(np.mean(xflux),np.mean(yflux),'zs',filt_len=14.0)
-xsif,ysif,sif,timesif = climate.SIF_at_pts(np.mean(xflux),np.mean(yflux),filt_len=14.)
+xrac,yrac,smbrac,timerac = climlib.racmo_at_pts(np.mean(xflux),np.mean(yflux),'smb',filt_len=14.0)
+xrac,yrac,runrac,timerac = climlib.racmo_at_pts(np.mean(xflux),np.mean(yflux),'runoff',filt_len=14.0)
+xrac,yrac,zsrac,timeraczs = climlib.racmo_at_pts(np.mean(xflux),np.mean(yflux),'zs',filt_len=14.0)
+xsif,ysif,sif,timesif = climlib.SIF_at_pts(np.mean(xflux),np.mean(yflux),filt_len=14.)
 
-dH_time,dH_flux,dH_dem,dH_smb = fluxgate.compare_thinning_rates(dem_time,dem_dH,flux_time,flux_dH,timerac,smbrac,rho_i=900.0)
+dH_time,dH_flux,dH_dem,dH_smb = fluxlib.compare_thinning_rates(dem_time,dem_dH,flux_time,flux_dH,timerac,smbrac,rho_i=900.0)
 
 ################################
 # Get elevations near terminus #
 ################################
 
-zpt_atm,zptstd_atm,time_atm = elevation.atm_at_pts(x[ind_eul],y[ind_eul],glacier,years='all',maxdist=250.,verticaldatum='geoid',method='average',cutoff='terminus')
+zpt_atm,zptstd_atm,time_atm = zslib.atm_at_pts(x[ind_eul],y[ind_eul],glacier,years='all',maxdist=250.,verticaldatum='geoid',method='average',cutoff='terminus')
 
-zpt_dem,zpterror_dem,time_dem = elevation.dem_at_pts(x[ind_eul],y[ind_eul],glacier,years='all',verticaldatum='geoid',cutoff='terminus',method='average',radius=250.)
-zpt_wv,zpterror_wv,time_wv = elevation.dem_at_pts(x[ind_eul],y[ind_eul],glacier,years='all',verticaldatum='geoid',cutoff='terminus',method='average',radius=250.,data='WV')
-zpt_tdm,zpterror_tdm,time_tdm = elevation.dem_at_pts(x[ind_eul],y[ind_eul],glacier,years='all',verticaldatum='geoid',cutoff='terminus',method='average',radius=250.,data='TDM')
-zpt_spirit,zpterror_spirit,time_spirit = elevation.dem_at_pts(x[ind_eul],y[ind_eul],glacier,years='all',verticaldatum='geoid',cutoff='terminus',method='average',radius=250.,data='SPIRIT')
+zpt_dem,zpterror_dem,time_dem = zslib.dem_at_pts(x[ind_eul],y[ind_eul],glacier,years='all',verticaldatum='geoid',cutoff='terminus',method='average',radius=250.)
+zpt_wv,zpterror_wv,time_wv = zslib.dem_at_pts(x[ind_eul],y[ind_eul],glacier,years='all',verticaldatum='geoid',cutoff='terminus',method='average',radius=250.,data='WV')
+zpt_tdm,zpterror_tdm,time_tdm = zslib.dem_at_pts(x[ind_eul],y[ind_eul],glacier,years='all',verticaldatum='geoid',cutoff='terminus',method='average',radius=250.,data='TDM')
+zpt_spirit,zpterror_spirit,time_spirit = zslib.dem_at_pts(x[ind_eul],y[ind_eul],glacier,years='all',verticaldatum='geoid',cutoff='terminus',method='average',radius=250.,data='SPIRIT')
 
 
 # Get rid of elevations that are in front of the ice front 
@@ -189,21 +187,21 @@ if plot_images == 1:
   images_type = []
   for file in imagefiles:
     if os.path.isfile(DIRLANDSAT+file):
-      images.append(geotiff.read(DIRLANDSAT+file))
+      images.append(geotifflib.read(DIRLANDSAT+file))
       year,month,day = [int(file[0:4]),int(file[4:6]),int(file[6:8])]
       images_type.append('Landsat-8')
     elif os.path.isfile(DIRWV+file):
-      images.append(geotiff.read(DIRWV+file))
+      images.append(geotifflib.read(DIRWV+file))
       year,month,day = [int(file[0:4]),int(file[4:6]),int(file[6:8])]
       images_type.append('Worldview')
     else:
-      images.append(geotiff.read(DIRTSX+file))
+      images.append(geotifflib.read(DIRTSX+file))
       if glacier == 'Helheim':
-        year,month,day = fracyear.doy_to_date(float(file[14:18]),float(file[19:22]))
+        year,month,day = datelib.doy_to_date(float(file[14:18]),float(file[19:22]))
       elif glacier == 'Kanger':
-        year,month,day = fracyear.doy_to_date(float(file[11:15]),float(file[16:19]))
+        year,month,day = datelib.doy_to_date(float(file[11:15]),float(file[16:19]))
       images_type.append('TSX')
-    images_time.append([year,month,day,fracyear.date_to_fracyear(year,month,day)])
+    images_time.append([year,month,day,datelib.date_to_fracyear(year,month,day)])
   
   N = len(images) # number of images
   images_labels = ['a','b','c','d','e']
@@ -213,11 +211,11 @@ if plot_images == 1:
   gs.update(left=0.02,wspace=0.02,hspace=0.02,top=0.98,right=0.9)
   for i in range(0,N):
   
-    xdem,ydem,zdem,demtime = elevation.grid_near_time(images_time[i][3],glacier)
-    xvel,yvel,uvel,vvel,vvel,vtime = velocity.tsx_near_time(images_time[i][3],glacier)
+    xdem,ydem,zdem,demtime = zslib.grid_near_time(images_time[i][3],glacier)
+    xvel,yvel,uvel,vvel,vvel,vtime = vellib.tsx_near_time(images_time[i][3],glacier)
     #if i == 0:
-      #xmask,ymask,mask = icemask.load(glacier,np.min(xvel),np.max(xvel),np.min(yvel),np.max(yvel),100)
-    xf,yf,zabovefloat = flotation.extent(xdem,ydem,zdem,demtime,glacier,rho_i=917.0,rho_sw=1020.0,bedsource='cresis',verticaldatum='geoid')
+      #xmask,ymask,mask = masklib.load(glacier,np.min(xvel),np.max(xvel),np.min(yvel),np.max(yvel),100)
+    xf,yf,zabovefloat = floatlib.extent(xdem,ydem,zdem,demtime,glacier,rho_i=917.0,rho_sw=1020.0,bedsource='cresis',verticaldatum='geoid')
   
     for j in [0,1,3]:
       ax = plt.subplot(gs[j,i])
@@ -229,15 +227,15 @@ if plot_images == 1:
       plt.yticks([])
       
     ax = plt.subplot(gs[0,i])
-    year,month,day = fracyear.fracyear_to_date(images_time[i][3])
+    year,month,day = datelib.fracyear_to_date(images_time[i][3])
     plt.text(xmin+500,ymax-1.25e3,str(year)+'-'+str(month)+'-'+str(int(np.floor(day))),backgroundcolor='w',fontsize=10)
     plt.text(xmin+500,ymin+1e3,images_type[i],backgroundcolor='w',fontsize=10)
     plt.text(xmin+500,ymax-3e3,images_labels[i],fontsize=10,fontweight='bold')
     
     ax = plt.subplot(gs[1,i])
     #vvel = np.ma.masked_array(vvel,mask)
-    year,month,day = fracyear.fracyear_to_date(vtime)
-    xfront,yfront,ftime = icefronts.near_time(images_time[i][3],glacier)
+    year,month,day = datelib.fracyear_to_date(vtime)
+    xfront,yfront,ftime = icefrontlib.near_time(images_time[i][3],glacier)
     im = plt.imshow(vvel/1e3,extent=[np.min(xvel),np.max(xvel),np.min(yvel),np.max(yvel)],origin='lower')
     plt.plot(xfront,yfront,'k',linewidth=1.5)
     plt.clim([5,10])
@@ -254,9 +252,9 @@ if plot_images == 1:
       cb.set_label('Speed (km/yr)',fontsize=10)
     
     ax = plt.subplot(gs[2,i])
-    shadeddem = dem_shading.set_shade(zdem,0,220)
+    shadeddem = demshadelib.set_shade(zdem,0,220)
     im = plt.imshow(shadeddem,extent=[np.min(xdem),np.max(xdem),np.min(ydem),np.max(ydem)],origin='lower')
-    year,month,day = fracyear.fracyear_to_date(demtime)
+    year,month,day = datelib.fracyear_to_date(demtime)
     plt.text(xmin+500,ymax-1.25e3,str(year)+'-'+str(month)+'-'+str(int(np.floor(day))),backgroundcolor='w',fontsize=10)
     plt.xlim([xmin,xmax])
     plt.ylim([ymin,ymax])
@@ -273,7 +271,7 @@ if plot_images == 1:
     
     ax = plt.subplot(gs[3,i])
     im=plt.scatter(xf,yf,c=zabovefloat,lw=0,vmin=-25,vmax=25,cmap='RdBu_r',s=3)
-    year,month,day = fracyear.fracyear_to_date(demtime)
+    year,month,day = datelib.fracyear_to_date(demtime)
     plt.text(xmin+500,ymax-1.25e3,str(year)+'-'+str(month)+'-'+str(int(np.floor(day))),backgroundcolor='w',fontsize=10)
     plt.xlim([xmin,xmax])
     plt.ylim([ymin,ymax])
@@ -407,20 +405,20 @@ if plot_overview == 1:
     xTickPos = np.linspace(np.floor(time1)-0.25,np.ceil(time2)-0.25,(np.ceil(time2)-np.floor(time1))*2+1)
     plt.bar(xTickPos, [max(plt.ylim())-min(plt.ylim())] * len(xTickPos), (xTickPos[1]-xTickPos[0]), bottom=min(plt.ylim()), color=['0.85','w'],linewidth=0,zorder=1)
   if glacier == 'Helheim':
-    plt.fill_between([time1,time2],np.ones(2)*flotation.height(zb[ind_eul[0]]-50)-flotation.height(zb[ind_eul[0]]),np.ones(2)*flotation.height(zb[ind_eul[0]]+50)-flotation.height(zb[ind_eul[0]]),
+    plt.fill_between([time1,time2],np.ones(2)*floatlib.height(zb[ind_eul[0]]-50)-floatlib.height(zb[ind_eul[0]]),np.ones(2)*floatlib.height(zb[ind_eul[0]]+50)-floatlib.height(zb[ind_eul[0]]),
     alpha=0.1,facecolor='b',edgecolor='b',antialiased=True,zorder=2)
     plt.plot([time1,time2],[0,0],'b:',linewidth=1.0)
-    plt.errorbar(time_wv,zpt_wv[:,1]-flotation.height(zb[ind_eul[1]]),capsize=1,yerr=zpterror_wv,fmt='o',color=coloptions[1],markersize=3,label='WV')
-    plt.errorbar(time_tdm,zpt_tdm[:,1]-flotation.height(zb[ind_eul[1]]),capsize=1,yerr=zpterror_tdm,fmt='^',color=coloptions[1],markersize=3,label='TDM')
-    plt.plot(time_atm,zpt_atm[:,1]-flotation.height(zb[ind_eul[1]]),'+',color=coloptions[1],markersize=4,label='ATM')
+    plt.errorbar(time_wv,zpt_wv[:,1]-floatlib.height(zb[ind_eul[1]]),capsize=1,yerr=zpterror_wv,fmt='o',color=coloptions[1],markersize=3,label='WV')
+    plt.errorbar(time_tdm,zpt_tdm[:,1]-floatlib.height(zb[ind_eul[1]]),capsize=1,yerr=zpterror_tdm,fmt='^',color=coloptions[1],markersize=3,label='TDM')
+    plt.plot(time_atm,zpt_atm[:,1]-floatlib.height(zb[ind_eul[1]]),'+',color=coloptions[1],markersize=4,label='ATM')
   if glacier == 'Kanger':
-    plt.fill_between([time1,time2],np.ones(2)*flotation.height(zb[ind_eul[2]]-50)-flotation.height(zb[ind_eul[2]]),np.ones(2)*flotation.height(zb[ind_eul[2]]+50)-flotation.height(zb[ind_eul[2]]),
+    plt.fill_between([time1,time2],np.ones(2)*floatlib.height(zb[ind_eul[2]]-50)-floatlib.height(zb[ind_eul[2]]),np.ones(2)*floatlib.height(zb[ind_eul[2]]+50)-floatlib.height(zb[ind_eul[2]]),
     alpha=0.1,facecolor='g',edgecolor='b',antialiased=True,zorder=2)
     plt.plot([time1,time2],[0,0],'g:',linewidth=1.0)
-    plt.errorbar(time_wv,zpt_wv[:,2]-flotation.height(zb[ind_eul[2]]),capsize=1,yerr=zpterror_wv,fmt='o',color=coloptions[2],markersize=3,label='WV')
-    plt.errorbar(time_tdm,zpt_tdm[:,2]-flotation.height(zb[ind_eul[2]]),capsize=1,yerr=zpterror_tdm,fmt='^',color=coloptions[2],markersize=3,label='TDM')
-    plt.errorbar(time_spirit,zpt_spirit[:,2]-flotation.height(zb[ind_eul[2]]),capsize=1,yerr=zpterror_spirit,fmt='v',color=coloptions[2],markersize=3,label='SPIRIT')
-    plt.plot(time_atm,zpt_atm[:,2]-flotation.height(zb[ind_eul[2]]),'+',color=coloptions[2],markersize=4,label='ATM')
+    plt.errorbar(time_wv,zpt_wv[:,2]-floatlib.height(zb[ind_eul[2]]),capsize=1,yerr=zpterror_wv,fmt='o',color=coloptions[2],markersize=3,label='WV')
+    plt.errorbar(time_tdm,zpt_tdm[:,2]-floatlib.height(zb[ind_eul[2]]),capsize=1,yerr=zpterror_tdm,fmt='^',color=coloptions[2],markersize=3,label='TDM')
+    plt.errorbar(time_spirit,zpt_spirit[:,2]-floatlib.height(zb[ind_eul[2]]),capsize=1,yerr=zpterror_spirit,fmt='v',color=coloptions[2],markersize=3,label='SPIRIT')
+    plt.plot(time_atm,zpt_atm[:,2]-floatlib.height(zb[ind_eul[2]]),'+',color=coloptions[2],markersize=4,label='ATM')
   x_formatter = matplotlib.ticker.ScalarFormatter(useOffset=False)
   ax.xaxis.set_major_formatter(x_formatter)
   ax.xaxis.set_minor_locator(AutoMinorLocator(2))
@@ -452,20 +450,20 @@ if plot_overview == 1:
     xTickPos = np.linspace(np.floor(time1)-0.25,np.ceil(time2)-0.25,(np.ceil(time2)-np.floor(time1))*2+1)
     plt.bar(xTickPos, [max(plt.ylim())-min(plt.ylim())] * len(xTickPos), (xTickPos[1]-xTickPos[0]), bottom=min(plt.ylim()), color=['0.85','w'],linewidth=0,zorder=1)
   if glacier == 'Helheim':
-		plt.fill_between([time1,time2],np.ones(2)*flotation.height(zb[ind_eul[0]]-50)-flotation.height(zb[ind_eul[0]]),np.ones(2)*flotation.height(zb[ind_eul[0]]+50)-flotation.height(zb[ind_eul[0]]),
+		plt.fill_between([time1,time2],np.ones(2)*floatlib.height(zb[ind_eul[0]]-50)-floatlib.height(zb[ind_eul[0]]),np.ones(2)*floatlib.height(zb[ind_eul[0]]+50)-floatlib.height(zb[ind_eul[0]]),
   			alpha=0.1,facecolor='r',edgecolor='r',antialiased=True,zorder=2)
 		plt.plot([time1,time2],[0,0],'r:',linewidth=1.0)
-		plt.errorbar(time_wv,zpt_wv[:,0]-flotation.height(zb[ind_eul[0]]),capsize=1,yerr=zpterror_wv,fmt='o',color=coloptions[0],markersize=3,label='WV')
-		plt.errorbar(time_tdm,zpt_tdm[:,0]-flotation.height(zb[ind_eul[0]]),capsize=1,yerr=zpterror_tdm,fmt='^',color=coloptions[0],markersize=3,label='TDM')
-		plt.plot(time_atm,zpt_atm[:,0]-flotation.height(zb[ind_eul[0]]),'+',color=coloptions[0],markersize=4,label='ATM')
+		plt.errorbar(time_wv,zpt_wv[:,0]-floatlib.height(zb[ind_eul[0]]),capsize=1,yerr=zpterror_wv,fmt='o',color=coloptions[0],markersize=3,label='WV')
+		plt.errorbar(time_tdm,zpt_tdm[:,0]-floatlib.height(zb[ind_eul[0]]),capsize=1,yerr=zpterror_tdm,fmt='^',color=coloptions[0],markersize=3,label='TDM')
+		plt.plot(time_atm,zpt_atm[:,0]-floatlib.height(zb[ind_eul[0]]),'+',color=coloptions[0],markersize=4,label='ATM')
   if glacier == 'Kanger':
-		plt.fill_between([time1,time2],np.ones(2)*flotation.height(zb[ind_eul[1]]-50)-flotation.height(zb[ind_eul[1]]),np.ones(2)*flotation.height(zb[ind_eul[1]]+50)-flotation.height(zb[ind_eul[1]]),
+		plt.fill_between([time1,time2],np.ones(2)*floatlib.height(zb[ind_eul[1]]-50)-floatlib.height(zb[ind_eul[1]]),np.ones(2)*floatlib.height(zb[ind_eul[1]]+50)-floatlib.height(zb[ind_eul[1]]),
   			alpha=0.1,facecolor='b',edgecolor='b',antialiased=True,zorder=2)
 		plt.plot([time1,time2],[0,0],'b:',linewidth=1.0)
-		plt.errorbar(time_wv,zpt_wv[:,1]-flotation.height(zb[ind_eul[1]]),capsize=1,yerr=zpterror_wv,fmt='o',color=coloptions[1],markersize=3,label='WV')
-		plt.errorbar(time_tdm,zpt_tdm[:,1]-flotation.height(zb[ind_eul[1]]),capsize=1,yerr=zpterror_tdm,fmt='^',color=coloptions[1],markersize=3,label='TDM')
-		plt.errorbar(time_spirit,zpt_spirit[:,1]-flotation.height(zb[ind_eul[1]]),capsize=1,yerr=zpterror_spirit,fmt='v',color=coloptions[1],markersize=3,label='SPIRIT')
-		plt.plot(time_atm,zpt_atm[:,1]-flotation.height(zb[ind_eul[1]]),'+',color=coloptions[1],markersize=4,label='ATM')
+		plt.errorbar(time_wv,zpt_wv[:,1]-floatlib.height(zb[ind_eul[1]]),capsize=1,yerr=zpterror_wv,fmt='o',color=coloptions[1],markersize=3,label='WV')
+		plt.errorbar(time_tdm,zpt_tdm[:,1]-floatlib.height(zb[ind_eul[1]]),capsize=1,yerr=zpterror_tdm,fmt='^',color=coloptions[1],markersize=3,label='TDM')
+		plt.errorbar(time_spirit,zpt_spirit[:,1]-floatlib.height(zb[ind_eul[1]]),capsize=1,yerr=zpterror_spirit,fmt='v',color=coloptions[1],markersize=3,label='SPIRIT')
+		plt.plot(time_atm,zpt_atm[:,1]-floatlib.height(zb[ind_eul[1]]),'+',color=coloptions[1],markersize=4,label='ATM')
   x_formatter = matplotlib.ticker.ScalarFormatter(useOffset=False)
   ax.xaxis.set_major_formatter(x_formatter)
   ax.xaxis.set_minor_locator(AutoMinorLocator(2))
@@ -581,21 +579,21 @@ if plot_overview == 1:
   
   # Image for plotting
   if glacier == "Helheim":
-    imagetime = fracyear.date_to_fracyear(2014,7,4)
-    ximage,yimage,image = geotiff.readrgb(os.path.join(os.getenv("DATA_HOME"),"Imagery/Landsat/Helheim/TIF/20140704140535_LC82330132014185LGN00.tif"))
+    imagetime = datelib.date_to_fracyear(2014,7,4)
+    ximage,yimage,image = geotifflib.readrgb(os.path.join(os.getenv("DATA_HOME"),"Imagery/Landsat/Helheim/TIF/20140704140535_LC82330132014185LGN00.tif"))
   elif glacier == "Kanger":
-    imagetime = fracyear.date_to_fracyear(2014,7,6)
-    ximage,yimage,image = geotiff.readrgb(os.path.join(os.getenv("DATA_HOME"),"Imagery/Landsat/Kanger/TIF/20140706135251_LC82310122014187LGN00.tif"))
+    imagetime = datelib.date_to_fracyear(2014,7,6)
+    ximage,yimage,image = geotifflib.readrgb(os.path.join(os.getenv("DATA_HOME"),"Imagery/Landsat/Kanger/TIF/20140706135251_LC82310122014187LGN00.tif"))
 
   # Load velocity record
   xvel = np.arange(np.min(ximage),np.max(ximage),100)
   yvel = np.arange(np.min(yimage),np.max(yimage),100)
-  vx,vy = velocity.inversion_3D(glacier,xvel,yvel,imagetime,dir_velocity_out='none',blur=False)
+  vx,vy = vellib.inversion_3D(glacier,xvel,yvel,imagetime,dir_velocity_out='none',blur=False)
   vel = np.sqrt(vx**2+vy**2)
   del vx,vy
 
   # Load mask
-  xmask,ymask,mask = icemask.load_grid(glacier,np.min(xvel),np.max(xvel),np.min(yvel),np.max(yvel),100,icefront_time=fracyear.date_to_fracyear(2014,7,4))
+  xmask,ymask,mask = masklib.load_grid(glacier,np.min(xvel),np.max(xvel),np.min(yvel),np.max(yvel),100,icefront_time=datelib.date_to_fracyear(2014,7,4))
   vel_masked = np.ma.masked_array(vel,mask)
   
   fig = plt.figure(figsize=(3,3))
@@ -785,7 +783,7 @@ if plot_years == 1:
 
 if plot_radargram == 1:
 
-  flowline_v,flowline_t,termini = velocity.velocity_along_flowline(x,y,glacier,cutoff='terminus',data='TSX')
+  flowline_v,flowline_t,termini = vellib.velocity_along_flowline(x,y,glacier,cutoff='terminus',data='TSX')
   flowline_tint=np.linspace(2008.0,2015,1051)
   term_int=np.zeros([len(flowline_tint),1])
   flowline_vint = np.zeros([len(dists),len(flowline_tint)])
@@ -892,7 +890,7 @@ if plot_radargram == 1:
 if plot_bed == 1:
 
   # Get morlighem bed
-  zb_morlighem = bed.morlighem_pts(x,y,verticaldatum='geoid')
+  zb_morlighem = bedlib.morlighem_pts(x,y,verticaldatum='geoid')
   if glacier == 'Helheim':
     ind = np.where(x > 309900)[0]
     zb_morlighem[ind] = 'NaN'
@@ -920,7 +918,7 @@ if plot_bed == 1:
   elif glacier == "Kanger":
     years = ['2008','2009a','2009b','2012','2013','2014']
   for k in range(0,len(years)):
-    bedpts = bed.cresis(years[k],glacier,'geoid')
+    bedpts = bedlib.cresis(years[k],glacier,'geoid')
     minind = np.argmin(abs(x-np.min(bedpts[:,0])))
     maxind = np.argmin(abs(x-np.max(bedpts[:,0])))
     ind = range(minind,maxind)
@@ -984,7 +982,7 @@ if plot_bed == 1:
   # Plot bed profiles
   plt.plot(x,y,color='k',linewidth=1.5)
   for i in range(0,len(years)):
-    bedpts = bed.cresis(years[i],glacier,'geoid')
+    bedpts = bedlib.cresis(years[i],glacier,'geoid')
     plt.plot(bedpts[:,0],bedpts[:,1],label=years[i],color=colors[i])
   plt.legend(fontsize=10,ncol=2)
   ax.set_xticklabels([])
