@@ -182,7 +182,7 @@ def readrgb(filename,xmin=-np.Inf,xmax=np.Inf,ymin=-np.Inf,ymax=np.Inf):
   return (x[j0:j1],y[i0:i1],znormal[i0:i1,j0:j1,:])
 
 
-def write_from_grid(x,y,zgrid,nodatavalue,outfile):
+def write_from_grid(x,y,zgrid,nodatavalue,outfile,proj="+proj=stere +lat_0=90 +lat_ts=70 +lon_0=-45 +k=1 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs"):
 
   nrows,ncols = np.shape(zgrid)
   xres = x[1]-x[0]
@@ -194,7 +194,7 @@ def write_from_grid(x,y,zgrid,nodatavalue,outfile):
   output_raster.SetGeoTransform(geotransform)  
   srs = osr.SpatialReference()                 
   
-  srs.ImportFromProj4("+proj=stere +lat_0=90 +lat_ts=70 +lon_0=-45 +k=1 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs")               
+  srs.ImportFromProj4(proj)               
   output_raster.SetProjection( srs.ExportToWkt() )   
   output_raster.GetRasterBand(1).WriteArray(np.array(zgrid))
   output_raster.GetRasterBand(1).SetNoDataValue(nodatavalue)  
