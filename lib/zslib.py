@@ -469,7 +469,7 @@ def lvis_at_pts(xpts,ypts,glacier,years='all',maxdist=200,verticaldatum='geoid',
 
   return zpts,zptstd,time
 
-def dem_error(glacier,date,sensor):
+def dem_error(glacier,filename,sensor):
   
   '''
   error = dem_error(glacier,date,sensor)
@@ -489,16 +489,20 @@ def dem_error(glacier,date,sensor):
     error = 4.0
   else:
     if sensor == 'TDM':
-      file = os.path.join(os.getenv("DATA_HOME"),'Elevation/TDM/'+glacier+'/'+glacier+'_TDM_align_results.txt')
+      file = os.path.join(os.getenv("DATA_HOME"),'Elevation/TDM/'+glacier+'/'+glacier+'_TDM_robust_stats_after_fn.csv')
     elif sensor == 'WV':
-      file = os.path.join(os.getenv("DATA_HOME"),'Elevation/Worldview/'+glacier+'/'+glacier+'_align_results.txt')
+      file = os.path.join(os.getenv("DATA_HOME"),'Elevation/Worldview/'+glacier+'/'+glacier+'_robust_stats_after_fn.csv')
 
     fid = open(file)
     lines = fid.readlines()
     for line in lines:
-      p = line.split()
-      if p[0][0:13] == str(date):
-        error = float(p[-1])
+      p = line.split(",")
+      if sensor == 'TDM':
+        if p[0][0:25] == str(filename):
+          error = float(p[-3])
+      else:
+        if p[0] == str(filename):
+          error = float(p[-3])
          
   return error
    
@@ -616,10 +620,10 @@ def dem_grid(glacier,xmin=-np.Inf,xmax=np.Inf,ymin=-np.Inf,ymax=np.Inf,
         print "Loading ", DIR
         if os.path.isfile(WVDIR+DIR):
           xwv,ywv,zwv = geotifflib.read(WVDIR+DIR) 
-          error[i] = dem_error(glacier,date,'WV')
+          error[i] = dem_error(glacier,DIR[0:47],'WV')
         elif os.path.isfile(TDMDIR+DIR):
           xwv,ywv,zwv = geotifflib.read(TDMDIR+DIR) 
-          error[i] = dem_error(glacier,date,'TDM')
+          error[i] = dem_error(glacier,DIR[0:25],'TDM')
         else:
           xwv,ywv,zwv = geotifflib.read(SPIRITDIR+DIR)
           error[i] = dem_error(glacier,date,'SPIRIT')
@@ -663,7 +667,7 @@ def dem_grid(glacier,xmin=-np.Inf,xmax=np.Inf,ymin=-np.Inf,ymax=np.Inf,
   else:
     return x,y,zs_nonnan,time_nonnan,error_nonnan
 
-def dem_along_flowline(xpts,ypts,glacier,years='all',cutoff='terminus',verticaldatum='geoid',filt_len='none',method='linear'):
+def dem_along_flowline(xpts,ypts,glacier,years='all',cutoff='terminus',verticaldatum='geoid',filt_len='none',method='linear',data='all'):
 
   '''
   zs,times = dem_along_flowline(xpts, ypts, glacier ,years='all', 
@@ -702,50 +706,53 @@ def dem_along_flowline(xpts,ypts,glacier,years='all',cutoff='terminus',verticald
 # Find dates where we have data in the desired region
   dates=[]
   #For Worldview...
-  for DIR in WVDIRs:
-    if (DIR[0:8] not in dates) and DIR.startswith('2') and DIR.endswith(filestring):
-      xmin,xmax,ymin,ymax = geotifflib.extent(WVDIR+DIR)
-      within = np.where((xpts > xmin) & (xpts < xmax) & (ypts > ymin) & (ypts < ymax))[0]
-      if len(within) > 0:
-        if not(years) or (years=='all'):
-          dates.append(DIR[0:8])
-        else: 
-          if len(years) == 4:
-            if DIR[0:4] in years:
-              dates.append(DIR[0:8])
-          else:
-            if DIR[0:8] in years:
-              dates.append(DIR[0:8])
+  if ('WV' in data) or (data == 'all'):
+    for DIR in WVDIRs:
+      if (DIR[0:8] not in dates) and DIR.startswith('2') and DIR.endswith(filestring):
+        xmin,xmax,ymin,ymax = geotifflib.extent(WVDIR+DIR)
+        within = np.where((xpts > xmin) & (xpts < xmax) & (ypts > ymin) & (ypts < ymax))[0]
+        if len(within) > 0:
+          if not(years) or (years=='all'):
+            dates.append(DIR[0:8])
+          else: 
+            if len(years) == 4:
+              if DIR[0:4] in years:
+                dates.append(DIR[0:8])
+            else:
+              if DIR[0:8] in years:
+                dates.append(DIR[0:8])
   # For TDM...
-  for DIR in TDMDIRs:
-    if DIR.endswith(filestring):
-      xmin,xmax,ymin,ymax = geotifflib.extent(TDMDIR+DIR)
-      within = np.where((xpts > xmin) & (xpts < xmax) & (ypts > ymin) & (ypts < ymax))[0]
-      if len(within) > 0:
-        if not(years) or (years=='all'):
-          dates.append(DIR[0:8])
-        else:
-          if len(years) == 4:
-            if DIR[0:4] in years:
-              dates.append(DIR[0:8])
+  if ('TDM' in data) or (data == 'all'):
+    for DIR in TDMDIRs:
+      if DIR.endswith(filestring):
+        xmin,xmax,ymin,ymax = geotifflib.extent(TDMDIR+DIR)
+        within = np.where((xpts > xmin) & (xpts < xmax) & (ypts > ymin) & (ypts < ymax))[0]
+        if len(within) > 0:
+          if not(years) or (years=='all'):
+            dates.append(DIR[0:8])
           else:
-            if DIR[0:8] in years:
-              dates.append(DIR[0:8])
+            if len(years) == 4:
+              if DIR[0:4] in years:
+                dates.append(DIR[0:8])
+            else:
+              if DIR[0:8] in years:
+                dates.append(DIR[0:8])
   # For SPIRIT...
-  for DIR in SPIRITDIRs:
-    if DIR.endswith(filestring):
-      xmin,xmax,ymin,ymax = geotifflib.extent(SPIRIT+DIR)
-      within = np.where((xpts > xmin) & (xpts < xmax) & (ypts > ymin) & (ypts < ymax))[0]
-      if len(within) > 0:
-        if not(years) or (years=='all'):
-          dates.append(DIR[0:8])
-        else:
-          if len(years) == 4:
-            if DIR[0:4] in years:
-              dates.append(DIR[0:8])
+  if ('SPIRIT' in data) or (data == 'all'):
+    for DIR in SPIRITDIRs:
+      if DIR.endswith(filestring):
+        xmin,xmax,ymin,ymax = geotifflib.extent(SPIRIT+DIR)
+        within = np.where((xpts > xmin) & (xpts < xmax) & (ypts > ymin) & (ypts < ymax))[0]
+        if len(within) > 0:
+          if not(years) or (years=='all'):
+            dates.append(DIR[0:8])
           else:
-            if DIR[0:8] in years:
-              dates.append(DIR[0:8])
+            if len(years) == 4:
+              if DIR[0:4] in years:
+                dates.append(DIR[0:8])
+            else:
+              if DIR[0:8] in years:
+                dates.append(DIR[0:8])
   
 
   # Set up output 
@@ -842,7 +849,7 @@ def dem_at_pts(xpts,ypts,glacier,years='all',verticaldatum='geoid',cutoff='none'
   '''
   
   if method == 'linear':
-    wv,times = dem_along_flowline(xpts,ypts,glacier,years=years,cutoff=cutoff,verticaldatum=verticaldatum,method=method)
+    wv,times = dem_along_flowline(xpts,ypts,glacier,years=years,cutoff=cutoff,verticaldatum=verticaldatum,method=method,data=data)
     time = times[:,0]
     zpts = wv
     zpts_error = np.zeros([len(time)])
