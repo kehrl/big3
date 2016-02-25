@@ -7,7 +7,7 @@ import os
 import sys
 import shapefile
 import datelib
-from shapely.geometry import LineString
+from shapely.geometry import LineString, Polygon
 import numpy as np
 from subprocess import call
 import glob
@@ -17,7 +17,7 @@ def cleanup(glacier,type='Icefronts'):
   '''
   cleanup(glacier,type='icefront')
   
-  QGIS stupidly doesn't cleanup the shapefiles after you edit/delete features,
+  QGIS stupidly doesn't (always) cleanup the shapefiles after you edit/delete features,
   so we have to do it manually. Basically I save a temporary shapefile and then save it
   again with its original name. Saving the file automatically cleans the file. There is no 
   output.
@@ -153,6 +153,102 @@ def distance_along_flowline(x,y,dists,glacier,type='icefront',imagesource=False,
   else:
     return terminus_val, terminus_time, terminus_source
 
+def box_method(glacier,imagesource=False,time1=-np.inf, time2=np.inf):
+  
+  DIRI=os.path.join(os.getenv("DATA_HOME"),"ShapeFiles/IceFronts/"+glacier+"/")  
+  files = os.listdir(DIRI)
+
+  # Load shapefile for box
+  sf_box = shapefile.Reader(os.path.join(os.getenv("DATA_HOME"),"ShapeFiles/FluxGates/"+glacier+"/box_method.shp"))
+  shapes_box = sf_box.shapes()
+  
+  # Lines that define back of box
+  pts_north = np.array(shapes_box[0].points)
+  line_north = LineString(pts_north)
+  pts_south = np.array(shapes_box[1].points)
+  line_south = LineString(pts_south)
+  pts_west = np.array(shapes_box[2].points)
+
+  # Box width
+  width = np.sqrt((pts_west[0][0]-pts_west[1][0])**2+(pts_west[0][1]-pts_west[1][1])**2)
+
+  # Set up variables for loading
+  terminus_val = []
+  terminus_time = []
+  sensorname = []
+
+  n = 0
+  for file in files:
+    intersect_north = []
+    intersect_south = []
+    if file.endswith('.shp') and (not "moon" in file) and (not "Landsat7" in file):
+      sf = shapefile.Reader(DIRI+file)
+      shapes = sf.shapes()
+      if len(shapes) > 1:
+        print "check ",file
+      else:
+        pts_terminus = np.array(shapes[0].points[:])
+        if pts_terminus[0,1] > pts_terminus[-1,1]:
+          pts_terminus = np.flipud(pts_terminus)
+        # Only look for intersection if there are points in the shape
+        if len(pts_terminus) > 0:
+          line_terminus = LineString(termpts)
+          # Find intersection with sides of box
+          intersect_north = (line_north.intersection(line_terminus))
+          intersect_south = (line_south.intersection(line_terminus))
+          if intersect_north.is_empty or intersect_south.is_empty:
+            print "Ice front doesn't extend across entire domain ", file
+          else:
+            ind_in_box = np.where((pts_terminus[:,1] < intersect_north.y) & (pts_terminus[:,1] > intersect_south.y))[0]
+            pts_box = np.row_stack([np.array(pts_west),np.r_[intersect_south.xy],pts_terminus[ind_in_box,:],np.r_[intersect_north.xy]])
+            box = Polygon(pts_box)
+            A = box.area
+    
+            # Terminus position
+            terminus_val.append( A/width )
+        
+            # Time of that terminus position
+            if ("TSX" in file) or ("moon" in file):
+              terminus_time.append(datelib.doy_to_fracyear(float(file[0:4]),float(file[5:8])))
+              sensorname.append('TSX')
+            elif ("ASTER" in file):
+              terminus_time.append(datelib.date_to_fracyear(float(file[0:4]),float(file[5:7]),float(file[8:10])))
+              sensorname.append('ASTER')
+            elif ("Landsat" in file):
+              terminus_time.append(datelib.date_to_fracyear(float(file[0:4]),float(file[5:7]),float(file[8:10])))
+              sensorname.append('Landsat8')
+            elif ("WV" in file):
+              terminus_time.append(datelib.date_to_fracyear(float(file[0:4]),float(file[5:7]),float(file[8:10])))
+              sensorname.append('WV')
+            else:
+              sys.exit("Don't know that date format for "+file)
+  
+  terminus_time = np.array(terminus_time)
+  terminus_val = np.array(terminus_val)
+  terminus_source = np.array(sensorname)
+
+  # Need to double check that we imported the same number of times and 
+  # terminus values. If we didn't something is horribly wrong.
+  if len(terminus_time) == len(terminus_val):
+    sortind=np.argsort(terminus_time,0)
+    terminus_time = terminus_time[sortind]
+    terminus_val = terminus_val[sortind]
+    terminus_source = terminus_source[sortind]
+  else:
+    sys.exit("Length of terminus values and times are different. Something is very wrong")
+
+  # Subset record to cover only a certain time period if time1,time2 are set.
+  ind = np.where((terminus_time > time1) & (terminus_time < time2))[0]
+  terminus_time = terminus_time[ind]
+  terminus_val = terminus_val[ind]
+  terminus_source = terminus_source[ind]
+  
+  # Sometimes we will want to know the image source for each digitized ice front position.
+  if imagesource == False:
+    return terminus_val, terminus_time
+  else:
+    return terminus_val, terminus_time, terminus_source
+
 def quantify_uncertainty(x,y,dists,glacier,time1,time2):
   
   # Get ice front positions
@@ -274,7 +370,7 @@ def near_time(time,glacier,type='all'):
   best_x,best_y,best_time=near_time(time,glacier)
   
   Inputs:
-  time: time when we want terminus position
+  time: fractional year when we want terminus position
   glacier: glacier name
   type: data source for ice front position (TSX, WV, Landsat, or all)
   
