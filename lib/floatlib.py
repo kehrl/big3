@@ -84,14 +84,15 @@ def height(zb,rho_i=917.0,rho_sw=1020.0):
   # Set up output
   try:
     floatheight = np.zeros(len(zb))
-    floatheight[:] = 'NaN' # no flotation height for bed elevations above sea level
+    floatheight[:] = float('NaN') # no flotation height for bed elevations above sea level
   
     # Find places where bed is below sea level
-    ind = np.where(zb < 0)[0]
+    nonnan = np.where(~(np.isnan(zb)))[0]
+    ind = np.where(zb[nonnan] < 0)[0]
   
     # Find flotation height
-
-    floatheight[ind] = (1-rho_sw/rho_i)*zb[ind]
+    floatheight[nonnan[ind]] = (1-rho_sw/rho_i)*zb[nonnan[ind]]
+    
   except:
     if zb < 0:
       floatheight = (1-rho_sw/rho_i)*zb
@@ -103,7 +104,7 @@ def height(zb,rho_i=917.0,rho_sw=1020.0):
 def extent(xs,ys,zs,ztime,glacier,rho_i=917.0,rho_sw=1020.0,bedsource='cresis',verticaldatum='geoid'):
 
   '''
-  This function takes an array of surface elevations and finds the height above flotation,
+  This function finds the height above (or below) flotation for an array of surface elevations,
   according to the Morlighem bed DEM or CreSIS radar picks. Right now it's only set up to 
   work for cresis radar picks.
   
@@ -137,7 +138,7 @@ def extent(xs,ys,zs,ztime,glacier,rho_i=917.0,rho_sw=1020.0,bedsource='cresis',v
   except: 
     N = 1
   zabovefloat=np.zeros([len(zfloat),N])
-  zabovefloat[:,:] = 'NaN'
+  zabovefloat[:,:] = float('NaN')
   for i in range(0,N): 
   
     # Get glacier extent so we're only checking if the glacier is floating where there is glacier ice

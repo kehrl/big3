@@ -153,7 +153,7 @@ def velocity_at_eulpoints(xpt,ypt,glacier,data='all',xy_velocities='False'):
     velocities[count,:] = fv(np.array([ypt,xpt]).T) 
     velocities_x[count,:] = fvx(np.array([ypt,xpt]).T)
     velocities_y[count,:] = fvy(np.array([ypt,xpt]).T)
-    error[count,:] = velocities[count,:]*(fex(np.array([ypt,xpt]).T)/fvx(np.array([ypt,xpt]).T)+fey(np.array([ypt,xpt]).T)/fvy(np.array([ypt,xpt]).T))        
+    error[count,:] = velocities[count,:]*np.sqrt((fex(np.array([ypt,xpt]).T)/fvx(np.array([ypt,xpt]).T))**2+(fey(np.array([ypt,xpt]).T)/fvy(np.array([ypt,xpt]).T))**2)        
     
     count = count + 1
     
@@ -353,7 +353,8 @@ def velocity_at_lagpoints(xf,yf,dists,pts,glacier,data='all'):
     
     # Find velocities 
     velocities[count,:] = fv(np.array([ypts,xpts]).T)  
-    error[count,:] = np.sqrt(fex(np.array([ypts,xpts]).T)**2+fey(np.array([ypts,xpts]).T)**2)
+    error[count,:] = velocities[count,:]*np.sqrt((fex(np.array([ypt,xpt]).T)/fvx(np.array([ypt,xpt]).T))**2+(fey(np.array([ypt,xpt]).T)/fvy(np.array([ypt,xpt]).T))**2)        
+    
      
     positions[count,:] = flowdists
     xpts_all[count,:] = xpts
