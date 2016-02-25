@@ -520,7 +520,7 @@ def dem_grid(glacier,xmin=-np.Inf,xmax=np.Inf,ymin=-np.Inf,ymax=np.Inf,
   data: type of data you want (WV, TDM, SPIRIT, or all)
   glacier: Kanger or Helheim
   verticaldatum: ellipsoid or geoid
-  return_error: return median co-registration errors if set to true
+  return_error: return NMAD co-registration errors if set to true
   
   Output: 
   x,y,zs_nonnan,time_nonnan: numpy array of surface elevations on the grid x,y for times_nonnan
@@ -667,7 +667,7 @@ def dem_grid(glacier,xmin=-np.Inf,xmax=np.Inf,ymin=-np.Inf,ymax=np.Inf,
   else:
     return x,y,zs_nonnan,time_nonnan,error_nonnan
 
-def dem_along_flowline(xpts,ypts,glacier,years='all',cutoff='terminus',verticaldatum='geoid',filt_len='none',method='linear',data='all'):
+def dem_along_flowline(xpts,ypts,glacier,years='all',cutoff='terminus',verticaldatum='geoid',filt_len='none',method='linear',data='all',return_error=False):
 
   '''
   zs,times = dem_along_flowline(xpts, ypts, glacier ,years='all', 
@@ -759,7 +759,7 @@ def dem_along_flowline(xpts,ypts,glacier,years='all',cutoff='terminus',verticald
   zs = np.zeros((len(dates),len(xpts)))
   zs[:,:] = float('nan')
   times = np.zeros((len(dates),2))
-
+  error = np.zeros(len(dates))
   for i in range(0,len(dates)):
     date = dates[i]
     times[i,0] = datelib.date_to_fracyear(float(date[0:4]),float(date[4:6]),float(date[6:]))
@@ -768,11 +768,14 @@ def dem_along_flowline(xpts,ypts,glacier,years='all',cutoff='terminus',verticald
       if DIR.startswith(date) and (DIR.endswith(filestring) or DIR.endswith(spiritstring)): 
         #print "Loading data from "+DIR+"\n"
         if os.path.isfile(WVDIR+DIR):
-          x,y,z = geotifflib.read(WVDIR+DIR)
+          x,y,z = geotifflib.read(WVDIR+DIR) 
+          error[i] = dem_error(glacier,DIR[0:47],'WV')
         elif os.path.isfile(TDMDIR+DIR):
-          x,y,z = geotifflib.read(TDMDIR+DIR)
+          x,y,z = geotifflib.read(TDMDIR+DIR) 
+          error[i] = dem_error(glacier,DIR[0:25],'TDM')
         else:
           x,y,z = geotifflib.read(SPIRITDIR+DIR)
+          error[i] = dem_error(glacier,date,'SPIRIT')
 
         dem = scipy.interpolate.RegularGridInterpolator([y,x],z,method=method)
     
@@ -805,6 +808,7 @@ def dem_along_flowline(xpts,ypts,glacier,years='all',cutoff='terminus',verticald
   sortind = np.argsort(times[:,0])
   times = times[sortind,:]
   zs = zs[sortind,:]
+  error = error[sortind]
   
   # Print warning if removing points in front of ice front
   if cutoff == 'terminus':
@@ -822,8 +826,11 @@ def dem_along_flowline(xpts,ypts,glacier,years='all',cutoff='terminus',verticald
 
         zs[i,nonnan]=signal.filtfilt(b,a,zs[i,nonnan])
   
-  return zs,times
-
+  if return_error == False:    
+    return zs,times
+  else:
+    return zs,times,error
+  
 def dem_at_pts(xpts,ypts,glacier,years='all',verticaldatum='geoid',cutoff='none',method='linear',radius=200,data='all'):
 
   '''
@@ -849,10 +856,8 @@ def dem_at_pts(xpts,ypts,glacier,years='all',verticaldatum='geoid',cutoff='none'
   '''
   
   if method == 'linear':
-    wv,times = dem_along_flowline(xpts,ypts,glacier,years=years,cutoff=cutoff,verticaldatum=verticaldatum,method=method,data=data)
+    zpts,times,zpts_error = dem_along_flowline(xpts,ypts,glacier,years=years,cutoff=cutoff,verticaldatum=verticaldatum,method=method,data=data,return_error=True)
     time = times[:,0]
-    zpts = wv
-    zpts_error = np.zeros([len(time)])
   elif method == 'average':
     xmin = np.min(xpts)-radius*3
     ymin = np.min(ypts)-radius*3
