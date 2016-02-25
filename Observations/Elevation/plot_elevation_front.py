@@ -56,7 +56,7 @@ for j in range(0,nrow):
     plt.subplot(gs[j,i])
     wvind = np.where(np.floor(timewv)==year)[0][i]
     date = datelib.fracyear_to_date(timewv[wvind])
-    shadeddem = demshadelib..set_shade(zwv[:,:,wvind],0,220)
+    shadeddem = demshadelib.set_shade(zwv[:,:,wvind],0,220)
     plt.imshow(shadeddem,extent=[np.min(xwv),np.max(xwv),np.min(ywv),np.max(ywv)],clim=[0,200],origin='lower')
     #plt.scatter(xf,yf,c=zabovefloat[:,wvind],s=3.0**2.0,cmap='gist_gray_r',edgecolors='none',vmin=-10,vmax=10)
     plt.xlim([np.min(xwv),np.max(xwv)])

@@ -2,7 +2,7 @@ import os
 import sys
 import numpy as np
 sys.path.append(os.path.join(os.getenv("CODE_HOME"),"Modules/demtools"))
-import glaclib, zslib, floatlib, datelib, demshadelib
+import glaclib, zslib, floatlib, datelib, demshadelib, bedlib
 import matplotlib.pyplot as plt
 import matplotlib, scipy
 from matplotlib.ticker import AutoMinorLocator
@@ -23,13 +23,13 @@ elif glacier == 'Kanger':
   bedsource = 'cresis'
 
 if glacier == 'Helheim':
-  xmin = 305000.0
-  xmax = 314000.0
+  xmin = 304700.0
+  xmax = 313600.0
   ymin = -2582000.0
-  ymax = -2570000.0
+  ymax = -2573000.0
 elif glacier == 'Kanger':
-  xmin = 480000.0
-  xmax = 497000.0
+  xmin = 484400.0
+  xmax = 497260.0
   ymin = -2298000.0
   ymax = -2282000.0
 
@@ -37,7 +37,7 @@ elif glacier == 'Kanger':
 # Flowline #
 ############
 
-x,y,zb,dists = glaclib.load_flowline(glacier,shapefilename='flowline_flightline',filt_len=2.0e3)
+x,y,zb,dists = glaclib.load_flowline(glacier,shapefilename='flowline_flightline',filt_len=2.0e3,verticaldatum='geoid',bedsource='smith')
 
 ############
 # Get DEMs #
@@ -46,9 +46,37 @@ x,y,zb,dists = glaclib.load_flowline(glacier,shapefilename='flowline_flightline'
 xdem,ydem,zdem,timedem,errordem = zslib.dem_grid(glacier,xmin,xmax,ymin,ymax,
 	years='all',verticaldatum='geoid',return_error=True)
 
+####################################
+# Get bed elevations near flowline #
+####################################
+
+# Get radar thicknesses close to flightline
+cresis = bedlib.cresis('all',glacier)
+if glacier == 'Helheim':
+	cresis2001 = bedlib.cresis('2001',glacier)
+	cresis = np.row_stack([cresis,cresis2001])
+
+cutoff = 200.
+dcresis = []
+zcresis = []
+tcresis = []
+for i in range(0,len(cresis[:,0])):
+	mindist = np.min(np.sqrt((cresis[i,0]-x)**2+(cresis[i,1]-(y))**2))
+	if mindist < cutoff:
+		minind = np.argmin(np.sqrt((cresis[i,0]-x)**2+(cresis[i,1]-(y))**2))
+		dcresis.append(dists[minind])
+		zcresis.append(cresis[i,2])
+		tcresis.append(cresis[i,4])
+dcresis = np.array(dcresis)
+zcresis = np.array(zcresis)
+
+###########################
+# Make plots for each DEM #
+###########################
+
 for i in range(0,len(timedem)):
 
-  plt.figure(figsize=(8,4))
+  plt.figure(figsize=(9,4))
   plt.subplot(121)
   plt.imshow(demshadelib.hillshade(zdem[:,:,i]),extent=[xmin,xmax,ymin,ymax],origin='lower',cmap='Greys_r')
   plt.imshow((zdem[:,:,i]),extent=[xmin,xmax,ymin,ymax],origin='lower',clim=[0,400],cmap='cpt_rainbow',alpha=0.6)
@@ -58,25 +86,37 @@ for i in range(0,len(timedem)):
   plt.xticks([])
   plt.yticks([])
   
-  
   plt.subplot(122)
-  plt.plot(dists/1e3,zb,'k',lw=1.5)
-  f=scipy.interpolate.RegularGridInterpolator((ydem,xdem),zdem[:,:,i],bounds_error = False,method='linear',fill_value=float('nan'))
-  plt.plot(dists/1e3,f((y,x)),'k')
-  plt.plot(dists/1e3,floatlib.shelfbase(f(((y,x)))),'k')
-  plt.xlim([-5,5])
+  plt.plot(dists/1e3,zb,'k',lw=1)
+  plt.plot(dcresis/1e3,zcresis,'.',color='0.7',markersize=3)
+  plt.plot([-10,5],[0,0],'0.8',lw=0.5)
+  f = scipy.interpolate.RegularGridInterpolator((ydem,xdem),zdem[:,:,i],bounds_error = False,method='linear',fill_value=float('nan'))
+  plt.plot(dists/1e3,floatlib.height(zb),'k:')
+  plt.plot(dists/1e3,f((y,x)),'b')
+  plt.plot(dists/1e3,floatlib.shelfbase(f(((y,x)))),'b')
   if glacier == 'Helheim':
     plt.ylim([-800,200])
+    plt.xticks(range(-5,5),fontsize=10)
+    plt.yticks(np.arange(-800,400,200),fontsize=10)
+    plt.xlim([-5,4])
   elif glacier == 'Kanger':
-    plt.ylim([-1000,200])
+    plt.ylim([-1200,200])
+    plt.xticks(np.arange(-10,5,2),fontsize=10)
+    plt.yticks(np.arange(-1200,400,200),fontsize=10)
+    plt.xlim([-10,5])
   year,month,day=datelib.fracyear_to_date(timedem[i])
-  plt.title(str(year)+'-'+str(month)+'-'+str(day))
+  plt.title(str(year)+'-'+str(month)+'-'+str(int(day)))
   
   plt.tight_layout()
-  plt.subplots_adjust(hspace=0.05,wspace=0) 
+  plt.subplots_adjust(hspace=10,wspace=0) 
   
-  plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/movie/"+'{0:02g}'.format(i)+'.png'),format='PNG')
+  plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/movie/"+'{0:02g}'.format(i)+'.png'),format='PNG',dpi=400)
   plt.close()
+
+
+##############
+# Make movie #
+##############
 
 fps=3
 ffmpeg_in_opt = "-r %i" % fps
@@ -85,11 +125,16 @@ ffmpeg_in_opt = "-r %i" % fps
 ffmpeg_out_opt = "-y -an -c:v libx264 -pix_fmt yuv420p"
 #scale='iw/4:-1'"
 
-outmov = 'movie.mp4'
+os.chdir(os.path.join(os.getenv("HOME"),"Bigtmp/movie/"))
+outmov = glacier+'.mp4'
 #cmd = 'ffmpeg {0} -i %04d.jpg {1} {2}'.format(ffmpeg_in_opt, ffmpeg_out_opt, outmov)
 #cmd = 'ffmpeg {0} -pattern_type glob -i *_clip.png {1} {2}'.format(ffmpeg_in_opt, ffmpeg_out_opt, outmov)
 cmd = 'ffmpeg {0} -i %02d.png {1} {2}'.format(ffmpeg_in_opt, ffmpeg_out_opt, outmov)
 
+print cmd
+subprocess.call(cmd, shell=True)
+
+cmd = 'rm *.png'
 print cmd
 subprocess.call(cmd, shell=True)
 
