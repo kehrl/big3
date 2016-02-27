@@ -15,7 +15,6 @@ import gmtColormap
 cpt_rainbow = gmtColormap.get_rainbow()
 plt.register_cmap(cmap=cpt_rainbow)
 
-
 ##########
 # Inputs #
 ##########
