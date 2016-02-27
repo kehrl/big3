@@ -12,13 +12,207 @@ fluxbox_geometry(glacier,fluxgate_filename):
 import os
 import sys
 import shapefile
-import distlib, bedlib, zslib, vellib, meshlib, coordlib, masklib
+import distlib, bedlib, zslib, vellib, meshlib, coordlib, masklib, climlib
 import shapely.geometry
 import numpy as np
 import scipy.interpolate, scipy
 from matplotlib import path
 
-def fluxgate_thinning(glacier,fluxgate_filename,bedsource='smith',dl=20.0):
+def fluxgate(glacier,fluxgate_filename,bedsource='smith',dl=20.0,timing='velocity'):
+
+  '''
+  Inputs:
+  glacier: glacier name
+  fluxgate_filename: fluxgate filename
+  bedsource: should be use CreSIS radar transects or morlighem/smith bed DEM to define the bed elevation?
+  dl: size of blocks for integrating ice flux across fluxgate
+  timing: calculate flux either when we have velocities ('velocity') or surface elevaions ('elevation')
+  '''
+  
+  # Get Shapefiles for flux gates and for glacier extent (so we can calculate surface area accurately)
+  DIR = os.path.join(os.getenv("DATA_HOME"),"ShapeFiles/FluxGates/"+glacier+"/")
+  gate_sf = shapefile.Reader(DIR+fluxgate_filename)
+   
+  # Get end points for flux gates
+  gate_pts = np.array(gate_sf.shapes()[0].points)
+  sortind = np.argsort(gate_pts[:,1])
+  gate_pts = gate_pts[sortind]
+
+  # Calculate length of flux gates (i.e., the "width" of glacier)
+  L = distlib.transect(gate_pts[:,0],gate_pts[:,1])
+  
+  # Get coordinates of points along flux gate
+  l = np.linspace(0,L[-1],np.ceil(L[-1]/dl)+1)
+  dl = l[1]-l[0]
+  l = l[0:-1]+dl/2
+  x = np.interp(l,L,gate_pts[:,0])
+  y = np.interp(l,L,gate_pts[:,1])
+  
+  # Get bed elevation along flux gates
+  if bedsource == 'morlighem':
+    print "Using Morlighem bed DEM, should maybe be changed to CreSIS radar transects or Smith bed DEM"
+    zb = bedlib.morlighem_pts(x,y,verticaldatum='ellipsoid')
+  elif bedsource == 'smith':
+    print "Using Smith bed DEM"
+    zb = bedlib.smith_at_pts(x,y,glacier,verticaldatum='ellipsoid')
+  else:
+    print "Using CreSIS radar products"
+    cresis_all = bedlib.cresis('all',glacier,verticaldatum='ellipsoid')
+
+    # Find radar pick indices for flux gate     
+    zb = np.zeros_like(x)
+    # Find points that are within 200~m of CreSIS transect for interpolation
+    ind = []
+    for i in range(0,len(x)):
+      d = np.min(np.sqrt((x[i]-cresis_all[:,0])**2+(y[i]-cresis_all[:,1])**2))
+      if d < 200.0:
+        ind.append(i)       
+    zb[ind] = scipy.interpolate.griddata(cresis_all[:,0:2],cresis_all[:,2],(x[ind],y[ind]))
+    f = scipy.interpolate.interp1d(l[ind],zb[ind],kind='cubic',bounds_error=False)
+    fex = extrap1d(f)
+    zb[zb == 0] = fex(l[zb==0])
+    filt_len=500.0
+    cutoff=(1/filt_len)/(1/((l[1]-l[0])*2))
+    b,a=scipy.signal.butter(4,cutoff,btype='low')
+    zb = scipy.signal.filtfilt(b,a,zb)
+    #if (glacier == 'Kanger') and (fluxgate_filename == 'fluxgate1_in'):
+    #  zb = zb+20
+    
+  # Get surface elevations
+  zs_all,zs_error,ztime=zslib.dem_at_pts(x,y,glacier,verticaldatum='ellipsoid',method='linear')
+  for i in range(0,len(ztime)):
+    nonnan1 = np.where(zs_all[i,:])[0]
+    if len(nonnan1) < (3./4.)*len(l):
+      zs_all[i,:] = float('nan')
+  
+  # Get velocities
+  vpt,tpt,ept,vxpt,vypt = vellib.velocity_at_eulpoints(x,y,glacier,data='TSX',xy_velocities='True')
+  
+  # Get normal to fluxgate so we can calculate flux through it
+  xperp = np.zeros(len(l))
+  yperp = np.zeros(len(l))
+  for i in range(0,len(l)-1):
+    xperp[i+1] = -(-y[i+1]+y[i])/np.sqrt((y[i+1]-y[i])**2+(x[i+1]-x[i])**2)
+    yperp[i+1] = -(x[i+1]-x[i])/np.sqrt((y[i+1]-y[i])**2+(x[i+1]-x[i])**2)
+  xperp[0] = xperp[1]
+  yperp[0] = yperp[1]
+
+  # Find dates with complete velocity profiles. We will use these profiles to create a 
+  # "shape factor" to fill in discontinuous velocity records.
+  ind=[]
+  for i in range(0,len(tpt)):
+    nans = np.where(np.isnan(vxpt[i,:]))[0]
+    if len(nans) < 1:
+      ind.append(i)
+  
+  # Velocity shape factor
+  sf = np.mean(abs(xperp*vxpt[ind,:]+yperp*vypt[ind,:]),0)/np.max(np.mean(abs(xperp*vxpt[ind,:]+yperp*vypt[ind,:]),0))
+  vperp = (xperp*vxpt+yperp*vypt)
+  vperp[:,0] = sf[0]*np.nanmax(vperp,1)
+  vperp[:,-1] = sf[-1]*np.nanmax(vperp,1)
+
+  if timing == 'velocity':
+    Q = np.zeros_like(vperp) # actual fluxes
+    Q[:,:] = float('NaN')
+    time = tpt
+    error = np.zeros_like(time)
+    error[:] = float('nan')
+    ubar = np.zeros_like(time)
+    ubar[:] = float('NaN')
+    Hbar = np.zeros_like(time)
+    Hbar[:] = float('NaN')
+    for i in range(0,len(time)):
+      # Find places where we have no surface velocities
+      nans_vperp = np.where(np.isnan(vperp[i,:]))[0]
+      if len(nans_vperp) < 1.0/4.0*len(l):
+        # If the number of locations without surface velocities is small, let's use the known 
+        # surface velocities to interpolate.
+        nonnans_vperp = np.where(~(np.isnan(vperp[i,:])))[0]
+      
+        # Get surface elevation for that timestep
+        #vind = np.where(abs(ztime - tpt[i]) < 0.25)[0]
+        #if len(vind) < 1:
+        #  vind = np.where(abs(ztime - tpt[i]) < 1)[0]
+        #zs = np.nanmean(zs_all[vind,:],axis=0)
+        #vind = np.argmin(abs(ztime-tpt[i]))
+        #zs = zs_all[vind,:]
+        #nonnan = np.where(~(np.isnan(zs)))
+        #nans = np.where(np.isnan(zs))
+        #zs[nans] = np.interp(l[nans],l[nonnan],zs[nonnan])
+        zs = np.zeros(len(l))
+        zs_error_ind = np.zeros(len(l))
+        vperp_errors = np.zeros(len(l))
+        for j in range(0,len(l)):
+          nonnans_zs = np.where(~(np.isnan(zs_all[:,j])))[0]
+          mind = np.argmin(abs(ztime[nonnans_zs]-tpt[i]))
+          zs[j] = zs_all[nonnans_zs[mind],j]
+          zs_error_ind[j] = zs_error[nonnans_zs[mind]]
+          #zs[j] = np.interp(tpt[i],ztime[nonnan],zs_all[nonnan,j])
+
+        #f = scipy.interpolate.interp1d(l_in[nonnans],vperp_in[i,nonnans],kind='cubic')
+        #vperp_in[i,nans] = f(l_in[nans])
+        #vperp_in[i,vperp_in[i,:] < 0] = np.interp(l_in[vperp_in[i,:] < 0],l_in[nonnans],vperp_in[i,nonnans])
+        vperp[i,nans_vperp] = sf[nans_vperp]*np.nanmax(vperp[i,:])#np.interp(l[nans],l[nonnans],vperp[i,nonnans])
+        
+        # Set velocity errors
+        vperp_errors[nonnans_vperp] = vperp[i,nonnans_vperp]*0.03
+        vperp_errors[nans_vperp] = vperp[i,nans_vperp]*0.1
+      
+        # Calculate fluxes
+        Q[i,:] = (vperp[i,:]*(zs-zb)*dl)
+      
+        # Get average surface elevations and ice flow velocities for fluxgate
+        Hbar[i] = np.nanmean(zs-zb)
+        ubar[i] = np.mean(vperp[i,:])
+      
+        # We don't want negative fluxes so let's toss them out.
+        Q[i,zs < zb] = 0
+        
+        ubar_error = np.sqrt(1/(np.sum(np.mean(1/vperp_errors)**2*np.ones(int(L[1]/500.)))))
+        hbar_error = np.sqrt(1/(np.sum(np.mean(1/zs_error_ind)**2*np.ones(int(L[1]/32.)))))
+        error[i] = np.sum(Q[i,:])*np.sqrt((ubar_error/ubar[i])**2+(hbar_error/Hbar[i])**2)
+      
+  elif timing == 'elevation':
+    time = ztime
+    Q = np.zeros([len(ztime),len(l)]) # actual fluxes
+    Q[:,:] = float('NaN')
+    error = np.zeros_like(time)
+    error[:] = float('nan')
+    ubar = np.zeros_like(time)
+    ubar[:] = float('NaN')
+    Hbar = np.zeros_like(time)
+    Hbar[:] = float('NaN')
+    for i in range(0,len(time)):
+      nonnans = np.where(~(np.isnan(zs_all[i,:])))[0]
+      nans = np.where((np.isnan(zs_all[i,:])))[0]
+      if len(nonnans) > (3./4)*len(l):
+        zs_ind = zs_all[i,:]
+        zs_ind[nans] = np.interp(l[nans],l[nonnans],zs_all[i,nonnans])      
+        ind = np.argmin(abs(time[i]-tpt))
+        if (time[i]-tpt[ind]) < 1/12.:
+          nonnans = np.where(~(np.isnan(vperp[ind,:])))[0]
+          nans = np.where(np.isnan(vperp[ind,:]))[0]
+          
+          vperp_ind = vperp[ind,:]
+          vperp_ind[nans] = sf[nans]*np.nanmax(vperp[i,:])#np.interp(l[nans],l[nonnans],vperp[ind,nonnans])
+
+          # Calculate fluxes  
+          Q[i,:] = (vperp_ind*(zs_ind-zb)*dl)  
+      
+          # We don't want negative fluxes so let's toss them out.
+          Q[i,zs_ind < zb] = 0
+          
+          # Get average surface elevations and ice flow velocities for fluxgate
+          Hbar[i] = np.mean(zs_ind-zb)
+          ubar[i] = np.mean(vperp_ind)
+
+  # Add up fluxes along glacier width
+  sumQ = np.sum(Q,1)
+
+  return time, sumQ, Hbar, ubar, error
+
+
+def fluxgate_thinning(glacier,fluxgate_filename,bedsource='smith',dl=20.0,timing='elevation',rho_i=917.):
 
   '''
   Inputs:
@@ -26,220 +220,52 @@ def fluxgate_thinning(glacier,fluxgate_filename,bedsource='smith',dl=20.0):
   fluxgate_filename: fluxgate filename, minus the "_in" or "_out" which defines the extent of the box
   bedsource: should be use CreSIS radar transects or morlighem/smith bed DEM to define the bed elevation?
   dl: size of blocks for integrating ice flux across fluxgate
+  timing: calculate dH at time steps when we have ice flow velocity measurements ('velocity') 
+  	or when we have surface elevation measurements ('elevation')
+  rho_i: ice density for calculating dH/dt due to surface mass balance at the same time steps	
+  
   '''
-  
-  # Get Shapefiles for flux gates and for glacier extent (so we can calculate surface area accurately)
-  DIR = os.path.join(os.getenv("DATA_HOME"),"ShapeFiles/FluxGates/"+glacier+"/")
-  gate_in_sf = shapefile.Reader(DIR+fluxgate_filename+"_in")
-  gate_out_sf = shapefile.Reader(DIR+fluxgate_filename+"_out")
-   
-  # Get end points for flux gates
-  gate_in_pts = np.array(gate_in_sf.shapes()[0].points)
-  sortind = np.argsort(gate_in_pts[:,1])
-  gate_in_pts = gate_in_pts[sortind]
-  gate_out_pts = np.array(gate_out_sf.shapes()[0].points)
-  sortind = np.argsort(gate_out_pts[:,1])
-  gate_out_pts = gate_out_pts[sortind]
-  
+
   # Get fluxbox geometry
   fluxbox_x,fluxbox_y = fluxbox_geometry(glacier,fluxgate_filename)
 
-  # Calculate length of flux gates (i.e., the "width" of glacier)
-  L_in = distlib.transect(gate_in_pts[:,0],gate_in_pts[:,1])
-  L_out = distlib.transect(gate_out_pts[:,0],gate_out_pts[:,1])
-  
-  # Get coordinates of points along upstream flux gate
-  l_in = np.linspace(0,L_in[-1],np.ceil(L_in[-1]/dl)+1)
-  dl_in = l_in[1]-l_in[0]
-  l_in = l_in[0:-1]+dl_in/2
-  x_in = np.interp(l_in,L_in,gate_in_pts[:,0])
-  y_in = np.interp(l_in,L_in,gate_in_pts[:,1])
-  
-  # Get coordinates of points along downstream flux gate
-  l_out = np.linspace(0,L_out[-1],np.ceil(L_out[-1]/dl)+1)
-  dl_out = l_out[1]-l_out[0]
-  l_out = l_out[0:-1]+dl_out/2
-  x_out = np.interp(l_out,L_out,gate_out_pts[:,0])
-  y_out = np.interp(l_out,L_out,gate_out_pts[:,1])
-  
-  # Get bed elevation along flux gates
-  if bedsource == 'morlighem':
-    print "Using Morlighem bed DEM, should maybe be changed to CreSIS radar transects or Smith bed DEM"
-    zb_in = bedlib.morlighem_pts(x_in,y_in,verticaldatum='ellipsoid')
-    zb_out = bedlib.morlighem_pts(x_out,y_out,verticaldatum='ellipsoid')
-  elif bedsource == 'smith':
-    print "Using Smith bed DEM"
-    zb_in = bedlib.smith_at_pts(x_in,y_in,glacier,verticaldatum='ellipsoid')
-    zb_out = bedlib.smith_at_pts(x_out,y_out,glacier,verticaldatum='ellipsoid')
-  else:
-    print "Using CreSIS radar products"
-    cresis_all = bedlib.cresis('all',glacier,verticaldatum='ellipsoid')
+  # Get surface mass balance for flux box 
+  xrac,yrac,zsrac,timerac = climlib.racmo_at_pts(np.mean(fluxbox_x),np.mean(fluxbox_y),'zs',filt_len='none')
 
-    # Find radar pick indices for upstream flux gate     
-    zb_in = np.zeros_like(x_in)
-    # Find points that are within 200~m of CreSIS transect for interpolation
-    ind = []
-    for i in range(0,len(x_in)):
-      d = np.min(np.sqrt((x_in[i]-cresis_all[:,0])**2+(y_in[i]-cresis_all[:,1])**2))
-      if d < 200.0:
-        ind.append(i)       
-    zb_in[ind] = scipy.interpolate.griddata(cresis_all[:,0:2],cresis_all[:,2],(x_in[ind],y_in[ind]))
-    f = scipy.interpolate.interp1d(l_in[ind],zb_in[ind],kind='cubic',bounds_error=False)
-    fex = extrap1d(f)
-    zb_in[zb_in == 0] = fex(l_in[zb_in==0])
-    filt_len=1000.0
-    cutoff=(1/filt_len)/(1/((l_in[1]-l_in[0])*2))
-    b,a=scipy.signal.butter(4,cutoff,btype='low')
-    zb_in = scipy.signal.filtfilt(b,a,zb_in)
+  # Get flux through fluxgates
+  time_in,Q_in,hbar_in,ubar_in,error_in = fluxgate(glacier,fluxgate_filename+'_in',bedsource=bedsource,dl=dl,timing=timing)
+  time_out,Q_out,hbar_out,ubar_out,error_out = fluxgate(glacier,fluxgate_filename+'_out',bedsource=bedsource,dl=dl,timing=timing)
 
-    # Find radar pick indices for downstream flux gate
-    zb_out = np.zeros_like(x_out)
-    # Find points that are within 200~m of CreSIS transect for interpolation
-    ind = []
-    for i in range(0,len(x_out)):
-      d = np.min(np.sqrt((x_out[i]-cresis_all[:,0])**2+(y_out[i]-cresis_all[:,1])**2))
-      if d < 200.0:
-        ind.append(i)       
-    zb_out[ind] = scipy.interpolate.griddata(cresis_all[:,0:2],cresis_all[:,2],(x_out[ind],y_out[ind]))
-    f = scipy.interpolate.interp1d(l_out[ind],zb_out[ind],kind='cubic',bounds_error=False)
-    fex = extrap1d(f)
-    zb_out[zb_out == 0] = fex(l_out[zb_out==0])
-    filt_len=1000.0
-    cutoff=(1/filt_len)/(1/((l_out[1]-l_out[0])*2))
-    b,a=scipy.signal.butter(4,cutoff,btype='low')
-    zb_out = scipy.signal.filtfilt(b,a,zb_out)
-
-    
-  # Get surface elevations
-  zs_all,zs_error,ztime=zslib.dem_at_pts(np.r_[x_in,x_out],np.r_[y_in,y_out],glacier,verticaldatum='ellipsoid',method='linear')
-  zs_all_in = np.array(zs_all[:,0:len(x_in)])
-  zs_error_in = np.array(zs_error[0:len(x_in)])
-  zs_all_out = np.array(zs_all[:,len(x_in):])
-  zs_error_out = np.array(zs_all[len(x_in):])
-  for i in range(0,len(ztime)):
-    nonnan1 = np.where(zs_all_in[i,:])[0]
-    nonnan2 = np.where(zs_all_out[i,:])[0]
-    if len(nonnan1) < 0.9*len(l_in) or len(nonnan2) < 0.9*len(l_out):
-      zs_all_in[i,:] = float('nan')
-      zs_all_out[i,:] = float('nan')
-  
-  # Get velocities
-  vpt_in,tpt_in,ept_in,vxpt_in,vypt_in = vellib.velocity_at_eulpoints(x_in,y_in,glacier,data='TSX',xy_velocities='True')
-  vpt_out,tpt_out,ept_out,vxpt_out,vypt_out = vellib.velocity_at_eulpoints(x_out,y_out,glacier,data='TSX',xy_velocities='True')
-  
-  # Time for dH/dt calculations
-  time = tpt_in
-  dH = np.zeros([len(time),2])
-  
-  # Anticipated error between surface elevations and/or bed DEM 
-  error = np.nanstd(np.nanmean(zs_all_in,axis=1)-np.nanmean(zs_all_out,axis=1))
-  
-  # Get flux through upstream gate
-  xperp = np.zeros(len(l_in))
-  yperp = np.zeros(len(l_in))
-  for i in range(0,len(l_in)-1):
-    xperp[i+1] = (-y_in[i+1]+y_in[i])/np.sqrt((y_in[i+1]-y_in[i])**2+(x_in[i+1]-x_in[i])**2)
-    yperp[i+1] = (x_in[i+1]-x_in[i])/np.sqrt((y_in[i+1]-y_in[i])**2+(x_in[i+1]-x_in[i])**2)
-  xperp[0] = xperp[1]
-  yperp[0] = yperp[1]
-  vperp_in = abs(xperp*vxpt_in+yperp*vypt_in)
-  vperp_in[:,0] = 0.0
-  vperp_in[:,-1] = 0.0
-  #vperp_in = vpt_in
-  Q_in = np.zeros_like(vperp_in) # actual fluxes
-  Q_in[:,:] = 'NaN'
-  Q_in_max = np.zeros_like(vperp_in) # large possible flux given the errors
-  Q_in_max[:,:] = 'NaN'
-  for i in range(0,len(tpt_in)):
-    # Find places where we have no surface velocities
-    nans = np.where(np.isnan(vperp_in[i,:]))[0]
-    if len(nans) < 1.0/4.0*len(l_in):
-      # If the number of locations without surface velocities is small, let's use the known 
-      # surface velocities to interpolate.
-      nonnans = np.where(~(np.isnan(vperp_in[i,:])))[0]
-      
-      # Get surface elevation for that timestep
-      vind = np.where(abs(ztime - tpt_in[i]) < 0.5)[0]
-      if len(vind) < 1:
-        vind = np.where(abs(ztime - tpt_in[i]) < 1)[0]
-      zs_in = np.nanmean(zs_all_in[vind,:],axis=0)
-      #zs_in = np.zeros(len(l_in))
-      #for j in range(0,len(l_in)):
-      #  nonnan = np.where(~(np.isnan(zs_all_in[:,j])))[0]
-      #  zs_in[j] = np.interp(tpt_in[i],ztime[nonnan],zs_all_in[nonnan,j])
-
-      
-      #f = scipy.interpolate.interp1d(l_in[nonnans],vperp_in[i,nonnans],kind='cubic')
-      #vperp_in[i,nans] = f(l_in[nans])
-      #vperp_in[i,vperp_in[i,:] < 0] = np.interp(l_in[vperp_in[i,:] < 0],l_in[nonnans],vperp_in[i,nonnans])
-      vperp_in[i,nans] = np.interp(l_in[nans],l_in[nonnans],vperp_in[i,nonnans])
-      
-      # Calculate fluxes
-      Q_in[i,:] = (vperp_in[i,:]*(zs_in-zb_in)*dl_in)
-      Q_in_max[i,:] = (vperp_in[i,:]*(zs_in+error-zb_in)*dl_in)
-      
-      # We don't want negative fluxes so let's toss them out.
-      Q_in[i,zs_in < zb_in] = 0
-      Q_in_max[i,zs_in < zb_in] = 0  
-
-  # Get flux through downstream gate
-  xperp = np.zeros(len(l_out))
-  yperp = np.zeros(len(l_out))
-  for i in range(0,len(l_out)-1):
-    xperp[i+1] = (-y_out[i+1]+y_out[i])/np.sqrt((y_out[i+1]-y_out[i])**2+(x_out[i+1]-x_out[i])**2)
-    yperp[i+1] =  (x_out[i+1]-x_out[i])/np.sqrt((y_out[i+1]-y_out[i])**2+(x_out[i+1]-x_out[i])**2)
-  vperp_out = abs(xperp*vxpt_out+yperp*vypt_out)
-  vperp_out[:,0] = 0.0
-  vperp_out[:,-1] = 0.0
-  #vperp_out = vpt_out
-  Q_out = np.zeros_like(vperp_out)
-  Q_out[:,:] = float('NaN')
-  Q_out_max = np.zeros_like(vperp_out)
-  Q_out_max[:,:] = float('NaN')
-  for i in range(0,len(tpt_out)):
-    # Find places where we have no surface velocities
-    nans = np.where(np.isnan(vperp_out[i,:]))[0]
-    if len(nans) < 1.0/4.0*len(l_out):
-      # If the number of locations without surface velocities is small, let's use the known 
-      # surface velocities to interpolate. Otherwise the fluxes are set to nan's.
-      nonnans = np.where(~(np.isnan(vperp_out[i,:])))[0]
-
-      # Get surface elevation for that timestep
-      vind = np.where(abs(ztime - tpt_out[i]) < 0.5)[0]
-      if len(vind) < 1:
-        vind = np.where(abs(ztime - tpt_out[i]) < 1)[0]
-      zs_out = np.nanmean(zs_all_out[vind,:],axis=0)
-      #zs_out = np.zeros(len(l_out))
-      #for j in range(0,len(l_out)):
-      #  nonnan = np.where(~(np.isnan(zs_all_out[:,j])))[0]
-      #  zs_out[j] = np.interp(tpt_out[i],ztime[nonnan],zs_all_out[nonnan,j])
-      
-      #f = scipy.interpolate.interp1d(l_out[nonnans],vperp_out[i,nonnans],kind='cubic')
-      #vperp_out[i,nans] = f(l_out[nans])
-      vperp_out[i,nans] = np.interp(l_out[nans],l_out[nonnans],vperp_out[i,nonnans])
-      #vperp_out[i,vperp_out < 0] = np.interp(l_out[vperp_out[i,:]<0],l_out[nonnans],vperp_out[i,nonnans])
-      #vperp_out[i,nans] = np.nanmean(vperp_out[i,:])*scale_out[nans]
-      
-      # Calculate fluxes
-      Q_out[i,:] = (vperp_out[i,:]*(zs_out-zb_out)*dl_out)
-      Q_out_max[i,:] = (vperp_out[i,:]*(zs_out-error-zb_out)*dl_out)
-    
-      # We don't want negative fluxes
-      Q_out[i,zs_out < zb_out] = 0
-      Q_out_max[i,zs_out < zb_out] = 0
-  
   # Get surface area
   shape = shapely.geometry.Polygon(np.column_stack([fluxbox_x,fluxbox_y]))
   A = shape.area
   
-  # Calculate the change in flux between the two gates
-  dQ = np.sum(Q_in,1)-np.sum(Q_out,1)
-  dQ_max = np.sum(Q_in_max,1)-np.sum(Q_out_max,1)
+  time = []
+  hbar = []
+  ubar = []
+  Q = []
+  smb = []
+  error_Q = []
+  for i in range(0,len(time_in)):
+    if time_in[i] in time_out:
+      j = np.argmin(abs(time_in[i]-time_out))
+      time.append(time_in[i])
+      hbar.append([hbar_in[i],hbar_out[j]])
+      ubar.append([ubar_in[i],ubar_out[j]])
+      Q.append([Q_in[i],Q_out[j]])
+      error_Q.append(error_in[i]+error_out[j])
+      minind = np.argmin(abs(time_in[i]-timerac))
+      smb.append(np.mean(np.diff(zsrac[minind-5:minind+5])/np.diff(timerac[minind-5:minind+5])))
+  hbar = np.array(hbar)
+  ubar = np.array(ubar)
+  time = np.array(time)
+  smb = np.array(smb)
+  error_Q = np.array(error_Q)
+  Q = np.array(Q)
 
-  dH[:,0] = dQ/A # anticipated dH/dt
-  dH[:,1] = (dQ_max-dQ)/A # error in dH/dt
+  dH = np.column_stack([(Q[:,0]-Q[:,1])/A,(error_Q)/A])
   
-  return time, dH
+  return time, dH, Q, hbar, ubar, smb
 
 def dem_thinning(glacier,x,y,zs,time,zserror,fluxgate_filename,type='rate'):
   
@@ -259,35 +285,32 @@ def dem_thinning(glacier,x,y,zs,time,zserror,fluxgate_filename,type='rate'):
   inside = box.contains_points(np.column_stack([xgrid.flatten(),ygrid.flatten()]))
   ninside = len(xgrid.flatten()[inside])
   
-  # Calculate average thinning rates
+  # Calculate thinning rates from DEMs
   nt = len(time)
-  j = 0
   dH_time_mid = []
   dH_time_extent = []
   dH_ave = []
   dH_error = []
   if type=='rate':
-    for i in range(1,nt):
-      # Surface elevations inside the fluxbox at times 1 and 2
-      zs_inside_t1 = zs[:,:,j].flatten()[inside]
-      zs_inside_t2 = zs[:,:,i].flatten()[inside]
+    for i in range(0,nt):
+      for j in range(i+1,nt):
+        if i != j:
+          # Surface elevations inside the fluxbox at times 1 and 2
+          zs_inside_t1 = zs[:,:,i].flatten()[inside]
+          zs_inside_t2 = zs[:,:,j].flatten()[inside]
   
-      # Find locations where we have thinning rates
-      nonnan = np.where(~(np.isnan(zs_inside_t2-zs_inside_t1)))[0]    
-      if (len(nonnan) > 0.9*ninside) and (time[i]-time[j] > 1/12.0):
-        #dH_time_extent.append(float(len(nonnan))/float(ninside))
-        # Calculate time as halfway between the two times
-        dH_time_mid.append((time[i]+time[j])/2) # time
-        dH_time_extent.append((time[i]-time[j])/2) # time interval
+          # Find locations where we have thinning rates
+          nonnan = np.where(~(np.isnan(zs_inside_t2-zs_inside_t1)))[0]
+          if (len(nonnan) > 0.9*ninside) and ((time[j]-time[i]) > 1/12.0) and ((time[j]-time[i]) < 1/3.):
+            # dH_time_extent.append(float(len(nonnan))/float(ninside))
+            # Calculate time as halfway between the two times
+            dH_time_mid.append((time[i]+time[j])/2) # time
+            dH_time_extent.append(abs(time[j]-time[i])/2) # time interval
     
-        # Only calculate the average thinning rates if the measured thinning rates cover a 
-        # sufficient area of the fluxbox and surface elevation profiles are more than a month apart.
-        dH_ave.append(np.nanmean(zs_inside_t2-zs_inside_t1)/(time[i]-time[j])) # average thinning rate
-        dH_error.append(np.sqrt(zserror[i]**2+zserror[j]**2)/(time[i]-time[j])) # error according to co-registration 
-        j = i
-      else:
-        if len(np.where(~(np.isnan(zs_inside_t1)))[0]) < 0.9*ninside or len(np.where(~(np.isnan(zs_inside_t1)))[0]) < len(np.where(~(np.isnan(zs_inside_t2)))[0]):
-          j = i
+            # Only calculate the average thinning rates if the measured thinning rates cover a 
+            # sufficient area of the fluxbox and surface elevation profiles are more than a month apart.
+            dH_ave.append(np.nanmean(zs_inside_t2-zs_inside_t1)/(time[j]-time[i])) # average thinning rate
+            dH_error.append(np.sqrt(zserror[i]**2+zserror[j]**2)/(time[j]-time[i])) # error according to co-registration 
     
     dH_time = np.column_stack([dH_time_mid,dH_time_extent])
     dH = np.column_stack([dH_ave,dH_error])
@@ -415,7 +438,7 @@ def fluxbox_geometry(glacier,fluxgate_filename):
   
   return fluxbox_x,fluxbox_y
 
-def compare_thinning_rates(demtime,demdH,fluxtime,fluxdH,smbtime,smbdH,rho_i=900.0):
+def compare_thinning_rates(demtime,demdH,fluxtime,fluxdH,smbdH):
 
   '''
   Compare the calculated thinning rates from the DEMs and from the fluxgate method.
@@ -434,11 +457,17 @@ def compare_thinning_rates(demtime,demdH,fluxtime,fluxdH,smbtime,smbdH,rho_i=900
   
   time = np.arange(starttime,starttime+Nt*dt,dt)
   
+  # Add surface mass balance to fluxgate thinning rates so that we can compare these rates
+  # directly to the dem difference rates
+  fluxsmbdH = fluxdH[:,0]+smbdH
+  
+  # Set up variables
   dH_time = np.array(demtime)
   dH_dem = np.array(demdH)
   dH_flux = np.zeros_like(demdH)
-  dH_smb = np.zeros(len(demdH))
   dH_flux[:,:] = float('nan')
+  
+  # Iterate through DEM times for comparison
   for i in range(0,len(demtime[:,0])):
     # Check to make sure there is at least one estimated thinning rate from the 
     # velocities within the time period when we have a DEM thinning rate.
@@ -448,16 +477,13 @@ def compare_thinning_rates(demtime,demdH,fluxtime,fluxdH,smbtime,smbdH,rho_i=900
         ind = np.where((time > demtime[i,0]-demtime[i,1]) & (time < demtime[i,0]+demtime[i,1]))[0]
         nonnan = np.where(~(np.isnan(fluxdH[:,0])))[0]
         #values = nearest_interp(time[ind],fluxtime[nonnan],fluxdH[nonnan,0])
-        values = np.interp(time[ind],fluxtime,fluxdH[:,0])
+        values = np.interp(time[ind],fluxtime,fluxsmbdH)
         errors = np.interp(time[ind],fluxtime,fluxdH[:,1])
         dH_flux[i,0] = np.nanmean(values)  
         dH_flux[i,1] = np.nanmean(errors) 
 
-    ind = np.where((time > smbtime[i]-demtime[i,1]) & (time < smbtime[i]+demtime[i,1]))[0]    
-    values = np.interp(time[ind],smbtime,smbdH)
-    dH_smb[i] = np.mean(values)*365.25/rho_i
   
-  return dH_time,dH_flux,dH_dem,dH_smb
+  return dH_time,dH_flux,dH_dem
   
 def extrap1d(interpolator):
     

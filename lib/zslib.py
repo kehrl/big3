@@ -14,6 +14,7 @@ import scipy.interpolate
 import scipy.signal as signal
 import shapely.geometry
 import scipy.ndimage
+from scipy import stats
 
 def smith_db_query(xpts,ypts,glacier,verticaldatum='geoid',data='all',maxdist=200.):
 
@@ -1057,7 +1058,7 @@ def dem_continuous_flowline(xf,yf,dists,glacier,date,verticaldatum='geoid',filli
    
   return zflow_filtered
   
-def variability(glacier,time1,time2,verticaldatum='geoid',resolution=32.,data='all',years='all'):
+def variability(glacier,time1,time2,verticaldatum='geoid',resolution=32.,data='all'):
 
   '''
   '''
@@ -1103,47 +1104,33 @@ def variability(glacier,time1,time2,verticaldatum='geoid',resolution=32.,data='a
       if (DIR[0:8] not in dates) and DIR.startswith('2') and (DIR.endswith(filestring)):
         wvxmin,wvxmax,wvymin,wvymax = geotifflib.extent(WVDIR+DIR)
         wv_extent = shapely.geometry.Polygon([(wvxmin,wvymin),(wvxmin,wvymax),(wvxmax,wvymax),(wvxmax,wvymin)])
+        time_file = datelib.date_to_fracyear(int(DIR[0:4]),int(DIR[4:6]),float(DIR[6:8]))
         if glacier_extent.intersects(wv_extent):
-          if not(years) or (years=='all'):
+          if (time_file > time1) and (time_file < time2):
             dates.append(DIR[0:8])
-          else:
-            if len(years) == 4:
-              if DIR[0:4] in years:
-                dates.append(DIR[0:8])
-            else:
-              if DIR[0:8] in years:
-                dates.append(DIR[0:8])
+        del wvxmin,wvxmax,wvymin,wvymax,wv_extent
   if 'TDM' in data or data=='all':
     for DIR in TDMDIRs:
-      if DIR.endswith(filestring):
+      if (DIR.endswith(filestring)) and (DIR[0:8] not in dates):
         TDMmin,TDMmax,tdymin,tdymax = geotifflib.extent(TDMDIR+DIR)
         td_extent = shapely.geometry.Polygon([(TDMmin,tdymin),(TDMmin,tdymax),(TDMmax,tdymax),(TDMmax,tdymin)])
+        time_file = datelib.date_to_fracyear(int(DIR[0:4]),int(DIR[4:6]),float(DIR[6:8]))
         if glacier_extent.intersects(td_extent):
-          if not(years) or (years=='all'):
+          if (time_file > time1) and (time_file < time2):
             dates.append(DIR[0:8])
-          else:
-            if len(years) == 4:
-              if DIR[0:4] in years:
-                dates.append(DIR[0:8])
-            else:
-              if DIR[0:8] in years:
-                dates.append(DIR[0:8])
+        del td_extent,TDMmin,TDMmax,tdymin,tdymax
   if 'SPIRIT' in data or data=='all':
     for DIR in SPIRITDIRs:
-      if DIR.endswith(filestring):
+      if DIR.endswith(filestring) and (DIR[0:8] not in dates):
         sprxmin,sprxmax,sprymin,sprymax = geotifflib.extent(SPIRITDIR+DIR)
         spr_extent = shapely.geometry.Polygon([(sprxmin,sprymin),(sprxmin,sprymax),(sprxmax,sprymax),(sprxmax,sprymin)])
+        time_file = datelib.date_to_fracyear(int(DIR[0:4]),int(DIR[4:6]),float(DIR[6:8]))
         if glacier_extent.intersects(spr_extent):
-          if not(years) or (years=='all'):
+          if (time_file > time1) and (time_file < time2):
             dates.append(DIR[0:8])
-          else:
-            if len(years) == 4:
-              if DIR[0:4] in years:
-                dates.append(DIR[0:8])
-            else:
-              if DIR[0:8] in years:
-                dates.append(DIR[0:8])
- 
+        del spr_extent, sprxmin,sprxmax,sprymin,sprymax
+  del time_file
+   
   # Load data
   time = np.zeros(len(dates))
   zs = np.zeros([ny,nx,len(time)])
@@ -1194,7 +1181,9 @@ def variability(glacier,time1,time2,verticaldatum='geoid',resolution=32.,data='a
             xmask,ymask,mask[:,:,i] = masklib.load_grid(glacier,xmin,xmax,ymin,ymax,dx,icefront_time=time[i])
             geotifflib.write_from_grid(xmask,ymask,np.flipud(mask[:,:,i]),float('nan'),maskfile)   
     
-    zs[zs==0] = 'NaN' 
+    zs[zs==0] = float('NaN')
+  
+  del xwv,ywv,zwv,maskfile,n,ngrid
       
   # It's possible we still pulled a DEM full of NaNs in the desired region. If so, let's chuck those.
   nonnan=[]
@@ -1205,19 +1194,79 @@ def variability(glacier,time1,time2,verticaldatum='geoid',resolution=32.,data='a
   time = time[nonnan]    
 
   # Mask out non-ice surface elevations
+  #allmask = np.nanmax(mask,axis=2)
+  #zs[allmask==1,:] = float('nan')
   for i in range(0,len(time)):
     zs[mask[:,:,i]==1,i] = float('nan') 
+  
+  # Sort data by time
+  sortind = np.argsort(time)
+  time = time[sortind]
+  zs = zs[:,:,sortind]
+  del sortind
   
   # Get standard deviation and mean of all elevations
   zsstd = np.nanstd(zs,axis=2)
   zsmean = np.nanmean(zs,axis=2)
   
+  # Get trends
+  zstrend = np.zeros_like(zsmean)
+  zstrend_time1 = np.zeros_like(zsmean)
+  zstrend_time2 = np.zeros_like(zsmean)
+  zstrend_p = np.zeros_like(zsmean)
+  zstrend_count = np.zeros_like(zsmean)
+  zstrend_error = np.zeros_like(zsmean)
+  zstrend_r = np.zeros_like(zsmean)
+  zstrend_intercept = np.zeros_like(zsmean)
+  zstrend[:,:] = float('nan')
+  zstrend_p[:,:] = float('nan')
+  zstrend_error[:,:] = float('nan')
+  zstrend_r[:,:] = float('nan')
+  zstrend_intercept[:,:] = float('nan')
+  for j in range(0,len(y)):
+    for i in range(0,len(x)):
+      nonnan = np.where(~(np.isnan(zs[j,i,:])))[0]
+      zstrend_count[j,i] = len(nonnan)
+      if len(nonnan) > 1:
+        if (np.floor(np.min(time[nonnan]))==time1) and np.ceil(np.max(time[nonnan]))==time2: 
+        # don't want to calculate a trend if measurements don't cover the entire time period
+          zstrend_time1[j,i] = np.min(time[nonnan])
+          zstrend_time2[j,i] = np.max(time[nonnan])
+          slope,intercept,r,p,std_err = stats.linregress(time[nonnan],zs[j,i,nonnan])
+          zstrend[j,i] = slope
+          zstrend_intercept[j,i] = intercept
+          zstrend_error[j,i] = std_err
+          zstrend_p[j,i] = p
+          zstrend_r[j,i] = r
+
+  # Remove trend from all observations
+  zsdetrend = np.zeros_like(zs)
+  zsdetrend[:,:] = float('nan')
+  nonnan = np.where(~(np.isnan(zstrend)))
+  for i in range(0,len(time)):
+    trend = zstrend_intercept+zstrend*time[i]
+    #zsdetrend[:,:,i] = zs[:,:,i]
+    zsdetrend[:,:,i] = zs[:,:,i]-trend
+
+  # Calculate range of observed values
+  zsrange = np.zeros_like(zsmean)
+  zsrange[:,:] = float('nan')
+  for i in range(0,len(x)):
+    for j in range(0,len(y)):
+      nonnan = np.where(~(np.isnan(zsdetrend[j,i,:])))[0]
+      if len(nonnan) > 1:
+        zsrange[j,i] = np.max(zsdetrend[j,i,nonnan])-np.min(zsdetrend[j,i,nonnan])
+  
+  # Remove insignificant trends from trend matrix
+  ind = np.where(zstrend_p > 0.05)
+  zstrend[ind] = float('nan')
+  
   # Get number of nonnan velocities for each pixel
   zscount = np.zeros([len(y),len(x)])
   for j in range(0,len(y)):
     for i in range(0,len(x)):
-      nonnan = len(np.where(~(np.isnan(zs[j,i,:])))[0])
-      zscount[j,i] = nonnan   
+      nonnan = np.where(~(np.isnan(zs[j,i,:])))[0]
+      zscount[j,i] = len(nonnan)   
   
-  return x,y,zs,zsmean,zsstd,zscount,time
+  return x,y,zs,zstrend,zsdetrend,zsrange,zscount,time
 

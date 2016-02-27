@@ -21,6 +21,7 @@ import sys
 import scipy.interpolate
 import numpy as np
 import geodatlib, icefrontlib, geotifflib, datelib, masklib
+from scipy import stats
 
 #########################################################################################
 def convert_binary_to_geotiff(glacier):
@@ -341,6 +342,8 @@ def velocity_at_lagpoints(xf,yf,dists,pts,glacier,data='all'):
       
     # Set up grid for interpolation
     fv = scipy.interpolate.RegularGridInterpolator([y,x],v,method='linear',bounds_error=False)
+    fvx = scipy.interpolate.RegularGridInterpolator([y,x],vx,method='linear',bounds_error=False)
+    fvy = scipy.interpolate.RegularGridInterpolator([y,x],vy,method='linear',bounds_error=False)
     fex = scipy.interpolate.RegularGridInterpolator([y,x],ex,method='linear',bounds_error=False)
     fey = scipy.interpolate.RegularGridInterpolator([y,x],ey,method='linear',bounds_error=False)
       
@@ -353,7 +356,7 @@ def velocity_at_lagpoints(xf,yf,dists,pts,glacier,data='all'):
     
     # Find velocities 
     velocities[count,:] = fv(np.array([ypts,xpts]).T)  
-    error[count,:] = velocities[count,:]*np.sqrt((fex(np.array([ypt,xpt]).T)/fvx(np.array([ypt,xpt]).T))**2+(fey(np.array([ypt,xpt]).T)/fvy(np.array([ypt,xpt]).T))**2)        
+    error[count,:] = velocities[count,:]*np.sqrt((fex(np.array([ypts,xpts]).T)/fvx(np.array([ypts,xpts]).T))**2+(fey(np.array([ypts,xpts]).T)/fvy(np.array([ypts,xpts]).T))**2)        
     
      
     positions[count,:] = flowdists
@@ -377,6 +380,9 @@ def velocity_at_lagpoints(xf,yf,dists,pts,glacier,data='all'):
 def tsx_near_time(time,glacier,just_filename = False):
 
   '''
+  
+  x,y,vx,vy,v,time = tsx_near_time(time,glacier,just_filename = False)
+  
   Find TSX data closest to "time".
   
   Inputs:
@@ -389,7 +395,6 @@ def tsx_near_time(time,glacier,just_filename = False):
   vx,vy: x and y velocities
   v: velocity magnitudes for gird
   time: time of transect
-  interval: time between radar images used in velocity calculations
 
   '''
 
@@ -411,15 +416,21 @@ def tsx_near_time(time,glacier,just_filename = False):
   
   if just_filename:
     year,month,day = datelib.fracyear_to_date(best_time)
+    
     return DIR_TSX+'TIF/'+best_track+'_'+"%04d%02d%02d" % (year,month,day),best_time
+  
   else:
     # Return the closest velocity profile
     x,y,v,vx,vy,ex,ey,time,interval = geodatlib.readvelocity(DIR_TSX,best_track,"/mosaicOffsets")
+    
     return x,y,vx,vy,v,time
 
 
 #########################################################################################
 def variability(glacier,time1,time2):
+
+  ''
+  ''
 
   DIR_TSX = os.path.join(os.getenv("DATA_HOME"),"Velocity/TSX/"+glacier+"/")
 
@@ -467,8 +478,9 @@ def variability(glacier,time1,time2):
     DIR=DIRs[j]
     if DIR.startswith('track'):
       # Load velocity
-      x1,y1,v1,vx1,vy1,ex1,ey1,time1,interval1 = geodatlib.readvelocity(DIR_TSX,DIR,"mosaicOffsets")
-      time[count] = time1
+      x1,y1,v1,vx1,vy1,ex1,ey1,time_file,interval1 = geodatlib.readvelocity(DIR_TSX,DIR,"mosaicOffsets")
+      
+      time[count] = time_file
       year,month,day = datelib.fracyear_to_date(time1)
       
       xind1 = np.argmin(abs(x1-xmin))
@@ -502,15 +514,75 @@ def variability(glacier,time1,time2):
       
       count = count+1 
   
+  del count,maskfile,date,xind1,yind1,xind2,yind2,year,month,x1,y1,vx1,vy1,ex1,ey1,time_file,interval1
+  
   # Throw out obvious outliers
   ind = np.where(velgrid > 16.0e3)
   velgrid[ind[0],ind[1],ind[2]] = float('nan')
   velgrid_mask[ind[0],ind[1],ind[2]] = float('nan')
   print "Throwing out velocities above 16 km/yr to deal with outliers in Kanger record"
+
+  # Only keep data that falls between time1 and time2, and sort that data by time
+  sortind = np.argsort(time)
+  time = time[sortind]
+  velgrid_mask = velgrid_mask[:,:,sortind]
+  velgrid = velgrid[:,:,sortind]
   
+  ind = np.where((time > time1) & (time < time2))[0]
+  velgrid_mask = velgrid_mask[:,:,ind]
+  time = time[ind]
+  velgrid = velgrid[:,:,ind]
+
   # Get average and std values
   velmean = np.nanmean(velgrid_mask,axis=2)
-  velstd = np.nanstd(velgrid_mask,axis=2)
+  
+  # Get linear trends
+  veltrend = np.zeros_like(velmean)
+  veltrend_time1 = np.zeros_like(velmean)
+  veltrend_time2 = np.zeros_like(velmean)
+  veltrend_count = np.zeros_like(velmean)
+  veltrend_p = np.zeros_like(velmean)
+  veltrend_error = np.zeros_like(velmean)
+  veltrend_r = np.zeros_like(velmean)
+  veltrend_intercept = np.zeros_like(velmean)
+  veltrend_p[:,:] = float('nan')
+  veltrend[:,:] = float('nan')
+  veltrend_error[:,:] = float('nan')
+  veltrend_r[:,:] = float('nan')
+  veltrend_intercept[:,:] = float('nan')
+  for j in range(0,len(y)):
+    for i in range(0,len(x)):
+      nonnan = np.where((~(np.isnan(velgrid_mask[j,i,:]))))[0]
+      if len(nonnan) > 0.75*len(time):
+        if (np.floor(np.min(time[nonnan]))==time1) and np.ceil(np.max(time[nonnan]))==time2:
+          slope,intercept,r,p,std_err = stats.linregress(time[nonnan],velgrid_mask[j,i,nonnan])
+          veltrend_count[j,i] = len(nonnan)
+          veltrend[j,i] = slope
+          veltrend_p[j,i] = p
+          veltrend_error[j,i] = std_err
+          veltrend_time1[j,i] = np.min(time[nonnan])
+          veltrend_time2[j,i] = np.max(time[nonnan])
+          veltrend_r[j,i] = r
+          veltrend_intercept[j,i] = intercept
+        
+  # Detrend velocity timeseries      
+  veldetrend = np.zeros_like(velgrid_mask)
+  for i in range(0,len(time)):
+    trend = veltrend_intercept+time[i]*veltrend
+    veldetrend[:,:,i] = velgrid_mask[:,:,i]-trend
+  
+  # Calculate range of observed values
+  velrange = np.zeros_like(velmean)
+  velrange[:,:] = float('nan')
+  for i in range(0,len(x)):
+    for j in range(0,len(y)):
+      nonnan = np.where(~(np.isnan(veldetrend[j,i,:])))[0]
+      if len(nonnan) > 1:
+        velrange[j,i] = np.max(veldetrend[j,i,nonnan])-np.min(veldetrend[j,i,nonnan])
+  
+  # Remove insignifcant trends      
+  ind = np.where(veltrend_p > 0.05)
+  veltrend[ind] = float('nan')
 
   # Get number of nonnan velocities for each pixel
   velcount = np.zeros([ny,nx])
@@ -523,7 +595,7 @@ def variability(glacier,time1,time2):
   velgrid_mask = velgrid_mask[:,:,sortind]
   time = time[sortind]
   
-  return x,y,velgrid_mask,velmean,velstd,velcount,time
+  return x,y,velgrid_mask,veltrend,veldetrend,velrange,velcount,time
 
 #########################################################################################
 def divergence_at_eulpoints(xpt,ypt):
