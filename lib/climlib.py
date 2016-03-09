@@ -29,13 +29,15 @@ def racmo_grid(xmin,xmax,ymin,ymax,variable,epsg=3413,maskvalues='ice'):
   # RACMO data
   if variable != 'zs':
     files = [(os.path.join(os.getenv("DATA_HOME"),"Climate/RACMO/2015_09_Laura_Kehrl/RACMO2.3_GRN11_"+variable+"_daily_2001_2010.nc")), \
-           (os.path.join(os.getenv("DATA_HOME"),"Climate/RACMO/2015_09_Laura_Kehrl/RACMO2.3_GRN11_"+variable+"_daily_2011_2014.nc"))]
+           (os.path.join(os.getenv("DATA_HOME"),"Climate/RACMO/2015_09_Laura_Kehrl/RACMO2.3_GRN11_"+variable+"_daily_2011_2014.nc")), \
+           (os.path.join(os.getenv("DATA_HOME"),"Climate/RACMO/2015_09_Laura_Kehrl/RACMO2.3_GRN11_"+variable+"_daily_2015.nc"))]
   else:
     files = [(os.path.join(os.getenv("DATA_HOME"),"Climate/RACMO/ZS_ZGRN_V5_1960-2014_detrended_2day.nc"))]
 
   rec1 = netCDF4.Dataset(files[0])
   if variable != 'zs':
     rec2 = netCDF4.Dataset(files[1])
+    rec3 = netCDF4.Dataset(files[2])
   mask = netCDF4.Dataset(os.path.join(os.getenv("DATA_HOME"),"Climate/RACMO/2015_09_Laura_Kehrl/RACMO23_masks_ZGRN11.nc")).variables['icemask'][:]
 
   # Load RACMO data
@@ -46,19 +48,26 @@ def racmo_grid(xmin,xmax,ymin,ymax,variable,epsg=3413,maskvalues='ice'):
   if variable != 'zs':
     var2 = np.array(rec2.variables[variable][:])
     daysfrom1950_2 = np.array(rec2.variables['time'][:])
+    var3 = np.array(rec3.variables[variable][:])
+    if variable != 't2m':
+      var3 = np.array(var3)/(60*60*24.0)
+    days2015 = np.array(rec3.variables['time'][:])
 
   # Convert date to fractional year
   startday1950 = jdcal.gcal2jd(1950,1,1)
   Nt1 = len(daysfrom1950_1)
   if variable != 'zs':
     Nt2 = len(daysfrom1950_2)
-    time = np.zeros(Nt1+Nt2)
+    Nt3 = len(days2015)
+    time = np.zeros(Nt1+Nt2+Nt3)
     for i in range(0,Nt1):
       year,month,day,fracday = jdcal.jd2gcal(startday1950[0],startday1950[1]+daysfrom1950_1[i])
       time[i] = datelib.date_to_fracyear(year,month,day) 
     for i in range(0,Nt2):
       year,month,day,fracday = jdcal.jd2gcal(startday1950[0],startday1950[1]+daysfrom1950_2[i])
       time[i+Nt1] = datelib.date_to_fracyear(year,month,day)
+    for i in range(0,Nt3):
+      time[i+Nt1+Nt2] = datelib.doy_to_fracyear(2015,1+days2015[i])
   else:
     time = daysfrom1950_1 
     time = time[0:-71]
@@ -81,6 +90,7 @@ def racmo_grid(xmin,xmax,ymin,ymax,variable,epsg=3413,maskvalues='ice'):
   if variable != 'zs':
     var1_subset = var1[:,:,xind[0],xind[1]]  
     var2_subset = var2[:,:,xind[0],xind[1]]
+    var3_subset = var3[:,xind[0],xind[1]]
   else:
     var1_subset = var1[:,xind[0],xind[1]] 
   mask_subset = mask[xind[0],xind[1]]
@@ -96,7 +106,8 @@ def racmo_grid(xmin,xmax,ymin,ymax,variable,epsg=3413,maskvalues='ice'):
   if variable != 'zs':  
     var1_subset = var1_subset[:,:,yind]
     var2_subset = var2_subset[:,:,yind]
-    var_subset = np.row_stack([var1_subset[:,0,0,:],var2_subset[:,0,0,:]])
+    var3_subset = var3_subset[:,yind]
+    var_subset = np.row_stack([var1_subset[:,0,0,:],var2_subset[:,0,0,:],var3_subset[:,0,:]])
   else:
     var1_subset = var1_subset[:,yind]
     var_subset = var1_subset[:,0,:]
