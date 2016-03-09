@@ -17,26 +17,24 @@ def date_to_fracyear(year,month,day):
     N = len(year)
     
     fracyear = np.zeros(N)
-
   
     for i in range(0,N):
-      fracday = day - np.floor(day[i])
-      day0 = jdcal.gcal2jd(year[i],month[i],np.floor(day[i]))
-      day2 = jdcal.gcal2jd(year[i]+1,1,31)
+      day0 = jdcal.gcal2jd(year[i],month[i],day[i])
+      day2 = jdcal.gcal2jd(year[i]+1,1,1)
       day1 = jdcal.gcal2jd(year[i],1,1)
-      doy = day0[1]+day0[0]-day1[1]-day1[0]+fracday
+      doy = day0[1]+day0[0]-day1[1]-day1[0]
   
       fracyear[i] = year[i] + doy/(day2[1]+day2[0]-day1[0]-day1[1])
     
   except:
     # If we only have one date
+
     N = 1
   
-    fracday = day - np.floor(day)
-    day0 = jdcal.gcal2jd(year,month,np.floor(day))
+    day0 = jdcal.gcal2jd(year,month,day)
     day2 = jdcal.gcal2jd(year+1,1,1)
     day1 = jdcal.gcal2jd(year,1,1)
-    doy = day0[1]+day0[0]-day1[1]-day1[0]+fracday
+    doy = day0[1]+day0[0]-day1[1]-day1[0]
   
     fracyear = year + doy/(day2[1]+day2[0]-day1[0]-day1[1])
 
@@ -64,15 +62,11 @@ def fracyear_to_date(input):
   
       day1 = jdcal.gcal2jd(year[i],1,1) # Get length of year
       day2 = jdcal.gcal2jd(year[i]+1,1,1)
-      day[i] = (input[i]-year[i])*float(day2[1]+day2[0]-day1[0]-day1[1])
+      dayfrac[i] = (input[i]-year[i])*float(day2[1]+day2[0]-day1[0]-day1[1])
 
-      year[i],month[i],day[i],frac = jdcal.jd2gcal(day1[0]+day1[1],day[i])
-      # Sometimes there are rounding issues, so if this is the case we want to 
-      # just call it the correct day.
-      if (frac < 1.0e-10) or (frac > 0.999999):
-        day[i] = day[i]+np.round(frac)
-      else:
-        day[i] = day[i]+frac
+      year[i],month[i],day[i],frac = jdcal.jd2gcal(day1[0]+day1[1],dayfrac[i])
+
+      day[i] = day[i]+frac
   except:
     # If input has no length (i.e., it's a float), then just calculate 
     # the date for that number.
@@ -80,15 +74,11 @@ def fracyear_to_date(input):
     day1 = jdcal.gcal2jd(year,1,1) # Get length of year
     day2 = jdcal.gcal2jd(year+1,1,1)
   
-    day = (input-year)*float(day2[1]+day2[0]-day1[0]-day1[1])
+    dayfrac = (input-year)*float(day2[1]+day2[0]-day1[0]-day1[1])
 
-    year,month,day,frac = jdcal.jd2gcal(day1[0]+day1[1],day)
-    # Sometimes there are rounding issues, so if this is the 
-    # case we want to just call it the correct day.
-    if (frac < 1.0e-10) or (frac > 0.999999):
-      day = day+np.round(frac)
-    else:
-      day = day+frac
+    year,month,day,frac = jdcal.jd2gcal(day1[0]+day1[1],dayfrac)
+
+    day = day+frac
 
   return year,month,day
   
@@ -99,7 +89,7 @@ def fracyear_to_doy(input):
   day1 = jdcal.gcal2jd(year,1,1) # Get length of year
   day2 = jdcal.gcal2jd(year+1,1,1)
   
-  doy = (input-year)*float(day2[1]+day2[0]-day1[0]-day1[1])
+  doy = (input-year)*float(day2[1]+day2[0]-day1[0]-day1[1])+1
 
   return year,doy
 
