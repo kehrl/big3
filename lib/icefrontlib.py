@@ -192,7 +192,7 @@ def box_method(glacier,imagesource=False,time1=-np.inf, time2=np.inf):
           pts_terminus = np.flipud(pts_terminus)
         # Only look for intersection if there are points in the shape
         if len(pts_terminus) > 0:
-          line_terminus = LineString(termpts)
+          line_terminus = LineString(pts_terminus)
           # Find intersection with sides of box
           intersect_north = (line_north.intersection(line_terminus))
           intersect_south = (line_south.intersection(line_terminus))
