@@ -9,6 +9,7 @@ import matplotlib.colors as colors
 import matplotlib.cm as cmx
 import matplotlib
 import scipy
+from matplotlib.ticker import AutoMinorLocator
 
 sys.path.append(os.path.join(os.getenv("CODE_HOME"),"Modules/demtools"))
 import gmtColormap
@@ -88,40 +89,45 @@ if plot_overview:
   zcresis = np.array(zcresis)
 
   fig = plt.figure(figsize=(4,3))
-  gs = matplotlib.gridspec.GridSpec(3,1)
+  gs = matplotlib.gridspec.GridSpec(2,1)
   matplotlib.rc('font',family='Arial')
 
   coloptions=['r','b','g','limegreen','gold']
  
-  plt.subplot(gs[0:2])
+  plt.subplot(gs[0])
   ax = plt.gca()
-  plt.plot(dists/1e3,floatlib.height(zb),'k:',linewidth=1.5,label='Flotation')
+  plt.plot(dists/1e3,floatlib.height(zb),'k',linewidth=1.2,label='Flotation',dashes=[2,2,2,2])
   if glacier == 'Helheim':
-    plt.plot(dists/1e3,atm_data['20010521'][:,2],'k',label='2001-05-21',lw=1.5)
+    plt.plot(dists/1e3,atm_data['20010521'][:,2],'k',label='2001-05-21',lw=1.2)
   elif glacier == 'Kanger':
-    plt.plot(dists/1e3,atm_data['20010520'][:,2],'k',label='2001-05-20',lw=1.5)
-  plt.plot(dists/1e3,atm_data['20050518'][:,2],'0.8',label='2005-05-18',lw=1.5)
+    plt.plot(dists/1e3,atm_data['20010520'][:,2],'k',label='2001-05-20',lw=1.2)
+  plt.plot(dists/1e3,atm_data['20050518'][:,2],'0.8',label='2005-05-18',lw=1.2)
   date = str(int(time_dem[ind1,1]))
-  plt.plot(dists/1e3,zs_dem[ind1,:].T,color='r',linewidth=1.5,label=date[0:4]+'-'+date[4:6]+'-'+date[6:])
+  plt.plot(dists/1e3,zs_dem[ind1,:].T,color='r',linewidth=1.2,label=date[0:4]+'-'+date[4:6]+'-'+date[6:])
   date = str(int(time_dem[ind2,1]))
-  plt.plot(dists/1e3,zs_dem[ind2,:].T,color='b',linewidth=1.5,label=date[0:4]+'-'+date[4:6]+'-'+date[6:])
+  plt.plot(dists/1e3,zs_dem[ind2,:].T,color='b',linewidth=1.2,label=date[0:4]+'-'+date[4:6]+'-'+date[6:])
   plt.xticks(np.arange(-30,10,5),fontsize=8)
   ax.set_xticklabels([])
   plt.yticks(np.arange(-1000,1000,250),fontsize=8)
   plt.xlim([-21,6])
   if glacier == 'Helheim':
     plt.ylim([0,670])
-    plt.text(-19.5,500,'b',fontsize=9,fontweight='bold')
+    plt.text(-20,500,'b',fontsize=9,fontweight='bold')
   elif glacier == 'Kanger':
     plt.ylim([0,800])
-    plt.text(-19.5,560,'b',fontsize=9,fontweight='bold')
+    plt.text(-20,560,'b',fontsize=9,fontweight='bold')
+  ax.xaxis.set_minor_locator(AutoMinorLocator(2))
+  ax.yaxis.set_minor_locator(AutoMinorLocator(2))
+  ax.tick_params('both', length=6, width=1.25, which='major')
+  ax.tick_params('both', length=3, width=1, which='minor')
   plt.ylabel('Elevation (m asl)',fontsize=8)
   plt.legend(loc=1,fontsize=8,borderpad=0.2,numpoints=1,handlelength=0.6,labelspacing=0.1,handletextpad=0.3,markerscale=2)
 
   plt.subplot(gs[-1])
+  ax = plt.gca()
   plt.plot(dcresis/1e3,zcresis,'.',c='0.7',markersize=2.5,label='CreSIS')
   if glacier == 'Helheim':
-    plt.plot(dists/1e3,zb,color='k',linewidth=1.5,label='Bed')
+    plt.plot(dists/1e3,zb,color='k',linewidth=1.2,label='Bed')
   elif glacier == 'Kanger':
     ind = np.argmin(abs(dists--5e3))
     plt.plot(dists/1e3,zb,':',color='k',linewidth=1.5)
@@ -131,15 +137,19 @@ if plot_overview:
   plt.xlabel('Distance from mean terminus (km)',fontsize=8)
   plt.xticks(np.arange(-30,10,5),fontsize=8)
   plt.xlim([-21,6])
-  plt.text(-19.5,-500,'c',fontsize=9,fontweight='bold')
+  plt.text(-20,-450,'c',fontsize=9,fontweight='bold')
+  ax.xaxis.set_minor_locator(AutoMinorLocator(2))
+  ax.yaxis.set_minor_locator(AutoMinorLocator(2))
+  ax.tick_params('both', length=6, width=1.25, which='major')
+  ax.tick_params('both', length=3, width=1, which='minor')
   plt.yticks(np.arange(-1250,-250,250),fontsize=8)
-  plt.ylim([-1300,-300])
+  plt.ylim([-1150,-300])
   plt.legend(loc=4,borderpad=0.2,fontsize=8,numpoints=1,handletextpad=0.3,handlelength=0.5,labelspacing=0.1,markerscale=2)
 
   # Save figure
   plt.tight_layout()
   plt.subplots_adjust(wspace=0.04,hspace=0.04)
-  plt.savefig(os.path.join(os.getenv("HOME"),'Bigtmp/'+glacier+'_zs_flowline.pdf'),FORMAT='PDF')
+  plt.savefig(os.path.join(os.getenv("HOME"),'Bigtmp/'+glacier+'_zs_flowline.pdf'),FORMAT='PDF',dpi=600)
   plt.close()
 
 
