@@ -138,6 +138,11 @@ def readbinary(filename,nodatavalue=float('nan')):
   return (x,y,v,vx,vy,ex,ey,time,interval)
 
 def readvelocity(DIR,track,file):
+  
+  '''
+  x,y,v,vx,vy,ex,ey,time,interval = readvelocity(DIR,track,file)
+  '''
+  
    
   # Filename
   filename = DIR+track+"/"+file
@@ -147,23 +152,23 @@ def readvelocity(DIR,track,file):
     year,month,day = datelib.fracyear_to_date(time)
     date = "%04d%02d%02d" % (year,month,day)
   else:
-    time = 'NaN'
-    interval = 'NaN'
-    date = 'NaN'
-    
-  # Check to see if there are geotiff files in the subdirectory. If not, read the binary data.
-  if os.path.isfile(DIR+"TIF/"+track+"_"+date+"_v.tif"):
-    x,y,v = geotifflib.read(DIR+"TIF/"+track+"_"+date+"_v.tif")
-    x,y,vx = geotifflib.read(DIR+"TIF/"+track+"_"+date+"_vx.tif")
-    x,y,vy = geotifflib.read(DIR+"TIF/"+track+"_"+date+"_vy.tif")
-    x,y,ex = geotifflib.read(DIR+"TIF/"+track+"_"+date+"_ex.tif")
-    x,y,ey = geotifflib.read(DIR+"TIF/"+track+"_"+date+"_ey.tif")
-  elif os.path.isfile(DIR+"TIF/"+track+"_v.tif"):
+    time = float('NaN')
+    interval = float('NaN')
+    date = float('NaN')
+  
+  if os.path.isfile(DIR+"TIF/"+track+"_v.tif"):
     x,y,v = geotifflib.read(DIR+"TIF/"+track+"_v.tif")
     x,y,vx = geotifflib.read(DIR+"TIF/"+track+"_vx.tif")
     x,y,vy = geotifflib.read(DIR+"TIF/"+track+"_vy.tif")
     x,y,ex = geotifflib.read(DIR+"TIF/"+track+"_ex.tif")
     x,y,ey = geotifflib.read(DIR+"TIF/"+track+"_ey.tif")
+      # Check to see if there are geotiff files in the subdirectory. If not, read the binary data.
+  elif os.path.isfile(DIR+"TIF/"+track+"_"+date+"_v.tif"):
+    x,y,v = geotifflib.read(DIR+"TIF/"+track+"_"+date+"_v.tif")
+    x,y,vx = geotifflib.read(DIR+"TIF/"+track+"_"+date+"_vx.tif")
+    x,y,vy = geotifflib.read(DIR+"TIF/"+track+"_"+date+"_vy.tif")
+    x,y,ex = geotifflib.read(DIR+"TIF/"+track+"_"+date+"_ex.tif")
+    x,y,ey = geotifflib.read(DIR+"TIF/"+track+"_"+date+"_ey.tif")
   else:
     print "Unpacking binary velocity file ",track
     x,y,v,vx,vy,ex,ey,time,interval = readbinary(filename)
