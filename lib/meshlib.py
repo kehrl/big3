@@ -311,6 +311,8 @@ def xy_to_gmsh_3d(glacier,date,exterior,holes,refine,DIRM,lc1,lc2,lc3,lc4,\
   zbot_interped = floatlib.icebottom(zbed_interped,zsur_interped,rho_i=rho_i,rho_sw=rho_sw)
 
   zbed_grid = np.reshape(zbed_flattened,(len(ysur),len(xsur)))
+  ind = np.where((zsur_grid-zbed_grid) < 10.)
+  zbed_grid[ind] = zsur_grid[ind]-10.
   
   # Print out surface and bed
   fids = open(DIRM+"/inputs/zsdem.xy","w")

@@ -54,7 +54,7 @@ Simulation
 
   Output Intervals = 1
 
-  Steady State Max Iterations = 50
+  Steady State Max Iterations = 500
   Steady State Min Iterations = 1
 
   Output File = "$name$.result"
@@ -293,7 +293,7 @@ Solver 7
   Equation = SaveLine
   Procedure = "SaveData" "SaveLine"
   Exec Solver = String "After all"
-  Filename = "elmer/$name$_beta.dat"
+  Filename = "mesh2d/$name$_beta.dat"
   
   !Parallel Reduce = Logical True
 End
