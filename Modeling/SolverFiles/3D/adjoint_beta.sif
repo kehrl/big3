@@ -49,7 +49,7 @@ Simulation
   Simulation Type = Steady State
 
 ! Internal extrusion 
-  Extruded Mesh Levels = 10
+  Extruded Mesh Levels = 20
   ! Extruded Mesh Name = String "mesh3d"
 
   Output Intervals = 1
@@ -62,7 +62,7 @@ Simulation
 
   Initialize Dirichlet Conditions = Logical False
 
-  Max Output Level = 4
+  Max Output Level = 3
 End
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

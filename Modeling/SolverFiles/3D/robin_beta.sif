@@ -48,7 +48,7 @@ Simulation
   Coordinate System = Cartesian 3D
   Simulation Type = Steady State
 
-  Extruded Mesh Levels = Integer 5
+  Extruded Mesh Levels = Integer 20
   !Extruded Mesh Name = String "mesh3d"
   
   Output Intervals = 1
@@ -306,7 +306,7 @@ Solver 8
   Equation = SaveLine
   Procedure = "SaveData" "SaveLine"
   Exec Solver = String "After all"
-  Filename = "elmer/beta.dat"
+  Filename = "mesh2d/beta.dat"
   
   !Parallel Reduce = Logical True
 End

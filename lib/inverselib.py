@@ -33,12 +33,16 @@ def guess_beta(x,y,zs,zb,u,v,frac):
   dx = x[1] - x[0]
   dy = y[1] - y[0]
 
-  #u = u/yearinsec
-  #v = v/yearinsec
-
   #############################
   # Compute the surface slope #
   #############################
+
+  # Smooth the ice surface elevation
+  for i in range(1, ny - 1):
+    for j in range(1, nx - 1):
+      zs[i, j] = (4 * zs[i, j] +
+      	zs[i + 1, j] + zs[i - 1, j] +
+        zs[i, j + 1] + zs[i, j - 1]) / 8.0
   
   dsdx = np.zeros((ny, nx))
   dsdy = np.zeros((ny, nx))
