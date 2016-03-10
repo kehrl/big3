@@ -6,7 +6,7 @@ from matplotlib.path import Path
 import scipy.interpolate
 import scipy.signal
 
-def load_flowline(glacier,shapefilename='center_flowline',filt_len=2.0e3,verticaldatum='geoid',bedsource='smith',bedmodel='aniso',bedsmoothing=4):
+def load_flowline(glacier,shapefilename='center_flowline',filt_len=2.0e3,verticaldatum='geoid',bedsource='cresis',bedmodel='aniso',bedsmoothing=4):
 
   '''
   x,y,zb_filt,dists = load(glacier,shapefilename='center_flowline')
@@ -62,9 +62,14 @@ def load_flowline(glacier,shapefilename='center_flowline',filt_len=2.0e3,vertica
   # Find bed elevation
   if (glacier == 'Helheim') and (bedsource == 'smith'):
     zb = bedlib.smith_at_pts(x,y,glacier,model=bedmodel,smoothing=bedsmoothing,verticaldatum=verticaldatum)
-  elif glacier == 'Kanger' and (bedsource != 'morlighem'):
+  elif bedsource == 'morlighem':
+    zb = bedlib.morlighem_pts(x,y,verticaldatum=verticaldatum)
+  elif (glacier == 'Kanger' and (bedsource != 'morlighem')) or (bedsource == 'cresis'):
     cresis = bedlib.cresis('all',glacier,verticaldatum=verticaldatum)
-    cutdist = 100.
+    if glacier == 'Helheim':
+      cresis2001 = bedlib.cresis('2001',glacier,verticaldatum=verticaldatum)
+      cresis = np.row_stack([cresis,cresis2001])
+    cutdist = 200.
     dcresis = []
     zcresis = []
     tcresis = []
@@ -80,8 +85,7 @@ def load_flowline(glacier,shapefilename='center_flowline',filt_len=2.0e3,vertica
     dcresis = np.array(dcresis)[ind]
     zcresis = np.array(zcresis)[ind]
     zb = np.interp(dists,dcresis,zcresis)
-  elif bedsource == 'morlighem':
-    zb = bedlib.morlighem_pts(x,y,verticaldatum='geoid')
+
 
   if filt_len != 'none':
     ind = np.where(~(np.isnan(zb)))[0]

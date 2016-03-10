@@ -111,6 +111,7 @@ def velocity_at_eulpoints(xpt,ypt,glacier,data='all',xy_velocities='False'):
     elif type == 'TSX':
       DIRTOP = os.path.join(os.getenv("DATA_HOME"),"Velocity/TSX/"+glacier+"/")
     
+
     DIRs=os.listdir(DIRTOP)
     for DIR in DIRs:
       if DIR.startswith('track') or DIR.startswith('winter'):
@@ -481,7 +482,7 @@ def variability(glacier,time1,time2):
       x1,y1,v1,vx1,vy1,ex1,ey1,time_file,interval1 = geodatlib.readvelocity(DIR_TSX,DIR,"mosaicOffsets")
       
       time[count] = time_file
-      year,month,day = datelib.fracyear_to_date(time1)
+      year,month,day = datelib.fracyear_to_date(time_file)
       
       xind1 = np.argmin(abs(x1-xmin))
       xind2 = np.argmin(abs(x1-xmax))+1
