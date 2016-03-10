@@ -20,8 +20,7 @@ solverfile='model2.sif'
 
 # Directories
 DIRS=os.path.join(os.getenv("CODE_HOME"),"big3/modeling/solverFiles/3D/")
-DIRM=os.path.join(os.getenv("MODEL_HOME"),"Helheim/Meshes/3D/"+RES+"/")
-DIRR=os.path.join(os.getenv("MODEL_HOME"),"Helheim/Results/3D/"+RES+"/Inversion/")
+DIRM=os.path.join(os.getenv("MODEL_HOME"),"Helheim/3D/"+RES+"/")
 DIRX=os.path.join(os.getenv("DATA_HOME"),"ShapeFiles/Glaciers/3D/Helheim/")
 
 ####################################################

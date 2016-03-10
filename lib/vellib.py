@@ -821,15 +821,15 @@ def inversion_3D(glacier,x,y,time,dir_velocity_out='none',blur=False):
   
   if dir_velocity_out != 'none':
     # File for velocity in x-dir
-    fidu = open(dir_velocity_out+"/UDEM.xy","w")
+    fidu = open(dir_velocity_out+"/udem.xy","w")
     fidu.write('{}\n{}\n'.format(len(xu),len(yu)))
   
     # File for velocity in y-dir
-    fidv = open(dir_velocity_out+"/VDEM.xy","w")
+    fidv = open(dir_velocity_out+"/vdem.xy","w")
     fidv.write('{}\n{}\n'.format(len(xv),len(yv)))
   
     # File for velocity magnitude
-    fidmag = open(dir_velocity_out+"/VMAG.xy","w")
+    fidmag = open(dir_velocity_out+"/vsurfdem.xy","w")
     fidmag.write('{}\n{}\n'.format(len(xu),len(yu)))
   
     for i in range(0,len(xu)):

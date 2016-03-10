@@ -39,7 +39,7 @@ $gravity = -9.81*yearinsec^2
 
 
 Header
-  Mesh DB "Mesh_Input" "elmer"
+  Mesh DB "Mesh_Input" "mesh2d"
 End
 
 
@@ -47,6 +47,10 @@ End
 Simulation
   Coordinate System  = Cartesian 3D 
   Simulation Type = Steady State
+
+! Internal extrusion 
+  Extruded Mesh Levels = 5
+  ! Extruded Mesh Name = String "mesh3d"
 
   Output Intervals = 1
 
@@ -58,7 +62,7 @@ Simulation
 
   Initialize Dirichlet Conditions = Logical False
 
-  max output level = 4
+  Max Output Level = 4
 End
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -82,8 +86,10 @@ End
 Initial Condition 1
   BetaS = Variable coordinate 1, Coordinate 2
      REAL MATC "betaSquare(tx)"
-  MuS = Variable Coordinate 3,
-    Real Procedure "Rheology.so" "Viscosity"
+  MuS = Real $ (2.0*6.4e-25*yearinsec)^(-1.0/3.0)*1.0e-6 
+  ! Using a mixed value from Habermann (Jakobshavn) and Nick (Helheim flowline), -5 deg C
+  ! MuS = Variable Coordinate 3,
+  !  Real Procedure "Rheology.so" "Viscosity"
  
 ! initial guess for (square root) slip coeff.
   Beta = Variable Coordinate 1, Coordinate 2
@@ -128,17 +134,15 @@ Material 1
 End
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Solver 1
+  Exec Solver = Before simulation
+  Equation = "MapCoordinate"
+  Procedure = "StructuredMeshMapper" "StructuredMeshMapper"
+  Active Coordinate = Integer 3
+End
 
 !!!! Navier-Stokes Solution
-
-!Solver 1
-!  Exec Solver = Before simulation
-!  Equation = "MapCoordinate"
-!  Procedure = "StructuredMeshMapper" "StructuredMeshMapper"
-!  Active Coordinate = Integer 3
-!End
-
-Solver 1
+Solver 2
   Equation = "Navier-Stokes"
   
   Stabilize = logical True
@@ -194,7 +198,7 @@ End
 
 !!! Compute Cost function
 !!!!!!!!   Has to be run before the Adjoint Solver as adjoint forcing is computed here !!!!!
-Solver 2
+Solver 3
 
   Equation = "Cost"
 
@@ -214,7 +218,7 @@ Solver 2
 end
 
 !!!!  Adjoint Solution
-Solver 3
+Solver 4
  
   Equation = "Adjoint"
   Variable = Adjoint
@@ -237,7 +241,7 @@ End
 
 
 !!!!!  Compute Derivative of Cost function / Beta
-Solver 4
+Solver 5
   Equation = "DJDBeta"
 
 !!  Solver need to be associated => Define dumy variable
@@ -257,7 +261,7 @@ Solver 4
 end
 
 !!!!! Optimization procedure 
-Solver 5
+Solver 6
   Equation = "Optimize_m1qn3"
 
 !!  Solver need to be associated => Define dumy variable
@@ -285,7 +289,7 @@ Solver 5
 
 end
 
-Solver 6
+Solver 7
   Equation = SaveLine
   Procedure = "SaveData" "SaveLine"
   Exec Solver = String "After all"
@@ -297,46 +301,18 @@ End
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 Equation 1
-  Active Solvers (4)= 1 2 3 6
+  Active Solvers (4)= 1 2 3 4 7
   NS Convect= False
 End
 
 Equation 2
- Active Solvers (2)=  4 5
+ Active Solvers (2)=  5 6
 End
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 Boundary Condition 1
-  Name = "Side Walls"
-  Target Boundaries(1) = 4
-
-! Dirichlet BC 
- 
-  Velocity 1 = Real 0.0
-  Velocity 2 = Real 0.0
-
-! Dirichlet BC => Dirichlet = 0 for Adjoint
-  Adjoint 1 = Real 0.0
-  Adjoint 2 = Real 0.0
-End
-
-Boundary Condition 2
-  Name = "Inflow"
-  Target Boundaries = 5
-
-  Velocity 1 = Variable Coordinate 1
-    Real procedure "UWA_Bnd.so" "UBnd"
-  Velocity 2 = Variable Coordinate 1
-    Real procedure "UWA_Bnd.so" "VBnd"
-
-! Dirichlet BC => Dirichlet = 0 for Adjoint
-  Adjoint 1 = Real 0.0
-  Adjoint 2 = Real 0.0
-End
-
-Boundary Condition 3
   Name = "Front"
-  Target Boundaries = 3
+  Target Boundaries = 1
 
   Flow Force BC = Logical True
   External Pressure = Variable Coordinate 3 !we are in MPa units
@@ -347,12 +323,44 @@ Boundary Condition 3
   Adjoint 2 = Real 0.0
 End
 
+Boundary Condition 2
+  Name = "Side Walls"
+  Target Boundaries(1) = 2
+
+! Dirichlet BC 
+  Velocity 1 = Variable Coordinate 1
+    Real procedure "USF_Init.so" "UWa"
+  Velocity 2 = Variable Coordinate 1
+    Real procedure "USF_Init.so" "VWa"
+
+! Dirichlet BC => Dirichlet = 0 for Adjoint
+  Adjoint 1 = Real 0.0
+  Adjoint 2 = Real 0.0
+End
+
+Boundary Condition 3
+  Name = "Inflow"
+  Target Boundaries = 3
+
+  Velocity 1 = Variable Coordinate 1
+    Real procedure "USF_Init.so" "UWa"
+  Velocity 2 = Variable Coordinate 1
+    Real procedure "USF_Init.so" "VWa"
+
+! Dirichlet BC => Dirichlet = 0 for Adjoint
+  Adjoint 1 = Real 0.0
+  Adjoint 2 = Real 0.0
+End
+
 Boundary Condition 4
   !Name= "bed" mandatory to compute regularistaion term of the cost function (int (dbeta/dx) 2)
   Name = "bed"
   !Body Id used to solve
   Body ID = Integer 2
-  Target Boundaries = 1
+  Target Boundaries = 4
+  
+  Bottom Surface = Variable Coordinate 1
+    REAL   procedure "./USF_Init.so" "zbIni"
 
   Save Line = Logical True
 
@@ -376,7 +384,10 @@ End
 Boundary Condition 5
   !Name= "Surface" mandatory to compute cost function
   Name = "Surface"
-  Target Boundaries = 2
+  Target Boundaries = 5
+  
+  Top Surface = Variable Coordinate 1
+    REAL procedure "./USF_Init.so" "zsIni"
   
   Save Line = Logical True
 

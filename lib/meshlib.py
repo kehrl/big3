@@ -29,7 +29,7 @@ def shp_to_xy(in_file):
   
   Converts shapefile "in_file" to a sorted array of x,y points.
   
-  Inputs:
+  inputs:
   in_file: shapefile name
   
   Outputs:
@@ -89,7 +89,7 @@ def xy_to_gmsh_3d(glacier,date,exterior,holes,refine,DIRM,lc1,lc2,lc3,lc4,\
   '''
   x,y,zbed,zsur = xy_to_gmsh_3d(glacier,date,exterior,holes,refine,DIRM,lc1,lc2,lc3,lc4,bedname,bedmodel,bedsmoothing)
   
-  Inputs:
+  inputs:
   exterior: list of x,y coordinates for glacier mesh from "shp_to_xy"
   holes: list of holes with x,y coordinates for glacier mesh from "shp_to_xy"
   refine: list of x,y coordinates for refinement, with an index number that states what level of refinment
@@ -102,7 +102,7 @@ def xy_to_gmsh_3d(glacier,date,exterior,holes,refine,DIRM,lc1,lc2,lc3,lc4,\
   '''
   
   # Open file "Planar.geo" in the mesh directory
-  filename = os.path.join(DIRM+"Planar.geo")
+  filename = os.path.join(DIRM+"mesh2d.geo")
   fid = open(filename,'w')
   fid.write("lc1 = %f; \n" % lc1)
   fid.write("lc2 = %f; \n" % lc2)
@@ -280,9 +280,10 @@ def xy_to_gmsh_3d(glacier,date,exterior,holes,refine,DIRM,lc1,lc2,lc3,lc4,\
   
   # Load bed DEM
   if bedname == 'morlighem':
-    xbed,ybed,zbed = bedlib.morlighem_grid(xmin,xmax,ymin,ymax,verticaldatum='geoid')
+    xbed_grid,ybed_grid,zbed = bedlib.morlighem_grid(xmin,xmax,ymin,ymax,verticaldatum='geoid')
     xbed_grid,ybed_grid = np.meshgrid(xbed,ybed)
   elif bedname == 'smith':
+    # irregular triangular grid
     xbed_grid,ybed_grid,zbed_grid = bedlib.smith_grid(glacier,\
     			model=bedmodel,smoothing=bedsmoothing,verticaldatum='geoid')
 
@@ -308,17 +309,25 @@ def xy_to_gmsh_3d(glacier,date,exterior,holes,refine,DIRM,lc1,lc2,lc3,lc4,\
   zbed_interped = zbed_grid.flatten()
 
   zbot_interped = floatlib.icebottom(zbed_interped,zsur_interped,rho_i=rho_i,rho_sw=rho_sw)
-  
-  # Print out surface
-  np.savetxt(DIRM+"/Inputs/surf.xyz",np.column_stack((x_interped,y_interped,zsur_interped)),fmt='%.6f')
-  
-  # Print out ice bottom
-  np.savetxt(DIRM+"/Inputs/bed.xyz",np.column_stack((x_interped,y_interped,zbot_interped)),fmt='%.6f')  
-  
-  # Print out bed
-  np.savetxt(DIRM+"/Inputs/roughbed.xyz",np.column_stack((xbed_grid.flatten(),ybed_grid.flatten(),zbed_interped)),fmt='%.6f')
-  
+
   zbed_grid = np.reshape(zbed_flattened,(len(ysur),len(xsur)))
+  
+  # Print out surface and bed
+  fids = open(DIRM+"/inputs/zsdem.xy","w")
+  fidb = open(DIRM+"/inputs/zbdem.xy","w")
+  fids.write('{}\n{}\n'.format(len(xsur),len(ysur)))
+  fidb.write('{}\n{}\n'.format(len(xsur),len(ysur)))
+  for i in range(0,len(xsur)):
+    for j in range(0,len(ysur)):
+      fids.write('{0} {1} {2}\n'.format(xsur[i],ysur[j],zsur_grid[j,i]))
+      fidb.write('{0} {1} {2}\n'.format(xsur[i],ysur[j],zbed_grid[j,i]))
+  fids.close()
+  fidb.close()
+   
+  # Print out bed
+  # np.savetxt(DIRM+"/inputs/roughbed.xyz",np.column_stack((xbed_grid.flatten(),ybed_grid.flatten(),zbed_interped)),fmt='%.6f')
+  
+
   
   return xsur,ysur,zbed_grid,zsur_grid
 
@@ -335,7 +344,7 @@ def xy_to_gmsh_box(x,y,dists,zb,zs,terminus,glacier,DIRM,filename,lc,lc_d,layers
   that include the surface elevations and ice bottom elevations, respectively. 
   These files are used by "MshGlacier."
 
-  Inputs:
+  inputs:
   x,y,dists,zb: output from glacier_flowline
   glacier: glacier name
   date: date for surface DEM
