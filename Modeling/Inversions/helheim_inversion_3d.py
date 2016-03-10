@@ -16,7 +16,7 @@ import numpy as np
 import argparse
 
 ##########
-# Inputs #
+# inputs #
 ##########
 
 # Get inputs to file
@@ -43,15 +43,15 @@ glacier = 'Helheim'
 DIRS=os.path.join(os.getenv("CODE_HOME"),"big3/modeling/solverFiles/3D/")
 DIRM=os.path.join(os.getenv("MODEL_HOME"),glacier+"/3D/"+RES+"/")
 DIRX=os.path.join(os.getenv("DATA_HOME"),"ShapeFiles/Glaciers/3D/"+glacier)
-Inputs=os.path.join(DIRM+"/Inputs/")
+inputs=os.path.join(DIRM+"/inputs/")
 
 if not(os.path.exists(DIRM)):
   os.makedirs(DIRM)
 
 # Copy model inputs into the solver file directory
-input_files=os.listdir(DIRM+"Inputs/")
+input_files=os.listdir(DIRM+"inputs/")
 for file in input_files:
-  shutil.copy(DIRM+"Inputs/"+file,DIRS+"Inputs/")
+  shutil.copy(DIRM+"inputs/"+file,DIRS+"inputs/")
 del input_files
 
 # Boundary numbers 
@@ -134,7 +134,7 @@ for name in names:
 ################################
 
 #Linear Beta square
-fid = open(Inputs+"beta_linear.xyz",'w')
+fid = open(inputs+"beta_linear.xyz",'w')
 fid.write('{0}\n'.format(len(bed['node'])))
 for i in range(0,len(bed['node'])):
   fid.write('{0} {1} {2:.4f} {3}\n'.format(bed['coord1'][i],bed['coord2'][i],\
@@ -142,7 +142,7 @@ for i in range(0,len(bed['node'])):
 fid.close()
 
 #Weertman coefficient
-fid = open(Inputs+"beta_weertman.xyz",'w')
+fid = open(inputs+"beta_weertman.xyz",'w')
 fid.write('{0}\n'.format(len(bed['node'])))
 for i in range(0,len(bed['node'])):
   coeff=(bed['beta'][i]**2)*(bed['vel'][i]**(2.0/3.0))
@@ -151,8 +151,8 @@ fid.close()
 
 
 # Remove files in solver Input directory
-for file in os.listdir(DIRS+"Inputs/"):
-  file_path = os.path.join(DIRS+"Inputs/", file)
+for file in os.listdir(DIRS+"inputs/"):
+  file_path = os.path.join(DIRS+"inputs/", file)
   try:
    if os.path.isfile(file_path):
      os.unlink(file_path)  
