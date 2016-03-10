@@ -111,17 +111,17 @@ del fid
 # Combine elmer results into one file #
 #######################################
 
-bed = elmerreadlib.saveline_boundary(DIRM+"/elmer/",runname,bbed)
-surf = elmerreadlib.saveline_boundary(DIRM+"/elmer/",runname,bsurf)
+bed = elmerreadlib.saveline_boundary(DIRM+"/mesh2d/",runname,bbed)
+surf = elmerreadlib.saveline_boundary(DIRM+"/mesh2d/",runname,bsurf)
 
-os.rename(DIRM+"/elmer/"+runname+".dat",DIRM+runname+method+"_"+regpar+"_beta.dat")
-os.rename(DIRM+"/elmer/"+runname+".dat.names",DIRM+runname+method+"_"+regpar+"_beta.dat.names")
+os.rename(DIRM+"/mesh2d/"+runname+".dat",DIRM+runname+method+"_"+regpar+"_beta.dat")
+os.rename(DIRM+"/mesh2d/"+runname+".dat.names",DIRM+runname+method+"_"+regpar+"_beta.dat.names")
 os.rename(DIRS+"M1QN3_"+method+"_beta.out",DIRM+"M1QN3_"+method+"_"+regpar+"_beta.out")
 os.rename(DIRS+"gradientnormadjoint_"+method+"_beta.dat",DIRM+"gradient_"+method+"_"+regpar+"_beta.dat")
 os.rename(DIRS+"cost_"+method+"_beta.dat",DIRM+"cost_"+method+"_"+regpar+"_beta.dat")
 
-names = os.listdir(DIRM+"/elmer")
-os.chdir(DIRM+"/elmer")
+names = os.listdir(DIRM+"/mesh2d")
+os.chdir(DIRM+"/mesh2d")
 if not os.path.exists(DIRM+"lambda_"+regpar):
   os.makedirs(DIRM+"lambda_"+regpar)
 for name in names:
