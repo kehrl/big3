@@ -108,7 +108,7 @@ def main():
   # Write cost values to summary file #
   ##################################### 
 
-  fid = open(DIRS+"cost_"+method+"_beta.dat","r")
+  fid = open(DIRM+"cost_"+method+"_beta.dat","r")
   lines = fid.readlines()
   line=lines[-1]
   p=line.split()
