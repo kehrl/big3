@@ -102,7 +102,7 @@ def main():
   fid3.write(method+'_beta_'+date+'.sif')
   fid3.close()
 
-  call(["mpiexec","-np",partitions,"elmersolver_mpi"])
+  call(["mpiexec","-np",partitions,"ElmerSolver_mpi"])
 	
   #####################################
   # Write cost values to summary file #
