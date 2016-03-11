@@ -2,6 +2,5 @@
 #PBS -l select=1:ncpus=8:model=ivy
 #PBS -l walltime=1:00:00
 source /u/dlilien/sw/elmer/.bashrc_pleiades
-module load cmake
 cd $PBS_O_WORKDIR
 python /u/lkehrl/Code/BigThreeGlaciers/Modeling/Inversions/helheim_inversion_3d.py -n 8 -mesh 20120624_Pleiades8
