@@ -107,7 +107,7 @@ def load_flowline(glacier,shapefilename='center_flowline',filt_len=2.0e3,vertica
 
   return x,y,zb_filt,dists
 
-def load_extent(glacier,time,nofront_shapefile='glacier_extent_nofront.shp):
+def load_extent(glacier,time,nofront_shapefile='glacier_extent_nofront'):
   
   '''
   xextent,yextent = date(glacier,time)
