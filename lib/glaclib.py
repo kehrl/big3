@@ -107,7 +107,7 @@ def load_flowline(glacier,shapefilename='center_flowline',filt_len=2.0e3,vertica
 
   return x,y,zb_filt,dists
 
-def load_extent(glacier,time):
+def load_extent(glacier,time,nofront_shapefile='glacier_extent_nofront.shp):
   
   '''
   xextent,yextent = date(glacier,time)
@@ -123,7 +123,7 @@ def load_extent(glacier,time):
   '''
   
   # Glacier extent with no ice front
-  extent = meshlib.shp_to_xy(os.path.join(os.getenv("DATA_HOME"),"ShapeFiles/Glaciers/3D/"+glacier+"/glacier_extent_nofront"))
+  extent = meshlib.shp_to_xy(os.path.join(os.getenv("DATA_HOME"),"ShapeFiles/Glaciers/3D/"+glacier+"/"+nofront_shapefile))
   xextent = extent[:,0]
   yextent = extent[:,1]
   bound = extent[:,2]

@@ -39,7 +39,7 @@ $gravity = -9.81*yearinsec^2
 
 
 Header
-  Mesh DB "Mesh_Input" "mesh2d"
+  Mesh DB "." "mesh2d"
 End
 
 
@@ -48,7 +48,7 @@ Simulation
   Coordinate System = Cartesian 3D
   Simulation Type = Steady State
 
-  Extruded Mesh Levels = Integer 20
+  Extruded Mesh Levels=Integer
   !Extruded Mesh Name = String "mesh3d"
   
   Output Intervals = 1

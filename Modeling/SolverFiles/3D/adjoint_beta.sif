@@ -39,7 +39,7 @@ $gravity = -9.81*yearinsec^2
 
 
 Header
-  Mesh DB "Mesh_Input" "mesh2d"
+  Mesh DB "." "mesh2d"
 End
 
 
@@ -49,12 +49,12 @@ Simulation
   Simulation Type = Steady State
 
 ! Internal extrusion 
-  Extruded Mesh Levels = 20
+  Extruded Mesh Levels=Integer
   ! Extruded Mesh Name = String "mesh3d"
 
   Output Intervals = 1
 
-  Steady State Max Iterations = 500
+  Steady State Max Iterations = 2
   Steady State Min Iterations = 1
 
   Output File = "$name$.result"
@@ -318,7 +318,7 @@ Boundary Condition 1
   External Pressure = Variable Coordinate 3 !we are in MPa units
     Real MATC "-1.0*waterpressure(tx)*1.0E-06"
 
-!Dirichlet BC => Dirichlet = 0 for Adjoint
+! Dirichlet BC => Dirichlet = 0 for Adjoint
   Adjoint 1 = Real 0.0
   Adjoint 2 = Real 0.0
 End
@@ -353,9 +353,9 @@ Boundary Condition 3
 End
 
 Boundary Condition 4
-  !Name= "bed" mandatory to compute regularistaion term of the cost function (int (dbeta/dx) 2)
+! Name= "bed" mandatory to compute regularistaion term of the cost function (int (dbeta/dx) 2)
   Name = "bed"
-  !Body Id used to solve
+! Body Id used to solve
   Body ID = Integer 2
   Target Boundaries = 4
   
@@ -396,7 +396,7 @@ Boundary Condition 5
   Adjoint Cost = Variable Velocity 1 , Vsurfini 1 , Velocity 2 , Vsurfini 2
     Real MATC "0.5*((tx(0)-tx(1))*(tx(0)-tx(1))+(tx(2)-tx(3))*(tx(2)-tx(3)))"
 
-  !  derivative of the cost function wr u and v
+  ! Derivative of the cost function wr u and v
   Adjoint Cost der 1 = Variable Velocity 1 , Vsurfini 1
     Real MATC "tx(0)-tx(1)"
   Adjoint Cost der 2 = Variable Velocity 2 , Vsurfini 2
