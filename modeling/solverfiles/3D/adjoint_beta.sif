@@ -135,7 +135,7 @@ End
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 Solver 1
-  Exec Solver = Before simulation
+  Exec Solver = Before Simulation
   Equation = "MapCoordinate"
   Procedure = "StructuredMeshMapper" "StructuredMeshMapper"
   Active Coordinate = Integer 3
@@ -360,7 +360,7 @@ Boundary Condition 4
   Target Boundaries = 4
   
   Bottom Surface = Variable Coordinate 1
-    REAL   procedure "./USF_Init.so" "zbIni"
+    REAL   procedure "USF_Init.so" "zbIni"
 
   Save Line = Logical True
 
@@ -387,7 +387,7 @@ Boundary Condition 5
   Target Boundaries = 5
   
   Top Surface = Variable Coordinate 1
-    REAL procedure "./USF_Init.so" "zsIni"
+    REAL procedure "USF_Init.so" "zsIni"
   
   Save Line = Logical True
 
