@@ -15,7 +15,7 @@ FUNCTION Linear( Model, nodenumber, dumy) RESULT(coeff) !
 	REAL(KIND=dp) :: Zbed, znode, dist(1)
 	REAL(KIND=dp), ALLOCATABLE :: xb(:), yb(:), zb(:), betas(:)
 	LOGICAL :: FirstTime=.True.
-	CHARACTER(len=MAX_NAME_LEN) :: filin='Inputs/beta_linear.xyz'
+	CHARACTER(len=MAX_NAME_LEN) :: filin='inputs/beta_linear.xyz'
 
 	SAVE xb, yb, zb, betas
 	SAVE Firsttime
@@ -25,7 +25,7 @@ FUNCTION Linear( Model, nodenumber, dumy) RESULT(coeff) !
     	Firsttime=.False.
 
        	! open file
-       	open(10,file='Inputs/beta_linear.xyz')
+       	open(10,file='inputs/beta_linear.xyz')
     	Read(10,*) Nb
         ALLOCATE(xb(Nb), yb(Nb), zb(Nb), betas(Nb))
         READ(10,*)(xb(i), yb(i), zb(i), betas(i), i=1,Nb)
@@ -62,7 +62,7 @@ FUNCTION Weertman( Model, nodenumber, dumy) RESULT(coeff) !
 	REAL(KIND=dp) :: Zbed, znode, dist(1)
 	REAL(KIND=dp), ALLOCATABLE :: xb(:), yb(:), zb(:), betas(:)
 	LOGICAL :: FirstTime=.True.
-	CHARACTER(len=MAX_NAME_LEN) :: filin='Inputs/beta_weertman.xyz'
+	CHARACTER(len=MAX_NAME_LEN) :: filin='inputs/beta_weertman.xyz'
 
 	SAVE xb, yb, zb, betas
 	SAVE Firsttime
@@ -72,7 +72,7 @@ FUNCTION Weertman( Model, nodenumber, dumy) RESULT(coeff) !
     	Firsttime=.False.
 
        	! open file
-       	open(10,file='Inputs/beta_weertman.xyz')
+       	open(10,file='inputs/beta_weertman.xyz')
     	Read(10,*) Nb
         ALLOCATE(xb(Nb), yb(Nb), zb(Nb), betas(Nb))
         READ(10,*)(xb(i), yb(i), zb(i), betas(i), i=1,Nb)
@@ -123,7 +123,7 @@ FUNCTION GuessBeta( Model, nodenumber, dumy) RESULT(coeff) !
 
 
         ! open file
-        open(10,file='Inputs/beta0.xy')
+        open(10,file='inputs/beta0.xy')
         Read(10,*) nx
         Read(10,*) ny
         ALLOCATE(xx(nx),yy(ny))
