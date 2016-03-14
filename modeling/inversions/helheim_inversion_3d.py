@@ -102,7 +102,7 @@ def main():
   fid3.write(method+'_beta_'+date+'.sif')
   fid3.close()
 
-  call(["mpiexec","-np",partitions,"ElmerSolver_mpi"])
+  call(["mpiexec","ElmerSolver_mpi"])
 	
   #####################################
   # Write cost values to summary file #
@@ -163,16 +163,6 @@ def main():
     coeff=(bed['beta'][i]**2)*(bed['vel'][i]**(2.0/3.0))
     fid.write('{0} {1} {2:.4f} {3}\n'.format(bed['coord1'][i],bed['coord2'][i],bed['coord3'][i],coeff))
   fid.close() 
-
-
-  # Remove files in solver Input directory
-  for file in os.listdir(DIRS+"inputs/"):
-    file_path = os.path.join(DIRS+"inputs/", file)
-    try:
-      if os.path.isfile(file_path):
-        os.unlink(file_path)  
-    except:
-      pass
 
 	
 if __name__ == "__main__":
