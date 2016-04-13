@@ -1,6 +1,6 @@
 import os
 import sys
-import icefrontlib, meshlib, distlib, bedlib
+import icefrontlib, meshlib, distlib, bedlib, geotifflib, datelib
 import numpy as np
 from matplotlib.path import Path
 import scipy.interpolate
@@ -171,3 +171,63 @@ def load_extent(glacier,time,nofront_shapefile='glacier_extent_nofront'):
       bound = np.r_[np.delete(bound[0:ind1],range(ind2+1,ind1)),boundterminus,bound[ind1+1:]]
   
   return np.column_stack([xextent,yextent,bound])
+
+def load_satimages(glacier,xmin,xmax,ymin,ymax,time1=-np.inf,time2=np.inf,data='all'):
+
+  '''
+  Load satellite images for a particular glacier for the grid defined by xmin,xmax,ymin,
+  ymax, over the time interval time1 to time2.
+  '''
+  
+  DIRLANDSAT = os.path.join(os.getenv("DATA_HOME"),"Imagery/Landsat/"+glacier+"/TIF/")
+  DIRWV = os.path.join(os.getenv("DATA_HOME"),"Imagery/Worldview/"+glacier+"/")
+  DIRTSX = os.path.join(os.getenv("DATA_HOME"),"Mosaics/"+glacier+"/")
+  
+  # Find files to load
+  dirs = []
+  times = []
+  types = []
+  images = []
+  
+  # Check landsat files
+  if ('LANDSAT' in data) or (data=='all'):
+    files = os.listdir(DIRLANDSAT)
+    for file in files:
+      if file.endswith('.tif'):
+        filetime = datelib.date_to_fracyear(float(file[0:4]),float(file[4:6]),float(file[6:8]))
+        if (filetime >= time1) and (filetime <= time2):
+          types.append('Landsat')
+          dirs.append(DIRLANDSAT+file)
+          times.append(filetime)
+          images.append(geotifflib.read(DIRLANDSAT+file))
+  
+  # Check TSX files
+  if ('TSX' in data) or (data == 'all'):  
+    files = os.listdir(DIRTSX)
+    for file in files:
+      if file.endswith('.tif'):
+        if glacier == 'Helheim':
+          filetime = datelib.doy_to_fracyear(float(file[14:18]),float(file[19:22]))
+        elif glacier == 'Kanger':
+          filetime = datelib.doy_to_fracyear(float(file[11:15]),float(file[16:19]))        
+        if (filetime >= time1) and (filetime <= time2):
+          types.append('TSX')
+          dirs.append(DIRLANDSAT+file)
+          times.append(filetime)
+          images.append(geotifflib.read(DIRTSX+file))
+  
+  sortind = np.argsort(times)
+  images_sorted = []
+  types_sorted = []
+  times_sorted = []
+  for ind in sortind:
+    images_sorted.append(images[ind])
+    types_sorted.append(types[ind])
+    times_sorted.append(times[ind])
+    
+          
+  return images_sorted,times_sorted,types_sorted
+     
+          
+       
+    

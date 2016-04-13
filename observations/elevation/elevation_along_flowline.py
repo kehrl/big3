@@ -63,10 +63,8 @@ gimp = zslib.gimp_at_pts(x,y,glacier,'geoid')
 if plot_overview:
   if glacier == 'Helheim':
     ind1 = np.where(time_dem[:,1] == 20130804)[0]
-    ind2 = np.where(time_dem[:,1] == 20140127)[0]
   elif glacier == 'Kanger':
-    ind1 = np.where(time_dem[:,1] == 20140628)[0]
-    ind2 = np.where(time_dem[:,1] == 20141023)[0]
+    ind1 = np.where(time_dem[:,1] == 20130714)[0]
 
   # Get radar thicknesses close to flightline
   cresis = bedlib.cresis('all',glacier)
@@ -88,7 +86,7 @@ if plot_overview:
   dcresis = np.array(dcresis)
   zcresis = np.array(zcresis)
 
-  fig = plt.figure(figsize=(4,3))
+  fig = plt.figure(figsize=(4,2.7))
   gs = matplotlib.gridspec.GridSpec(2,1)
   matplotlib.rc('font',family='Arial')
 
@@ -98,14 +96,17 @@ if plot_overview:
   ax = plt.gca()
   plt.plot(dists/1e3,floatlib.height(zb),'k',linewidth=1.2,label='Flotation',dashes=[2,2,2,2])
   if glacier == 'Helheim':
-    plt.plot(dists/1e3,atm_data['20010521'][:,2],'k',label='2001-05-21',lw=1.2)
+    plt.plot(dists/1e3,atm_data['20010521'][:,2],'k',label='21 May 2001',lw=1.2)
   elif glacier == 'Kanger':
-    plt.plot(dists/1e3,atm_data['20010520'][:,2],'k',label='2001-05-20',lw=1.2)
-  plt.plot(dists/1e3,atm_data['20050518'][:,2],'0.8',label='2005-05-18',lw=1.2)
-  date = str(int(time_dem[ind1,1]))
-  plt.plot(dists/1e3,zs_dem[ind1,:].T,color='r',linewidth=1.2,label=date[0:4]+'-'+date[4:6]+'-'+date[6:])
-  date = str(int(time_dem[ind2,1]))
-  plt.plot(dists/1e3,zs_dem[ind2,:].T,color='b',linewidth=1.2,label=date[0:4]+'-'+date[4:6]+'-'+date[6:])
+    plt.plot(dists/1e3,atm_data['20010520'][:,2],'k',label='20 May 2001',lw=1.2)
+  plt.plot(dists/1e3,atm_data['20050518'][:,2],'b',label='18 May 2005',lw=1.2)
+  plt.plot(dists/1e3,atm_data['20080730'][:,2],'r',label='30 July 2008',lw=1.2)
+  #plt.plot(dists/1e3,atm_data['20140424'][:,2],'g',label='30 July 2008',lw=1.2)
+  if glacier == 'Kanger':
+    date = str(int(time_dem[ind1,1]))
+    plt.plot(dists/1e3,zs_dem[ind1,:].T,color='g',linewidth=1.2,label='14 July 2013')
+  #date = str(int(time_dem[ind2,1]))
+  #plt.plot(dists/1e3,zs_dem[ind2,:].T,color='b',linewidth=1.2,label=date[0:4]+'-'+date[4:6]+'-'+date[6:])
   plt.xticks(np.arange(-30,10,5),fontsize=8)
   ax.set_xticklabels([])
   plt.yticks(np.arange(-1000,1000,250),fontsize=8)
@@ -115,26 +116,30 @@ if plot_overview:
     plt.text(-20,500,'b',fontsize=9,fontweight='bold')
   elif glacier == 'Kanger':
     plt.ylim([0,800])
-    plt.text(-20,560,'b',fontsize=9,fontweight='bold')
+    plt.text(-20,500,'b',fontsize=9,fontweight='bold')
+  plt.plot(dists/1e3,atm_data['20050518'][:,2],'b',lw=1.2)
   ax.xaxis.set_minor_locator(AutoMinorLocator(2))
   ax.yaxis.set_minor_locator(AutoMinorLocator(2))
   ax.tick_params('both', length=6, width=1.25, which='major')
   ax.tick_params('both', length=3, width=1, which='minor')
-  plt.ylabel('Elevation (m asl)',fontsize=8)
+  plt.ylabel('Elevation (m asl)                                    ',fontsize=8)
   plt.legend(loc=1,fontsize=8,borderpad=0.2,numpoints=1,handlelength=0.6,labelspacing=0.1,handletextpad=0.3,markerscale=2)
 
   plt.subplot(gs[-1])
   ax = plt.gca()
-  plt.plot(dcresis/1e3,zcresis,'.',c='0.7',markersize=2.5,label='CreSIS')
+  plt.plot(dcresis/1e3,zcresis,'.',c='0.7',markersize=2.5,label='Measured')
+  plt.yticks(np.arange(-1250,-250,250),fontsize=8)
   if glacier == 'Helheim':
-    plt.plot(dists/1e3,zb,color='k',linewidth=1.2,label='Bed')
+    plt.plot(dists/1e3,zb,color='k',linewidth=1.2,label='Smoothed')
+    plt.ylim([-1150,-300])
   elif glacier == 'Kanger':
     ind = np.argmin(abs(dists--5e3))
     plt.plot(dists/1e3,zb,':',color='k',linewidth=1.5)
-    plt.plot(dists[0:ind]/1e3,zb[0:ind],color='k',linewidth=1.5,label='Bed')
-    plt.text(-3,-1050,'??',fontsize=8,fontname='arial')
+    plt.plot(dists[0:ind]/1e3,zb[0:ind],color='k',linewidth=1.5,label='Smoothed')
+    plt.text(-3.2,-950,'??',fontsize=8,fontname='arial')
     plt.text(3.2,-500,'??',fontsize=8,fontname='arial')
-  plt.xlabel('Distance from mean terminus (km)',fontsize=8)
+    plt.ylim([-1300,-300])
+  plt.xlabel('Distance along flowline (km)',fontsize=8)
   plt.xticks(np.arange(-30,10,5),fontsize=8)
   plt.xlim([-21,6])
   plt.text(-20,-450,'c',fontsize=9,fontweight='bold')
@@ -142,13 +147,11 @@ if plot_overview:
   ax.yaxis.set_minor_locator(AutoMinorLocator(2))
   ax.tick_params('both', length=6, width=1.25, which='major')
   ax.tick_params('both', length=3, width=1, which='minor')
-  plt.yticks(np.arange(-1250,-250,250),fontsize=8)
-  plt.ylim([-1150,-300])
   plt.legend(loc=4,borderpad=0.2,fontsize=8,numpoints=1,handletextpad=0.3,handlelength=0.5,labelspacing=0.1,markerscale=2)
 
   # Save figure
   plt.tight_layout()
-  plt.subplots_adjust(wspace=0.04,hspace=0.04)
+  plt.subplots_adjust(wspace=0.04,hspace=0.04,top=0.98,right=0.98,left=0.125,bottom=0.13)
   plt.savefig(os.path.join(os.getenv("HOME"),'Bigtmp/'+glacier+'_zs_flowline.pdf'),FORMAT='PDF',dpi=600)
   plt.close()
 

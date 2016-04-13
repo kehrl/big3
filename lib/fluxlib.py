@@ -130,7 +130,7 @@ def fluxgate(glacier,fluxgate_filename,bedsource='smith',dl=20.0,timing='velocit
     for i in range(0,len(time)):
       # Find places where we have no surface velocities
       nans_vperp = np.where(np.isnan(vperp[i,:]))[0]
-      if len(nans_vperp) < 1.0/4.0*len(l):
+      if len(nans_vperp) < 1.0/3.0*len(l):
         # If the number of locations without surface velocities is small, let's use the known 
         # surface velocities to interpolate.
         nonnans_vperp = np.where(~(np.isnan(vperp[i,:])))[0]
@@ -160,20 +160,29 @@ def fluxgate(glacier,fluxgate_filename,bedsource='smith',dl=20.0,timing='velocit
         #f = scipy.interpolate.interp1d(l[nonnans_vperp],vperp[i,nonnans_vperp],kind='cubic')
         #vperp[i,nans_vperp] = f(l[nans_vperp])
         #vperp[i,vperp[i,:] < 0] = np.interp(l[vperp[i,:] < 0],l[nonnans_vperp],vperp[i,nonnans_vperp])
-        vperp[i,nans_vperp] = np.interp(l[nans_vperp],l[nonnans_vperp],vperp[i,nonnans_vperp]) #
-        #vperp[i,nans_vperp] = sf[nans_vperp]*np.nanmax(vperp[i,:])
+        #vperp[i,nans_vperp] = np.interp(l[nans_vperp],l[nonnans_vperp],vperp[i,nonnans_vperp]) #
+        vperp[i,nans_vperp] = sf[nans_vperp]*np.nanmax(vperp[i,:])
         
         # Set velocity errors
         vperp_errors[nonnans_vperp] = vperp[i,nonnans_vperp]*0.03
         vperp_errors[nans_vperp] = vperp[i,nans_vperp]*0.1
       
+        # Let's try filtering data before calculating ice flux
+        filt_len = 200.
+        
+        cutoff=(1/filt_len)/(1/(np.diff(l[1:3])*2))
+        b,a=scipy.signal.butter(4,cutoff,btype='low')
+        zs_filt = scipy.signal.filtfilt(b,a,zs)
+        vperp_filt = scipy.signal.filtfilt(b,a,vperp[i,:])
+        
+      
         # Calculate fluxes
-        Q[i,:] = ((vperp[i,:])*(zs-zb)*dl)
-        ind = np.where(zs-zb > 0)[0]
+        Q[i,:] = ((vperp_filt)*(zs_filt-zb)*dl)
+        ind = np.where(zs_filt-zb > 0)[0]
       
         # Get average surface elevations and ice flow velocities for fluxgate
-        Hbar[i] = np.mean(zs[ind]-zb[ind])
-        ubar[i] = np.mean(vperp[i,ind])
+        Hbar[i] = np.mean(zs_filt-zb)
+        ubar[i] = np.mean(vperp_filt)
       
         # We don't want negative fluxes so let's toss them out.
         Q[i,(zs-zb)<0] = 0.
@@ -465,7 +474,7 @@ def compare_thinning_rates(demtime,demdH,fluxtime,fluxdH,smbdH):
     return y[idx.argmin(axis=1)]
   
   # Set up time
-  dt = (0.2/365.25)
+  dt = (1/365.25)
 
   starttime = demtime[0,0]-demtime[0,1]
   endtime = demtime[-1,0]+demtime[-1,1]
@@ -488,8 +497,8 @@ def compare_thinning_rates(demtime,demdH,fluxtime,fluxdH,smbdH):
     # Check to make sure there is at least one estimated thinning rate from the 
     # velocities within the time period when we have a DEM thinning rate.
     inside = np.where((fluxtime > demtime[i,0]-demtime[i,1]) & (fluxtime < demtime[i,0]+demtime[i,1]))[0]
-    if (len(inside) > 0):
-      if len(np.where(~(np.isnan(fluxdH[inside])))[0]) > 0:
+    if (len(inside) > 1):
+      if len(np.where(~(np.isnan(fluxdH[inside])))[0]) > 1:
         ind = np.where((time > demtime[i,0]-demtime[i,1]) & (time < demtime[i,0]+demtime[i,1]))[0]
         nonnan = np.where(~(np.isnan(fluxdH[:,0])))[0]
         #values = nearest_interp(time[ind],fluxtime[nonnan],fluxdH[nonnan,0])

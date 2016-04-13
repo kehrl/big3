@@ -109,7 +109,7 @@ path = matplotlib.path.Path([[0.49*(xmax1-xmin1)+xmin,0.98*(ymax1-ymin1)+ymin1],
   			[0.49*(xmax1-xmin1)+xmin1,0.98*(ymax1-ymin1)+ymin1]])
 patch = matplotlib.patches.PathPatch(path,edgecolor='k',facecolor='w',lw=1,zorder=3)
 ax1.add_patch(patch)
-cbaxes = fig.add_axes([0.15, 0.85, 0.085, 0.03]) 
+cbaxes = fig.add_axes([0.14, 0.85, 0.085, 0.03]) 
 cb = plt.colorbar(p,cax=cbaxes,orientation='horizontal',ticks=[-1,0,1]) 
 cb.set_label('Bed elevation \n (km asl)',size=8,fontname='arial')
 cb.ax.tick_params(labelsize=8)
@@ -184,7 +184,7 @@ path = matplotlib.path.Path([[0.49*(xmax1-xmin1)+xmin,0.98*(ymax1-ymin1)+ymin1],
   			[0.49*(xmax1-xmin1)+xmin1,0.98*(ymax1-ymin1)+ymin1]])
 patch = matplotlib.patches.PathPatch(path,edgecolor='k',facecolor='w',lw=1,zorder=3)
 ax3.add_patch(patch)
-cbaxes = fig.add_axes([0.63, 0.85, 0.085, 0.03]) 
+cbaxes = fig.add_axes([0.635, 0.85, 0.085, 0.03]) 
 cb = plt.colorbar(p,cax=cbaxes,orientation='horizontal',ticks=[0,20,40]) 
 cb.set_label(r'Elevation range'+'\n (m)',size=8,fontname='arial')
 cb.ax.tick_params(labelsize=8)
@@ -233,7 +233,7 @@ ax3.text(0.05*(xmax1-xmin1)+xmin1,ymin1+0.05*(ymax1-ymin1),'d',fontweight='bold'
 
 
 plt.tight_layout()
-plt.subplots_adjust(hspace=0.05,wspace=0.05)
+plt.subplots_adjust(hspace=0.05,wspace=0.05,right=0.99,left=0.01,bottom=0.02,top=0.98)
 plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+"_variability.pdf"),FORMAT='PDF',dpi=600)
 plt.close()
 
@@ -262,24 +262,29 @@ xmin1,xmax1 = plt.xlim()
 ymin1,ymax1 = plt.ylim()
 path = matplotlib.path.Path([[0.46*(xmax1-xmin1)+xmin,0.98*(ymax1-ymin1)+ymin1],
   			[0.98*(xmax1-xmin1)+xmin1,0.98*(ymax1-ymin1)+ymin1],
-  			[0.98*(xmax1-xmin1)+xmin1,0.67*(ymax1-ymin1)+ymin1],
-  			[0.46*(xmax1-xmin1)+xmin1,0.67*(ymax1-ymin1)+ymin1],
+  			[0.98*(xmax1-xmin1)+xmin1,0.60*(ymax1-ymin1)+ymin1],
+  			[0.46*(xmax1-xmin1)+xmin1,0.60*(ymax1-ymin1)+ymin1],
   			[0.46*(xmax1-xmin1)+xmin1,0.98*(ymax1-ymin1)+ymin1]])
 patch = matplotlib.patches.PathPatch(path,edgecolor='k',facecolor='w',lw=1,zorder=3)
 ax1.add_patch(patch)
-cbaxes = fig.add_axes([0.3, 0.84, 0.17, 0.03]) 
+cbaxes = fig.add_axes([0.28, 0.85, 0.17, 0.03]) 
 cb = plt.colorbar(p,cax=cbaxes,orientation='horizontal',ticks=[-500,-250,0],extend='max') 
 cb.set_label('Velocity trend \n (m yr$^{-2}$)',size=8,fontname='arial')
 cb.ax.tick_params(labelsize=8,length=5)
 for i in range(0,len(dists_eul)):
   ax1.plot(xflow[ind_eul[i]],yflow[ind_eul[i]],'o',color=coloptions[i],markersize=5)
 ax1.text(0.05*(xmax1-xmin1)+xmin1,0.05*(ymax1-ymin1)+ymin1,'a',weight='bold',fontsize=9)
+ax1.plot([xmin1+0.54*(xmax1-xmin1),xmin+0.54*(xmax1-xmin1)+5e3],[ymin1+0.66*(ymax1-ymin1),ymin1+0.66*(ymax1-ymin1)],'k',linewidth=1.5,zorder=5)
+ax1.plot([xmin1+0.54*(xmax1-xmin1),xmin1+0.54*(xmax1-xmin1)],[ymin1+0.66*(ymax1-ymin1),ymin1+0.64*(ymax1-ymin1)],'k',linewidth=1.5,zorder=5)
+ax1.plot([xmin1+0.54*(xmax1-xmin1)+5e3,xmin1+0.54*(xmax1-xmin1)+5e3],[ymin1+0.66*(ymax1-ymin1),ymin1+0.64*(ymax1-ymin1)],'k',linewidth=1.5,zorder=5)
+ax1.text(xmin1+0.58*(xmax1-xmin1)+5e3,ymin1+0.63*(ymax1-ymin1),'5 km',fontsize=8,fontname='arial')
+
 
 plt.subplot(gs[1])
 ax2 = plt.gca()
 plt.imshow(image[:,:,0],extent=[np.min(ximage),np.max(ximage),np.min(yimage),np.max(yimage)],cmap='Greys_r',origin='lower',clim=[0,0.6])
-norms = matplotlib.colors.BoundaryNorm(np.arange(-8,10,2),cx.N)
-p=plt.imshow(zstrend,extent=[np.min(xzs),np.max(xzs),np.min(yzs),np.max(yzs)],origin='lower',cmap='RdBu_r',clim=[-8,8])
+norms = matplotlib.colors.BoundaryNorm(np.arange(-10,10,2),cx.N)
+p=plt.imshow(zstrend,extent=[np.min(xzs),np.max(xzs),np.min(yzs),np.max(yzs)],origin='lower',cmap='RdBu_r',clim=[-10,10])
 ax2.set_xticks([])
 ax2.set_yticks([])
 ax2.axes.set_xlim([xmin,xmax])
@@ -293,12 +298,12 @@ path = matplotlib.path.Path([[0.48*(xmax1-xmin1)+xmin,0.98*(ymax1-ymin1)+ymin1],
   			[0.48*(xmax1-xmin1)+xmin,0.98*(ymax1-ymin1)+ymin1]])
 patch = matplotlib.patches.PathPatch(path,edgecolor='k',facecolor='w',lw=1,zorder=3)
 ax2.add_patch(patch)
-cbaxes = fig.add_axes([0.755, 0.84, 0.16, 0.03]) 
-cb = plt.colorbar(p,cax=cbaxes,orientation='horizontal',ticks=[-8,0,8]) 
+cbaxes = fig.add_axes([0.77, 0.85, 0.17, 0.03]) 
+cb = plt.colorbar(p,cax=cbaxes,orientation='horizontal',ticks=[-10,0,10]) 
 cb.set_label("Elevation trend \n (m yr$^{-1}$)",size=8,fontname='arial')
 cb.ax.tick_params(labelsize=9)
 ax2.text(0.05*(xmax1-xmin1)+xmin1,0.05*(ymax1-ymin1)+ymin1,'b',weight='bold',fontsize=9)
-minorticks = p.norm(np.arange(-8, 12, 4))
+minorticks = p.norm(np.arange(-10, 15, 5))
 cb.ax.xaxis.set_ticks(minorticks, minor=True)
 cb.ax.tick_params(labelsize=8)
 cb.ax.tick_params(which='both',length=5)
@@ -306,6 +311,6 @@ for i in range(0,len(dists_eul)):
   ax2.plot(xflow[ind_eul[i]],yflow[ind_eul[i]],'o',color=coloptions[i],markersize=5)
 
 plt.tight_layout()
-plt.subplots_adjust(hspace=0.03,wspace=0.03)
+plt.subplots_adjust(hspace=0.05,wspace=0.05,right=0.98,left=0.02,bottom=0.02,top=0.98)
 plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+"_trends.pdf"),FORMAT='PDF',dpi=600)
 plt.close()

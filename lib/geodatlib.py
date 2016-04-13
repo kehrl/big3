@@ -64,7 +64,7 @@ def readtime(filename):
 	return time,interval
 
 
-def readbinary(filename,nodatavalue=float('nan')):
+def readbinary(filename,nodatavalue=float('nan'),read_vz=False):
     
   # Get time
   if os.path.exists(filename+".meta"):
@@ -107,6 +107,17 @@ def readbinary(filename,nodatavalue=float('nan')):
   vy = arr.reshape((ny,nx))
   ind = np.where(vy == -2e9)
   vy[ind] = nodatavalue
+  
+    # Go through the same rigmarole for the y-velocity file
+  vzfile = open(filename+".vz","rb")
+  vz_raw_data = vzfile.read()
+  vzfile.close()
+  arr = np.zeros(nvals)
+  for i in range(nvals):
+    arr[i] = struct.unpack('>f',vy_raw_data[4*i:4*(i+1)])[0]
+  vz = arr.reshape((ny,nx))
+  ind = np.where(vz == -2e9)
+  vz[ind] = nodatavalue
 
   # Do the same thing for the files containing the errors
   exfile = open(filename+".ex","rb")
@@ -134,9 +145,12 @@ def readbinary(filename,nodatavalue=float('nan')):
   v = np.zeros_like(vx)
   v[:,:] = nodatavalue
   v[ind] = (vx[ind]**2+vy[ind]**2)**(0.5)
+  
+  if not read_vz:
+    return (x,y,v,vx,vy,vz,ex,ey,time,interval)
+  else:
+    return (x,y,v,vx,vy,ex,ey,time,interval)
     
-  return (x,y,v,vx,vy,ex,ey,time,interval)
-
 def readvelocity(DIR,track,file):
   
   '''

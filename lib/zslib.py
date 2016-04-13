@@ -9,7 +9,7 @@ LMK, UW, 11/12/2015
 import os
 import sys
 import numpy as np
-import icefrontlib, coordlib, masklib, distlib,datelib, geotifflib
+import icefrontlib, coordlib, masklib, distlib,datelib, geotifflib, floatlib
 import scipy.interpolate
 import scipy.signal as signal
 import shapely.geometry
@@ -741,8 +741,8 @@ def dem_along_flowline(xpts,ypts,glacier,years='all',cutoff='terminus',verticald
   # For SPIRIT...
   if ('SPIRIT' in data) or (data == 'all'):
     for DIR in SPIRITDIRs:
-      if DIR.endswith(filestring):
-        xmin,xmax,ymin,ymax = geotifflib.extent(SPIRIT+DIR)
+      if DIR.endswith(spiritstring):
+        xmin,xmax,ymin,ymax = geotifflib.extent(SPIRITDIR+DIR)
         within = np.where((xpts > xmin) & (xpts < xmax) & (ypts > ymin) & (ypts < ymax))[0]
         if len(within) > 0:
           if not(years) or (years=='all'):
@@ -885,6 +885,87 @@ def dem_at_pts(xpts,ypts,glacier,years='all',verticaldatum='geoid',cutoff='none'
 
     
   return zpts,zpts_error,time
+
+def dem_at_lagpts(xf,yf,dists,zb,pts,glacier,years='all',verticaldatum='geoid',cutoff='none',method='linear',radius=200,data='all',rho_i=917.,rho_sw=1020.):
+
+  '''
+  zpts,zpts_haf,zpts_error,time = dem_at_pts(xpts,ypts,glacier,years='all',
+  	verticaldatum='geoid',cutoff='none',method='linear',radius=200,data='all'):
+
+  
+  Interpolates worldview surface elevations to lagrangian points behind flowline.
+  
+  Inputs:
+  xf,yf: x,y coordinates for flowline
+  dists: distances along flowline
+  zb: bed elevations (given relative to the geoid) to calculate height above flotation
+  pts: lagrangian distances where we want surface elevation
+  glacier: glacier name
+  years: years that we want data
+  verticaldatum: geoid or ellipsoid
+  cutoff: cutoff elevations in front of terminus ('terminus' or 'none')
+  method: 'linear' extrapolation or 'average' value for a region defined by radius
+  radius: radius for average value (only necessary if method is 'average')
+  data: all, WV, TDM, or SPIRIT
+  
+  Outputs:
+  zpts: array of surface elevations for points xpts,ypts
+  zpts_hab: array of height above flotation for distances "pts" behind terminus
+  zpts_error
+  time: time of the arrays
+  '''
+  
+  # Get surface elevation along flowline for each timestep
+  if method == 'linear':
+    zf,times,zf_error = dem_along_flowline(xf,yf,glacier,years=years,cutoff=cutoff,verticaldatum=verticaldatum,method=method,data=data,return_error=True)
+    time = times[:,0]
+  elif method == 'average':
+    xmin = np.min(xf)-radius*3
+    ymin = np.min(yf)-radius*3
+    xmax = np.max(xf)+radius*3
+    ymax = np.max(yf)+radius*3
+    
+    xwv,ywv,zwv,timewv,zf_error = dem_grid(glacier,xmin,xmax,ymin,ymax,years='all',verticaldatum='geoid',return_error=True,data=data)
+    N = len(timewv)
+    
+    time = timewv
+    zf = np.zeros([N,len(xf)])
+    zf[:,:] = float('nan')
+    
+    xwv_grid,ywv_grid = np.meshgrid(xwv,ywv) 
+    xwv_flattened = xwv_grid.flatten()
+    ywv_flattened = ywv_grid.flatten()
+    
+    for j in range(0,len(xf)):
+      ind = np.where(np.sqrt((xf[j] - xwv_flattened)**2+(yf[j] - ywv_flattened)**2) < radius)[0]
+      for i in range(0,N):
+        nonnan = np.where(~(np.isnan(zwv[:,:,i].flatten()[ind])))[0]
+        if len(nonnan) > 0.9*len(ind):
+          zf[i,j] = np.nanmean(zwv[:,:,i].flatten()[ind])
+    del ind
+
+  # Get terminus positions
+  terminus_val,terminus_time = icefrontlib.distance_along_flowline(xf,yf,dists,glacier,type='icefront')
+  
+  # Get surface elevations at desired distances from terminus
+  N = len(pts)
+  zpts = np.zeros([len(time),N])
+  zpts[:,:] = float('nan')
+  zpts_haf = np.zeros([len(time),N])
+  zpts_haf[:,:] = float('nan')
+  termpts = np.zeros(len(time))
+  zpts_error = np.zeros(len(time))
+  for j in range(0,N):
+    for i in range(0,len(time)):
+      termpts[i] = np.interp(time[i],terminus_time,terminus_val)
+      minind = np.argmin(abs(dists-(termpts[i]+pts[j])))
+      zpts[i,j] = zf[i,minind]
+      zpts_haf[i,j] = zf[i,minind]-floatlib.height(zb[minind],rho_i=rho_i,rho_sw=rho_sw)
+      zpts_error[i] = zf_error[i]
+  
+    
+  return zpts,zpts_haf,zpts_error,termpts,time
+
 
 def grid_near_time(time,glacier,verticaldatum='geoid'):
 

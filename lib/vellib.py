@@ -43,7 +43,7 @@ before unpacking the binary files.
     if file.startswith('track'):
       print file
       # Load binary data
-      x,y,v,vx,vy,ex,ey,time,interval = geodatlib.readbinary(DIRTOP_TSX+file+"/mosaicOffsets",nodatavalue=-2.0e9)
+      x,y,v,vx,vy,vz,ex,ey,time,interval = geodatlib.readbinary(DIRTOP_TSX+file+"/mosaicOffsets",nodatavalue=-2.0e9,read_vz=True)
 
       year,month,day = datelib.fracyear_to_date(time)
     
@@ -56,6 +56,8 @@ before unpacking the binary files.
       geotifflib.write_from_grid(x,y,np.flipud(vy),-2.0e9,DIRTOP_TSX+"TIF/"+file+"_"+date+"_vy.tif")
       geotifflib.write_from_grid(x,y,np.flipud(ex),-2.0e9,DIRTOP_TSX+"TIF/"+file+"_"+date+"_ex.tif")
       geotifflib.write_from_grid(x,y,np.flipud(ey),-2.0e9,DIRTOP_TSX+"TIF/"+file+"_"+date+"_ey.tif")
+      geotifflib.write_from_grid(x,y,np.flipud(vz),-2.0e9,DIRTOP_TSX+"TIF/"+file+"_"+date+"_vz.tif")
+
   
   # RADARSAT files    
   files = os.listdir(DIRTOP_RADARSAT)
@@ -74,6 +76,75 @@ before unpacking the binary files.
       geotifflib.write_from_grid(x,y,np.flipud(ey),-2.0e9,DIRTOP_RADARSAT+"TIF/"+file+"_ey.tif")
       
   return 1
+
+#########################################################################################
+def velocity_grid(glacier,xmin=-np.Inf,xmax=np.Inf,ymin=-np.Inf,ymax=np.Inf,resolution=100,return_error=False):
+
+  DIR_TSX = os.path.join(os.getenv("DATA_HOME"),"Velocity/TSX/"+glacier+"/")
+  
+  dx = dy = float(resolution)
+  nx = int(np.ceil((xmax-xmin)/dx)+1)
+  x = np.linspace(xmin,(nx-1)*dx+xmin,nx)
+  ny = int(np.ceil((ymax-ymin)/dx)+1)
+  y = np.linspace(ymin,(ny-1)*dy+ymin,ny)
+  xgrid,ygrid = np.meshgrid(x,y) 
+  coords = np.column_stack([ygrid.flatten(),xgrid.flatten()])
+ 
+  #################
+  # LOAD TSX Data #
+  #################
+
+  DIRs=os.listdir(DIR_TSX)
+  
+  # Get number of velocity files
+  nt=0
+  for DIR in DIRs:
+    if DIR.startswith('track'):
+      nt = nt+1
+
+  # Set up variables
+  velgrid = np.zeros([ny,nx,nt])
+  mask = np.zeros([ny,nx,nt])
+  velgrid_mask = np.zeros([ny,nx,nt])
+  time = np.zeros(nt)
+  ergrid = np.zeros([ny,nx,nt])
+
+  # Load velocity and mask
+  count = 0
+  for j in range(0,len(DIRs)):
+    DIR=DIRs[j]
+    if DIR.startswith('track'):
+      # Load velocity
+      x1,y1,v1,vx1,vy1,ex1,ey1,time_file,interval1 = geodatlib.readvelocity(DIR_TSX,DIR,"mosaicOffsets")
+      
+      time[count] = time_file
+      year,month,day = datelib.fracyear_to_date(time_file)
+      
+      xind1 = np.argmin(abs(x1-xmin))
+      xind2 = np.argmin(abs(x1-xmax))+1
+      yind1 = np.argmin(abs(y1-ymin))
+      yind2 = np.argmin(abs(y1-ymax))+1
+      
+      # Load velocity
+      try:
+        # If the input and output grids have the same dimensions...
+        velgrid[:,:,count] = v1[yind1:yind2,xind1:xind2]
+      except:
+        # Otherwise interpolate onto output grid
+        f_dem = scipy.interpolate.RegularGridInterpolator([y1,x1],v1,bounds_error = False,method='linear',fill_value=float('nan'))
+        v_flatten = f_dem(coords)
+    
+        # Reshape to grid
+        velgrid[:,:,count] = np.reshape(v_flatten,(ny,nx))
+          
+      count = count+1 
+  
+  # Sort velocities
+  sortind = np.argsort(time)
+  time = time[sortind]
+  velgrid = velgrid[:,:,sortind]
+
+  return x,y,velgrid,time
     
 #########################################################################################
 def velocity_at_eulpoints(xpt,ypt,glacier,data='all',xy_velocities='False'):
