@@ -250,7 +250,8 @@ def fluxgate_thinning(glacier,fluxgate_filename,bedsource='smith',dl=20.0,timing
   fluxbox_x,fluxbox_y = fluxbox_geometry(glacier,fluxgate_filename)
 
   # Get surface mass balance for flux box 
-  xrac,yrac,zsrac,timerac = climlib.racmo_at_pts(np.mean(fluxbox_x),np.mean(fluxbox_y),'zs',filt_len='none')
+  xrac,yrac,zsrac,timerac = climlib.racmo_at_pts(np.mean(fluxbox_x),np.mean(fluxbox_y),'smb',filt_len='none')
+  zsrac=zsrac*365.25/900.
 
   # Get fluxbox geometry
   fluxbox_x,fluxbox_y = fluxbox_geometry(glacier,fluxgate_filename)
@@ -278,7 +279,8 @@ def fluxgate_thinning(glacier,fluxgate_filename,bedsource='smith',dl=20.0,timing
       Q.append([Q_in[i],Q_out[j]])
       error_Q.append(error_in[i]+error_out[j])
       minind = np.where(abs(time_in[i]-timerac) < 5/365.)[0]
-      smb.append(np.mean(np.diff(zsrac[minind])/np.diff(timerac[minind])))
+      #smb.append(np.mean(np.diff(zsrac[minind])/np.diff(timerac[minind])))
+      smb.append(np.mean(zsrac[minind]))
   hbar = np.array(hbar)
   ubar = np.array(ubar)
   time = np.array(time)
