@@ -372,7 +372,7 @@ cmd = 'ffmpeg {0} -i %03d.png {1} {2}'.format(ffmpeg_in_opt, ffmpeg_out_opt, out
 print cmd
 subprocess.call(cmd, shell=True)
 
-cmd = 'rm *.png'
-print cmd
-subprocess.call(cmd, shell=True)
+#cmd = 'rm *.png'
+#print cmd
+#subprocess.call(cmd, shell=True)
 

@@ -37,7 +37,7 @@ elif glacier == 'Kanger':
 # Flowline #
 ############
 
-x,y,zb,dists = glaclib.load_flowline(glacier,shapefilename='flowline_flightline',filt_len=2.0e3,verticaldatum='geoid',bedsource='smith')
+x,y,zb,dists = glaclib.load_flowline(glacier,shapefilename='flowline_flightline',filt_len=2.0e3,verticaldatum='geoid',bedsource='cresis')
 
 ############
 # Get DEMs #
@@ -88,22 +88,26 @@ for i in range(0,len(timedem)):
   
   plt.subplot(122)
   plt.plot(dists/1e3,zb,'k',lw=1)
-  plt.plot(dcresis/1e3,zcresis,'.',color='0.7',markersize=3)
+  plt.plot(dcresis/1e3,zcresis,'.',color='0.5',markersize=3)
   plt.plot([-10,5],[0,0],'0.8',lw=0.5)
+  if i != 0:
+    plt.plot(dists/1e3,f((y,x)),c='0.7')
+    plt.plot(dists/1e3,floatlib.shelfbase(f(((y,x)))),c='0.7')
+
   f = scipy.interpolate.RegularGridInterpolator((ydem,xdem),zdem[:,:,i],bounds_error = False,method='linear',fill_value=float('nan'))
   plt.plot(dists/1e3,floatlib.height(zb),'k:')
-  plt.plot(dists/1e3,f((y,x)),'b')
-  plt.plot(dists/1e3,floatlib.shelfbase(f(((y,x)))),'b')
+  plt.plot(dists/1e3,f((y,x)),'b',lw=1.5)
+  plt.plot(dists/1e3,floatlib.shelfbase(f(((y,x)))),'b',lw=1.5)
   if glacier == 'Helheim':
-    plt.ylim([-800,200])
-    plt.xticks(range(-5,5),fontsize=10)
-    plt.yticks(np.arange(-800,400,200),fontsize=10)
-    plt.xlim([-5,4])
+    plt.ylim([-1200,220])
+    plt.xticks(range(-10,5,2),fontsize=10)
+    plt.yticks(np.arange(-1200,400,200),fontsize=10)
+    plt.xlim([-7,4])
   elif glacier == 'Kanger':
-    plt.ylim([-1200,200])
+    plt.ylim([-1200,220])
     plt.xticks(np.arange(-10,5,2),fontsize=10)
     plt.yticks(np.arange(-1200,400,200),fontsize=10)
-    plt.xlim([-10,5])
+    plt.xlim([-7,4])
   year,month,day=datelib.fracyear_to_date(timedem[i])
   plt.title(str(year)+'-'+str(month)+'-'+str(int(day)))
   
