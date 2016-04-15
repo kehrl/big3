@@ -294,7 +294,7 @@ if plot_images == 1:
 ###########################################
 
 if plot_overview == 1:
-  plt.figure(figsize=(7.45,7))
+  plt.figure(figsize=(7.45,6.5))
   gs = matplotlib.gridspec.GridSpec(6,1)
   matplotlib.rc('font',family='Arial')
 
@@ -333,7 +333,7 @@ if plot_overview == 1:
       plt.plot([images_time[i][3],images_time[i][3]],ax.get_ylim(),'--',color='0.3')
   plt.legend(loc=2,fontsize=8,numpoints=1,handlelength=0.3,labelspacing=0.05,ncol=3,columnspacing=0.7,handletextpad=0.2,borderpad=0.25)
   nonnan = np.where(~(np.isnan(terminus_val)))[0]
-  plt.plot(terminus_time[nonnan],terminus_val[nonnan]/1e3,'ko',linewidth=1,markersize=2)
+  plt.plot(terminus_time[nonnan],terminus_val[nonnan]/1e3,'ko',linewidth=1,markersize=2.5)
   x_formatter = matplotlib.ticker.ScalarFormatter(useOffset=False)
   ax.xaxis.set_major_formatter(x_formatter)
   ax.xaxis.set_minor_locator(AutoMinorLocator(2))
@@ -347,7 +347,7 @@ if plot_overview == 1:
   ax.set_xticklabels(labels,fontsize=8,fontname='Arial')
   plt.xlim([time1,time2])
   plt.yticks(np.arange(-6,8,2),fontsize=8,fontname="Arial")
-  plt.ylabel('Terminus \n (km)',fontsize=8,fontname="Arial")
+  plt.ylabel('Terminus (km)',fontsize=8,fontname="Arial")
   ax.tick_params('both', length=6, width=1.25, which='major')
   ax.tick_params('both', length=3, width=1, which='minor')
   if glacier == 'Helheim':
@@ -379,15 +379,15 @@ if plot_overview == 1:
   else:
     for i in range(0,len(dists_eul)):
       nonnan = np.where(~(np.isnan(vel_val[:,i])))[0]
-      plt.plot(vel_time[nonnan],(vel_val[nonnan,i])/1e3,markoptions[i],color=coloptions[i],label=glacier[0]+'{0:02d}'.format(int(abs(dists_eul[i]))),markersize=3)
+      plt.plot(vel_time[nonnan],(vel_val[nonnan,i])/1e3,markoptions[i],color=coloptions[i],label=glacier[0]+'{0:02d}'.format(int(abs(dists_eul[i]))),markersize=3.5)
     plt.yticks(range(2,12),fontsize=8,fontname="Arial")
     if glacier == 'Helheim':
       plt.ylim([3.5,11])
-      plt.text(2008.13,8.0,'b',fontsize=9,fontname='arial',weight='bold')
+      plt.text(2008.13,3.8,'b',fontsize=9,fontname='arial',weight='bold')
     elif glacier == 'Kanger':
       plt.ylim([2.5,12])
-      plt.text(2008.13,8.2,'b',fontsize=9,fontname='arial',weight='bold')
-  plt.ylabel('Glacier speed \n (km yr$^{-1}$)',fontsize=8,fontname="Arial")
+      plt.text(2008.13,3,'b',fontsize=9,fontname='arial',weight='bold')
+  plt.ylabel('Glacier speed (km yr$^{-1}$)',fontsize=8,fontname="Arial")
   x_formatter = matplotlib.ticker.ScalarFormatter(useOffset=False)
   ax.xaxis.set_major_formatter(x_formatter)
   ax.xaxis.set_minor_locator(AutoMinorLocator(2))
@@ -408,58 +408,21 @@ if plot_overview == 1:
       patch = matplotlib.patches.PathPatch(path,facecolor='0.85',edgecolor='none',lw=0)
       ax.add_patch(patch)  
   plt.xlim([time1,time2])
-
-  # Plot strain rates
-  #plt.subplot(gs[-4, :])
-  #ax = plt.gca()
-  #plt.ylim([-10,230])
-  #if plot_images == 1:
-  # for i in range(0,len(images)):
-  #    plt.plot([images_time[i][3],images_time[i][3]],ax.get_ylim(),'--',color='0.3')
-  #if vbars == 'seasonal':
-  #  xTickPos = np.linspace(np.floor(time1)-0.25,np.ceil(time2)-0.25,(np.ceil(time2)-np.floor(time1))*2+1)
-  #  ax.bar(xTickPos, [max(plt.ylim())-min(plt.ylim())] * len(xTickPos), (xTickPos[1]-xTickPos[0]), bottom=min(plt.ylim()), color=['0.85','w'],linewidth=0)
-  #elif vbars == 'runoff':
-  #  for i in range(0,len(year_runoff)):
-  #    path = matplotlib.path.Path([[day1_runoff[i],0],[day1_runoff[i],600],[day2_runoff[i],600],[day2_runoff[i],0]])
-  #    patch = matplotlib.patches.PathPatch(path,facecolor='0.85',edgecolor='none',lw=0)
-  #    ax.add_patch(patch)  
-  #plt.errorbar(time_wv,zpt_wv[:,3]-floatlib.height(zb[ind_eul[3]]),capsize=1,yerr=zpterror_wv,fmt='o',color=coloptions[3],markersize=3,label='WV')
-  #plt.errorbar(time_tdm,zpt_tdm[:,3]-floatlib.height(zb[ind_eul[3]]),capsize=1,yerr=zpterror_tdm,fmt='^',color=coloptions[3],markersize=3,label='TDM')
-  #if glacier == 'Kanger':
-    #plt.errorbar(time_spirit,zpt_spirit[:,3]-floatlib.height(zb[ind_eul[3]]),capsize=1,yerr=zpterror_spirit,fmt='v',color=coloptions[3],markersize=3,label='SPIRIT')
-  #plt.plot(time_atm,zpt_atm[:,3]-floatlib.height(zb[ind_eul[3]]),'+',color=coloptions[3],markersize=4,label='ATM')
-  #plt.plot(vel_time,(vel_val[:,1]-vel_val[:,2])/5e3,'kv',markersize=3,label=glacier[0]+'05-'+glacier[0]+'10')
-  #plt.plot(vel_time,(vel_val[:,2]-vel_val[:,3])/5e3,'^',color='0.7',markersize=3,label=glacier[0]+'10-'+glacier[0]+'15')
-  #x_formatter = matplotlib.ticker.ScalarFormatter(useOffset=False)
-  #ax.xaxis.set_major_formatter(x_formatter)
-  #ax.xaxis.set_minor_locator(AutoMinorLocator(2))
-  #ax.yaxis.set_minor_locator(AutoMinorLocator(2))
-  #ax.set_xticklabels([])
-  #plt.xticks(range(2000,2016),fontsize=8,fontname="Arial")
-  #plt.xlim([time1,time2])
-  ##plt.ylabel('Height above\n flotation (m)',fontsize=8,fontname="Arial")
-  #ax.tick_params('both', length=6, width=1.25, which='major')
-  #ax.tick_params('both', length=3, width=1, which='minor')
-  #plt.ylabel('Strain rate \n'+r'(yr$^{-1}$)',fontsize=8,fontname='Arial')
-  #if glacier == 'Helheim':
-  #  plt.yticks(np.arange(0,1,0.2),fontsize=8,fontname="Arial")
-  #  #plt.ylim([485,520])
-  #  #plt.ylim([405,440])
-  #  plt.ylim([0,0.45])
-  #  plt.text(2008.13,0.03,'c',fontsize=9,fontname='arial',weight='bold')
-  #elif glacier == 'Kanger':
-  #  plt.yticks(np.arange(0,1,0.2),fontsize=8,fontname="Arial")
-  #  #plt.ylim([530,595])
-  #  #plt.ylim([325,385])
-  #  plt.ylim([0.2,0.65])
-  #  plt.text(2008.13,0.23,'c',fontsize=9,fontname='arial',weight='bold')
-  #plt.legend(loc=2,borderpad=0.3,handleheight=0.1,fontsize=8,numpoints=1,handlelength=0.4,labelspacing=0.05,ncol=4,columnspacing=0.7,handletextpad=0.5)
  
   # Plot surface elevations
-  plt.subplot(gs[-3, :])
+  plt.subplot(gs[-3:-1, :])
   ax = plt.gca()
-  plt.ylim([-10,230])
+  # Set up points for legend
+  plt.errorbar(0,0,capsize=1,yerr=0.5,fmt='o',color='k',markersize=3.5,label='WV')
+  plt.errorbar(0,0,capsize=1,yerr=0.5,fmt='^',color='k',markersize=3.5,label='TDM')
+  plt.plot(0,0,'+',color='k',markersize=5,label='ATM')
+  if glacier == 'Helheim':
+    plt.plot(0,0,'rs',label='H02',markersize=3.5)
+    plt.plot(0,0,'bs',label='H05',markersize=3.5)
+  elif glacier == 'Kanger':
+    plt.errorbar(0,0,capsize=1,yerr=0,fmt='v',color='k',markersize=3.5,label='SPIRIT')
+    plt.plot(0,0,'bs',label='K05',markersize=3.5)
+    plt.plot(0,0,'gs',label='K10',markersize=3.5)
   if plot_images == 1:
    for i in range(0,len(images)):
       plt.plot([images_time[i][3],images_time[i][3]],ax.get_ylim(),'--',color='0.3')
@@ -468,71 +431,24 @@ if plot_overview == 1:
     ax.bar(xTickPos, [max(plt.ylim())-min(plt.ylim())] * len(xTickPos), (xTickPos[1]-xTickPos[0]), bottom=min(plt.ylim()), color=['0.85','w'],linewidth=0)
   elif vbars == 'runoff':
     for i in range(0,len(year_runoff)):
-      path = matplotlib.path.Path([[day1_runoff[i],60],[day1_runoff[i],240],[day2_runoff[i],240],[day2_runoff[i],60]])
+      path = matplotlib.path.Path([[day1_runoff[i],-50],[day1_runoff[i],240],[day2_runoff[i],240],[day2_runoff[i],-50]])
       patch = matplotlib.patches.PathPatch(path,facecolor='0.85',edgecolor='none',lw=0)
       ax.add_patch(patch)
-  plt.fill_between([time1,time2],np.ones(2)*floatlib.height(zb[ind_eul[2]]-50)-floatlib.height(zb[ind_eul[2]]),np.ones(2)*floatlib.height(zb[ind_eul[2]]+50)-floatlib.height(zb[ind_eul[2]]),
-  alpha=0.1,facecolor='g',edgecolor='b',antialiased=True,zorder=2)
-  plt.plot([time1,time2],[0,0],'g:',linewidth=1.0)
-  if glacier == 'Helheim':
-    plt.errorbar(time_wv,zpt_wv[:,1]-floatlib.height(zb[ind_eul[1]]),capsize=1,yerr=zpterror_wv,fmt='o',color=coloptions[1],markersize=3,label='WV')
-    plt.errorbar(time_tdm,zpt_tdm[:,1]-floatlib.height(zb[ind_eul[1]]),capsize=1,yerr=zpterror_tdm,fmt='^',color=coloptions[1],markersize=3,label='TDM')
-    plt.plot(time_atm,zpt_atm[:,1]-floatlib.height(zb[ind_eul[1]]),'+',color=coloptions[1],markersize=4,label='ATM')
-  elif glacier == 'Kanger':
-    plt.errorbar(time_wv,zpt_wv[:,2]-floatlib.height(zb[ind_eul[2]]),capsize=1,yerr=zpterror_wv,fmt='o',color=coloptions[2],markersize=3,label='WV')
-    plt.errorbar(time_tdm,zpt_tdm[:,2]-floatlib.height(zb[ind_eul[2]]),capsize=1,yerr=zpterror_tdm,fmt='^',color=coloptions[2],markersize=3,label='TDM')
-    plt.plot(time_atm,zpt_atm[:,2]-floatlib.height(zb[ind_eul[2]]),'+',color=coloptions[2],markersize=4,label='ATM')
-    plt.errorbar(time_spirit,zpt_spirit[:,2]-floatlib.height(zb[ind_eul[2]]),capsize=1,yerr=zpterror_spirit,fmt='v',color=coloptions[2],markersize=3,label='SPIRIT')
-  x_formatter = matplotlib.ticker.ScalarFormatter(useOffset=False)
-  ax.xaxis.set_major_formatter(x_formatter)
-  ax.xaxis.set_minor_locator(AutoMinorLocator(2))
-  ax.yaxis.set_minor_locator(AutoMinorLocator(2))
-  ax.set_xticklabels([])
-  plt.xticks(range(2000,2016),fontsize=8,fontname="Arial")
-  plt.xlim([time1,time2])
-  #plt.ylabel('Height above\n flotation (m)',fontsize=8,fontname="Arial")
-  ax.tick_params('both', length=6, width=1.25, which='major')
-  ax.tick_params('both', length=3, width=1, which='minor')
-  if glacier == 'Helheim':
-    plt.yticks(np.arange(60,120,10),fontsize=8,fontname="Arial")
-    plt.ylim([65,105])
-    plt.text(2008.13,98,'c',fontsize=9,fontname='arial',weight='bold')
-  elif glacier == 'Kanger':
-    plt.yticks(np.arange(160,250,20),fontsize=8,fontname="Arial")
-    plt.ylim([165,230])
-    plt.text(2008.13,213,'c',fontsize=9,fontname='arial',weight='bold')
-  plt.legend(loc=3,borderpad=0.3,handleheight=0.1,fontsize=8,numpoints=1,handlelength=0.4,labelspacing=0.05,ncol=4,columnspacing=0.7,handletextpad=0.5)
-
-  # Plot surface elevations
-  plt.subplot(gs[-2, :])
-  ax = plt.gca()
-  plt.ylim([-120,120])
-  if plot_images == 1:
-   for i in range(0,len(images)):
-      plt.plot([images_time[i][3],images_time[i][3]],ax.get_ylim(),'--',color='0.3')
-  if vbars == 'seasonal':
-    xTickPos = np.linspace(np.floor(time1)-0.25,np.ceil(time2)-0.25,(np.ceil(time2)-np.floor(time1))*2+1)
-    ax.bar(xTickPos, [max(plt.ylim())-min(plt.ylim())] * len(xTickPos), (xTickPos[1]-xTickPos[0]), bottom=min(plt.ylim()), color=['0.85','w'],linewidth=0)
-  elif vbars == 'runoff':
-    for i in range(0,len(year_runoff)):
-      path = matplotlib.path.Path([[day1_runoff[i],-40],[day1_runoff[i],40],[day2_runoff[i],40],[day2_runoff[i],-40]])
-      patch = matplotlib.patches.PathPatch(path,facecolor='0.85',edgecolor='none',lw=0)
-      ax.add_patch(patch) 
   if glacier == 'Helheim':
 		plt.fill_between([time1,time2],np.ones(2)*floatlib.height(zb[ind_eul[0]]-50)-floatlib.height(zb[ind_eul[0]]),np.ones(2)*floatlib.height(zb[ind_eul[0]]+50)-floatlib.height(zb[ind_eul[0]]),
   			alpha=0.1,facecolor='r',edgecolor='r',antialiased=True,zorder=2)
 		plt.plot([time1,time2],[0,0],'r:',linewidth=1.0)
-		plt.errorbar(time_wv,zpt_wv[:,0]-floatlib.height(zb[ind_eul[0]]),capsize=1,yerr=zpterror_wv,fmt='o',color=coloptions[0],markersize=3,label='WV')
-		plt.errorbar(time_tdm,zpt_tdm[:,0]-floatlib.height(zb[ind_eul[0]]),capsize=1,yerr=zpterror_tdm,fmt='^',color=coloptions[0],markersize=3,label='TDM')
-		plt.plot(time_atm,zpt_atm[:,0]-floatlib.height(zb[ind_eul[0]]),'+',color=coloptions[0],markersize=4,label='ATM')
+		plt.errorbar(time_wv,zpt_wv[:,0]-floatlib.height(zb[ind_eul[0]]),capsize=1,yerr=zpterror_wv,fmt='o',color=coloptions[0],markersize=3.5)
+		plt.errorbar(time_tdm,zpt_tdm[:,0]-floatlib.height(zb[ind_eul[0]]),capsize=1,yerr=zpterror_tdm,fmt='^',color=coloptions[0],markersize=3.5)
+		plt.plot(time_atm,zpt_atm[:,0]-floatlib.height(zb[ind_eul[0]]),'+',color=coloptions[0],markersize=5)
   if glacier == 'Kanger':
 		plt.fill_between([time1,time2],np.ones(2)*floatlib.height(zb[ind_eul[1]]-50)-floatlib.height(zb[ind_eul[1]]),np.ones(2)*floatlib.height(zb[ind_eul[1]]+50)-floatlib.height(zb[ind_eul[1]]),
   			alpha=0.1,facecolor='b',edgecolor='b',antialiased=True,zorder=2)
 		plt.plot([time1,time2],[0,0],'b:',linewidth=1.0)
-		plt.errorbar(time_wv,zpt_wv[:,1]-floatlib.height(zb[ind_eul[1]]),capsize=1,yerr=zpterror_wv,fmt='o',color=coloptions[1],markersize=3,label='WV')
-		plt.errorbar(time_tdm,zpt_tdm[:,1]-floatlib.height(zb[ind_eul[1]]),capsize=1,yerr=zpterror_tdm,fmt='^',color=coloptions[1],markersize=3,label='TDM')
-		plt.errorbar(time_spirit,zpt_spirit[:,1]-floatlib.height(zb[ind_eul[1]]),capsize=1,yerr=zpterror_spirit,fmt='v',color=coloptions[1],markersize=3,label='SPIRIT')
-		plt.plot(time_atm,zpt_atm[:,1]-floatlib.height(zb[ind_eul[1]]),'+',color=coloptions[1],markersize=4,label='ATM')
+		plt.errorbar(time_wv,zpt_wv[:,1]-floatlib.height(zb[ind_eul[1]]),capsize=1,yerr=zpterror_wv,fmt='o',color=coloptions[1],markersize=3.5)
+		plt.errorbar(time_tdm,zpt_tdm[:,1]-floatlib.height(zb[ind_eul[1]]),capsize=1,yerr=zpterror_tdm,fmt='^',color=coloptions[1],markersize=3.5)
+		plt.errorbar(time_spirit,zpt_spirit[:,1]-floatlib.height(zb[ind_eul[1]]),capsize=1,yerr=zpterror_spirit,fmt='v',color=coloptions[1],markersize=3.5)
+		plt.plot(time_atm,zpt_atm[:,1]-floatlib.height(zb[ind_eul[1]]),'+',color=coloptions[1],markersize=5)
   x_formatter = matplotlib.ticker.ScalarFormatter(useOffset=False)
   ax.xaxis.set_major_formatter(x_formatter)
   ax.xaxis.set_minor_locator(AutoMinorLocator(2))
@@ -540,27 +456,54 @@ if plot_overview == 1:
   ax.set_xticklabels([])
   plt.xticks(range(2000,2016),fontsize=8,fontname="Arial")
   plt.xlim([time1,time2])
-  plt.ylabel('$\hspace{8}$ Height above flotation \n                          (m)',fontsize=8,fontname="Arial")
   ax.tick_params('both', length=6, width=1.25, which='major')
   ax.tick_params('both', length=3, width=1, which='minor')
   if glacier == 'Helheim':
-    plt.yticks(np.arange(-10,40,10),fontsize=8,fontname="Arial")
-    plt.ylim([-15,25])
-    plt.text(2008.13,18,'d',fontsize=9,fontname='arial',weight='bold')
+    plt.ylabel('  Height above flotation at H02 (m)',fontsize=8,fontname="Arial")
+    plt.yticks(np.arange(-10,50,10),fontsize=8,fontname="Arial")
+    plt.ylim([-5,45])
+    plt.text(2008.13,7,'c',fontsize=9,fontname='arial',weight='bold')
+    ind = [0,1,3,2,4]
   elif glacier == 'Kanger':
-    plt.yticks(np.arange(-20,60,20),fontsize=8,fontname="Arial")
-    plt.ylim([-25,40])
-    plt.text(2008.13,30,'d',fontsize=9,fontname='arial',weight='bold')
-  plt.legend(loc=3,borderpad=0.3,handleheight=0.1,fontsize=8,numpoints=1,handlelength=0.4,labelspacing=0.05,ncol=4,columnspacing=0.7,handletextpad=0.5)
+    plt.ylabel('  Height above flotation at K05 (m)',fontsize=8,fontname="Arial")
+    plt.yticks(np.arange(-20,80,10),fontsize=8,fontname="Arial")
+    plt.ylim([-25,62])
+    plt.text(2008.13,-4,'c',fontsize=9,fontname='arial',weight='bold')
+    ind = [0,3,4,1,5,2]
+  handles, labels = ax.get_legend_handles_labels()
+  labels = [labels[i] for i in ind]
+  handles = [handles[i] for i in ind]
+  plt.legend(handles,labels,loc=3,borderpad=0.3,handleheight=0.1,fontsize=8,numpoints=1,handlelength=0.4,labelspacing=0.05,ncol=3,columnspacing=0.7,handletextpad=0.5)
+
+  ax2 = ax.twinx()
+  ax2.plot([0,0],[1,1],'k-',lw=1.5,label='SIF')
+  ax2.plot(timerac,runrac,c='0.4',dashes=[2,1],lw=1.5,label='Runoff')
+  if glacier == 'Helheim':
+    ax2.errorbar(time_wv,zpt_wv[:,1]-floatlib.height(zb[ind_eul[1]]),capsize=1,yerr=zpterror_wv,fmt='o',color=coloptions[1],markersize=3.5,label='WV')
+    ax2.errorbar(time_tdm,zpt_tdm[:,1]-floatlib.height(zb[ind_eul[1]]),capsize=1,yerr=zpterror_tdm,fmt='^',color=coloptions[1],markersize=3.5,label='TDM')
+    ax2.plot(time_atm,zpt_atm[:,1]-floatlib.height(zb[ind_eul[1]]),'+',color=coloptions[1],markersize=5,label='ATM')
+    ax2.set_ylabel('    Height above flotation at H05 (m)',fontsize=8,fontname='Arial')
+  elif glacier == 'Kanger':
+    ax2.errorbar(time_wv,zpt_wv[:,2]-floatlib.height(zb[ind_eul[2]]),capsize=1,yerr=zpterror_wv,fmt='o',color=coloptions[2],markersize=3.5,label='WV')
+    ax2.errorbar(time_tdm,zpt_tdm[:,2]-floatlib.height(zb[ind_eul[2]]),capsize=1,yerr=zpterror_tdm,fmt='^',color=coloptions[2],markersize=3.5,label='TDM')
+    ax2.plot(time_atm,zpt_atm[:,2]-floatlib.height(zb[ind_eul[2]]),'+',color=coloptions[2],markersize=5,label='ATM')
+    ax2.errorbar(time_spirit,zpt_spirit[:,2]-floatlib.height(zb[ind_eul[2]]),capsize=1,yerr=zpterror_spirit,fmt='v',color=coloptions[2],markersize=3.5,label='SPIRIT')
+    ax2.set_ylabel('   Height above flotation at K10 (m)',fontsize=8,fontname='Arial')
+  ax2.set_xlim([time1,time2])
+  ax2.tick_params('both', length=6, width=1.25, which='major')
+  ax2.tick_params('both', length=3, width=1, which='minor')
+  ax2.yaxis.set_minor_locator(AutoMinorLocator(2))
+  if glacier == 'Helheim':
+    ax2.set_yticks(np.arange(60,120,10))
+    ax2.set_ylim([55,105])
+    ax2.set_yticklabels([60,70,80,90,100],fontsize=8,fontname='arial')
+  elif glacier == 'Kanger':
+    ax2.set_yticks(np.arange(150,250,10))
+    ax2.set_ylim([145,232])
+    ax2.set_yticklabels(np.arange(150,250,10),fontsize=8,fontname='arial')
 
   # Plot presence of rigid melange and/or climate variables
   plt.subplot(gs[-1, :])
-  rigid2 = np.zeros(len(velmel_time))
-  rigid2[:] = float('nan')
-  for i in range(0,len(velmel_time)):
-    nonnan = np.where(~(np.isnan(velmel_val[i,:])))[0]
-    if len(nonnan) > 0:
-      rigid2[i] = 1
   plt.ylabel('Sea Ice Fraction',fontsize=8,fontname="Arial")
   ax = plt.gca()
   plt.ylim([0,1])
@@ -597,14 +540,15 @@ if plot_overview == 1:
   ax2.set_yticks([0,25,50])
   ax2.set_yticklabels([0,25,50],fontsize=8,fontname='Arial')
   ax2.set_ylabel('Runoff (kg m$^{-2}$ d$^{-1}$)',fontsize=8,fontname='Arial')
+  ax2.yaxis.set_minor_locator(AutoMinorLocator(2))
   plt.legend(loc=3,borderpad=0.3,fontsize=8,numpoints=1,handlelength=0.7,labelspacing=0.05,ncol=4,columnspacing=0.7,handletextpad=0.5)
-  ax.text(2008.13,0.35,'e',fontsize=9,fontname='arial',weight='bold')
+  ax.text(2008.13,0.32,'d',fontsize=9,fontname='arial',weight='bold')
   if plot_images == 1:
    for i in range(0,len(images)):
       plt.plot([images_time[i][3],images_time[i][3]],ax.get_ylim(),'--',color='0.3')
 
   plt.tight_layout()
-  plt.subplots_adjust(hspace=0.05,wspace=0,top=0.95,right=0.94,left=0.09,bottom=0.05) 
+  plt.subplots_adjust(hspace=0.03,wspace=0,top=0.95,right=0.93,left=0.09,bottom=0.05) 
   plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+"_vel_time_"+str(int(time1))+"to"+str(int(time2))+".pdf"),FORMAT='PDF',dpi=600)
   plt.close()
 
@@ -713,7 +657,7 @@ if plot_overview == 1:
     xg,yg = m([-38.3],[66.1])
   elif glacier == 'Kanger':
     xg,yg = m ([-33.0],[68.63333])
-  m.plot(xg,yg,'ro',markersize=4)
+  m.plot(xg,yg,'ro',markersize=3.5)
 
   plt.subplots_adjust(wspace=0,hspace=0,top=0.98,right=0.98,left=0.02,bottom=0.02)
   plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+"_velocity_map.pdf"),FORMAT='PDF',dpi=600)
