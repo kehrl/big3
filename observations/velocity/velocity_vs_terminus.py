@@ -81,6 +81,7 @@ if lagrangian == 1:
   vel_val,vel_time,vel_error,vel_dists,vel_x,vel_y = vellib.velocity_at_lagpoints(x,y,dists,dists_eul*1e3,glacier)
 else:
   vel_val,vel_time,vel_error = vellib.velocity_at_eulpoints(x[ind_eul],y[ind_eul],glacier)
+vel_val_howat,vel_time_howat,vel_error_howat = vellib.howat_optical_at_pts(x[ind_eul],y[ind_eul],glacier)
 
 velmel_val,velmel_time,velmel_error,velmel_dists,velmel_x,velmel_y = vellib.velocity_at_lagpoints(x,y,dists,dists_mel*1e3,glacier)
 velocitypoints = np.column_stack([x[ind_eul],y[ind_eul]])
@@ -352,10 +353,10 @@ if plot_overview == 1:
   ax.tick_params('both', length=3, width=1, which='minor')
   if glacier == 'Helheim':
     plt.ylim([-3,3])
-    plt.text(2008.13,-2.6,'a',fontsize=9,fontname='arial',weight='bold')
+    plt.text(2008.13,-2.6,'a',fontsize=10,fontname='arial',weight='bold')
   elif glacier == 'Kanger':
     plt.ylim([-4.5,4.5])
-    plt.text(2008.13,-3.8,'a',fontsize=9,fontname='arial',weight='bold')
+    plt.text(2008.13,-3.8,'a',fontsize=10,fontname='arial',weight='bold')
   else:  
     plt.ylim(np.floor((np.min(terminus_val))/1e3),np.ceil((np.max(terminus_val))/1e3))
 
@@ -380,13 +381,15 @@ if plot_overview == 1:
     for i in range(0,len(dists_eul)):
       nonnan = np.where(~(np.isnan(vel_val[:,i])))[0]
       plt.plot(vel_time[nonnan],(vel_val[nonnan,i])/1e3,markoptions[i],color=coloptions[i],label=glacier[0]+'{0:02d}'.format(int(abs(dists_eul[i]))),markersize=3.5)
+      #nonnan = np.where(~(np.isnan(vel_val_howat[:,i])))[0]
+      #plt.plot(vel_time_howat[nonnan,0],(vel_val_howat[nonnan,i])/1e3,'+',color=coloptions[i],markersize=5)
     plt.yticks(range(2,12),fontsize=8,fontname="Arial")
     if glacier == 'Helheim':
       plt.ylim([3.5,11])
-      plt.text(2008.13,3.8,'b',fontsize=9,fontname='arial',weight='bold')
+      plt.text(2008.13,3.8,'b',fontsize=10,fontname='arial',weight='bold')
     elif glacier == 'Kanger':
       plt.ylim([2.5,12])
-      plt.text(2008.13,3,'b',fontsize=9,fontname='arial',weight='bold')
+      plt.text(2008.13,3,'b',fontsize=10,fontname='arial',weight='bold')
   plt.ylabel('Glacier speed (km yr$^{-1}$)',fontsize=8,fontname="Arial")
   x_formatter = matplotlib.ticker.ScalarFormatter(useOffset=False)
   ax.xaxis.set_major_formatter(x_formatter)
@@ -462,13 +465,13 @@ if plot_overview == 1:
     plt.ylabel('  Height above flotation at H02 (m)',fontsize=8,fontname="Arial")
     plt.yticks(np.arange(-10,50,10),fontsize=8,fontname="Arial")
     plt.ylim([-5,45])
-    plt.text(2008.13,7,'c',fontsize=9,fontname='arial',weight='bold')
+    plt.text(2008.13,7,'c',fontsize=10,fontname='arial',weight='bold')
     ind = [0,1,3,2,4]
   elif glacier == 'Kanger':
     plt.ylabel('  Height above flotation at K05 (m)',fontsize=8,fontname="Arial")
     plt.yticks(np.arange(-20,80,10),fontsize=8,fontname="Arial")
     plt.ylim([-25,62])
-    plt.text(2008.13,-4,'c',fontsize=9,fontname='arial',weight='bold')
+    plt.text(2008.13,-4,'c',fontsize=10,fontname='arial',weight='bold')
     ind = [0,3,4,1,5,2]
   handles, labels = ax.get_legend_handles_labels()
   labels = [labels[i] for i in ind]
@@ -542,7 +545,7 @@ if plot_overview == 1:
   ax2.set_ylabel('Runoff (kg m$^{-2}$ d$^{-1}$)',fontsize=8,fontname='Arial')
   ax2.yaxis.set_minor_locator(AutoMinorLocator(2))
   plt.legend(loc=3,borderpad=0.3,fontsize=8,numpoints=1,handlelength=0.7,labelspacing=0.05,ncol=4,columnspacing=0.7,handletextpad=0.5)
-  ax.text(2008.13,0.32,'d',fontsize=9,fontname='arial',weight='bold')
+  ax.text(2008.13,0.32,'d',fontsize=10,fontname='arial',weight='bold')
   if plot_images == 1:
    for i in range(0,len(images)):
       plt.plot([images_time[i][3],images_time[i][3]],ax.get_ylim(),'--',color='0.3')
@@ -644,7 +647,7 @@ if plot_overview == 1:
   ax.plot([xmin+0.63*(xmax-xmin),xmin+0.63*(xmax-xmin)],[ymin+0.78*(ymax-ymin),ymin+0.76*(ymax-ymin)],'k',linewidth=1.5)
   ax.plot([xmin+0.63*(xmax-xmin)+5e3,xmin+0.63*(xmax-xmin)+5e3],[ymin+0.78*(ymax-ymin),ymin+0.76*(ymax-ymin)],'k',linewidth=1.5)
   ax.text(xmin+0.67*(xmax-xmin)+5e3,ymin+0.76*(ymax-ymin),'5 km',fontsize=8)
-  ax.text(xmin+0.02*(xmax-xmin),ymin+0.93*(ymax-ymin),'a',fontweight='bold',fontsize=9)
+  ax.text(xmin+0.02*(xmax-xmin),ymin+0.93*(ymax-ymin),'a',fontweight='bold',fontsize=10)
 
   ax2 = fig.add_axes([0.04, 0.04, 0.2, 0.36])
   m = Basemap(width=1600000,height=3000000,
@@ -837,8 +840,8 @@ if plot_radargram == 1:
   cb.set_ticks([3,4,5,6,7,8,9])
   cb.set_ticklabels(['3','4','5','6','7','8','9'])
   ax.xaxis.set_minor_locator(AutoMinorLocator(2))
-  cb.set_label('Glacier speed (km/yr)',fontsize=9,fontname="Arial")
-  plt.ylabel('Distance along flowline (km)',fontsize=9,fontname="Arial")
+  cb.set_label('Glacier speed (km/yr)',fontsize=10,fontname="Arial")
+  plt.ylabel('Distance along flowline (km)',fontsize=10,fontname="Arial")
   ax.tick_params('both', length=6, width=1.25, which='major')
   ax.tick_params('both', length=3, width=1, which='minor')
   plt.ylim([5,-25])
@@ -866,7 +869,7 @@ if plot_radargram == 1:
   cb=plt.colorbar(orientation="horizontal",fraction=0.07)
   ax.xaxis.set_minor_locator(AutoMinorLocator(2))
   cb.set_ticks([-0.2,0,0.2])
-  cb.set_label('Change from average',fontsize=9,fontname="Arial")
+  cb.set_label('Change from average',fontsize=10,fontname="Arial")
   ax.set_yticklabels([])
   plt.ylim([5,-25])
   ax.tick_params('both', length=6, width=1.25, which='major')

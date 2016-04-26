@@ -15,7 +15,7 @@ xmax = 314000.0
 ymin = -2582500.0
 ymax = -2572500.0
 
-plt.figure(figsize=(3.5,2.1))
+plt.figure(figsize=(5,2.9))
 gs = matplotlib.gridspec.GridSpec(1,2)
 
 plt.subplot(gs[0])
@@ -25,7 +25,7 @@ plt.xlim([xmin,xmax])
 plt.ylim([ymin,ymax])
 plt.xticks([])
 plt.yticks([])
-plt.text(xmin+0.05*(xmax-xmin),ymax-0.12*(ymax-ymin),'a',fontsize=9,fontname='arial',fontweight='bold')
+plt.text(xmin+0.05*(xmax-xmin),ymax-0.08*(ymax-ymin),'a',fontsize=9,fontname='arial',fontweight='bold')
 
 plt.subplot(gs[1])
 plt.imshow(znon,origin='lower',extent=[np.min(xnon),np.max(xnon),np.min(ynon),np.max(ynon)])
@@ -33,24 +33,24 @@ plt.xlim([xmin,xmax])
 plt.ylim([ymin,ymax])
 plt.xticks([])
 plt.yticks([])
-plt.text(xmin+0.05*(xmax-xmin),ymax-0.12*(ymax-ymin),'b',fontsize=9,fontname='arial',fontweight='bold')
+plt.text(xmin+0.05*(xmax-xmin),ymax-0.08*(ymax-ymin),'b',fontsize=9,fontname='arial',fontweight='bold')
 
 plt.subplot(gs[0])
 ax = plt.gca()
 xmin,xmax = plt.xlim()
 ymin,ymax = plt.ylim()
-path = matplotlib.path.Path([[0.57*(xmax-xmin)+xmin,0.98*(ymax-ymin)+ymin],
+path = matplotlib.path.Path([[0.67*(xmax-xmin)+xmin,0.98*(ymax-ymin)+ymin],
   			[0.98*(xmax-xmin)+xmin,0.98*(ymax-ymin)+ymin],
-  			[0.98*(xmax-xmin)+xmin,0.86*(ymax-ymin)+ymin],
-  			[0.56*(xmax-xmin)+xmin,0.86*(ymax-ymin)+ymin],
-  			[0.56*(xmax-xmin)+xmin,0.98*(ymax-ymin)+ymin]])
+  			[0.98*(xmax-xmin)+xmin,0.90*(ymax-ymin)+ymin],
+  			[0.67*(xmax-xmin)+xmin,0.90*(ymax-ymin)+ymin],
+  			[0.67*(xmax-xmin)+xmin,0.98*(ymax-ymin)+ymin]])
 patch = matplotlib.patches.PathPatch(path,edgecolor='k',facecolor='w',lw=1)
 ax.add_patch(patch)
 
-ax.plot([xmin+0.60*(xmax-xmin),xmin+0.60*(xmax-xmin)+1e3],[ymin+0.93*(ymax-ymin),ymin+0.93*(ymax-ymin)],'k',linewidth=1.5)
-ax.plot([xmin+0.60*(xmax-xmin),xmin+0.60*(xmax-xmin)],[ymin+0.93*(ymax-ymin),ymin+0.91*(ymax-ymin)],'k',linewidth=1.5)
-ax.plot([xmin+0.60*(xmax-xmin)+1e3,xmin+0.60*(xmax-xmin)+1e3],[ymin+0.93*(ymax-ymin),ymin+0.91*(ymax-ymin)],'k',linewidth=1.5)
-ax.text(xmin+0.62*(xmax-xmin)+1e3,ymin+0.89*(ymax-ymin),'1 km',fontsize=9)
+ax.plot([xmin+0.70*(xmax-xmin),xmin+0.70*(xmax-xmin)+1e3],[ymin+0.95*(ymax-ymin),ymin+0.95*(ymax-ymin)],'k',linewidth=1.5)
+ax.plot([xmin+0.70*(xmax-xmin),xmin+0.70*(xmax-xmin)],[ymin+0.95*(ymax-ymin),ymin+0.93*(ymax-ymin)],'k',linewidth=1.5)
+ax.plot([xmin+0.70*(xmax-xmin)+1e3,xmin+0.70*(xmax-xmin)+1e3],[ymin+0.95*(ymax-ymin),ymin+0.93*(ymax-ymin)],'k',linewidth=1.5)
+ax.text(xmin+0.72*(xmax-xmin)+1e3,ymin+0.92*(ymax-ymin),'1 km',fontsize=9,fontname='Arial')
 
 plt.tight_layout()
 plt.subplots_adjust(hspace=0.05,wspace=0.05)

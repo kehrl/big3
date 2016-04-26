@@ -20,7 +20,7 @@ import math
 import sys
 import scipy.interpolate
 import numpy as np
-import geodatlib, icefrontlib, geotifflib, datelib, masklib
+import geodatlib, icefrontlib, geotifflib, datelib, masklib, jdcal
 from scipy import stats
 
 #########################################################################################
@@ -985,3 +985,89 @@ def inversion_2D(x,y,d,glacier,time,dir_velocity_out,filt_len='none'):
 
   return filtered
 
+def howat_optical_at_pts(xpt,ypt,glacier,xy_velocities='False'):
+
+  DIR = os.path.join(os.getenv("DATA_HOME"),"Velocity/Howat/"+glacier+"/")
+  
+  dirs = os.listdir(DIR)
+  
+  m=0
+  for dir in dirs:
+    if dir.startswith('OPT'):
+      m = m+1
+  try:
+    n = len(xpt)
+  except:
+    n = 1
+  
+  # Set up variables
+  velocities = np.zeros([m,n])
+  velocities[:,:] = 'nan'
+  velocities_x = np.zeros([m,n])
+  velocities_x[:,:] = 'nan'
+  velocities_y = np.zeros([m,n])
+  velocities_y[:,:] = 'nan'
+  error = np.zeros([m,n])
+  error[:,:] = 'nan'
+  times=np.zeros([m,2])
+  
+  count = 0
+  for dir in dirs:
+    if dir.startswith('OPT'):
+      metafile = open(DIR+dir+'/'+dir+'.meta',"r")
+      lines = metafile.readlines()
+      metafile.close()
+      jdates = []
+      jdates.append(float(lines[0][36:48]))
+      if len(lines[0]) > 50:
+        jdates.append(float(lines[0][49:61]))
+        if len(lines[0]) > 63:
+          jdates.append(float(lines[0][62:74]))
+          if len(lines[0]) > 75:
+            jdates.append(float(lines[0][75:87]))
+            if len(lines[0]) > 88:
+              jdates.append(float(lines[0][88:100]))
+              if len(lines[0]) > 101:
+                jdates.append(float(lines[0][101:113]))
+    
+      # Get date
+      times_all = []
+      for jdate in jdates:
+    	  year,month,day,fracday=jdcal.jd2gcal(jdate,0)
+    	  times_all.append(datelib.date_to_fracyear(year,month,day+fracday))
+    
+      times[count,0] = np.mean(times_all)
+      times[count,1] = np.max(times_all)-np.min(times_all)
+    
+      x,y,vx = geotifflib.read(DIR+dir+'/'+dir+'.vx.tif',no_data_value=-99999)
+      x,y,vy = geotifflib.read(DIR+dir+'/'+dir+'.vy.tif',no_data_value=-99999)
+      x,y,ex = geotifflib.read(DIR+dir+'/'+dir+'.ex.tif',no_data_value=-99999)
+      x,y,ey = geotifflib.read(DIR+dir+'/'+dir+'.ey.tif',no_data_value=-99999)
+      v = np.sqrt(vx**2+vy**2)
+    
+      fv = scipy.interpolate.RegularGridInterpolator([y,x],v,method='linear',bounds_error=False)
+      fex = scipy.interpolate.RegularGridInterpolator([y,x],ex,method='linear',bounds_error=False)
+      fey = scipy.interpolate.RegularGridInterpolator([y,x],ey,method='linear',bounds_error=False)
+      fvx = scipy.interpolate.RegularGridInterpolator([y,x],vx,method='linear',bounds_error=False)
+      fvy = scipy.interpolate.RegularGridInterpolator([y,x],vy,method='linear',bounds_error=False)
+      
+      # Find velocities 
+      velocities[count,:] = fv(np.array([ypt,xpt]).T) 
+      velocities_x[count,:] = fvx(np.array([ypt,xpt]).T)
+      velocities_y[count,:] = fvy(np.array([ypt,xpt]).T)
+      error[count,:] = velocities[count,:]*np.sqrt((fex(np.array([ypt,xpt]).T)/fvx(np.array([ypt,xpt]).T))**2+(fey(np.array([ypt,xpt]).T)/fvy(np.array([ypt,xpt]).T))**2)        
+    
+      count = count + 1
+    
+  # Sort arrays by time  
+  sortind=np.argsort(times[:,0],0)
+  tpt_sort = times[sortind]
+  vpt_sort = velocities[sortind,:]
+  ept_sort = error[sortind,:]
+  vxpt_sort = velocities_x[sortind,:]
+  vypt_sort = velocities_y[sortind,:]
+  
+  if xy_velocities == 'True':
+    return vpt_sort,tpt_sort,ept_sort,vxpt_sort,vypt_sort
+  else:  	  
+    return vpt_sort,tpt_sort,ept_sort

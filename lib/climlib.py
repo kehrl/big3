@@ -303,7 +303,11 @@ def cumsmb(xpt,ypt,epsg=3413,rho_i=900.0,method='nearest',maskvalues='ice'):
 def SIF_at_pts(xpts,ypts,epsg=3413,filt_len='none'):
 
   file = os.path.join(os.getenv("DATA_HOME"),"Climate/SeaIce/METOFFICE-GLO-SST-L4-NRT-OBS-SST-V2_1447191850310.nc")
-  
+  #file = os.path.join(os.getenv("DATA_HOME"),"Climate/SeaIce/METOFFICE-GLO-SST-REANALYSIS_1.nc")
+  file = os.path.join(os.getenv("DATA_HOME"),"Climate/SeaIce/METOFFICE-GLO-SST-REANALYSIS_2.nc")
+  file = os.path.join(os.getenv("DATA_HOME"),"Climate/SeaIce/METOFFICE-GLO-SST-V2.nc")
+
+
   rec = netCDF4.Dataset(file)
   
   lat = rec.variables['lat'][:]
@@ -311,6 +315,7 @@ def SIF_at_pts(xpts,ypts,epsg=3413,filt_len='none'):
   time = rec.variables['time'][:]
   mask = rec.variables['mask'][:]
   sif = rec.variables['sea_ice_fraction'][:]
+  #sif = rec.variables['analysed_sst'][:]
   
   lon_grid,lat_grid = np.meshgrid(lon,lat)
   

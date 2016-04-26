@@ -43,7 +43,7 @@ def extent(filename):
      
   return xmin,xmax,ymin,ymax
 
-def read(filename,xmin=-np.Inf,xmax=np.Inf,ymin=-np.Inf,ymax=np.Inf):
+def read(filename,xmin=-np.Inf,xmax=np.Inf,ymin=-np.Inf,ymax=np.Inf,no_data_value='none'):
   
   '''
   x,y,z = read(filename,xmin=-np.Inf,xmax=np.Inf,ymin=-np.Inf,ymax=np.Inf)
@@ -71,7 +71,9 @@ def read(filename,xmin=-np.Inf,xmax=np.Inf,ymin=-np.Inf,ymax=np.Inf):
 
   # Get no data value
   nodatavalue = geotiffile.GetRasterBand(1).GetNoDataValue()
-
+  if no_data_value != 'none':
+    nodatavalue = no_data_value
+    
   # Get the coordinates of the image
   gt = geotiffile.GetGeoTransform()
   x = np.zeros(nx)
