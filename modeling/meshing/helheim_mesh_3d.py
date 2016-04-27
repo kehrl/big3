@@ -33,7 +33,7 @@ def get_arguments():
             help = "Type of bed (aniso,iso).")
   parser.add_argument("-bsmooth", dest="bedsmooth", type=int,required = False,\
 			default=4,help = "Smoothness of bed (1-8).")
-  parser.add_argument("-lc", dest="lc", type=int,required = False,\
+  parser.add_argument("-lc", dest="lc", type=int,required = False,nargs='+',\
 			default=[1000,1000,3000,5000],\
 			help = "Four numbers that define the mesh resolution for grounding-line (1000 m),channels (1000 m),regions near channels (3000 m), and entire mesh (5000 m).")
 
@@ -82,7 +82,7 @@ def main():
   #################
 
   # Mesh exterior
-  exterior = glaclib.load_extent(glacier,time)
+  exterior = glaclib.load_extent(glacier,time,nofront_shapefile='glacier_extent_inversion_nofront')
   np.savetxt(inputs+"mesh_extent.dat",exterior[:,0:2])
 
   # Mesh holes

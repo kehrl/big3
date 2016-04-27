@@ -1,6 +1,8 @@
 #PBS -S /bin/bash
-#PBS -l select=1:ncpus=8:model=ivy
-#PBS -l walltime=1:00:00
+#PBS -l select=1:ncpus=16:model=ivy
+#PBS -l walltime=20:00:00
+source /u/lkehrl/.profile
 source /u/dlilien/sw/elmer/.bashrc_pleiades
-cd $PBS_O_WORKDIR
-python /u/lkehrl/Code/BigThreeGlaciers/Modeling/Inversions/helheim_inversion_3d.py -n 8 -mesh 20120624_Pleiades8
+cd /nobackupp8/lkehrl/Models/Helheim/3D/DEM20120624_HIGH/
+#mpiexec ElmerSolver_mpi
+python /u/lkehrl/Code/big3/modeling/inversions/helheim_inversion_3d.py -n 16 -mesh DEM20120624_HIGH -regpar 1e10 -extrude 20
