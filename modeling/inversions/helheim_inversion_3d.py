@@ -61,7 +61,7 @@ def main():
   # Directories
   DIRS=os.path.join(os.getenv("CODE_HOME"),"big3/modeling/solverfiles/3D/")
   DIRM=os.path.join(os.getenv("MODEL_HOME"),glacier+"/3D/"+RES+"/")
-  DIRR=os.path.join(DIRM+'inversion_'+method+'_'+date+'/')
+  DIRR=os.path.join(DIRM+'inversion_'+method+'/')
   DIRX=os.path.join(os.getenv("DATA_HOME"),"ShapeFiles/Glaciers/3D/"+glacier)
   inputs=os.path.join(DIRM+"/inputs/")
 
@@ -126,29 +126,30 @@ def main():
 	# Combine elmer results into one file #
 	#######################################
 
-  bed = elmerreadlib.saveline_boundary(DIRM+"/mesh2d/",runname,bbed)
-  surf = elmerreadlib.saveline_boundary(DIRM+"/mesh2d/",runname,bsurf)
-
-  os.rename(DIRM+"/mesh2d/"+runname+".dat",DIRR+runname+"_"+regpar+".dat")
-  os.rename(DIRM+"/mesh2d/"+runname+".dat.names",DIRR+runname+"_"+regpar+".dat.names")
-  os.rename(DIRM+"M1QN3_"+method+"_beta.out",DIRR+"M1QN3_"+method+"_"+regpar+"_beta.out")
-  os.rename(DIRM+"gradientnormadjoint_"+method+"_beta.dat",DIRR+"gradient_"+runname+"_"+regpar+".dat")
-  os.rename(DIRM+"cost_"+method+"_beta.dat",DIRR+"cost_"+runname+"_"+regpar+".dat")
+  DIRR_lambda = DIRR+"lambda_"+regpar+"_"+date
 
   names = os.listdir(DIRM+"/mesh2d")
   os.chdir(DIRM+"/mesh2d")
-  if not os.path.exists(DIRM+"lambda_"+regpar):
-    os.makedirs(DIRM+"lambda_"+regpar)
+  if not os.path.exists(DIRR_lambda):
+    os.makedirs(DIRR_lambda)
   for name in names:
     if name.endswith('vtu') and name.startswith(method):
       os.rename(name,DIRM+"lambda_"+regpar+"/"+name)
-	
-	
+
+  bed = elmerreadlib.saveline_boundary(DIRM+"/mesh2d/",runname,bbed)
+  surf = elmerreadlib.saveline_boundary(DIRM+"/mesh2d/",runname,bsurf)
+
+  os.rename(DIRM+"/mesh2d/"+runname+".dat",DIRR_lambda+runname+".dat")
+  os.rename(DIRM+"/mesh2d/"+runname+".dat.names",DIRR_lambda+runname+".dat.names")
+  os.rename(DIRM+"M1QN3_"+method+"_beta.out",DIRR_lambda+"M1QN3_"+method+"_beta.out")
+  os.rename(DIRM+"gradientnormadjoint_"+method+"_beta.dat",DIRR_lambda+"gradient_"+runname+".dat")
+  os.rename(DIRM+"cost_"+method+"_beta.dat",DIRR_lambda+"cost_"+runname+".dat")
+
 	################################
 	# Output friction coefficients #
 	################################
 
-	#Linear Beta square
+	# Linear Beta square
   fid = open(inputs+"beta_linear.xyz",'w')
   fid.write('{0}\n'.format(len(bed['node'])))
   for i in range(0,len(bed['node'])):
@@ -156,7 +157,7 @@ def main():
 				bed['coord3'][i],bed['beta'][i]**2))
   fid.close()
 
-  #Weertman coefficient
+  # Weertman coefficient
   fid = open(inputs+"beta_weertman.xyz",'w')
   fid.write('{0}\n'.format(len(bed['node'])))
   for i in range(0,len(bed['node'])):
