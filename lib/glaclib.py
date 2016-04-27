@@ -124,6 +124,10 @@ def load_extent(glacier,time,nofront_shapefile='glacier_extent_nofront'):
   
   # Glacier extent with no ice front
   extent = meshlib.shp_to_xy(os.path.join(os.getenv("DATA_HOME"),"ShapeFiles/Glaciers/3D/"+glacier+"/"+nofront_shapefile))
+  
+  if extent[1,1] > extent[0,1]:
+    extent = np.flipud(extent)
+  
   xextent = extent[:,0]
   yextent = extent[:,1]
   bound = extent[:,2]

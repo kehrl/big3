@@ -229,6 +229,7 @@ def xy_to_gmsh_3d(glacier,date,exterior,holes,refine,DIRM,lc1,lc2,lc3,lc4,\
   # Add refinement points
   R = len(refine[:,0])
   start = n
+  nrefine = 0 
   polyglacier = Polygon(exterior[:,0:2])
   for i in range(0,R):
     polypt = Point(refine[i,0:2])
@@ -240,6 +241,7 @@ def xy_to_gmsh_3d(glacier,date,exterior,holes,refine,DIRM,lc1,lc2,lc3,lc4,\
       else:
         fid.write('Point({}) = {{{}, {}, 0, lc4}}; \n'.format(n,refine[i,0],refine[i,1]))
       n = n+1
+      nrefine = nrefine+1
   
   # Save plane surface
   fid.write('Plane Surface({}) = {{'.format(n))
@@ -250,7 +252,7 @@ def xy_to_gmsh_3d(glacier,date,exterior,holes,refine,DIRM,lc1,lc2,lc3,lc4,\
   n = n+1
   
   # Call refinement points in gmsh file
-  for j in range(0,R):
+  for j in range(0,nrefine):
     fid.write('Point{{{}}} In Surface{{{}}}; \n'.format(start+j,surf))
   
   # Save physical surfaces and physical lines for calling boundary conditions
