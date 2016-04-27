@@ -19,7 +19,7 @@ import scipy.signal as signal
 import math
 from scipy import interpolate
 import bedlib, floatlib, zslib, coordlib
-from shapely.geometry import LineString
+from shapely.geometry import Polygon,Point
 import scipy.interpolate
 
 def shp_to_xy(in_file):
@@ -229,14 +229,17 @@ def xy_to_gmsh_3d(glacier,date,exterior,holes,refine,DIRM,lc1,lc2,lc3,lc4,\
   # Add refinement points
   R = len(refine[:,0])
   start = n
+  polyglacier = Polygon(exterior[:,0:2])
   for i in range(0,R):
-    if refine[i,2] == 2:
-      fid.write('Point({}) = {{{}, {}, 0, lc3}}; \n'.format(n,refine[i,0],refine[i,1]))
-    elif refine[i,2] == 1:
-      fid.write('Point({}) = {{{}, {}, 0, lc2}}; \n'.format(n,refine[i,0],refine[i,1]))
-    else:
-      fid.write('Point({}) = {{{}, {}, 0, lc4}}; \n'.format(n,refine[i,0],refine[i,1]))
-    n = n+1
+    polypt = Point(refine[i,0:2])
+    if polyglacier.contains(polypt):
+      if refine[i,2] == 2:
+        fid.write('Point({}) = {{{}, {}, 0, lc3}}; \n'.format(n,refine[i,0],refine[i,1]))
+      elif refine[i,2] == 1:
+        fid.write('Point({}) = {{{}, {}, 0, lc2}}; \n'.format(n,refine[i,0],refine[i,1]))
+      else:
+        fid.write('Point({}) = {{{}, {}, 0, lc4}}; \n'.format(n,refine[i,0],refine[i,1]))
+      n = n+1
   
   # Save plane surface
   fid.write('Plane Surface({}) = {{'.format(n))
