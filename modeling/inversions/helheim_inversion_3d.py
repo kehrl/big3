@@ -15,6 +15,8 @@ import elmerreadlib, meshlib
 import numpy as np
 import argparse
 import datetime
+import matplotlib
+matplotlib.use('agg')
 import matplotlib.pyplot as plt
 
 def get_arguments():
