@@ -86,8 +86,9 @@ End
 Initial Condition 1
   BetaS = Variable coordinate 1, Coordinate 2
      REAL MATC "betaSquare(tx)"
-  MuS = Real $ (2.0*6.4e-25*yearinsec)^(-1.0/3.0)*1.0e-6 
-  ! Using a mixed value from Habermann (Jakobshavn) and Nick (Helheim flowline), -5 deg C
+  ! MuS = Real $ (3*3.5e-25*yearinsec)^(-1.0/3.0)*1.0e-6 
+  ! Using a mixed value from Habermann (Jakobshavn) and Nick (Helheim flowline), -10 deg C, 
+  ! and an enhancement factor of 3
   ! MuS = Variable Coordinate 3,
   !  Real Procedure "Rheology.so" "Viscosity"
  
