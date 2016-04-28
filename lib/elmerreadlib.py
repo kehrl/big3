@@ -71,7 +71,7 @@ def saveline(DIR,runname):
     fid.close()
   
   # Calculate velocity magnitude for 3D simulations
-  if 'velod4' in variables:
+  if ('velod4' in variables) or ('velocityb4' in variables):
     data['velmes']=[]
     data['vel']=[]
     for i in range(0,len(data['vel1'])):
@@ -81,7 +81,7 @@ def saveline(DIR,runname):
   # Calculate basal shear stress
   if 'beta' in variables:
     data['taub']=[]
-    if 'velod4' in variables:
+    if ('velod4' in variables) or ('velocityb4' in variables):
       for i in range(0,len(data['vel1'])):
         data['taub'].append(data['beta'][i]**2*data['vel'][i])
     else:

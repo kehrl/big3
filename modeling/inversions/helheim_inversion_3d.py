@@ -15,6 +15,7 @@ import elmerreadlib, meshlib
 import numpy as np
 import argparse
 import datetime
+import matplotlib.pyplot as plt
 
 def get_arguments():
 
@@ -65,12 +66,17 @@ def main():
   DIRX=os.path.join(os.getenv("DATA_HOME"),"ShapeFiles/Glaciers/3D/"+glacier)
   inputs=os.path.join(DIRM+"/inputs/")
 
+  extent = np.loadtxt(inputs+"mesh_extent.dat")
+  hole1 = np.loadtxt(inputs+"mesh_hole1.dat")
+  hole2 = np.loadtxt(inputs+"mesh_hole2.dat")
+  holes=[hole1,hole2]  
+
   if not(os.path.exists(DIRR)):
     os.makedirs(DIRR)
 
   # Boundary numbers 
-  bbed=3
-  bsurf=4
+  bbed=4
+  bsurf=5
   runname=method+"_beta"
 
   #############################
@@ -126,7 +132,7 @@ def main():
 	# Combine elmer results into one file #
 	#######################################
 
-  DIRR_lambda = DIRR+"lambda_"+regpar+"_"+date
+  DIRR_lambda = DIRR+"lambda_"+regpar+"_"+date+"/"
 
   names = os.listdir(DIRM+"/mesh2d")
   os.chdir(DIRM+"/mesh2d")
@@ -134,7 +140,7 @@ def main():
     os.makedirs(DIRR_lambda)
   for name in names:
     if name.endswith('vtu') and name.startswith(method):
-      os.rename(name,DIRM+"lambda_"+regpar+"/"+name)
+      os.rename(name,DIRR_lambda+name)
 
   bed = elmerreadlib.saveline_boundary(DIRM+"/mesh2d/",runname,bbed)
   surf = elmerreadlib.saveline_boundary(DIRM+"/mesh2d/",runname,bsurf)
@@ -149,7 +155,7 @@ def main():
 	# Output friction coefficients #
 	################################
 
-	# Linear Beta square
+  # Linear Beta square
   fid = open(inputs+"beta_linear.xyz",'w')
   fid.write('{0}\n'.format(len(bed['node'])))
   for i in range(0,len(bed['node'])):
@@ -165,6 +171,14 @@ def main():
     fid.write('{0} {1} {2:.4f} {3}\n'.format(bed['coord1'][i],bed['coord2'][i],bed['coord3'][i],coeff))
   fid.close() 
 
+  xgrid,ygrid,taubgrid = elmerreadlib.grid3d(bed,'taub',holes,extent)
+  plt.imshow(taubgrid*1e4,origin='lower',clim=[0,500])
+  plt.xticks([])
+  plt.yticks([])
+  plt.colorbar()
+  cb.set_label('Basal shear stress (kPa)')
+  plt.savefig(DIRR+'lambda_'+regpar+'_'+date+'.pdf',format='PDF',dpi=400)
+  plt.close()
 	
 if __name__ == "__main__":
   main()
