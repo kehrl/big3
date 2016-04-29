@@ -145,40 +145,36 @@ def main():
   # SIA approximation to get basal sliding speed for the inflow boundary  #
   #########################################################################
 
-  ## Get mesh nodes
-  # nodes_file=DIRM+"mesh2d/mesh.nodes"
-  # nodes=np.loadtxt(nodes_file)
+  # Get mesh nodes
+  nodes_file=DIRM+"mesh2d/mesh.nodes"
+  nodes=np.loadtxt(nodes_file)
 
-  ## Get modeled temperatures from Kristin's work
-  # kristin_file=os.path.join(os.getenv("DATA_HOME"),"Climate/IceTemperature/Helheim/helheim_TA.xyz")
-  # tempdata=np.genfromtxt(kristin_file,delimiter=',')
-  # tempdata=np.delete(tempdata,(0),axis=0)
+  # Get modeled temperatures from Kristin's work
+  kristin_file=os.path.join(os.getenv("DATA_HOME"),"Climate/IceTemperature/Helheim/helheim_TA.xyz")
+  tempdata=np.genfromtxt(kristin_file,delimiter=',')
+  tempdata=np.delete(tempdata,(0),axis=0)
 
-  ## Normalize height to 1 in Kristin's temperatures
-  # xdata,xinds=np.unique(tempdata[:,0],return_index=True)
-  # ydata,yinds=np.unique(tempdata[:,1],return_index=True)
-  # inds=np.union1d(xinds,yinds)
-  # del xdata, ydata
-  # xdata=tempdata[inds,0]
-  # ydata=tempdata[inds,1]
-  # tempdata_normalized=tempdata
-  # for i in range(0,len(xdata)):
-  #   colinds=np.where(tempdata[:,0]==xdata[i])
-  #   colinds=np.array(colinds)
-  #   surf=np.max(tempdata[colinds,2])
-  #   bed=np.min(tempdata[colinds,2])
-  #   H=surf-bed
-  #   tempdata_normalized[colinds,2]=(tempdata[colinds,2]-bed)/H
-  # del H,surf,bed,xdata,ydata,xinds,yinds,inds,colinds
+  # Get surface and bed for Kristin's temps
+  xdata,xinds=np.unique(tempdata[:,0],return_index=True)
+  ydata,yinds=np.unique(tempdata[:,1],return_index=True)
+  inds=np.union1d(xinds,yinds)
+  del xdata, ydata
+  xdata=tempdata[inds,0]
+  ydata=tempdata[inds,1]
+  tempdata_normalized=tempdata
+  for i in range(0,len(xdata)):
+    colinds=np.where(tempdata[:,0]==xdata[i])
+    colinds=np.array(colinds)
+    surf=np.max(tempdata[colinds,2])
+    bed=np.min(tempdata[colinds,2])
+    #H=surf-bed
+    #tempdata_normalized[colinds,2]=(tempdata[colinds,2]-bed)/H
+  del H,surf,bed,xdata,ydata,xinds,yinds,inds,colinds
 
-  ## Normalize height to 1 for nodes
-  # junk,xinds=np.unique(nodes[:,2],return_index=True)
-  # junk,yinds=np.unique(nodes[:,3],return_index=True)
-  # inds=np.unique(np.hstack([xinds,yinds]))
-  # xnodes=nodes[inds,2]
-  # ynodes=nodes[inds,3]
-  # surf=np.zeros_like(xnodes)
-  # bed=np.zeros_like(ynodes)
+  ## Set up output grid
+  
+  junk,xinds=np.unique(nodes[:,2],return_index=True)
+  junk,yinds=np.unique(nodes[:,3],return_index=True)
   # nodes_normalized=np.zeros_like(nodes[:,4])
   # height=np.zeros_like(xnodes)
   # for i in range(0,len(inds)):

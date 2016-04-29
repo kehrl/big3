@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 # This script let's you choose the velocity record for the basal inversion, and then runs 
 # the Helheim inversion script.
 #
@@ -15,7 +17,7 @@ import elmerreadlib, meshlib
 import numpy as np
 import argparse
 import datetime
-import matplotlib
+import matplotlib, elmerrunlib
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
 
@@ -85,8 +87,6 @@ def main():
   # Run inversion solver file #
   #############################
 
-  print "\n## Running elmer inversion code ##\n"
-
   if not(os.path.exists(DIRR+"summary.dat")):
     fid_info = open(DIRR+"summary.dat","w")
     fid_info.write('Lambda Nsim Cost Norm RelPrec_G \n')
@@ -99,18 +99,14 @@ def main():
 
   lines=fid1.readlines()
   for line in lines:
-    line=line.replace('Extruded Mesh Levels=Integer', 'Extruded Mesh Levels=Integer {}'.format(extrude))
-    line=line.replace('$Lambda=1.0e10', '$Lambda={}'.format(regpar))
+    line=line.replace('{Extrude}', '{0}'.format(extrude))
+    line=line.replace('{Lambda}', '{0}'.format(regpar))
     fid2.write(line)
   fid1.close()
   fid2.close()
   del fid1, fid2
 
-  fid3 = open(DIRM+'ELMERSOLVER_STARTINFO','w')
-  fid3.write(method+'_beta_'+date+'.sif')
-  fid3.close()
-
-  call(["mpiexec","ElmerSolver_mpi"])
+  returncode = elmerrunlib.run_elmer(DIRM+method+'_beta_'+date+'.sif',n=partitions)
 	
   #####################################
   # Write cost values to summary file #
@@ -177,7 +173,7 @@ def main():
   plt.imshow(taubgrid*1e4,origin='lower',clim=[0,500])
   plt.xticks([])
   plt.yticks([])
-  plt.colorbar()
+  cb = plt.colorbar()
   cb.set_label('Basal shear stress (kPa)')
   plt.savefig(DIRR+'lambda_'+regpar+'_'+date+'.pdf',format='PDF',dpi=400)
   plt.close()

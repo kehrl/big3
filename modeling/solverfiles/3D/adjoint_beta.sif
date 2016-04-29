@@ -4,7 +4,7 @@ check keywords warn
 $name="adjoint_beta"
 
 ! Regularization Parameter
-$Lambda=0.0e00  
+$Lambda={Lambda}
 
 $ function waterpressure(Z) {\
   rhow = 1025.0;\
@@ -49,12 +49,12 @@ Simulation
   Simulation Type = Steady State
 
 ! Internal extrusion 
-  Extruded Mesh Levels=Integer
+  Extruded Mesh Levels = Integer {Extrude}
   ! Extruded Mesh Name = String "mesh3d"
 
   Output Intervals = 1
 
-  Steady State Max Iterations = 500
+  Steady State Max Iterations = 5
   Steady State Min Iterations = 1
 
   Output File = "$name$.result"
