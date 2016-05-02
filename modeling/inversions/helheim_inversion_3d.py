@@ -170,7 +170,7 @@ def main():
   fid.close() 
 
   xgrid,ygrid,taubgrid = elmerreadlib.grid3d(bed,'taub',holes,extent)
-  plt.imshow(taubgrid*1e4,origin='lower',clim=[0,500])
+  plt.imshow(taubgrid*1e3,origin='lower',clim=[0,500])
   plt.xticks([])
   plt.yticks([])
   cb = plt.colorbar()
