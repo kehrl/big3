@@ -36,32 +36,36 @@ def readgeodat(filename):
     return xgeo
 
 def readtime(filename):
-	metafile = open(filename+".meta","r")	
-	lines = metafile.readlines()
+  metafile = open(filename+".meta","r")	
+  lines = metafile.readlines()
 	
-	if lines[0][0] == 'N': # Using nominal date
-	  time = float(lines[0][15:21])
-	  interval = 'NaN'
-	else: # Using Central Julian date
-	  jdate = float(lines[0][36:47])	
+  try:
+	  if lines[0][0] == 'N': # Using nominal date
+	    time = float(lines[0][15:21])
+	    interval = 'NaN'
+	  else: # Using Central Julian date
+	    jdate = float(lines[0][36:47])	
 	
-	  # Get date
-	  year,month,day,fracday=jdcal.jd2gcal(jdate,0)
+	    # Get date
+	    year,month,day,fracday=jdcal.jd2gcal(jdate,0)
 
-	  time = datelib.date_to_fracyear(year,month,day+fracday)
+	    time = datelib.date_to_fracyear(year,month,day+fracday)
 	  
-	  # Get time interval for velocity (time of second image - time of first image)
-	  month1 = datelib.month(lines[1][32:35])
-	  day1 = float(lines[1][36:38])
-	  year1 = float(lines[1][39:43])
+	    # Get time interval for velocity (time of second image - time of first image)
+	    month1 = datelib.month(lines[1][32:35])
+	    day1 = float(lines[1][36:38])
+	    year1 = float(lines[1][39:43])
 	  
-	  month2 = datelib.month(lines[2][33:36])
-	  day2 = float(lines[2][37:39])
-	  year2 = float(lines[2][40:44])
+	    month2 = datelib.month(lines[2][33:36])
+	    day2 = float(lines[2][37:39])
+	    year2 = float(lines[2][40:44])
 	
-	  interval = datelib.date_to_fracyear(year2,month2,day2)-datelib.date_to_fracyear(year1,month1,day1)
+	    interval = datelib.date_to_fracyear(year2,month2,day2)-datelib.date_to_fracyear(year1,month1,day1)
+  except:
+    time = float('nan')
+    interval = float('nan')
 	
-	return time,interval
+  return time,interval
 
 
 def readbinary(filename,nodatavalue=float('nan'),read_vz=False):
@@ -70,8 +74,8 @@ def readbinary(filename,nodatavalue=float('nan'),read_vz=False):
   if os.path.exists(filename+".meta"):
     time,interval = readtime(filename)
   else:
-    time = 'NaN'
-    interval = 'NaN'
+    time = float('NaN')
+    interval = float('NaN')
     
   # Get the data about the grid from the .geodat file
   xgeo = readgeodat(filename+".vx.geodat")
@@ -146,7 +150,7 @@ def readbinary(filename,nodatavalue=float('nan'),read_vz=False):
   v[:,:] = nodatavalue
   v[ind] = (vx[ind]**2+vy[ind]**2)**(0.5)
   
-  if not read_vz:
+  if read_vz:
     return (x,y,v,vx,vy,vz,ex,ey,time,interval)
   else:
     return (x,y,v,vx,vy,ex,ey,time,interval)
