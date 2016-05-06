@@ -22,11 +22,7 @@ def guess_beta(x,y,zs,zb,u,v,frac):
   yearinsec = 365.25 * 24 * 60 * 60
   rho = 917 * 1.0e-6 / yearinsec**2
   g = 9.81 * yearinsec**2
-  A0 = 3.985e-13 * yearinsec * 1.0e18
-  Q = 6.0e4
-  T = 273 - 13
-  R = 8.3144
-  A = A0 * math.exp(-Q / (R * T))
+  A = 3.5e-25*yearinsec*1.0e18 # For -10 deg ice
 
   nx = len(x)
   ny = len(y)
@@ -85,8 +81,13 @@ def guess_beta(x,y,zs,zb,u,v,frac):
       if u[i, j] != -2.0e+9:
         alpha = frac
         h = max(zs[i, j] - zb[i, j], 0.0)
+        # internal deformation from SIA, Paterson pg. 310, eq 8.35
         q = A * (rho * g * h)**3 * ds[i, j]**3 / 2
+        
+        # Measured surface speed
         speed = np.sqrt(u[i, j]**2 + v[i, j]**2)
+        
+        # Inferred basal speed if bed supports ~1/2 of driving stress
         basal_speed = speed - alpha**3*h*q
         if basal_speed <= 0.0:
           basal_speed = min(10.0, 0.1 * speed)
@@ -100,9 +101,12 @@ def guess_beta(x,y,zs,zb,u,v,frac):
 
         # Since we've already guessed the sliding speed and the
         # x-z strain rate from the SIA, the boundary condition
-        #     tau_xz = -beta**2 * u    (resp. tau_yz, v)
+        #     tau_xz = -beta**2 * u    
         # gives us the value of beta consistent with the guesses
         # we've already made.
+        
+        # Note that this is the square root of beta, so that we can use it as an initial 
+        # guess for beta in inversions.
         beta[i, j] = (2*alpha**3*q / (A*basal_speed**3))**(1.0/6)
         if np.isnan(beta[i,j]):
           beta[i,j] = 1.0e-2
