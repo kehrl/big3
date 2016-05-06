@@ -287,6 +287,9 @@ def xy_to_gmsh_3d(glacier,date,exterior,holes,refine,DIRM,lc1,lc2,lc3,lc4,\
   if bedname == 'morlighem':
     xbed_grid,ybed_grid,zbed = bedlib.morlighem_grid(xmin,xmax,ymin,ymax,verticaldatum='geoid')
     xbed_grid,ybed_grid = np.meshgrid(xbed,ybed)
+  elif bedname == 'cresis':
+    xbed_grid,ybed_grid,zbed = bedlib.cresis_grid(xmin,xmax,ymin,ymax,verticaldatum='geoid')
+    xbed_grid,ybed_grid = np.meshgrid(xbed,ybed)
   elif bedname == 'smith':
     # irregular triangular grid
     xbed_grid,ybed_grid,zbed_grid = bedlib.smith_grid(glacier,\
