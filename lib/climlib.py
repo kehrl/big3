@@ -321,9 +321,6 @@ def SIF_at_pts(xpts,ypts,epsg=3413,filt_len='none'):
   
   xsif,ysif = coordlib.convert(lon_grid,lat_grid,4326,epsg)
   
-  # Find closest point 
-  ind = np.where((mask[0,:,:] == 1) | (mask[0,:,:] == 8))
-  
   try:
     bestind = np.zeros(len(xpts))
     print "need to fix code for multiple points"
@@ -331,7 +328,7 @@ def SIF_at_pts(xpts,ypts,epsg=3413,filt_len='none'):
     mindist = 500.e3
     for j in range(0,len(lat)):
       for i in range(0,len(lon)):
-        if (mask[100,j,i] != 2):
+        if (mask[100,j,i] != 2) and (xsif[j,i] > xpts):
           d = np.sqrt((xsif[j,i]-xpts)**2+(ysif[j,i]-ypts)**2)
           if d < mindist:
             mindist = d
