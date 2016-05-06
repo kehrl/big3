@@ -123,7 +123,9 @@ xflux,yflux = fluxlib.fluxbox_geometry(glacier,"fluxgate1")
 xrac,yrac,smbrac,timerac = climlib.racmo_at_pts(np.mean(xflux),np.mean(yflux),'smb',filt_len=14.0)
 xrac,yrac,runrac,timerac = climlib.racmo_at_pts(np.mean(xflux),np.mean(yflux),'runoff',filt_len=14.0)
 xrac,yrac,zsrac,timeraczs = climlib.racmo_at_pts(np.mean(xflux),np.mean(yflux),'zs',filt_len=14.0)
-xsif,ysif,sif,timesif = climlib.SIF_at_pts(np.mean(xflux),np.mean(yflux),filt_len=14.)
+
+ind = np.argmin(abs(dists-np.nanmax(terminus_val)))
+xsif,ysif,sif,timesif = climlib.SIF_at_pts(x[ind],y[ind],filt_len=14.)
 
 year_runoff,day1_runoff,day2_runoff,meltlength_runoff,total_runoff = climlib.seasonlength(timerac,runrac,'runoff')
 
@@ -365,18 +367,21 @@ if plot_overview == 1:
   #plt.plot([2000,2014],[0,0],'k')
   #coloptions=['k','r','y','g','b']
   coloptions=['r','b','g','limegreen','gold']
-  markoptions=['o','o','o','o','o']
+  markoptions=['o','o','o','o','o','o']
   if plot_images == 1:
    for i in range(0,len(images)):
       plt.plot([images_time[i][3],images_time[i][3]],[0,12],'--',color='0.3')
       plt.text(images_time[i][3]+0.05,0.3,images_labels[i],fontsize=8,fontweight='bold')
   if normalized == 1:
-    for i in range(0,len(dists_eul)):
+    for i in np.flipud(range(0,len(dists_eul))):
       nonnan = np.where(~(np.isnan(vel_val[:,i])))[0]
+      plt.plot([time1,time2],[0,0],'k',lw=1.2)
       plt.plot(vel_time[nonnan],(vel_val[nonnan,i]-vel_val[nonnan[0],i])/1e3,markoptions[i],color=coloptions[i],label=glacier[0]+'{0:02d}'.format(int(abs(dists_eul[i]))),linewidth=1,markersize=3)
     plt.yticks(range(-3,3,1),fontsize=8,fontname='Arial')
-    if glacier == 'Kanger':
+    if glacier == 'Helheim':
       plt.ylim([-1.5,3])
+    if glacier == 'Kanger':
+      plt.ylim([-2,2.5])
   else:
     for i in range(0,len(dists_eul)):
       nonnan = np.where(~(np.isnan(vel_val[:,i])))[0]
@@ -407,7 +412,7 @@ if plot_overview == 1:
     ax.bar(xTickPos, [max(plt.ylim())-min(plt.ylim())] * len(xTickPos), (xTickPos[1]-xTickPos[0]), bottom=min(plt.ylim()), color=['0.85','w'],linewidth=0)
   elif vbars == 'runoff':
     for i in range(0,len(year_runoff)):
-      path = matplotlib.path.Path([[day1_runoff[i],2],[day1_runoff[i],12],[day2_runoff[i],12],[day2_runoff[i],2]])
+      path = matplotlib.path.Path([[day1_runoff[i],-3],[day1_runoff[i],12],[day2_runoff[i],12],[day2_runoff[i],-3]])
       patch = matplotlib.patches.PathPatch(path,facecolor='0.85',edgecolor='none',lw=0)
       ax.add_patch(patch)  
   plt.xlim([time1,time2])
@@ -725,7 +730,7 @@ if plot_years == 1:
 	n=0
 	for year in years:
 		nonnan = np.where(~(np.isnan(flux_dH[:,0])))[0]
-		plt.plot(flux_time[nonnan]-year,flux_dH[nonnan,0],markers[n]+'-',color=colors[n],markersize=3,lw=0.75)
+		plt.plot(flux_time[nonnan]-year,flux_dH[nonnan,0]+smb_flux[nonnan],markers[n]+'-',color=colors[n],markersize=3,lw=0.75)
 		n=n+1
 	plt.xlim([0,1])
 	x_formatter = matplotlib.ticker.ScalarFormatter(useOffset=False)
