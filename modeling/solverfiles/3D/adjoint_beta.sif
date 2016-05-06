@@ -213,7 +213,7 @@ Solver 3
   Cost Variable Name = String "CostValue"  ! Name of Cost Variable
 
   Optimized Variable Name = String "Beta"  ! Name of Beta for Regularization
-  Lambda = Real  $Lambda                   ! Regularization Coef
+  Lambda = Real $Lambda                   ! Regularization Coef
 ! save the cost as a function of iterations
   Cost Filename = File "cost_$name$.dat"   
 end
@@ -258,7 +258,7 @@ Solver 5
   PowerFormulation = Logical False
   Beta2Formulation = Logical True        ! SlipCoef define as Beta^2
 
-  Lambda = Real  $Lambda                   ! Regularization Coef
+  Lambda = Real $Lambda                   ! Regularization Coef
 end
 
 !!!!! Optimization procedure 
