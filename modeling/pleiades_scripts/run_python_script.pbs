@@ -1,8 +1,9 @@
 #PBS -S /bin/bash
-#PBS -l select=1:ncpus=16:model=ivy
-#PBS -l walltime=20:00:00
+#PBS -l select=1:ncpus=20:model=ivy
+#PBS -l walltime=16:00:00
+#PBS -M kehrl@uw.edu
+#PBS -m ab
 source /u/lkehrl/.profile
 source /u/dlilien/sw/elmer/.bashrc_pleiades
-cd /nobackupp8/lkehrl/Models/Helheim/3D/DEM20120624_HIGH/
 #mpiexec ElmerSolver_mpi
-python /u/lkehrl/Code/big3/modeling/inversions/helheim_inversion_3d.py -n 16 -mesh DEM20120624_HIGH -regpar 1e10 -extrude 20
+python /u/lkehrl/Code/big3/modeling/inversions/helheim_inversion_3d.py -n 20 -mesh DEM20120624_aniso4 -method robin -regpar 1e10 -extrude 20
