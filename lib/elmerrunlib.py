@@ -53,4 +53,6 @@ def run_elmer(sif_file,n=20,to=['kehrl@uw.edu']):
 	  tail=subprocess.Popen(['tail','-n','10',sif_file+'.log'],stdout=subprocess.PIPE).stdout.read()
 	  subject=sif_file+' returned '+str(returncode)+' at '+now
 	  text=str(sif_file)+' exited on '+socket.gethostname()+' at '+now+'.\n Last ten lines of the error log file are:\n'+tail
+  print subject
+  print text
   return returncode

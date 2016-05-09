@@ -366,6 +366,142 @@ FUNCTION VWa( Model, nodenumber, dumy) RESULT(U)                   !
   Return 
 End
 
+!------------------------------------------------------------------!
+FUNCTION GuessBeta( Model, nodenumber, dumy) RESULT(coeff) !
+!------------------------------------------------------------------!
+		USE types
+		USE DefUtils
+  	IMPLICIT NONE
+		TYPE(Model_t) :: Model
+  	REAL(kind=dp) :: dumy,coeff
+  	INTEGER :: nodenumber
+  	REAL(kind=dp) :: LinearInterp
+
+  	REAL(kind=dp),allocatable :: xx(:),yy(:),beta0(:,:)
+    REAL(kind=dp) :: x,y,z
+    
+    INTEGER :: nx,ny
+    INTEGER :: i,j
+		
+    LOGICAL :: FirstTimeBeta=.true.
+
+    SAVE xx,yy,beta0,nx,ny
+    SAVE FirstTimeBeta
+
+    if (FirstTimeBeta) then
+
+    	FirstTimeBeta=.False.
+
+
+        ! open file
+        open(10,file='inputs/beta0.xy')
+        Read(10,*) nx
+        Read(10,*) ny
+        ALLOCATE(xx(nx),yy(ny))
+        ALLOCATE(beta0(nx,ny))
+        Do i=1,nx
+        	Do j=1,ny
+                read(10,*) xx(i),yy(j),beta0(i,j)
+            End Do
+		End do
+		close(10)
+    End if
+
+    ! position current point
+    x = Model % Nodes % x (nodenumber)
+    y = Model % Nodes % y (nodenumber)
+
+    coeff = LinearInterp(beta0,xx,yy,nx,ny,x,y)
+		
+    Return
+End
+
+!------------------------------------------------------------------!
+FUNCTION Viscosity( Model, nodenumber, dumy) RESULT(eta) !
+!------------------------------------------------------------------!
+    USE types
+		Use DefUtils
+    implicit none
+		TYPE(Model_t) :: Model
+    Real(kind=dp) :: dumy,eta
+    INTEGER :: nodenumber
+
+		Real(kind=dp),allocatable :: dem(:,:,:), xx(:), yy(:)
+		Real(kind=dp) :: x, y, z, zs , zb, dz
+		Real(kind=dp) :: yearinsec, E, alpha
+		integer :: nx, ny, nz, k, i, j
+		REAL(kind=dp) :: LinearInterp, zsIni, zbIni
+		
+		TYPE(Variable_t), POINTER :: dSVariable
+    INTEGER, POINTER :: dSPerm(:) 
+    REAL(KIND=dp), POINTER :: dSValues(:)
+
+		
+    logical :: Firsttime=.true.
+
+    SAVE dem,xx,yy,nx,ny,nz
+    SAVE Firsttime
+
+    if (Firsttime) then
+
+    	Firsttime=.False.
+
+    	! open file
+      open(10,file='Inputs/flowA.xyz')
+      Read(10,*) nx
+      Read(10,*) ny
+      Read(10,*) nz
+      
+      allocate(xx(nx), yy(ny))
+      allocate(dem(nx, ny, nz))
+
+      do i = 1, nx
+      	do j = 1, ny
+        	read(10, *) xx(i), yy(j), dem(i, j, :)
+        End do
+      End do
+      close(10)
+      
+		End if
+
+    x = Model % Nodes % x (nodenumber)
+    y = Model % Nodes % y (nodenumber)
+    
+    dSVariable => VariableGet( Model % Variables, 'dS' )
+    IF (ASSOCIATED(dSVariable)) THEN
+    	dSPerm    => dSVariable % Perm
+    	dSValues  => dSVariable % Values
+    ELSE
+      CALL FATAL('USF_Init, Viscosity','Could not find variable >dS<')
+    END IF
+    z = dSValues(dSPerm(nodenumber))
+
+    zs = zsIni( Model, nodenumber, dumy )
+    zb = zbIni( Model, nodenumber, dumy )		
+		
+		yearinsec=365.25d0*24*60*60
+		
+		! Enhanced factor
+		E = 3.d0
+		
+		! Find which vertical layer the current point belongs to
+		dz = (zs - zb) / (nz - 1)
+		k = int( (z-zb) / dz)+1
+    IF (k < 0) THEN
+      print *,k,z,zb,zs,dz
+    END IF
+    
+    ! Interpolate the value of the temperature from nearby points in
+    ! the layers above and below it
+    alpha = (z - (zb + (k - 1) * dz)) / dz
+    eta = (1 - alpha) * LinearInterp(dem(:,:,k), xx, yy, nx, ny, x, y) + alpha * LinearInterp(dem(:,:,k+1), xx, yy, nx, ny, x, y)
+    
+    ! Get the viscosity in the correct unitsk
+    eta = eta**(-1.0/3.0d0)*1.0e-6*yearinsec**(-1.0/3.0d0)
+    print *,'eta ',eta
+    
+    Return
+End
 
 
 !------------------------------------------------------------------!

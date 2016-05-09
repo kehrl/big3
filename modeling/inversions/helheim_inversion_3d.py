@@ -27,6 +27,8 @@ def get_arguments():
   parser = argparse.ArgumentParser()
   parser.add_argument("-mesh", dest="mesh", required = True,
         help = "Name of meshlib") 
+  parser.add_argument("-front", dest="frontbc", required = True,
+        help = "Calving front boundary condition (velocity or pressure).") 
   parser.add_argument("-n", dest="n", required = True,
         help = "Number of partitions.")
   parser.add_argument("-regpar", dest="regpar", required = False,
@@ -55,6 +57,7 @@ def main():
   regpar = str(args.regpar)
   method = args.method
   extrude = str(args.extrude)
+  frontbc = str(args.frontbc)
 
   # Get current date
   now = datetime.datetime.now()
@@ -83,6 +86,46 @@ def main():
   bsurf=5
   runname=method+"_beta"
 
+  # Grab boundary condition for front -- it will be different if we are using an actual
+  # terminus position (neumann, pressure BC) or an outflow boundary (dirichlet, velocity BC)
+  if method=='adjoint':
+    if (frontbc == 'neumann') or (frontbc == 'pressure'):
+      frontbc_text ="""
+        Adjoint Force BC = Logical True
+        Flow Force BC = Logical True
+        External Pressure = Variable Coordinate 3 !we are in MPa units
+          Real MATC "-1.0*waterpressure(tx)*1.0E-06" """
+    elif (frontbc == 'dirichlet') or (frontbc == 'velocity'):
+      frontbc_text = """
+        Velocity 1 = Variable Coordinate 1
+          Real procedure "USF_Init.so" "UWa"
+        Velocity 2 = Variable Coordinate 1
+          Real procedure "USF_Init.so" "VWa"
+        ! Dirichlet BC => Dirichlet = 0 for Adjoint
+        Adjoint 1 = Real 0.0
+        Adjoint 2 = Real 0.0"""
+    else:
+      sys.exit("Unknown BC for front of glacier.")
+  elif method == 'robin':
+    if (frontbc == 'neumann') or (frontbc == 'pressure'):
+      frontbc_text = """
+        Flow Force BC = Logical True
+        External Pressure = Variable Coordinate 3 !we are in MPa units
+        Real MATC "-1.0*waterpressure(tx)*1.0E-06" """
+    elif (frontbc == 'dirichlet') or (frontbc == 'velocity'):
+      frontbc_text ="""
+        ! Dirichlet BCs
+        Velocity 1 = Variable Coordinate 1, Coordinate 2
+          Real procedure "USF_Init.so" "UWa"
+        Velocity 2 = Variable Coordinate 1, Coordinate 2
+          Real procedure "USF_Init.so" "VWa"
+        
+        ! Dirichlet BC => Same Dirichlet
+        VeloD 1 = Variable Coordinate 1, Coordinate 2
+          Real procedure "USF_Init.so" "UWa"
+        VeloD 2 = Variable Coordinate 1, Coordinate 2
+          Real procedure "USF_Init.so" "VWa" """
+
   #############################
   # Run inversion solver file #
   #############################
@@ -95,18 +138,18 @@ def main():
   #  os.remove(filename)
   os.chdir(DIRM)
   fid1 = open(DIRS+method+'_beta.sif', 'r')
-  fid2 = open(DIRM+method+'_beta_'+date+'.sif', 'w')
+  fid2 = open(DIRM+method+'_beta_'+regpar+'_'+date+'.sif', 'w')
 
-  lines=fid1.readlines()
-  for line in lines:
-    line=line.replace('{Extrude}', '{0}'.format(extrude))
-    line=line.replace('{Lambda}', '{0}'.format(regpar))
-    fid2.write(line)
+  lines=fid1.read()
+  lines=lines.replace('{Extrude}', '{0}'.format(extrude))
+  lines=lines.replace('{Lambda}', '{0}'.format(regpar))
+  lines=lines.replace('{FrontBC}', '{0}'.format(frontbc_text))
+  fid2.write(lines)
   fid1.close()
   fid2.close()
   del fid1, fid2
 
-  returncode = elmerrunlib.run_elmer(DIRM+method+'_beta_'+date+'.sif',n=partitions)
+  returncode = elmerrunlib.run_elmer(DIRM+method+'_beta_'+regpar+'_'+date+'.sif',n=partitions)
 	
   #####################################
   # Write cost values to summary file #
@@ -170,11 +213,28 @@ def main():
   fid.close() 
 
   xgrid,ygrid,taubgrid = elmerreadlib.grid3d(bed,'taub',holes,extent)
+  xgrid,ygrid,vmodgrid = elmerreadlib.grid3d(surf,'vel',holes,extent)
+  xgrid,ygrid,vmesgrid = elmerreadlib.grid3d(surf,'velmes',holes,extent)
+  
+  plt.figure(figsize=(6.5,3))
+  plt.subplot(121)
   plt.imshow(taubgrid*1e3,origin='lower',clim=[0,500])
   plt.xticks([])
   plt.yticks([])
-  cb = plt.colorbar()
+  cb = plt.colorbar(ticks=np.arange(0,600,100))
+  cb.ax.tick_params(labelsize=10)
   cb.set_label('Basal shear stress (kPa)')
+  
+  plt.subplot(122)
+  plt.imshow(vmodgrid-vmesgrid,origin='lower',clim=[-500,500],cmap='RdBu_r')
+  plt.xticks([])
+  plt.yticks([])
+  cb = plt.colorbar(ticks=np.arange(-500,600,100))
+  cb.ax.tick_params(labelsize=10)
+  cb.set_label('Modeled-Measured (m/yr)')
+  
+  plt.tight_layout()
+  
   plt.savefig(DIRR+'lambda_'+regpar+'_'+date+'.pdf',format='PDF',dpi=400)
   plt.close()
 	

@@ -6,7 +6,7 @@
 import os
 import shutil
 import sys
-import vellib, datelib, glaclib, flowparameterlib, meshlib, inverselib
+import vellib, datelib, glaclib, flowparameterlib, meshlib, inverselib, flowparameterlib
 from subprocess import call
 from scipy.interpolate import *
 import numpy as np
@@ -21,8 +21,10 @@ def get_arguments():
 
   # Get inputs to file
   parser = argparse.ArgumentParser()
+  parser.add_argument("-output", dest="output", required = True,
+        help = "Name of output mesh.")
   parser.add_argument("-mesh", dest="mesh", required = True,
-        help = "Name of meshlib.")
+        help = "Name for input shapefile.")
   parser.add_argument("-d", dest="date", required = True,
             help = "Date for mesh.")
   parser.add_argument("-n", dest="n", required = True,
@@ -51,7 +53,8 @@ def main():
   bedname = args.bedname
   bedmodel = args.bedmodel
   bedsmoothing = args.bedsmooth
-  MESHNAME = args.mesh
+  outputmeshname = args.output
+  meshname = args.mesh
 
   # Mesh refinement
   lc3,lc2,lc4,lc1 = args.lc
@@ -61,7 +64,7 @@ def main():
 
   # Directories
   DIRS = os.path.join(os.getenv("CODE_HOME"),"BigThreeGlaciers/Modeling/SolverFiles/3D")
-  DIRM = os.path.join(os.getenv("MODEL_HOME"),glacier+"/3D/"+MESHNAME+"/")
+  DIRM = os.path.join(os.getenv("MODEL_HOME"),glacier+"/3D/"+outputmeshname+"/")
   DIRX = os.path.join(os.getenv("DATA_HOME"),"ShapeFiles/Glaciers/3D/"+glacier+"/")
   inputs = os.path.join(DIRM+"inputs/")
 
@@ -82,7 +85,10 @@ def main():
   #################
 
   # Mesh exterior
-  exterior = glaclib.load_extent(glacier,time,nofront_shapefile='glacier_extent_inversion_nofront')
+  if meshname.endswith('nofront'):
+    exterior = glaclib.load_extent(glacier,time,nofront_shapefile=meshname)
+  else:
+    exterior = meshlib.shp_to_xy(DIRX+meshname)
   np.savetxt(inputs+"mesh_extent.dat",exterior[:,0:2])
 
   # Mesh holes
@@ -113,7 +119,7 @@ def main():
   #############
 
   # Gmsh .geo file
-  x,y,zbed,zsur = meshlib.xy_to_gmsh_3d(glacier,date,exterior,holes,refine,DIRM,\
+  x,y,zbed,zsur,zbot = meshlib.xy_to_gmsh_3d(glacier,date,exterior,holes,refine,DIRM,\
 		lc1,lc2,lc3,lc4,bedname,bedmodel,bedsmoothing,rho_i,rho_sw)
 
   # Create .msh file
@@ -140,75 +146,23 @@ def main():
   # Output files for velocities in x,y directions (u,v)
   u,v = vellib.inversion_3D(glacier,x,y,time,inputs)
 
-  #########################################################################
-  # Import mesh boundary, calculate flow parameter at mesh nodes, and use #
-  # SIA approximation to get basal sliding speed for the inflow boundary  #
-  #########################################################################
+  #######################
+  # Get flow parameter  #
+  #######################
 
-  # Get mesh nodes
-  nodes_file=DIRM+"mesh2d/mesh.nodes"
-  nodes=np.loadtxt(nodes_file)
+  flowA = flowparameterlib.load_kristin(glacier,x,y,type='A')
 
-  # Get modeled temperatures from Kristin's work
-  kristin_file=os.path.join(os.getenv("DATA_HOME"),"Climate/IceTemperature/Helheim/helheim_TA.xyz")
-  tempdata=np.genfromtxt(kristin_file,delimiter=',')
-  tempdata=np.delete(tempdata,(0),axis=0)
+  fid = open(inputs+"flowA.xyz", "w")
+  fid.write("{0}\n{1}\n{2}\n".format(len(x), len(y), len(flowA[0,0,:])))
 
-  # Get surface and bed for Kristin's temps
-  xdata,xinds=np.unique(tempdata[:,0],return_index=True)
-  ydata,yinds=np.unique(tempdata[:,1],return_index=True)
-  inds=np.union1d(xinds,yinds)
-  del xdata, ydata
-  xdata=tempdata[inds,0]
-  ydata=tempdata[inds,1]
-  tempdata_normalized=tempdata
-  for i in range(0,len(xdata)):
-    colinds=np.where(tempdata[:,0]==xdata[i])
-    colinds=np.array(colinds)
-    surf=np.max(tempdata[colinds,2])
-    bed=np.min(tempdata[colinds,2])
-    #H=surf-bed
-    #tempdata_normalized[colinds,2]=(tempdata[colinds,2]-bed)/H
-  del H,surf,bed,xdata,ydata,xinds,yinds,inds,colinds
+  for j in range(len(x)):
+    for i in range(len(y)):
+      fid.write("{0} {1} ".format(x[j], y[i]))
+      for k in range(len(flowA[0,0,:])):
+        fid.write("{0} ".format(flowA[i, j, k]))
+      fid.write("\n")
 
-  ## Set up output grid
-  
-  junk,xinds=np.unique(nodes[:,2],return_index=True)
-  junk,yinds=np.unique(nodes[:,3],return_index=True)
-  # nodes_normalized=np.zeros_like(nodes[:,4])
-  # height=np.zeros_like(xnodes)
-  # for i in range(0,len(inds)):
-  #   xcolinds=np.array(np.where(nodes[:,2]==xnodes[i]))
-  #   ycolinds=np.array(np.where(nodes[:,3]==ynodes[i]))
-  #   colinds=[]
-  #   if len(xcolinds[0]) >= len(ycolinds[0]):
-  #     for j in range(0,len(xcolinds[0])):
-  #       if xcolinds[0,j] in ycolinds[0,:]:
-  #         colinds.append(xcolinds[0,j])
-  #   else:
-  #     for j in range(0,len(ycolinds[0])):
-  #       if ycolinds[0,j] in xcolinds[0,:]:
-  #         colinds.append(ycolinds[0,j])      
-  #   surf[i]=np.max(nodes[colinds,4]) # Surface elevation
-  #   bed[i]=np.min(nodes[colinds,4]) # Bed elevation
-  #   height[i]=surf[i]-bed[i] #height
-  #   nodes_normalized[colinds]=(nodes[colinds,4]-bed[i])/height[i] #normalized value
-	
-  # Now interpolate Kristin's temperatures to the nodes
-  # Temps_lin = griddata(tempdata_normalized[:,0:3],tempdata_normalized[:,3],np.column_stack([nodes[:,2:4], nodes_normalized]),method='linear')
-  # Temps_near = griddata(tempdata_normalized[:,0:3],tempdata_normalized[:,3],np.column_stack([nodes[:,2:4], nodes_normalized]),method='nearest')
-  # 
-  # nans=np.isnan(Temps_lin)
-  # Temps_lin[nans]=Temps_near[nans]
-  # Anodes=flowparameterlib.arrhenius(Temps_lin)
-  # 
-  # # Write out flow law parameter at each node
-  # fid = open(inputs+"flowparameters.dat","w")
-  # fid.write('{}\n'.format(len(Temps_lin)))
-  # for i in range(0,len(Temps_lin)):
-  #   fid.write('{0} {1} {2} {3} {4}\n'.format(int(nodes[i,0]),nodes[i,2],nodes[i,3],nodes[i,4],Anodes[i]))
-  # fid.close() 
-  # del nans, kristin_file,Temps_near,fid,Temps_lin   
+  fid.close()
 
   #################################################################
   # Calculate basal sliding speed using SIA for inflow boundaries #

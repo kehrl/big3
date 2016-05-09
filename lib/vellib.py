@@ -847,30 +847,34 @@ def inversion_3D(glacier,x,y,time,dir_velocity_out='none',blur=False):
   OUTDIR = os.path.join(os.getenv("DATA_HOME"),"Velocity/MosaicVelocities/"+glacier)
   
   # Large velocity map to fill in gaps in smaller velocity map
+  file_velocity_all = os.path.join(os.getenv("DATA_HOME"),"Velocity/TSX/"+glacier+"/TIF/all-2008-2016")
+
+  # If the region is bigger than what is covered by the TSX stripmaps, then we use Ian's big 
+  # inSAR velocity map
   file_velocity_global = os.path.join(os.getenv("DATA_HOME"),"Velocity/Random/Greenland/AllGLVel/mosaicOffsets")
 
-  # Individual velocity map
+  # Individual velocity map for time step
   filename1,time1 = tsx_near_time(time,glacier,just_filename=True)
-  filename2,time2 = tsx_near_time(time-0.1,glacier,just_filename=True)
-  filename3,time3 = tsx_near_time(time+0.1,glacier,just_filename=True)
+  filename2,time2 = tsx_near_time(time-11/365.,glacier,just_filename=True)
+  filename3,time3 = tsx_near_time(time+11/365.,glacier,just_filename=True)
   year,month,day = datelib.fracyear_to_date(time1)
   date = "%04d%02d%02d" % (year,month,day)
   
   files_vx = ' '+filename1+'_vx.tif'+' '+filename2+'_vx.tif'+\
-  		' '+filename3+'_vx.tif'+' '+file_velocity_global+'_vx.tif'
+  		' '+filename3+'_vx.tif'+' '+file_velocity_all+'_vx.tif'+' '+file_velocity_global+'_vx.tif'
   files_vy = ' '+filename1+'_vy.tif'+' '+filename2+'_vy.tif'+\
-  		' '+filename3+'_vy.tif'+' '+file_velocity_global+'_vy.tif'
+  		' '+filename3+'_vy.tif'+' '+file_velocity_all+'_vy.tif'+' '+file_velocity_global+'_vy.tif'
   
   CURRENTDIR = os.getcwd()
   os.chdir(OUTDIR)
   filename_vx = 'mosaic-'+date+'-vx'
-  if not(os.path.isfile(filename_vx+'-tile-0.tif')):
-    os.system('dem_mosaic --hole-fill-length 5 --t_projwin '+str(xmin)+' '+str(ymin)+' '+str(xmax)+\
+  #if not(os.path.isfile(filename_vx+'-tile-0.tif')):
+  os.system('dem_mosaic --hole-fill-length 5 --t_projwin '+str(xmin)+' '+str(ymin)+' '+str(xmax)+\
   		' '+str(ymax)+' --priority-blending-length 10 -o'+filename_vx+files_vx)
   filename_vy = 'mosaic-'+date+'-vy'
-  if not(os.path.isfile(filename_vy+'-tile-0.tif')):
-    os.system('dem_mosaic --hole-fill-length 5 --t_projwin '+str(xmin)+' '+str(ymin)+' '+str(xmax)+\
-  		' '+str(ymax)+' --priority-blending-length 10 -o'+filename_vy+files_vy)
+  #if not(os.path.isfile(filename_vy+'-tile-0.tif')):
+  os.system('dem_mosaic --hole-fill-length 5 --t_projwin '+str(xmin)+' '+str(ymin)+' '+str(xmax)+\
+  		' '+str(ymax)+' --priority-blending-length 10 -o'+filename_vy+files_vy) 
   
   xu,yu,uu = geotifflib.read(filename_vx+"-tile-0.tif")
   xv,yv,vv = geotifflib.read(filename_vy+"-tile-0.tif")
@@ -878,13 +882,16 @@ def inversion_3D(glacier,x,y,time,dir_velocity_out='none',blur=False):
   if blur == True:
     print "Blurring DEM over 17 pixels (roughly 500 m in each direction)..."
     # 17 pixel gaussian blur
-    vx_blur = scipy.ndimage.filters.gaussian_filter(vx,sigma=2,truncate=4)
-    vy_blur = scipy.ndimage.filters.gaussian_filter(vy,sigma=2,truncate=4)
+    vx_blur = scipy.ndimage.filters.gaussian_filter(uu,sigma=2,truncate=4)
+    vy_blur = scipy.ndimage.filters.gaussian_filter(vv,sigma=2,truncate=4)
+  else:
+    vx_blur = uu
+    vy_blur = vv
   
   os.chdir(CURRENTDIR)
   
   # Calculate velocity magnitude
-  vmag = np.sqrt(uu**2+vv**2)
+  vmag = np.sqrt(vx_blur**2+vy_blur**2)
   
   ######################################################
   # Write out velocities to files for inversion solver #
@@ -905,8 +912,8 @@ def inversion_3D(glacier,x,y,time,dir_velocity_out='none',blur=False):
   
     for i in range(0,len(xu)):
       for j in range(0,len(yu)):
-        fidu.write('{} {} {}\n'.format(xu[i],yu[j],uu[j,i]))
-        fidv.write('{} {} {}\n'.format(xv[i],yv[j],vv[j,i]))
+        fidu.write('{} {} {}\n'.format(xu[i],yu[j],vx_blur[j,i]))
+        fidv.write('{} {} {}\n'.format(xv[i],yv[j],vy_blur[j,i]))
         fidmag.write('{} {} {}\n'.format(xu[i],yu[j],vmag[j,i]))
   
     fidv.close()
@@ -915,9 +922,9 @@ def inversion_3D(glacier,x,y,time,dir_velocity_out='none',blur=False):
 
   # Interpolate to input grid
   xgrid,ygrid = np.meshgrid(x,y)
-  fu = scipy.interpolate.RegularGridInterpolator((yu,xu),uu,method='linear')
+  fu = scipy.interpolate.RegularGridInterpolator((yu,xu),vx_blur,method='linear')
   vx = fu((ygrid,xgrid))
-  fv = scipy.interpolate.RegularGridInterpolator((yv,xv),vv,method='linear')
+  fv = scipy.interpolate.RegularGridInterpolator((yv,xv),vy_blur,method='linear')
   vy = fv((ygrid,xgrid))
   
   return vx,vy

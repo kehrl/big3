@@ -278,17 +278,17 @@ def xy_to_gmsh_3d(glacier,date,exterior,holes,refine,DIRM,lc1,lc2,lc3,lc4,\
   ############################################################
   
   # Set up grid extent
-  xmin = np.min(exterior[:,0])-2.0e3
-  xmax = np.max(exterior[:,0])+2.0e3
-  ymin = np.min(exterior[:,1])-2.0e3
-  ymax = np.max(exterior[:,1])+2.0e3
+  xmin = np.min(exterior[:,0])-1.0e3
+  xmax = np.max(exterior[:,0])+1.0e3
+  ymin = np.min(exterior[:,1])-1.0e3
+  ymax = np.max(exterior[:,1])+1.0e3
   
   # Load bed DEM
   if bedname == 'morlighem':
-    xbed_grid,ybed_grid,zbed = bedlib.morlighem_grid(xmin,xmax,ymin,ymax,verticaldatum='geoid')
+    xbed,ybed,zbed_grid = bedlib.morlighem_grid(xmin-10e3,xmax+10e3,ymin-10e3,ymax+10e3,verticaldatum='geoid')
     xbed_grid,ybed_grid = np.meshgrid(xbed,ybed)
   elif bedname == 'cresis':
-    xbed_grid,ybed_grid,zbed = bedlib.cresis_grid(xmin,xmax,ymin,ymax,verticaldatum='geoid')
+    xbed,ybed,zbed_grid = bedlib.cresis_grid(glacier,verticaldatum='geoid')
     xbed_grid,ybed_grid = np.meshgrid(xbed,ybed)
   elif bedname == 'smith':
     # irregular triangular grid
@@ -296,7 +296,7 @@ def xy_to_gmsh_3d(glacier,date,exterior,holes,refine,DIRM,lc1,lc2,lc3,lc4,\
     			model=bedmodel,smoothing=bedsmoothing,verticaldatum='geoid')
 
   # Load surface DEM
-  xsur,ysur,zsur_grid = zslib.dem_continuous(glacier,date,\
+  xsur,ysur,zsur_grid = zslib.dem_continuous(glacier,xmin,xmax,ymin,ymax,date,\
   			verticaldatum='geoid',fillin=True,blur=False)
   xsur_grid,ysur_grid = np.meshgrid(xsur,ysur)
 
@@ -308,17 +308,10 @@ def xy_to_gmsh_3d(glacier,date,exterior,holes,refine,DIRM,lc1,lc2,lc3,lc4,\
   zbed_flattened = scipy.interpolate.griddata((ybed_grid.flatten(),xbed_grid.flatten()),zbed_grid.flatten(),\
   					(y_flattened,x_flattened),method='linear')
   
-  # Now interpolate surface elevations to bed coordinates, we only do this for finding the 
-  # ice bottom.
-  f = scipy.interpolate.RegularGridInterpolator((ysur,xsur),zsur_grid,method='linear')
-  x_interped = xbed_grid.flatten()
-  y_interped = ybed_grid.flatten()
-  zsur_interped = f((ybed_grid.flatten(),xbed_grid.flatten()))
-  zbed_interped = zbed_grid.flatten()
-
-  zbot_interped = floatlib.icebottom(zbed_interped,zsur_interped,rho_i=rho_i,rho_sw=rho_sw)
+  zbot_interped = floatlib.icebottom(zbed_flattened,zsur_flattened,rho_i=rho_i,rho_sw=rho_sw)
 
   zbed_grid = np.reshape(zbed_flattened,(len(ysur),len(xsur)))
+  zbot_grid = np.reshape(zbot_interped,(len(ysur),len(xsur)))
   ind = np.where((zsur_grid-zbed_grid) < 10.)
   zbed_grid[ind] = zsur_grid[ind]-10.
   
@@ -333,13 +326,8 @@ def xy_to_gmsh_3d(glacier,date,exterior,holes,refine,DIRM,lc1,lc2,lc3,lc4,\
       fidb.write('{0} {1} {2}\n'.format(xsur[i],ysur[j],zbed_grid[j,i]))
   fids.close()
   fidb.close()
-   
-  # Print out bed
-  # np.savetxt(DIRM+"/inputs/roughbed.xyz",np.column_stack((xbed_grid.flatten(),ybed_grid.flatten(),zbed_interped)),fmt='%.6f')
   
-
-  
-  return xsur,ysur,zbed_grid,zsur_grid
+  return xsur,ysur,zbed_grid,zsur_grid,zbot_grid
 
 ##########################################################################################
    

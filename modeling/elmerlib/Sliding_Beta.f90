@@ -34,17 +34,17 @@ FUNCTION Linear( Model, nodenumber, dumy) RESULT(coeff) !
 	End if
 
 	! position current point
-    x=Model % Nodes % x (nodenumber)
-    y=Model % Nodes % y (nodenumber)
-    ! Find the height of the current point
-    z=Model % Nodes % z (nodenumber)
+  x=Model % Nodes % x (nodenumber)
+  y=Model % Nodes % y (nodenumber)
+  ! Find the height of the current point
+  z=Model % Nodes % z (nodenumber)
 		
 	ind=minloc(sqrt((x-xb)**2+(y-yb)**2),1)
-    dist=minval(sqrt((x-xb)**2+(y-yb)**2),1)
-    beta=betas(ind(1))
-    coeff=beta
+  dist=minval(sqrt((x-xb)**2+(y-yb)**2),1)
+  beta=betas(ind(1))
+  coeff=beta
 
-    Return
+  Return
 End
 
 FUNCTION Weertman( Model, nodenumber, dumy) RESULT(coeff) !
@@ -81,70 +81,16 @@ FUNCTION Weertman( Model, nodenumber, dumy) RESULT(coeff) !
 	End if
 
 	! position current point
-    x=Model % Nodes % x (nodenumber)
-    y=Model % Nodes % y (nodenumber)
-    ! Find the height of the current point
-    z=Model % Nodes % z (nodenumber)
+  x=Model % Nodes % x (nodenumber)
+  y=Model % Nodes % y (nodenumber)
+  ! Find the height of the current point
+  z=Model % Nodes % z (nodenumber)
 		
 	ind=minloc(sqrt((x-xb)**2+(y-yb)**2),1)
-    dist=minval(sqrt((x-xb)**2+(y-yb)**2),1)
+  dist=minval(sqrt((x-xb)**2+(y-yb)**2),1)
     
-    beta=betas(ind(1))
-    coeff=beta
+  beta=betas(ind(1))
+  coeff=beta
 
-    Return
+  Return
 End
-
-!------------------------------------------------------------------!
-FUNCTION GuessBeta( Model, nodenumber, dumy) RESULT(coeff) !
-!------------------------------------------------------------------!
-	USE types
-	USE DefUtils
-    IMPLICIT NONE
-	TYPE(Model_t) :: Model
-    REAL(kind=dp) :: dumy,coeff
-    INTEGER :: nodenumber
-    REAL(kind=dp) :: LinearInterp
-
-    REAL(kind=dp),allocatable :: xx(:),yy(:),beta0(:,:)
-    REAL(kind=dp) :: x,y,z
-    
-    INTEGER :: nx,ny
-    INTEGER :: i,j
-		
-    LOGICAL :: FirstTimeBeta=.true.
-
-    SAVE xx,yy,beta0,nx,ny
-    SAVE FirstTimeBeta
-
-    if (FirstTimeBeta) then
-
-    	FirstTimeBeta=.False.
-
-
-        ! open file
-        open(10,file='inputs/beta0.xy')
-        Read(10,*) nx
-        Read(10,*) ny
-        ALLOCATE(xx(nx),yy(ny))
-        ALLOCATE(beta0(nx,ny))
-        Do i=1,nx
-        	Do j=1,ny
-                read(10,*) xx(i),yy(j),beta0(i,j)
-            End Do
-		End do
-		close(10)
-    End if
-
-    ! position current point
-    x = Model % Nodes % x (nodenumber)
-    y = Model % Nodes % y (nodenumber)
-
-    coeff = LinearInterp(beta0,xx,yy,nx,ny,x,y)
-		
-    Return
-End
-
-!------------------------------------------------------------------!
-include 'Interp.f90' !
-!------------------------------------------------------------------!    

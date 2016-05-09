@@ -1015,7 +1015,7 @@ def grid_near_time(time,glacier,verticaldatum='geoid'):
 
   return x,y,zs,besttime
 
-def dem_continuous(glacier,date,verticaldatum='geoid',fillin=False,blur=False):
+def dem_continuous(glacier,xmin,xmax,ymin,ymax,date,verticaldatum='geoid',fillin=False,blur=False):
 
   '''
   xg,yg,zs = dem_continuous(glacier, date, xmin, xmax, ymin, ymax,
@@ -1040,16 +1040,8 @@ def dem_continuous(glacier,date,verticaldatum='geoid',fillin=False,blur=False):
   # Get correct tile of the GIMP DEM
   if glacier == 'Helheim':
     subset = 'gimpdem3_1'
-    xmin = 233000.0
-    xmax = 318000.0
-    ymin = -2601000.0
-    ymax = -2515000.0
   elif glacier == 'Kanger':
     subset = 'gimpdem4_2'
-    xmin = 420000.0
-    xmax = 500000.0
-    ymin = -2320000.0
-    ymax = -2210000.0
   else: 
     sys.exit("Unknown glacier.")
   
@@ -1067,10 +1059,12 @@ def dem_continuous(glacier,date,verticaldatum='geoid',fillin=False,blur=False):
   # Directories for high res DEMs
   OUTDIR = os.path.join(os.getenv("DATA_HOME"),"Elevation/MosaicDEMs/"+glacier+"/")
   WVDIR = os.path.join(os.getenv("DATA_HOME"),"Elevation/Worldview/"+glacier+"/")
-  TDMDIR = os.path.join(os.getenv("DATA_HOME"),"Elevation/Worldview/"+glacier+"/")
+  TDMDIR = os.path.join(os.getenv("DATA_HOME"),"Elevation/TDM/"+glacier+"/")
   
   # Select dates for worldview images 
-  if glacier == 'Helheim':
+  if len(date) == 1:
+    dates = np.array(date)
+  elif glacier == 'Helheim':
     if date == '20120624':
       dates = ['20120624','20120513','20120520']
     elif date == '20110319':
@@ -1122,7 +1116,7 @@ def dem_continuous_flowline(xf,yf,dists,glacier,date,verticaldatum='geoid',filli
   '''
   
   # Get grid for that date 
-  xg,yg,zgrid = dem_continuous(glacier,date,verticaldatum=verticaldatum,fillin=fillin,blur=False)
+  xg,yg,zgrid = dem_continuous(glacier,np.min(x)-1e3,np.max(x)+1e3,np.min(y)-1e3,np.max(y)+1e3,date,verticaldatum=verticaldatum,fillin=fillin,blur=False)
   
   # Interpolate grid onto flowline
   dem = scipy.interpolate.RegularGridInterpolator([yg,xg],zgrid)

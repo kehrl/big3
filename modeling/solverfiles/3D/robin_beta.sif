@@ -18,19 +18,6 @@ $ function waterpressure(Z) {\
   }\
 }
 
-! Reference Slip Coefficicient used to construct surface velocities
-$ function betaSquare(tx) {\
-  yearinsec = 365.25*24*60*60;\
-  beta=1.0e5;\
-  _betaSquare=beta*beta/(1.0e06*yearinsec);\
-}
-
-! Reference Viscosity used to construct surface velocities
-$ function MuSquare(tx) {\
-   yearinsec = 365.25*24*60*60;\
-   mu=sqrt(1.8e08);\
-  _MuSquare=mu*mu*1.0e-6*(2.0*yearinsec)^(-1.0/3.0);\
-}
 
 ! Some constants
 $yearinsec = 365.25*24*60*60
@@ -49,7 +36,6 @@ Simulation
   Simulation Type = Steady State
 
   Extruded Mesh Levels=Integer {Extrude}
-  !Extruded Mesh Name = String "mesh3d"
   
   Output Intervals = 1
 
@@ -57,6 +43,7 @@ Simulation
   Steady State Min Iterations = 1
 
   Output File = "$name".result"
+  Post File = "$name$.vtu"
 
   Initialize Dirichlet Conditions = Logical False
 
@@ -82,16 +69,10 @@ End
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 Initial Condition 1
-  BetaS = Variable Coordinate 1,
-     REAL MATC "betaSquare(tx)"
-  ! MuS = Variable Coordinate 3,
-  !   Real Procedure "Rheology.so" "Viscosity"
-  MuS = Real $ (3*3.5e-25*yearinsec)^(-1.0/3.0)*1.0e-6 
-  ! Using a mixed value from Habermann (Jakobshavn) and Nick (Helheim flowline), -10 deg C, 
-  ! and an enhancement factor of 3
+
 ! initial guess for (square root) slip coeff.
   Beta = Variable Coordinate 1, Coordinate 2
-    Real Procedure "Sliding_Beta.so" "GuessBeta"
+    Real Procedure "USF_Init.so" "GuessBeta"
 
   Pressure = Real 0.0
   Velocity 1 = Real 0.0
@@ -125,7 +106,11 @@ Material 1
   Density = Real $rhoi
   Viscosity Model = String "power law"
 
-  Viscosity = Equals MuS
+  Viscosity = Variable Coordinate 1, Coordinate 2
+    Real Procedure "USF_Init.so" "Viscosity"
+  ! Viscosity = Real $ (3*3.5e-25*yearinsec)^(-1.0/3.0)*1.0e-6 
+  ! Using a mixed value from Habermann (Jakobshavn) and Nick (Helheim flowline), -10 deg C, 
+  ! and an enhancement factor of 3
 
   Viscosity Exponent = Real $(1.0e00/3.0e00)
   Critical Shear Rate = Real 1.0e-10
@@ -136,6 +121,7 @@ Solver 1
   Exec Solver = Before simulation
   Equation = "MapCoordinate"
   Procedure = "StructuredMeshMapper" "StructuredMeshMapper"
+  Mesh Update Variable = String "dS"
   Active Coordinate = Integer 3
 End
 
@@ -167,24 +153,22 @@ Solver 2
   Steady State Convergence Tolerance = Real 1.0e-12
 
 ! Define some usefull Variables
-  Exported Variable 1 = BetaS
-  Exported Variable 1 DOFS = 1
-  Exported Variable 2 = MuS
-  Exported Variable 2 DOFS = 1
 
 ! square root of the slip coef
-  Exported Variable 3 = Beta
-  Exported Variable 3 DOFS = Integer 1
+  Exported Variable 1 = Beta
+  Exported Variable 1 DOFS = Integer 1
 ! derivative of the cost fn wr to beta
-  Exported Variable 4 = DJDBeta
-  Exported Variable 4 DOFS = Integer 1
+  Exported Variable 2 = DJDBeta
+  Exported Variable 2 DOFS = Integer 1
 ! value of the cost function
-  Exported Variable 5 = CostValue
-  Exported Variable 5 DOFS = Integer 1
+  Exported Variable 3 = CostValue
+  Exported Variable 3 DOFS = Integer 1
 
-  Exported Variable 6 = VsurfIni
-  Exported Variable 6 DOFS = Integer 2
+  Exported Variable 4 = VsurfIni
+  Exported Variable 4 DOFS = Integer 2
 
+  Exported Variable 5 = dS
+  Exported Variable 5 DOFS = 1
 End
 
 !!!! Navier-Stokes = Dirichlet Problem
@@ -292,38 +276,22 @@ Solver 6
 end
 
 Solver 7
-  Equation = "ResultOutput"
-  Procedure = File "ResultOutputSolve" "ResultOutputSolver"
-
-  Output File Name = File "$name""
-  Vtu Format = logical true
-  Binary Output = True
-  Single Precision = True
-
+  Procedure = "SaveData" "SaveMaterials"
+  Parameter 1 = String "Viscosity"
 End
 
 Solver 8
   Equation = SaveLine
   Procedure = "SaveData" "SaveLine"
   Exec Solver = String "After all"
-  Filename = "mesh2d/beta.dat"
+  Filename = "mesh2d/$name$_beta.dat"
   
   !Parallel Reduce = Logical True
 End
 
-Solver 9
-  Procedure = File "SaveData" "SaveScalars"
-  Exec Solver = After TimeStep
-  Filename =  ""$name"_mass.dat"
-  !File Append = Logical True     ! For transient simulation
-  Variable 1 = String "Flow Solution"
-  Operator 1 = String "Convective Flux"
-  Parallel Reduce = Logical True
-End
-
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 Equation 1
-  Active Solvers (7)= 1 2 3 4 7 8 9
+  Active Solvers (6)= 1 2 3 4 7 8
   NS Convect= False
   Convection = Computed
 End
@@ -338,21 +306,7 @@ Boundary Condition 1
   Name = "Calving front"
   Target Boundaries(1) = 1
   
-  Flow Force BC = Logical True
-  External Pressure = Variable Coordinate 3 !we are in MPa units
-    Real MATC "-1.0*waterpressure(tx)*1.0E-06"
-    
-! Dirichlet BCs
-!  Velocity 1 = Variable Coordinate 1
-!    Real procedure "UWA_Bnd.so" "UBnd"
-!  Velocity 2 = Variable Coordinate 1
-!    Real procedure "UWA_Bnd.so" "VBnd"
-
-!Dirichlet BC => Same Dirichlet
-!  VeloD 1 = Variable Coordinate 1
-!    Real procedure "UWA_Bnd.so" "UBnd"
-!  VeloD 2 = Variable Coordinate 1
-!    Real procedure "UWA_Bnd.so" "VBnd"
+{FrontBC}
 
   Save Line = Logical True
   Save Scalars = Logical True
@@ -390,20 +344,6 @@ End
 Boundary Condition 3
   Name = "Inflow"
   Target Boundaries(1) = 3
-
- ! Dirichlet BCs
- ! Velocity 1 = Variable Coordinate 3
- !   Real procedure "SIA.so" "USIA"
- ! Velocity 2 = Variable Coordinate 3
- !   Real procedure "SIA.so" "VSIA"
- ! Velocity 3 = Real 0.0e0
-
- ! Dirichlet BC => Same Dirichlet
- ! VeloD 1 = Variable Coordinate 3
- !   Real procedure "SIA.so" "USIA"
- ! VeloD 2 = Variable Coordinate 3
- !   Real procedure "SIA.so" "VSIA"
- ! VeloD 3 = Real 0.0e0
  
  ! Dirichlet BCs
   Velocity 1 = Variable Coordinate 1

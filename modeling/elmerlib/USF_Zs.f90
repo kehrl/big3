@@ -237,9 +237,9 @@ FUNCTION ZsTopMzsIni ( Model, nodenumber, Zs) RESULT(mu)
    END IF
 
    IF (GroundedMaskValues(GroundedMaskPerm(nodenumber)) > -0.5_dp) THEN
-		! Update so that it is equal to the Surf
-		! Calculate current x-coordinate
-		x = XIni(nodenumber) + MeshValues(MeshPerm(nodenumber))
+		  ! Update so that it is equal to the Surf
+		  ! Calculate current x-coordinate
+		  x = XIni(nodenumber) + MeshValues(MeshPerm(nodenumber))
 	  	ZsNew = SurfFromFile(x)
    ELSE
    		ZsNew = Zs
