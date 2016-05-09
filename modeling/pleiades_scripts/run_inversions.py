@@ -49,7 +49,7 @@ command = "python /u/lkehrl/Code/big3/modeling/meshing/"+\
 for regpar in regpars:
  
     # Open a pipe to the qsub command.
-    #output, input = popen2('qsub')
+    output, input = popen2('qsub')
      
     # Customize your options here
     job_name = "lambda_%s" % regpar
@@ -69,14 +69,14 @@ for regpar in regpars:
     #PBS -o ./output/%s.out
     #PBS -e ./error/%s.err
     cd %s
-    %s""" % (job_name, walltime, processors, job_name, job_name, command,dir)
+    %s""" % (job_name, walltime, processors, job_name, job_name,dir,command)
      
     # Send job_string to qsub
-    #input.write(job_string)
-    #input.close()
+    input.write(job_string)
+    input.close()
      
     # Print your job and the system response to the screen as it's submitted
-    #print job_string
-    #print output.read()
+    print job_string
+    print output.read()
      
     time.sleep(0.1)
