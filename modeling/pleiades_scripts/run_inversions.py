@@ -39,8 +39,8 @@ else:
 # Create mesh #
 ###############
 
-#command = "python /u/lkehrl/Code/big3/modeling/meshing/"+\
-command = "python helheim_mesh_3d.py -mesh {0} -d {1} -bname {2} -bmodel {3} -bsmooth {4} -lc {5} -n {6} -output {7}".format(meshshp,date,bname,bmodel,bsmooth,lc,nparts,meshname)
+command = "python /u/lkehrl/Code/big3/modeling/meshing/"+\
+          "helheim_mesh_3d.py -mesh {0} -d {1} -bname {2} -bmodel {3} -bsmooth {4} -lc {5} -n {6} -output {7}".format(meshshp,date,bname,bmodel,bsmooth,lc,nparts,meshname)
 
 os.system(command)
 
