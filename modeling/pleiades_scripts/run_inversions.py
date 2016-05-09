@@ -79,7 +79,7 @@ for regpar in regpars:
     fid.write(job_string)
     fid.close()
     try:
-      subprocess.call('qsub < "PBS_"+method+"_"+regpar+".pbs"')
+      subprocess.call('qsub','-q','devel','PBS_"+method+"_"+regpar+".pbs"')
     finally:
       os.remove("PBS_"+method+"_"+regpar+".pbs")
      
