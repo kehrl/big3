@@ -447,7 +447,7 @@ FUNCTION Viscosity( Model, nodenumber, dumy) RESULT(eta) !
     	Firsttime=.False.
 
     	! open file
-      open(10,file='Inputs/flowA.xyz')
+      open(10,file='inputs/flowA.xyz')
       Read(10,*) nx
       Read(10,*) ny
       Read(10,*) nz
