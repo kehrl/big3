@@ -1103,7 +1103,7 @@ def dem_continuous(glacier,xmin,xmax,ymin,ymax,date,verticaldatum='geoid',blur=F
   filename = 'mosaic-'+date+'-'+verticaldatum
   #if not(os.path.isfile(filename+'-tile-0.tif')):
   os.system('dem_mosaic --hole-fill-length 5 --t_projwin '+str(xmin)+' '+str(ymin)+' '+str(xmax)+\
-  		' '+str(ymax)+' --priority-blending-length 40 -o'+filename+files)
+  		' '+str(ymax)+' --priority-blending-length 40 -o '+filename+files)
   
   xg,yg,zs = geotifflib.read(filename+"-tile-0.tif")
   
