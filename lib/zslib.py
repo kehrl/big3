@@ -1015,7 +1015,7 @@ def grid_near_time(time,glacier,verticaldatum='geoid'):
 
   return x,y,zs,besttime
 
-def dem_continuous(glacier,xmin,xmax,ymin,ymax,date,verticaldatum='geoid',fillin=False,blur=False):
+def dem_continuous(glacier,xmin,xmax,ymin,ymax,date,verticaldatum='geoid',blur=False):
 
   '''
   xg,yg,zs = dem_continuous(glacier, date, xmin, xmax, ymin, ymax,
@@ -1030,7 +1030,6 @@ def dem_continuous(glacier,xmin,xmax,ymin,ymax,date,verticaldatum='geoid',fillin
   date: date for terminus DEM (see function for options)
   xmin,xmax,ymin,ymax: desired output grid size
   verticaldatum: geoid or elliipsoid
-  fillin: fill in no data locations
   
   Outputs:
   xg,yg: x and y coordinates for output grid
@@ -1062,17 +1061,24 @@ def dem_continuous(glacier,xmin,xmax,ymin,ymax,date,verticaldatum='geoid',fillin
   TDMDIR = os.path.join(os.getenv("DATA_HOME"),"Elevation/TDM/"+glacier+"/")
   
   # Select dates for worldview images 
-  if len(date) == 1:
-    dates = np.array(date)
-  elif glacier == 'Helheim':
-    if date == '20120624':
-      dates = ['20120624','20120513','20120520']
-    elif date == '20110319':
+
+  
+  if glacier == 'Helheim':
+    if date == '20110319':
       dates = ['20110319','20110615']
-      dates_backup = ['20110628']
-    elif date == '20110628':
-      dates = ['20110628','20110615']
-      dates_backup = ['20110319']
+    elif date == '20110828':
+      dates = ['20110828','20110824','20110615']
+    elif date == '20120624':
+      dates = ['20120624','20120629','20120513']
+    elif date == '20140509':
+      dates = ['20140509','2014611','20140408','20130508']
+    elif date == '20140731':
+      dates = ['20140731','20130508']
+    elif date == '[20141016']:
+      dates = ['20141016','20130508']
+    else:
+      dates = np.array([date])
+     
   elif glacier == 'Kanger':
     if date == '20110712':
       dates = ['20110712','20110808','20110823']
@@ -1081,17 +1087,22 @@ def dem_continuous(glacier,xmin,xmax,ymin,ymax,date,verticaldatum='geoid',fillin
   
   files = ''
   dirs_wv = os.listdir(WVDIR)
+  dirs_tdm = os.listdir(TDMDIR)
   for d in dates:
+    for dir in dirs_tdm:
+      if (d in dir) and (dir.endswith(fileend)):
+        files = files+' '+TDMDIR+dir
     for dir in dirs_wv:
       if (d in dir) and (dir.endswith(fileend)):
         files = files+' '+WVDIR+dir
-  files = files+' '+gimpfile  
+
+  #files = files+' '+gimpfile  
   
   CURRENTDIR = os.getcwd()
   os.chdir(OUTDIR)
   filename = 'mosaic-'+date+'-'+verticaldatum
-  if not(os.path.isfile(filename+'-tile-0.tif')):
-    os.system('dem_mosaic --t_projwin '+str(xmin)+' '+str(ymin)+' '+str(xmax)+\
+  #if not(os.path.isfile(filename+'-tile-0.tif')):
+  os.system('dem_mosaic --hole-fill-length 5 --t_projwin '+str(xmin)+' '+str(ymin)+' '+str(xmax)+\
   		' '+str(ymax)+' --priority-blending-length 40 -o'+filename+files)
   
   xg,yg,zs = geotifflib.read(filename+"-tile-0.tif")
@@ -1100,12 +1111,14 @@ def dem_continuous(glacier,xmin,xmax,ymin,ymax,date,verticaldatum='geoid',fillin
     print "Blurring DEM over 17 pixels (roughly 500 m in each direction)..."
     # 17 pixel gaussian blur
     zs_blur = scipy.ndimage.filters.gaussian_filter(zs,sigma=2,truncate=4)
+  else:
+    zs_blur = zs
   
   os.chdir(CURRENTDIR)
   
-  return xg,yg,zs
+  return xg,yg,zs_blur
   
-def dem_continuous_flowline(xf,yf,dists,glacier,date,verticaldatum='geoid',fillin='none',filt_len='none'):
+def dem_continuous_flowline(xf,yf,dists,glacier,date,verticaldatum='geoid',filt_len='none'):
 
   '''
   zflow = dem_continuous_flowline(xf,yf,glacier,date,verticaldatum='geoid',fillin='none')
@@ -1116,7 +1129,7 @@ def dem_continuous_flowline(xf,yf,dists,glacier,date,verticaldatum='geoid',filli
   '''
   
   # Get grid for that date 
-  xg,yg,zgrid = dem_continuous(glacier,np.min(x)-1e3,np.max(x)+1e3,np.min(y)-1e3,np.max(y)+1e3,date,verticaldatum=verticaldatum,fillin=fillin,blur=False)
+  xg,yg,zgrid = dem_continuous(glacier,np.min(x)-1e3,np.max(x)+1e3,np.min(y)-1e3,np.max(y)+1e3,date,verticaldatum=verticaldatum,blur=False)
   
   # Interpolate grid onto flowline
   dem = scipy.interpolate.RegularGridInterpolator([yg,xg],zgrid)

@@ -297,7 +297,7 @@ def xy_to_gmsh_3d(glacier,date,exterior,holes,refine,DIRM,lc1,lc2,lc3,lc4,\
 
   # Load surface DEM
   xsur,ysur,zsur_grid = zslib.dem_continuous(glacier,xmin,xmax,ymin,ymax,date,\
-  			verticaldatum='geoid',fillin=True,blur=False)
+  			verticaldatum='geoid',blur=True)
   xsur_grid,ysur_grid = np.meshgrid(xsur,ysur)
 
   # Flatten surface coordinates and interpolate bed elevations to surface coordinates

@@ -23,7 +23,7 @@ def get_arguments():
   parser = argparse.ArgumentParser()
   parser.add_argument("-output", dest="output", required = True,
         help = "Name of output mesh.")
-  parser.add_argument("-mesh", dest="mesh", required = True,
+  parser.add_argument("-mesh", dest="meshshp", required = True,
         help = "Name for input shapefile.")
   parser.add_argument("-d", dest="date", required = True,
             help = "Date for mesh.")
@@ -54,7 +54,7 @@ def main():
   bedmodel = args.bedmodel
   bedsmoothing = args.bedsmooth
   outputmeshname = args.output
-  meshname = args.mesh
+  meshshp = args.meshshp
 
   # Mesh refinement
   lc3,lc2,lc4,lc1 = args.lc
@@ -85,10 +85,10 @@ def main():
   #################
 
   # Mesh exterior
-  if meshname.endswith('nofront'):
-    exterior = glaclib.load_extent(glacier,time,nofront_shapefile=meshname)
+  if meshshp.endswith('nofront'):
+    exterior = glaclib.load_extent(glacier,time,nofront_shapefile=meshshp)
   else:
-    exterior = meshlib.shp_to_xy(DIRX+meshname)
+    exterior = meshlib.shp_to_xy(DIRX+meshshp)
   np.savetxt(inputs+"mesh_extent.dat",exterior[:,0:2])
 
   # Mesh holes

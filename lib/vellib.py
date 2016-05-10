@@ -880,7 +880,7 @@ def inversion_3D(glacier,x,y,time,dir_velocity_out='none',blur=False):
   xv,yv,vv = geotifflib.read(filename_vy+"-tile-0.tif")
   
   if blur == True:
-    print "Blurring DEM over 17 pixels (roughly 500 m in each direction)..."
+    print "Blurring DEM over 17 pixels (roughly 1.5km in each direction)..."
     # 17 pixel gaussian blur
     vx_blur = scipy.ndimage.filters.gaussian_filter(uu,sigma=2,truncate=4)
     vy_blur = scipy.ndimage.filters.gaussian_filter(vv,sigma=2,truncate=4)
