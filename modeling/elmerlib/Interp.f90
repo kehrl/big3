@@ -1,5 +1,5 @@
  !------------------------------------------------------------------!
-        Function LinearInterp(dem,xx,yy,nx,ny,x,y) Result(InterP1) !
+Function LinearInterp(dem,xx,yy,nx,ny,x,y) Result(InterP1) !
         !------------------------------------------------------------------!
         USE TYPES
         implicit none
@@ -43,20 +43,21 @@
             InterP1=InterP1+(x-x_1)*(B(2)-B(1))/Dx+(y-y_1)*(B(4)-B(1))/Dy+B(1)
             found = .true.
         else
-        do i=0,1
+            do i=0,1
                 do j=0,1
                     dist = max( dabs(x-xx(nx_1+i)),dabs(y-yy(ny_1+j)) )
                     if (dist<=0.5*dx .and. dem(nx_1+i,ny_1+j)/=-2e+9) then
                         InterP1 = dem(nx_1+i,ny_1+j)
                         found = .true.
                     endif
-enddo
+                enddo
             enddo
         endif
 
-if (.not.found) then
-print *, 'Could not find a suitable point to interpolate ',x,y
+        if (.not.found) then
+            print *, 'Could not find a suitable point to interpolate ',x,y
         endif
 
-Return
+        Return
+
 End

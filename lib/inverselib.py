@@ -71,14 +71,14 @@ def guess_beta(x,y,zs,zb,u,v,frac):
   # Compute the bed sliding velocities & friction parameter
   ub = np.zeros((ny, nx))
   vb = np.zeros((ny, nx))
-  beta = np.zeros((ny, nx))
+  beta = np.zeros((ny, nx)) 
 
   q = 0.0
   speed = 0.0
 
   for i in range(1, ny - 1):
     for j in range(1, nx - 1):
-      if u[i, j] != -2.0e+9:
+      if not(np.isnan(u[i,j])) and not(np.isnan(zb[i,j])) and not(np.isnan(zs[i,j])):
         alpha = frac
         h = max(zs[i, j] - zb[i, j], 0.0)
         # internal deformation from SIA, Paterson pg. 310, eq 8.35
