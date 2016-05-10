@@ -496,9 +496,8 @@ FUNCTION Viscosity( Model, nodenumber, dumy) RESULT(eta) !
     alpha = (z - (zb + (k - 1) * dz)) / dz
     eta = (1 - alpha) * LinearInterp(dem(:,:,k), xx, yy, nx, ny, x, y) + alpha * LinearInterp(dem(:,:,k+1), xx, yy, nx, ny, x, y)
     
-    ! Get the viscosity in the correct unitsk
+    ! Get the viscosity in the correct units
     eta = eta**(-1.0/3.0d0)*1.0e-6*yearinsec**(-1.0/3.0d0)
-    print *,'eta ',eta
     
     Return
 End
