@@ -1096,7 +1096,7 @@ def dem_continuous(glacier,xmin,xmax,ymin,ymax,date,verticaldatum='geoid',blur=F
       if (d in dir) and (dir.endswith(fileend)):
         files = files+' '+WVDIR+dir
 
-  #files = files+' '+gimpfile  
+  files = files+' '+gimpfile  
   
   CURRENTDIR = os.getcwd()
   os.chdir(OUTDIR)
