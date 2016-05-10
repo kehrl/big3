@@ -163,7 +163,7 @@ def load_kristin(glacier,x,y,type='A',dir='none'):
       output = temp
   
     if dir != 'none':
-      fid = open(inputs+"flowA.xyz", "w")
+      fid = open(dir+"flowA.xyz", "w")
       fid.write("{0}\n{1}\n{2}\n".format(len(x), len(y), len(flowA[0,0,:])))
 
       for j in range(len(x)):
