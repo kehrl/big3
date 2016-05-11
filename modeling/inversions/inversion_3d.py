@@ -25,6 +25,8 @@ def get_arguments():
 
   # Get inputs to file
   parser = argparse.ArgumentParser()
+  parser.add_argument("-glacier",dest="glacier",required = True, 
+        help = "Name of glacier (Kanger or Helheim)")
   parser.add_argument("-mesh", dest="mesh", required = True,
         help = "Name of meshlib") 
   parser.add_argument("-front", dest="frontbc", required = True,
@@ -32,12 +34,11 @@ def get_arguments():
   parser.add_argument("-n", dest="n", required = True,
         help = "Number of partitions.")
   parser.add_argument("-regpar", dest="regpar", required = False,
-		default='1e10',help = "Regularization parameter.")
+		    default='1e10',help = "Regularization parameter.")
   parser.add_argument("-method", dest="method", required = False,
-		default='adjoint',help = "adjoint or robin.")
+		    default='adjoint',help = "adjoint or robin.")
   parser.add_argument("-extrude", dest="extrude", type=int,required = False,\
-		default=5,\
-		help = "Number of extrusion levels.")
+		    default=5,help = "Number of extrusion levels.")
 
   args, _ = parser.parse_known_args(sys.argv)
 
@@ -58,13 +59,11 @@ def main():
   method = args.method
   extrude = str(args.extrude)
   frontbc = str(args.frontbc)
+  glacier = args.glacier
 
   # Get current date
   now = datetime.datetime.now()
   date = '{0}{1:02.0f}{2:02.0f}'.format((now.year),(now.month),(now.day))
-
-  # Model Resolution
-  glacier = 'Helheim'
 
   # Directories
   DIRS=os.path.join(os.getenv("CODE_HOME"),"big3/modeling/solverfiles/3D/")
@@ -74,10 +73,13 @@ def main():
   inputs=os.path.join(DIRM+"/inputs/")
 
   extent = np.loadtxt(inputs+"mesh_extent.dat")
-  hole1 = np.loadtxt(inputs+"mesh_hole1.dat")
-  hole2 = np.loadtxt(inputs+"mesh_hole2.dat")
-  holes=[hole1,hole2]  
-
+  try:
+    hole1 = np.loadtxt(inputs+"mesh_hole1.dat")
+    hole2 = np.loadtxt(inputs+"mesh_hole2.dat")
+    holes=[hole1,hole2]  
+  except:
+    holes=[]
+  
   if not(os.path.exists(DIRR)):
     os.makedirs(DIRR)
 

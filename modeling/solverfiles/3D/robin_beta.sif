@@ -106,9 +106,9 @@ Material 1
   Density = Real $rhoi
   Viscosity Model = String "power law"
 
-  Viscosity = Variable Coordinate 1, Coordinate 2
-    Real Procedure "USF_Init.so" "Viscosity"
-  !Viscosity = Real $ (3*3.5e-25*yearinsec)^(-1.0/3.0)*1.0e-6 
+  !Viscosity = Variable Coordinate 1, Coordinate 2
+  !  Real Procedure "USF_Init.so" "Viscosity"
+  Viscosity = Real $ (3*3.5e-25*yearinsec)^(-1.0/3.0)*1.0e-6 
   ! Using a mixed value from Habermann (Jakobshavn) and Nick (Helheim flowline), -10 deg C, 
   ! and an enhancement factor of 3
 

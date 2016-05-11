@@ -906,19 +906,13 @@ def inversion_3D(glacier,x,y,time,dir_velocity_out='none',blur=False):
     fidv = open(dir_velocity_out+"/vdem.xy","w")
     fidv.write('{}\n{}\n'.format(len(xv),len(yv)))
   
-    # File for velocity magnitude
-    fidmag = open(dir_velocity_out+"/vsurfdem.xy","w")
-    fidmag.write('{}\n{}\n'.format(len(xu),len(yu)))
-  
     for i in range(0,len(xu)):
       for j in range(0,len(yu)):
         fidu.write('{} {} {}\n'.format(xu[i],yu[j],vx_blur[j,i]))
         fidv.write('{} {} {}\n'.format(xv[i],yv[j],vy_blur[j,i]))
-        fidmag.write('{} {} {}\n'.format(xu[i],yu[j],vmag[j,i]))
   
     fidv.close()
     fidu.close()
-    fidmag.close()
 
   # Interpolate to input grid
   xgrid,ygrid = np.meshgrid(x,y)

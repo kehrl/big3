@@ -41,18 +41,32 @@ def shp_to_xy(in_file):
   try:
     rec = sf.records()
   except:
-    pass  
+    pass 
+     
   n = len(shapes)
   x1 = np.zeros(n)
   y1 = np.zeros(n)
   bound1 = np.zeros(n)
+  
+  x1[:] = float('nan')
+  y1[:] = float('nan')
+  bound1[:] = float('nan')
   for i in range(0,n):
-    x1[i]=float(shapes[i].points[0][0])
-    y1[i]=float(shapes[i].points[0][1])
     try:
-      bound1[i]=int(rec[i][0])
+      x1[i]=float(shapes[i].points[0][0])
+      y1[i]=float(shapes[i].points[0][1])
+      try:
+        bound1[i]=int(rec[i][0])
+      except:
+        bound1[i]=float('NaN')
     except:
-      bound1[i]='NaN'
+      pass
+      
+  # Delete points that we passed over    
+  ind = np.where(np.isnan(x1))
+  x1 = np.delete(x1,ind)
+  y1 = np.delete(y1,ind)
+  bound1 = np.delete(bound1,ind)
   
   # Sort points
   ind = np.argmin(x1)
@@ -65,7 +79,7 @@ def shp_to_xy(in_file):
   indices=range(0,len(x1))
   indices.remove(ind)
   n=0
-  while len(indices) > 1:
+  while len(indices) > 0:
     min_d=1000000000
     d=[]
     for i in indices:
@@ -128,7 +142,7 @@ def xy_to_gmsh_3d(glacier,date,exterior,holes,refine,DIRM,lc1,lc2,lc3,lc4,\
   for i in range(0,X):
     if i != 0:
       d = math.sqrt((exterior[last,0]-exterior[i,0])**2+(exterior[last,1]-exterior[i,1])**2)
-    if (exterior[i,2] == 2) and (d > lc2/2):
+    if (exterior[i,2] == 2) and (d > lc3/2):
       fid.write('Point({}) = {{{}, {}, 0, lc3}}; \n'.format(n,exterior[i,0],exterior[i,1]))
       last = i
       indices.append(i)
@@ -235,6 +249,7 @@ def xy_to_gmsh_3d(glacier,date,exterior,holes,refine,DIRM,lc1,lc2,lc3,lc4,\
     polypt = Point(refine[i,0:2])
     if polyglacier.contains(polypt):
       if refine[i,2] == 2:
+        # Same as front
         fid.write('Point({}) = {{{}, {}, 0, lc3}}; \n'.format(n,refine[i,0],refine[i,1]))
       elif refine[i,2] == 1:
         fid.write('Point({}) = {{{}, {}, 0, lc2}}; \n'.format(n,refine[i,0],refine[i,1]))

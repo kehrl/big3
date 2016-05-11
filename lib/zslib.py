@@ -1083,6 +1083,8 @@ def dem_continuous(glacier,xmin,xmax,ymin,ymax,date,verticaldatum='geoid',blur=F
     if date == '20110712':
       dates = ['20110712','20110808','20110823']
       dates_backup = ['20110824']
+    else:
+      dates = np.array([date])
   
   
   files = ''

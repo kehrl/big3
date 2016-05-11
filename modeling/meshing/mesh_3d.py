@@ -21,18 +21,20 @@ def get_arguments():
 
   # Get inputs to file
   parser = argparse.ArgumentParser()
+  parser.add_argument("-glacier",dest="glacier",required = True, 
+        help = "Name of glacier (Kanger or Helheim)")
   parser.add_argument("-output", dest="output", required = True,
         help = "Name of output mesh.")
   parser.add_argument("-mesh", dest="meshshp", required = True,
         help = "Name for input shapefile.")
   parser.add_argument("-d", dest="date", required = True,
-            help = "Date for mesh.")
+        help = "Date for mesh.")
   parser.add_argument("-n", dest="n", required = True,
-            help = "Number of partitions.")
-  parser.add_argument("-bname", dest="bedname", required = False,default='smith',
-            help = "Name of bed file (smith,morlighem,cresis).")
+        help = "Number of partitions.")
+  parser.add_argument("-bname", dest="bedname", required = False,default='morlighem',
+        help = "Name of bed file (smith,morlighem,cresis).")
   parser.add_argument("-bmodel", dest="bedmodel", required = False,default='aniso',
-            help = "Type of bed (aniso,iso).")
+        help = "Type of bed (aniso,iso).")
   parser.add_argument("-bsmooth", dest="bedsmooth", type=int,required = False,\
 			default=4,help = "Smoothness of bed (1-8).")
   parser.add_argument("-lc", dest="lc", type=int,required = False,nargs='+',\
@@ -55,15 +57,12 @@ def main():
   bedsmoothing = args.bedsmooth
   outputmeshname = args.output
   meshshp = args.meshshp
+  glacier = args.glacier
 
   # Mesh refinement
   lc3,lc2,lc4,lc1 = args.lc
 
-  # File names
-  glacier = 'Helheim'
-
   # Directories
-  DIRS = os.path.join(os.getenv("CODE_HOME"),"BigThreeGlaciers/Modeling/SolverFiles/3D")
   DIRM = os.path.join(os.getenv("MODEL_HOME"),glacier+"/3D/"+outputmeshname+"/")
   DIRX = os.path.join(os.getenv("DATA_HOME"),"ShapeFiles/Glaciers/3D/"+glacier+"/")
   inputs = os.path.join(DIRM+"inputs/")
@@ -92,16 +91,15 @@ def main():
   np.savetxt(inputs+"mesh_extent.dat",exterior[:,0:2])
 
   # Mesh holes
-  hole1 = meshlib.shp_to_xy(DIRX+"glacier_hole1")
-  np.savetxt(inputs+"mesh_hole1.dat",hole1[:,0:2])
-
-  hole2 = meshlib.shp_to_xy(DIRX+"glacier_hole2")
-  np.savetxt(inputs+"mesh_hole2.dat",hole2[:,0:2])
-
-  # All holes
   holes = []
-  holes.append({'xy': hole1})
-  holes.append({'xy': hole2})
+  if os.path.isfile(DIRX+"glacier_hole1.shp"):
+    hole1 = meshlib.shp_to_xy(DIRX+"glacier_hole1")
+    np.savetxt(inputs+"mesh_hole1.dat",hole1[:,0:2])
+    holes.append({'xy': hole1})
+  if os.path.isfile(DIRX+"glacier_hole2.shp"):
+    hole2 = meshlib.shp_to_xy(DIRX+"glacier_hole2")
+    np.savetxt(inputs+"mesh_hole2.dat",hole2[:,0:2])
+    holes.append({'xy': hole2})
 
   # Add locations for refinement
   refine = meshlib.shp_to_xy(DIRX+"refine")
@@ -112,7 +110,7 @@ def main():
 
   #Set output name for gmsh file
   file_2d=os.path.join(DIRM+"mesh2d")
-  file_3d=os.path.join(DIRM+"mesh3d")
+  #file_3d=os.path.join(DIRM+"mesh3d")
 
   #############
   # Make mesh #
@@ -134,7 +132,7 @@ def main():
 
   # Partition mesh for parallel processing
   os.chdir(DIRM)
-  call(["ElmerGrid","2","2","mesh2d","dir","-halo","-metis",partitions,"0"])
+  call(["ElmerGrid","2","2","mesh2d","dir","-metis",partitions,"0"])
 
   # Output as gmsh file so we can look at it
   # call(["ElmerGrid","2","4","Elmer"])
