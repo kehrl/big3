@@ -134,7 +134,7 @@ def main():
 
   # Partition mesh for parallel processing
   os.chdir(DIRM)
-  call(["ElmerGrid","2","2","mesh2d","dir","-partition",partitions,"1","0","2"])
+  call(["ElmerGrid","2","2","mesh2d","dir","-halo","-metis",partitions,"0"])
 
   # Output as gmsh file so we can look at it
   # call(["ElmerGrid","2","4","Elmer"])
