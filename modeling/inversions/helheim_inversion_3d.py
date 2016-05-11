@@ -91,40 +91,40 @@ def main():
   if method=='adjoint':
     if (frontbc == 'neumann') or (frontbc == 'pressure'):
       frontbc_text ="""
-        Adjoint Force BC = Logical True
-        Flow Force BC = Logical True
-        External Pressure = Variable Coordinate 3 !we are in MPa units
-          Real MATC "-1.0*waterpressure(tx)*1.0E-06" """
+  Adjoint Force BC = Logical True
+  Flow Force BC = Logical True
+  External Pressure = Variable Coordinate 3 !we are in MPa units
+  Real MATC "-1.0*waterpressure(tx)*1.0E-06" """
     elif (frontbc == 'dirichlet') or (frontbc == 'velocity'):
       frontbc_text = """
-        Velocity 1 = Variable Coordinate 1
-          Real procedure "USF_Init.so" "UWa"
-        Velocity 2 = Variable Coordinate 1
-          Real procedure "USF_Init.so" "VWa"
-        ! Dirichlet BC => Dirichlet = 0 for Adjoint
-        Adjoint 1 = Real 0.0
-        Adjoint 2 = Real 0.0"""
+  Velocity 1 = Variable Coordinate 1
+    Real procedure "USF_Init.so" "UWa"
+  Velocity 2 = Variable Coordinate 1
+    Real procedure "USF_Init.so" "VWa"
+  ! Dirichlet BC => Dirichlet = 0 for Adjoint
+  Adjoint 1 = Real 0.0
+  Adjoint 2 = Real 0.0"""
     else:
       sys.exit("Unknown BC for front of glacier.")
   elif method == 'robin':
     if (frontbc == 'neumann') or (frontbc == 'pressure'):
       frontbc_text = """
-        Flow Force BC = Logical True
-        External Pressure = Variable Coordinate 3 !we are in MPa units
-        Real MATC "-1.0*waterpressure(tx)*1.0E-06" """
+  Flow Force BC = Logical True
+  External Pressure = Variable Coordinate 3 !we are in MPa units
+  Real MATC "-1.0*waterpressure(tx)*1.0E-06" """
     elif (frontbc == 'dirichlet') or (frontbc == 'velocity'):
       frontbc_text ="""
-        ! Dirichlet BCs
-        Velocity 1 = Variable Coordinate 1, Coordinate 2
-          Real procedure "USF_Init.so" "UWa"
-        Velocity 2 = Variable Coordinate 1, Coordinate 2
-          Real procedure "USF_Init.so" "VWa"
+  ! Dirichlet BCs
+  Velocity 1 = Variable Coordinate 1, Coordinate 2
+    Real procedure "USF_Init.so" "UWa"
+  Velocity 2 = Variable Coordinate 1, Coordinate 2
+    Real procedure "USF_Init.so" "VWa"
         
-        ! Dirichlet BC => Same Dirichlet
-        VeloD 1 = Variable Coordinate 1, Coordinate 2
-          Real procedure "USF_Init.so" "UWa"
-        VeloD 2 = Variable Coordinate 1, Coordinate 2
-          Real procedure "USF_Init.so" "VWa" """
+  ! Dirichlet BC => Same Dirichlet
+  VeloD 1 = Variable Coordinate 1, Coordinate 2
+    Real procedure "USF_Init.so" "UWa"
+  VeloD 2 = Variable Coordinate 1, Coordinate 2
+    Real procedure "USF_Init.so" "VWa" """
 
   #############################
   # Run inversion solver file #
