@@ -4,28 +4,27 @@ import subprocess
 import time
 import os
 
-# Date for mesh
-date = '20120624'
-
 # Mesh geometry
-glacier = 'Helheim'
-meshshp = 'glacier_extent_inversion_front.shp'
-extrude = 20
-date = '20120624'
-bname = 'smith'
+glacier = 'Kanger'
+meshshp = 'glacier_extent_inversion_front'
+extrude = 10
+date= '20120213'
+#date = '20120316'
+bname = 'morlighem'
 bmodel = 'aniso'
 bsmooth = '4'
-lc = '2000 2000 2000 2000'
+lc = '500 500 500 500'
 
 # Output mesh name
-meshname = 'TEST'
+meshname = 'DEM'+date+'_lowres'
 
 # Inversion options
 method = 'robin'
 regpars = ['1e10'] 
 
 
-# Options for 
+# Options for PBS submission
+queue = 'devel'
 model = 'ivy'
 nparts = 60
 ncpus = 20
@@ -40,8 +39,9 @@ else:
 ###############
 
 command = "python /u/lkehrl/Code/big3/modeling/meshing/"+\
-          "helheim_mesh_3d.py -mesh {0} -d {1} -bname {2} -bmodel {3} -bsmooth {4} -lc {5} -n {6} -output {7}".format(meshshp,date,bname,bmodel,bsmooth,lc,nparts,meshname)
+          "mesh_3d.py -glacier {0} -mesh {1} -d {2} -bname {3} -bmodel {4} -bsmooth {5} -lc {6} -n {7} -output {8}".format(glacier,meshshp,date,bname,bmodel,bsmooth,lc,nparts,meshname)
 
+print command
 os.system(command)
 
 ############################
@@ -58,29 +58,30 @@ for regpar in regpars:
     job_name = "lambda_%s" % regpar
     walltime = "1:00:00"
     processors = "select={0}:ncpus={1}:mpiprocs={2}:model={3}".format(nparts/ncpus,ncpus,ncpus,model)
-    command = "python /u/lkehrl/Code/big3/modeling/inversions/helheim_inversion_3d.py"+\
-              " -method {0} -regpar {1} -mesh {2} -extrude {3} -front {4}".format(method,regpar,meshname,extrude,frontBC)
+    command = "python /u/lkehrl/Code/big3/modeling/inversions/inversion_3d.py"+\
+              " -glacier {0} -method {1} -regpar {2} -mesh {3} -extrude {4} -front {5} -n {6}".format(glacier,method,regpar,meshname,extrude,frontBC,nparts)
     dir = "/nobackupp8/lkehrl/Models/"+glacier+"/3D/"+meshname+"/"
  
     job_string = """
     #PBS -S /bin/bash
     #PBS -M kehrl@uw.edu
-    #PBS -m ab
+    #PBS -m abe
     #PBS -N %s
     #PBS -l walltime=%s
     #PBS -l %s
     #PBS -o %s
     #PBS -e %s
+    source /u/lkehrl/.profile
+    source /u/dlilien/sw/elmer/.bashrc_pleiades
     cd %s
-    %s""" % (job_name, walltime, processors, dir+job_name+".out",dir+job_name+".err",dir,command)
+    %s""" % (job_name, walltime, processors, dir+"PBS_"+method+"_"+regpar+".out",dir+"PBS_"+method+"_"+regpar+".err",dir,command)
      
+    print command
     os.chdir(dir)
-    fid = open("PBS_"+method+"_"+regpar+".pbs")
+    fid = open("PBS_"+method+"_"+regpar+".pbs","w")
     fid.write(job_string)
     fid.close()
-    try:
-      subprocess.call('qsub','-q','devel','PBS_"+method+"_"+regpar+".pbs"')
-    finally:
-      os.remove("PBS_"+method+"_"+regpar+".pbs")
-     
-    time.sleep(0.1)
+    #try:
+    #  subprocess.call(['qsub','-q',queue,'PBS_'+method+'_'+regpar+'.pbs'])
+    #except:
+    #  print "Couldn't submit job for regularization %s" % regpar 
