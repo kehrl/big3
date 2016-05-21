@@ -97,7 +97,8 @@ if plot_overview:
   ind = np.where((terminus_time > 2008.) & (terminus_time < 2016.))
   plt.plot([np.min(terminus_val[ind])/1e3,np.min(terminus_val[ind])/1e3],[-1500,1500],'0.5')
   plt.plot([np.max(terminus_val[ind])/1e3,np.max(terminus_val[ind])/1e3],[-1500,1500],'0.5')
-  plt.plot(dists/1e3,floatlib.height(zb),'k',linewidth=1.2,label='Flotation',dashes=[2,2,2,2])
+  ind = np.argmin(abs(dists--5e3))
+  plt.plot(dists[0:ind]/1e3,floatlib.height(zb[0:ind]),'k',linewidth=1.2,label='Flotation',dashes=[2,2,2,2])
   if glacier == 'Helheim':
     plt.plot(dists/1e3,atm_data['20010521'][:,2],'k',label='21 May 2001',lw=1.2)
   elif glacier == 'Kanger':
@@ -143,10 +144,10 @@ if plot_overview:
     #plt.plot([0.7,np.max(terminus_val[ind])/1e3],[-425,-425],'0.5')
     plt.text(np.min(terminus_val[ind])/1e3+0.3,-450,'2008-2016',fontsize=7,fontname='Arial')
     ind = np.argmin(abs(dists--5e3))
-    plt.plot(dists/1e3,zb,':',color='k',linewidth=1.5)
+    #plt.plot(dists/1e3,zb,':',color='k',linewidth=1.5)
     plt.plot(dists[0:ind]/1e3,zb[0:ind],color='k',linewidth=1.5,label='Smoothed')
     plt.text(-3.2,-950,'??',fontsize=8,fontname='arial')
-    plt.text(3.2,-500,'??',fontsize=8,fontname='arial')
+    plt.text(1.5,-500,'??',fontsize=8,fontname='arial')
     plt.ylim([-1300,-300])
   plt.xlabel('Distance along flowline (km)',fontsize=8)
   plt.xticks(np.arange(-30,10,5),fontsize=8)

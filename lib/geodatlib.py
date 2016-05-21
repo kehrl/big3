@@ -113,15 +113,18 @@ def readbinary(filename,nodatavalue=float('nan'),read_vz=False):
   vy[ind] = nodatavalue
   
     # Go through the same rigmarole for the y-velocity file
-  vzfile = open(filename+".vz","rb")
-  vz_raw_data = vzfile.read()
-  vzfile.close()
-  arr = np.zeros(nvals)
-  for i in range(nvals):
-    arr[i] = struct.unpack('>f',vy_raw_data[4*i:4*(i+1)])[0]
-  vz = arr.reshape((ny,nx))
-  ind = np.where(vz == -2e9)
-  vz[ind] = nodatavalue
+  try:
+    vzfile = open(filename+".vz","rb")
+    vz_raw_data = vzfile.read()
+    vzfile.close()
+    arr = np.zeros(nvals)
+    for i in range(nvals):
+      arr[i] = struct.unpack('>f',vy_raw_data[4*i:4*(i+1)])[0]
+    vz = arr.reshape((ny,nx))
+    ind = np.where(vz == -2e9)
+    vz[ind] = nodatavalue
+  except:
+    pass
 
   # Do the same thing for the files containing the errors
   exfile = open(filename+".ex","rb")

@@ -106,15 +106,17 @@ Material 1
   Density = Real $rhoi
   Viscosity Model = String "power law"
 
-  Viscosity = Variable Coordinate 1, Coordinate 2
-    Real Procedure "USF_Init.so" "Viscosity"
-  ! Viscosity = Real $ (3*3.5e-25*yearinsec)^(-1.0/3.0)*1.0e-6 
+  !Viscosity = Variable Coordinate 1, Coordinate 2
+  !  Real Procedure "USF_Init.so" "Viscosity"
+  Viscosity = Real $ (3*3.5e-25*yearinsec)^(-1.0/3.0)*1.0e-6 
   ! Using a mixed value from Habermann (Jakobshavn) and Nick (Helheim flowline), -10 deg C, 
   ! and an enhancement factor of 3
   
 
   Viscosity Exponent = Real $1.0e00/3.0e00
   Critical Shear Rate = Real 1.0e-10
+  
+  Cauchy = Logical True
 End
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -131,20 +133,20 @@ Solver 2
   Equation = "Navier-Stokes"
   
   Stabilize = logical True
-  flow model = Stokes
+  Flow Model = Stokes
   
  ! mandatory to save bulk stiffness matrix
-  calculate loads = Logical True
+  Calculate loads = Logical True
 
-  !Linear System Solver = Direct
-  !Linear System Direct Method =  mumps
-  !mumps percentage increase working space = integer 60
-  Linear System Solver = Iterative
-  Linear System Iterative Method = GMRES
-  Linear System GMRES Restart = 100
-  Linear System Preconditioning= ILU0
-  Linear System Convergence Tolerance= 1.0e-08
-  Linear System Max Iterations = 1000
+  Linear System Solver = Direct
+  Linear System Direct Method =  Mumps
+  Mumps Percentage Increase Working Space = Integer 60
+  !Linear System Solver = Iterative
+  !Linear System Iterative Method = GMRES
+  !Linear System GMRES Restart = 100
+  !Linear System Preconditioning= ILU0
+  !Linear System Convergence Tolerance= 1.0e-08
+  !Linear System Max Iterations = 1000
 
 ! system self adjoint if Newton is used for the last iterations
   Nonlinear System Max Iterations = Integer 100
@@ -273,11 +275,36 @@ Solver 6
 end
 
 Solver 7
+  Equation = String "StressSolver"
+  Procedure =  File "ElmerIceSolvers" "ComputeDevStress"
+  ! this is just a dummy, hence no output is needed
+  !-----------------------------------------------------------------------
+  Variable = -nooutput "Sij"
+  Variable DOFs = 1
+  ! the name of the variable containing the flow solution (U,V,W,Pressure)
+  !-----------------------------------------------------------------------
+  Flow Solver Name = String "Flow Solution"
+  ! no default value anymore for "Stress Variable Name"
+  Stress Variable Name = String 'Sigma'
+  !-----------------------------------------------------------------------
+  Exported Variable 1 = "Sigma" ! [Sxx, Syy, Szz, Sxy] in 2D
+                                 ! [Sxx, Syy, Szz, Sxy, Syz, Szx] in 3D
+  Exported Variable 1 DOFs = 6
+  Linear System Solver = "Iterative"
+  Linear System Iterative Method = "BiCGStab"
+  Linear System Max Iterations = 300
+  Linear System Convergence Tolerance = 1.0E-09
+  Linear System Abort Not Converged = True
+  Linear System Preconditioning = "ILU0"
+  Linear System Residual Output = 1
+End
+
+Solver 8
   Procedure = "SaveData" "SaveMaterials"
   Parameter 1 = String "Viscosity"
 End
 
-Solver 8
+Solver 9
   Equation = SaveLine
   Procedure = "SaveData" "SaveLine"
   Exec Solver = String "After all"
@@ -289,7 +316,7 @@ End
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 Equation 1
-  Active Solvers (5)= 1 2 3 4 7 8
+  Active Solvers (6)= 1 2 3 4 7 8 9
   NS Convect= False
 End
 

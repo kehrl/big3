@@ -6,7 +6,7 @@
 import os
 import shutil
 import sys
-import vellib, datelib, glaclib, flowparameterlib, meshlib, inverselib, flowparameterlib
+import vellib, datelib, glaclib, flowparameterlib, meshlib, inverselib
 from subprocess import call
 from scipy.interpolate import *
 import numpy as np

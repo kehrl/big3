@@ -133,11 +133,11 @@ year_runoff,day1_runoff,day2_runoff,meltlength_runoff,total_runoff = climlib.sea
 # Get elevations near terminus #
 ################################
 
-zpt_atm,zptstd_atm,time_atm = zslib.atm_at_pts(x[ind_eul],y[ind_eul],glacier,years='all',maxdist=250.,verticaldatum='geoid',method='average',cutoff='terminus')
-zpt_dem,zpterror_dem,time_dem = zslib.dem_at_pts(x[ind_eul],y[ind_eul],glacier,years='all',verticaldatum='geoid',cutoff='terminus',method='average',radius=250.)
-zpt_wv,zpterror_wv,time_wv = zslib.dem_at_pts(x[ind_eul],y[ind_eul],glacier,years='all',verticaldatum='geoid',cutoff='terminus',method='average',radius=250.,data='WV')
-zpt_tdm,zpterror_tdm,time_tdm = zslib.dem_at_pts(x[ind_eul],y[ind_eul],glacier,years='all',verticaldatum='geoid',cutoff='terminus',method='average',radius=250.,data='TDM')
-zpt_spirit,zpterror_spirit,time_spirit = zslib.dem_at_pts(x[ind_eul],y[ind_eul],glacier,years='all',verticaldatum='geoid',cutoff='terminus',method='average',radius=250.,data='SPIRIT')
+zpt_atm,zptstd_atm,time_atm = zslib.atm_at_pts(x[ind_eul],y[ind_eul],glacier,years='all',maxdist=200.,verticaldatum='geoid',method='average',cutoff='terminus')
+zpt_dem,zpterror_dem,time_dem = zslib.dem_at_pts(x[ind_eul],y[ind_eul],glacier,years='all',verticaldatum='geoid',cutoff='terminus',method='average',radius=200.)
+zpt_wv,zpterror_wv,time_wv = zslib.dem_at_pts(x[ind_eul],y[ind_eul],glacier,years='all',verticaldatum='geoid',cutoff='terminus',method='average',radius=200.,data='WV')
+zpt_tdm,zpterror_tdm,time_tdm = zslib.dem_at_pts(x[ind_eul],y[ind_eul],glacier,years='all',verticaldatum='geoid',cutoff='terminus',method='average',radius=200.,data='TDM')
+zpt_spirit,zpterror_spirit,time_spirit = zslib.dem_at_pts(x[ind_eul],y[ind_eul],glacier,years='all',verticaldatum='geoid',cutoff='terminus',method='average',radius=200.,data='SPIRIT')
 
 # Get rid of elevations that are in front of the ice front 
 interped = np.interp(time_dem,terminus_time,terminus_val)
