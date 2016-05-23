@@ -7,16 +7,16 @@ import os
 # Mesh geometry
 glacier = 'Kanger'
 meshshp = 'glacier_extent_inversion_front'
-extrude = 10
+extrude = 20
 date= '20120213'
 #date = '20120316'
 bname = 'morlighem'
 bmodel = 'aniso'
 bsmooth = '4'
-lc = '500 500 500 500'
+lc = '200 200 200 200'
 
 # Output mesh name
-meshname = 'DEM'+date+'_lowres'
+meshname = 'DEM'+date
 
 # Inversion options
 method = 'robin'
@@ -24,9 +24,9 @@ regpars = ['1e10']
 
 
 # Options for PBS submission
-queue = 'devel'
+queue = 'normal'
 model = 'ivy'
-nparts = 60
+nparts = 80
 ncpus = 20
 
 if meshshp.endswith('nofront'):
