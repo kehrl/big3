@@ -1083,11 +1083,11 @@ def dem_continuous(glacier,xmin,xmax,ymin,ymax,date,verticaldatum='geoid',blur=F
       dates = np.array([date])
      
   elif glacier == 'Kanger':
-    if date = '20110308'
+    if date == '20110308':
       dates = ['20110308','20110311','20110318']
     elif date == '20110712':
       dates = ['20110712','20110808','20110823']
-    elif date == '20110826'
+    elif date == '20110826':
       dates = ['20110826','20110824']
     else:
       dates = np.array([date])

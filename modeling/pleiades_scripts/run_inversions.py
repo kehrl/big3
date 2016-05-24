@@ -12,18 +12,17 @@ glacier = 'Helheim'
 
 meshshp = 'glacier_extent_inversion_front'
 extrude = 18
-date= ['20120213'] # Kanger
-dates = ['20120316'] # Helheim
 bname = 'morlighem'
 bmodel = 'aniso'
 bsmooth = '4'
 lc = '300 300 500 500'
 
 if glacier == 'Helheim':
-  dates = ['20110319','20110615','20110828','20111116',\
-           '20120316','20120624','20120908','20121205',\
-           '20130209','20130508','20130804','20131031',\
-           '20140127','20140509','20140731','20141016']
+  dates = ['20110828']
+  #dates = ['20110319','20110615','20110828','20111117']#,\
+           #'20120316','20120624','20120908','20121205',\
+           #'20130209','20130508','20130804','20131031',\
+           #'20140127','20140509','20140731','20141016']
 elif glacier == 'Kanger':
   dates = ['20110308','20110708','20110826','20111106',\
            '20120213','20120522','20121012','20121217'\
@@ -65,15 +64,17 @@ for date in dates:
   print command
   os.system(command)
 
-  # Customize job options
-  job_name = glacier+"_"+date+"_lambda"+regpar
-  walltime = runtime
-  processors = "select={0}:ncpus={1}:mpiprocs={2}:model={3}".format(nparts/ncpus,ncpus,ncpus,model)
-  command = "python /u/lkehrl/Code/big3/modeling/inversions/inversion_3d.py"+\
-              " -glacier {0} -method {1} -regpar {2} -mesh {3} -extrude {4} -front {5} -n {6}".format(glacier,method,regpar,meshname,extrude,frontBC,nparts)
-  dir = "/nobackupp8/lkehrl/Models/"+glacier+"/3D/"+meshname+"/"
  
   for regpar in regpars:
+    
+    # Customize job options
+    job_name = glacier+"_"+date+"_lambda"+regpar
+    walltime = runtime
+    processors = "select={0}:ncpus={1}:mpiprocs={2}:model={3}".format(nparts/ncpus,ncpus,ncpus,model)
+    command = "python /u/lkehrl/Code/big3/modeling/inversions/inversion_3d.py"+\
+              " -glacier {0} -method {1} -regpar {2} -mesh {3} -extrude {4} -front {5} -n {6}".format(glacier,method,regpar,meshname,extrude,frontBC,nparts)
+    dir = "/nobackupp8/lkehrl/Models/"+glacier+"/3D/"+meshname+"/"
+
     job_string = """
     #PBS -S /bin/bash
     #PBS -M kehrl@uw.edu
