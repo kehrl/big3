@@ -180,7 +180,7 @@ Solver 3
   Variable = VeloD
   Variable Dofs = 4
 
-  procedure = "FlowSolve" "FlowSolver"
+  Procedure = "FlowSolve" "FlowSolver"
 
   Linear System Solver = Direct
   Linear System Direct Method = mumps
@@ -191,7 +191,6 @@ Solver 3
   ! Linear System Preconditioning= ILU2
   ! Linear System Convergence Tolerance= 1.0e-08
   ! Linear System Max Iterations = 1000
-
 
   Nonlinear System Max Iterations = Integer 100
   Nonlinear System Convergence Tolerance = Real 1.0e-7
@@ -279,6 +278,7 @@ end
 
 Solver 7
   Equation = String "StressSolver"
+  Exec Solver = String "After all"
   Procedure =  File "ElmerIceSolvers" "ComputeDevStress"
   ! this is just a dummy, hence no output is needed
   !-----------------------------------------------------------------------
@@ -288,9 +288,9 @@ Solver 7
   !-----------------------------------------------------------------------
   Flow Solver Name = String "Flow Solution"
   ! no default value anymore for "Stress Variable Name"
-  Stress Variable Name = String 'Sigma'
+  Stress Variable Name = String "Stress"
   !-----------------------------------------------------------------------
-  Exported Variable 1 = "Sigma" ! [Sxx, Syy, Szz, Sxy] in 2D
+  Exported Variable 1 = "Stress" ! [Sxx, Syy, Szz, Sxy] in 2D
                                  ! [Sxx, Syy, Szz, Sxy, Syz, Szx] in 3D
   Exported Variable 1 DOFs = 6
   Linear System Solver = "Iterative"

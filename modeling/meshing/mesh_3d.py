@@ -148,8 +148,8 @@ def main():
   # Get flow parameter  #
   #######################
 
-  print "Getting flow law parameters...\n"
-  flowA = flowparameterlib.load_kristin(glacier,x,y,type='A',dir=inputs)
+  #print "Getting flow law parameters...\n"
+  #flowA = flowparameterlib.load_kristin(glacier,x,y,type='A',dir=inputs)
 
   #################################################################
   # Calculate basal sliding speed using SIA for inflow boundaries #

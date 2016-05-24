@@ -5,18 +5,19 @@ import time
 import os
 
 # Mesh geometry
-glacier = 'Kanger'
+#glacier = 'Kanger'
+glacier = 'Helheim'
 meshshp = 'glacier_extent_inversion_front'
-extrude = 20
-date= '20120213'
-#date = '20120316'
+extrude = 18
+#date= '20120213' # Kanger
+date = '20120316' # Helheim
 bname = 'morlighem'
 bmodel = 'aniso'
 bsmooth = '4'
-lc = '200 200 200 200'
+lc = '300 300 500 500'
 
 # Output mesh name
-meshname = 'DEM'+date
+meshname = 'DEM'+date+'_lowerres'
 
 # Inversion options
 method = 'robin'
@@ -24,10 +25,11 @@ regpars = ['1e10']
 
 
 # Options for PBS submission
-queue = 'normal'
+queue = 'long'
 model = 'ivy'
 nparts = 80
 ncpus = 20
+runtime = '12:00:00'
 
 if meshshp.endswith('nofront'):
   frontBC = 'pressure'
@@ -55,8 +57,8 @@ for regpar in regpars:
     #output, input = popen2('qsub')
      
     # Customize your options here
-    job_name = "lambda_%s" % regpar
-    walltime = "1:00:00"
+    job_name = glacier+"_"+date+"_lambda"+regpar
+    walltime = runtime
     processors = "select={0}:ncpus={1}:mpiprocs={2}:model={3}".format(nparts/ncpus,ncpus,ncpus,model)
     command = "python /u/lkehrl/Code/big3/modeling/inversions/inversion_3d.py"+\
               " -glacier {0} -method {1} -regpar {2} -mesh {3} -extrude {4} -front {5} -n {6}".format(glacier,method,regpar,meshname,extrude,frontBC,nparts)
@@ -81,7 +83,7 @@ for regpar in regpars:
     fid = open("PBS_"+method+"_"+regpar+".pbs","w")
     fid.write(job_string)
     fid.close()
-    #try:
-    #  subprocess.call(['qsub','-q',queue,'PBS_'+method+'_'+regpar+'.pbs'])
-    #except:
-    #  print "Couldn't submit job for regularization %s" % regpar 
+    try:
+      subprocess.call(['qsub','-q',queue,'PBS_'+method+'_'+regpar+'.pbs'])
+    except:
+      print "Couldn't submit job for regularization %s" % regpar 
