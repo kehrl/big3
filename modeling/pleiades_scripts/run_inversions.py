@@ -4,20 +4,33 @@ import subprocess
 import time
 import os
 
-# Mesh geometry
 #glacier = 'Kanger'
 glacier = 'Helheim'
+
+
+# Mesh geometry
+
 meshshp = 'glacier_extent_inversion_front'
 extrude = 18
-#date= '20120213' # Kanger
-date = '20120316' # Helheim
+date= ['20120213'] # Kanger
+dates = ['20120316'] # Helheim
 bname = 'morlighem'
 bmodel = 'aniso'
 bsmooth = '4'
 lc = '300 300 500 500'
 
-# Output mesh name
-meshname = 'DEM'+date+'_lowerres'
+if glacier == 'Helheim':
+  dates = ['20110319','20110615','20110828','20111116',\
+           '20120316','20120624','20120908','20121205',\
+           '20130209','20130508','20130804','20131031',\
+           '20140127','20140509','20140731','20141016']
+elif glacier == 'Kanger':
+  dates = ['20110308','20110708','20110826','20111106',\
+           '20120213','20120522','20121012','20121217'\
+           '20130210','20130714','20131004','20131204'\
+           '20140213']  
+
+
 
 # Inversion options
 method = 'robin'
@@ -36,34 +49,31 @@ if meshshp.endswith('nofront'):
 else:
   frontBC = 'velocity'
 
-###############
-# Create mesh #
-###############
-
-command = "python /u/lkehrl/Code/big3/modeling/meshing/"+\
-          "mesh_3d.py -glacier {0} -mesh {1} -d {2} -bname {3} -bmodel {4} -bsmooth {5} -lc {6} -n {7} -output {8}".format(glacier,meshshp,date,bname,bmodel,bsmooth,lc,nparts,meshname)
-
-print command
-os.system(command)
-
 ############################
 # Submit inversions to PBS #
 ############################
 
 # Loop over PBS jobs
-for regpar in regpars:
- 
-    # Open a pipe to the qsub command.
-    #output, input = popen2('qsub')
-     
-    # Customize your options here
-    job_name = glacier+"_"+date+"_lambda"+regpar
-    walltime = runtime
-    processors = "select={0}:ncpus={1}:mpiprocs={2}:model={3}".format(nparts/ncpus,ncpus,ncpus,model)
-    command = "python /u/lkehrl/Code/big3/modeling/inversions/inversion_3d.py"+\
+for date in dates:
+
+  # Output mesh name
+  meshname = 'DEM'+date
+
+  # Create mesh
+  command = "python /u/lkehrl/Code/big3/modeling/meshing/"+\
+          "mesh_3d.py -glacier {0} -mesh {1} -d {2} -bname {3} -bmodel {4} -bsmooth {5} -lc {6} -n {7} -output {8}".format(glacier,meshshp,date,bname,bmodel,bsmooth,lc,nparts,meshname)
+  print command
+  os.system(command)
+
+  # Customize job options
+  job_name = glacier+"_"+date+"_lambda"+regpar
+  walltime = runtime
+  processors = "select={0}:ncpus={1}:mpiprocs={2}:model={3}".format(nparts/ncpus,ncpus,ncpus,model)
+  command = "python /u/lkehrl/Code/big3/modeling/inversions/inversion_3d.py"+\
               " -glacier {0} -method {1} -regpar {2} -mesh {3} -extrude {4} -front {5} -n {6}".format(glacier,method,regpar,meshname,extrude,frontBC,nparts)
-    dir = "/nobackupp8/lkehrl/Models/"+glacier+"/3D/"+meshname+"/"
+  dir = "/nobackupp8/lkehrl/Models/"+glacier+"/3D/"+meshname+"/"
  
+  for regpar in regpars:
     job_string = """
     #PBS -S /bin/bash
     #PBS -M kehrl@uw.edu
@@ -83,7 +93,7 @@ for regpar in regpars:
     fid = open("PBS_"+method+"_"+regpar+".pbs","w")
     fid.write(job_string)
     fid.close()
-    try:
-      subprocess.call(['qsub','-q',queue,'PBS_'+method+'_'+regpar+'.pbs'])
-    except:
-      print "Couldn't submit job for regularization %s" % regpar 
+    #try:
+    #  subprocess.call(['qsub','-q',queue,'PBS_'+method+'_'+regpar+'.pbs'])
+    #except:
+    #  print "Couldn't submit job for %s for lambda=%s" % (meshname,regpar)

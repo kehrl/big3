@@ -1052,6 +1052,9 @@ def dem_continuous(glacier,xmin,xmax,ymin,ymax,date,verticaldatum='geoid',blur=F
   else:
     sys.exit("Unknown vertical datum.")
   
+  # Mean surface elevations over observational period
+  TDMfile = os.path.join(os.getenv("DATA_HOME"),"Elevation/TDM/"+glacier+"/all-2011-2014_"+fileend)
+  
   # Gimp filename  
   gimpfile = os.path.join(os.getenv("DATA_HOME"),'Elevation/Gimp/'+subset+fileend[5:])
   
@@ -1080,9 +1083,12 @@ def dem_continuous(glacier,xmin,xmax,ymin,ymax,date,verticaldatum='geoid',blur=F
       dates = np.array([date])
      
   elif glacier == 'Kanger':
-    if date == '20110712':
+    if date = '20110308'
+      dates = ['20110308','20110311','20110318']
+    elif date == '20110712':
       dates = ['20110712','20110808','20110823']
-      dates_backup = ['20110824']
+    elif date == '20110826'
+      dates = ['20110826','20110824']
     else:
       dates = np.array([date])
   
@@ -1098,7 +1104,7 @@ def dem_continuous(glacier,xmin,xmax,ymin,ymax,date,verticaldatum='geoid',blur=F
       if (d in dir) and (dir.endswith(fileend)):
         files = files+' '+WVDIR+dir
 
-  files = files+' '+gimpfile  
+  files = files+' '+TDMfile+' '+gimpfile  
   
   CURRENTDIR = os.getcwd()
   os.chdir(OUTDIR)

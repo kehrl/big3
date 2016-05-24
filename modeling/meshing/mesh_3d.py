@@ -112,6 +112,24 @@ def main():
   file_2d=os.path.join(DIRM+"mesh2d")
   #file_3d=os.path.join(DIRM+"mesh3d")
 
+  ##################################################################
+  # Save file with mesh inputs so we know how the mesh was created #
+  ##################################################################
+  
+  fid = open(DIRM+'mesh_info.txt')
+  fid.write('glacier = {}\n'.format(glacier))
+  fid.write('date = {}\n'.format(date))
+  fid.write('meshshapefile = {}\n'.format(meshshp))
+  fid.write('lc1 = {}\n'.format(lc1))
+  fid.write('lc2 = {}\n'.format(lc2))
+  fid.write('lc3 = {}\n'.format(lc3))
+  fid.write('lc4 = {}\n'.format(lc4))
+  fid.write('bed = {}\n'.format(bedname))
+  fid.write('bed model = {}\n'.format(bedmodel))
+  fid.write('bed smoothness = {}'.format(bedsmoothing))
+  
+  fid.close()
+  
   #############
   # Make mesh #
   #############

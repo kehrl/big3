@@ -140,7 +140,7 @@ Solver 2
 
   Linear System Solver = Direct
   Linear System Direct Method =  Mumps
-  Mumps Percentage Increase Working Space = Integer 60
+  Mumps Percentage Increase Working Space = Integer 40
   !Linear System Solver = Iterative
   !Linear System Iterative Method = GMRES
   !Linear System GMRES Restart = 100
