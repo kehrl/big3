@@ -116,7 +116,7 @@ def main():
   # Save file with mesh inputs so we know how the mesh was created #
   ##################################################################
   
-  fid = open(DIRM+'mesh_info.txt')
+  fid = open(DIRM+'mesh_info.txt','w')
   fid.write('glacier = {}\n'.format(glacier))
   fid.write('date = {}\n'.format(date))
   fid.write('meshshapefile = {}\n'.format(meshshp))
