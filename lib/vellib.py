@@ -17,6 +17,7 @@ LMK, UW, 04/01/2014
 '''
 import os
 import math
+import shutil
 import sys
 import scipy.interpolate
 import numpy as np
@@ -857,14 +858,21 @@ def inversion_3D(glacier,x,y,time,dir_velocity_out='none',blur=False):
   filename1,time1 = tsx_near_time(time,glacier,just_filename=True)
   filename2,time2 = tsx_near_time(time-11/365.,glacier,just_filename=True)
   filename3,time3 = tsx_near_time(time+11/365.,glacier,just_filename=True)
-  year,month,day = datelib.fracyear_to_date(time1)
+  year,month,day = datelib.fracyear_to_date(time)
   date = "%04d%02d%02d" % (year,month,day)
   
-  files_vx = ' '+filename1+'_vx.tif'+' '+filename2+'_vx.tif'+\
-  		' '+filename3+'_vx.tif'+' '+file_velocity_all+'_vx.tif'+' '+file_velocity_global+'_vx.tif'
-  files_vy = ' '+filename1+'_vy.tif'+' '+filename2+'_vy.tif'+\
-  		' '+filename3+'_vy.tif'+' '+file_velocity_all+'_vy.tif'+' '+file_velocity_global+'_vy.tif'
+  if abs(time-time2) < abs(time-time3): 
+    files_vx = ' '+filename1+'_vx.tif'+' '+filename2+'_vx.tif'+\
+  	' '+filename3+'_vx.tif'+' '+file_velocity_all+'_vx.tif'+' '+file_velocity_global+'_vx.tif'
+    files_vy = ' '+filename1+'_vy.tif'+' '+filename2+'_vy.tif'+\
+  	' '+filename3+'_vy.tif'+' '+file_velocity_all+'_vy.tif'+' '+file_velocity_global+'_vy.tif'
+  else:
+    files_vx = ' '+filename1+'_vx.tif'+' '+filename3+'_vx.tif'+\
+        ' '+filename2+'_vx.tif'+' '+file_velocity_all+'_vx.tif'+' '+file_velocity_global+'_vx.tif'
+    files_vy = ' '+filename1+'_vy.tif'+' '+filename3+'_vy.tif'+\
+        ' '+filename2+'_vy.tif'+' '+file_velocity_all+'_vy.tif'+' '+file_velocity_global+'_vy.tif'
   
+
   CURRENTDIR = os.getcwd()
   os.chdir(OUTDIR)
   filename_vx = 'mosaic-'+date+'-vx'
@@ -878,7 +886,7 @@ def inversion_3D(glacier,x,y,time,dir_velocity_out='none',blur=False):
   
   xu,yu,uu = geotifflib.read(filename_vx+"-tile-0.tif")
   xv,yv,vv = geotifflib.read(filename_vy+"-tile-0.tif")
-  
+ 
   if blur == True:
     print "Blurring DEM over 17 pixels (roughly 1.5km in each direction)..."
     # 17 pixel gaussian blur
@@ -898,6 +906,11 @@ def inversion_3D(glacier,x,y,time,dir_velocity_out='none',blur=False):
   ######################################################
   
   if dir_velocity_out != 'none':
+    #files = os.listdir(OUTDIR):
+    #for file in files:
+    #  if file.startswith('mosaic-'+date):
+    #    shutil.copy(file,dir_velocity_out)
+    
     # File for velocity in x-dir
     fidu = open(dir_velocity_out+"/udem.xy","w")
     fidu.write('{}\n{}\n'.format(len(xu),len(yu)))

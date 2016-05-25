@@ -11,25 +11,23 @@ glacier = 'Helheim'
 # Mesh geometry
 
 meshshp = 'glacier_extent_inversion_front'
-extrude = 18
+extrude = 20
 bname = 'morlighem'
 bmodel = 'aniso'
 bsmooth = '4'
-lc = '300 300 500 500'
+lc = '300 300 400 500'
 
 if glacier == 'Helheim':
-  dates = ['20110828']
-  #dates = ['20110319','20110615','20110828','20111117']#,\
-           #'20120316','20120624','20120908','20121205',\
-           #'20130209','20130508','20130804','20131031',\
-           #'20140127','20140509','20140731','20141016']
+  dates = ['20120316']
+  #dates = ['20110319','20110615','20110828','20111116',\
+  #          '20120316','20120624','20120908','20121205',\
+  #          '20130209','20130508','20130804','20131031',\
+  #          '20140127','20140509','20140731','20141016']
 elif glacier == 'Kanger':
   dates = ['20110308','20110708','20110826','20111106',\
            '20120213','20120522','20121012','20121217'\
            '20130210','20130714','20131004','20131204'\
            '20140213']  
-
-
 
 # Inversion options
 method = 'robin'
@@ -37,11 +35,11 @@ regpars = ['1e10']
 
 
 # Options for PBS submission
-queue = 'long'
+queue = 'normal'
 model = 'ivy'
-nparts = 80
+nparts = 60
 ncpus = 20
-runtime = '12:00:00'
+runtime = '8:00:00'
 
 if meshshp.endswith('nofront'):
   frontBC = 'pressure'
