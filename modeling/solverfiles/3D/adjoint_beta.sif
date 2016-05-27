@@ -286,9 +286,9 @@ Solver 7
   !-----------------------------------------------------------------------
   Flow Solver Name = String "Flow Solution"
   ! no default value anymore for "Stress Variable Name"
-  Stress Variable Name = String 'Sigma'
+  Stress Variable Name = String 'Stress"
   !-----------------------------------------------------------------------
-  Exported Variable 1 = "Sigma" ! [Sxx, Syy, Szz, Sxy] in 2D
+  Exported Variable 1 = "Stress" ! [Sxx, Syy, Szz, Sxy] in 2D
                                  ! [Sxx, Syy, Szz, Sxy, Syz, Szx] in 3D
   Exported Variable 1 DOFs = 6
   Linear System Solver = "Iterative"
