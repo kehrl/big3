@@ -18,10 +18,10 @@ bsmooth = '4'
 lc = '300 300 400 500'
 
 if glacier == 'Helheim':
-  dates = ['20120316']
+  #dates = ['20120316']
   #dates = ['20110319','20110615','20110828','20111116',\
-  #          '20120316','20120624','20120908','20121205',\
-  #          '20130209','20130508','20130804','20131031',\
+  #         '20120624','20120908','20121205']#,\
+  dates = ['20130209','20130508','20130804','20131031','20140127']#,\
   #          '20140127','20140509','20140731','20141016']
 elif glacier == 'Kanger':
   dates = ['20110308','20110708','20110826','20111106',\
@@ -92,7 +92,7 @@ for date in dates:
     fid = open("PBS_"+method+"_"+regpar+".pbs","w")
     fid.write(job_string)
     fid.close()
-    #try:
-    #  subprocess.call(['qsub','-q',queue,'PBS_'+method+'_'+regpar+'.pbs'])
-    #except:
-    #  print "Couldn't submit job for %s for lambda=%s" % (meshname,regpar)
+    try:
+      subprocess.call(['qsub','-q',queue,'PBS_'+method+'_'+regpar+'.pbs'])
+    except:
+      print "Couldn't submit job for %s for lambda=%s" % (meshname,regpar)

@@ -34,11 +34,16 @@ def get_arguments():
   parser.add_argument("-n", dest="n", required = True,
         help = "Number of partitions.")
   parser.add_argument("-regpar", dest="regpar", required = False,
-		    default='1e10',help = "Regularization parameter.")
+       default='1e10',help = "Regularization parameter.")
   parser.add_argument("-method", dest="method", required = False,
-		    default='adjoint',help = "adjoint or robin.")
+       default='adjoint',help = "adjoint or robin.")
   parser.add_argument("-extrude", dest="extrude", type=int,required = False,\
-		    default=5,help = "Number of extrusion levels.")
+       default=5,help = "Number of extrusion levels.")
+  parser.add_argument("-restartfile",dest="restartfile",required = False,\
+       default="none",help = "Name of restart file.")
+  parser.add_argument("-restartposition",dest="restartposition",required = False,\
+       default="none",type=int,\
+       help = "Restart position in results file (if applicable.")  
 
   args, _ = parser.parse_known_args(sys.argv)
 
@@ -60,10 +65,8 @@ def main():
   extrude = str(args.extrude)
   frontbc = str(args.frontbc)
   glacier = args.glacier
-
-  # Get current date
-  now = datetime.datetime.now()
-  date = '{0}{1:02.0f}{2:02.0f}'.format((now.year),(now.month),(now.day))
+  restartfile = args.restartfile
+  restartposition = args.restartposition
 
   # Directories
   DIRS=os.path.join(os.getenv("CODE_HOME"),"big3/modeling/solverfiles/3D/")
@@ -136,22 +139,46 @@ def main():
     fid_info = open(DIRR+"summary.dat","w")
     fid_info.write('Lambda Nsim Cost Norm RelPrec_G \n')
 
-  #for filename in glob.glob(DIRM+"elmer/robin_beta*"):
-  #  os.remove(filename)
-  os.chdir(DIRM)
-  fid1 = open(DIRS+method+'_beta.sif', 'r')
-  fid2 = open(DIRM+method+'_beta_'+regpar+'_'+date+'.sif', 'w')
+  if restartfile !='none':
+    solverfile = restartfile
+    date = restartfile[-12:-4]
+    
+    # Move previous timesteps to output directory
+    DIRR_lambda = DIRR+"lambda_"+regpar+"_"+date+"/"
+    names = os.listdir(DIRM+"/mesh2d")
+    if not os.path.exists(DIRR_lambda):
+      os.makedirs(DIRR_lambda)
+    for name in names:
+      if name.endswith('vtu') and name.startswith(method):
+        os.rename(DIRM+"/mesh2d/"+name,DIRR_lambda+name)
+    try:
+      os.rename(DIRM+"M1QN3_"+method+"_beta.out",DIRR_lambda+"M1QN3_"+method+"_beta_beforerestart.out")
+      os.rename(DIRM+"gradientnormadjoint_"+method+"_beta.dat",DIRR_lambda+"gradient_"+runname+"_beforerestart.dat")
+      os.rename(DIRM+"cost_"+method+"_beta.dat",DIRR_lambda+"cost_"+runname+"_beforerestart.dat")
+    except:
+      pass
 
-  lines=fid1.read()
-  lines=lines.replace('{Extrude}', '{0}'.format(extrude))
-  lines=lines.replace('{Lambda}', '{0}'.format(regpar))
-  lines=lines.replace('{FrontBC}', '{0}'.format(frontbc_text))
-  fid2.write(lines)
-  fid1.close()
-  fid2.close()
-  del fid1, fid2
+  else: 
+    # Get current date
+    now = datetime.datetime.now()
+    date = '{0}{1:02.0f}{2:02.0f}'.format((now.year),(now.month),(now.day))
+    restartposition = 0
+ 
+    solverfile = method+'_beta_'+regpar+'_'+date+'.sif'
+    os.chdir(DIRM)
+    fid1 = open(DIRS+method+'_beta.sif', 'r')
+    fid2 = open(DIRM+solverfile, 'w')
 
-  returncode = elmerrunlib.run_elmer(DIRM+method+'_beta_'+regpar+'_'+date+'.sif',n=partitions)
+    lines=fid1.read()
+    lines=lines.replace('{Extrude}', '{0}'.format(extrude))
+    lines=lines.replace('{Lambda}', '{0}'.format(regpar))
+    lines=lines.replace('{FrontBC}', '{0}'.format(frontbc_text))
+    fid2.write(lines)
+    fid1.close()
+    fid2.close()
+    del fid1, fid2
+
+  returncode = elmerrunlib.run_elmer(DIRM+solverfile,n=partitions)
 	
   #####################################
   # Write cost values to summary file #
@@ -167,7 +194,7 @@ def main():
   norm = float(p[3]) 
   fid.close()
   fid_info = open(DIRR+"summary.dat","a")
-  fid_info.write('{} {} {} {} {}\n'.format(regpar,nsim,cost1,cost2,norm))
+  fid_info.write('{} {} {} {} {}\n'.format(regpar,nsim+restartposition,cost1,cost2,norm))
   fid_info.close()
   del fid
 
@@ -178,12 +205,13 @@ def main():
   DIRR_lambda = DIRR+"lambda_"+regpar+"_"+date+"/"
 
   names = os.listdir(DIRM+"/mesh2d")
-  os.chdir(DIRM+"/mesh2d")
   if not os.path.exists(DIRR_lambda):
     os.makedirs(DIRR_lambda)
   for name in names:
-    if name.endswith('vtu') and name.startswith(method):
-      os.rename(name,DIRR_lambda+name)
+    if name.endswith('pvtu') and name.startswith(method):
+      os.rename(DIRM+"/mesh2d/"+name,DIRR_lambda+'{0}{1:04d}{2}'.format(name[0:-9],int(name[-9:-5])+restartposition,'.pvtu'))
+    elif name.endswith('vtu') and name.startswith(method):
+      os.rename(DIRM+"/mesh2d/"+name,DIRR_lambda+'{0}{1:04d}{2}'.format(name[0:-8],int(name[-8:-4])+restartposition,'.vtu'))
 
   bed = elmerreadlib.saveline_boundary(DIRM+"/mesh2d/",runname,bbed)
   surf = elmerreadlib.saveline_boundary(DIRM+"/mesh2d/",runname,bsurf)
