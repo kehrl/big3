@@ -139,6 +139,37 @@ def month(string):
     num = 12
 
   return num
+  
+def month_to_string(num):
+
+# Return string of month for number
+
+  if num == 1:
+    string = 'Jan'
+  elif num == 2:
+    string = 'Feb'
+  elif num == 3:
+    string = 'Mar'
+  elif num == 4:
+    string = 'Apr'
+  elif num == 5:
+    string = 'May'
+  elif num == 6:
+    string = 'Jun'
+  elif num == 7:
+    string = 'Jul'
+  elif num == 8:
+    string = 'Aug'
+  elif num == 9:
+    string = 'Sep'
+  elif num == 10:
+    string = 'Oct'
+  elif num == 11:
+    string = 'Nov'
+  elif num == 12:
+    string = 'Dec'
+    
+  return string
 
 def yearlength(year):
   '''

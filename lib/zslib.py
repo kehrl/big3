@@ -576,7 +576,7 @@ def dem_grid(glacier,xmin=-np.Inf,xmax=np.Inf,ymin=-np.Inf,ymax=np.Inf,
   # For TDM data...
   if ('TDM' in data) or (data == 'all'):
     for DIR in TDMDIRs:
-      if DIR.endswith(filestring):
+      if DIR.endswith(filestring) and (DIR.startswith('2')):
         tdxmin,tdxmax,tdymin,tdymax = geotifflib.extent(TDMDIR+DIR)
         td_extent = shapely.geometry.Polygon([(tdxmin,tdymin),(tdxmin,tdymax),(tdxmax,tdymax),(tdxmax,tdymin)])
         if glacier_extent.intersects(td_extent):
@@ -588,7 +588,7 @@ def dem_grid(glacier,xmin=-np.Inf,xmax=np.Inf,ymin=-np.Inf,ymax=np.Inf,
                 dates.append(DIR[0:13])
             else:
               if DIR[0:8] in years:
-                dates.append(DIR[0:813])
+                dates.append(DIR[0:13])
   # For SPIRIT data...              
   if ('SPIRIT' in data) or (data == 'all'):
     for DIR in SPIRITDIRs:
@@ -725,7 +725,7 @@ def dem_along_flowline(xpts,ypts,glacier,years='all',cutoff='terminus',verticald
   # For TDM...
   if ('TDM' in data) or (data == 'all'):
     for DIR in TDMDIRs:
-      if DIR.endswith(filestring):
+      if DIR.endswith(filestring) and DIR.startswith('2'):
         xmin,xmax,ymin,ymax = geotifflib.extent(TDMDIR+DIR)
         within = np.where((xpts > xmin) & (xpts < xmax) & (ypts > ymin) & (ypts < ymax))[0]
         if len(within) > 0:
@@ -1207,7 +1207,7 @@ def variability(glacier,time1,time2,verticaldatum='geoid',resolution=32.,data='a
         del wvxmin,wvxmax,wvymin,wvymax,wv_extent
   if 'TDM' in data or data=='all':
     for DIR in TDMDIRs:
-      if (DIR.endswith(filestring)) and (DIR[0:8] not in dates):
+      if (DIR.endswith(filestring)) and (DIR[0:8] not in dates) and DIR.startswith('2'):
         TDMmin,TDMmax,tdymin,tdymax = geotifflib.extent(TDMDIR+DIR)
         td_extent = shapely.geometry.Polygon([(TDMmin,tdymin),(TDMmin,tdymax),(TDMmax,tdymax),(TDMmax,tdymin)])
         time_file = datelib.date_to_fracyear(int(DIR[0:4]),int(DIR[4:6]),float(DIR[6:8]))

@@ -52,13 +52,17 @@ def icebottom(zb,zs,rho_i=917.0,rho_sw=1020.0):
   '''
 
   # Find flotation depth
-  floatdepth = shelfbase(zs,rho_i=917.0,rho_sw=1020.0)
+  floatdepth = shelfbase(zs,rho_i,rho_sw)
   
   # Find locations where the flotation depth is less deep (i.e., greater) than the bed elevation (these are locations
   # where the ice is floating)
   ind = np.where(floatdepth > zb)[0]
   
   bottom = np.array(zb)
+  bottom[ind] = floatdepth[ind]
+  
+  # Also set nan bed depths to flotation thickness
+  ind = np.where(np.isnan(zb))[0]
   bottom[ind] = floatdepth[ind]
 
   return bottom

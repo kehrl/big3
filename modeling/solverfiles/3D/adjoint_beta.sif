@@ -276,6 +276,7 @@ end
 
 Solver 7
   Equation = String "StressSolver"
+  Exec Solver = String "After all"
   Procedure =  File "ElmerIceSolvers" "ComputeDevStress"
   ! this is just a dummy, hence no output is needed
   !-----------------------------------------------------------------------
