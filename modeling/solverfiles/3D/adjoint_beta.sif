@@ -40,7 +40,7 @@ Simulation
 
   Output Intervals = 1
 
-  Steady State Max Iterations = 500
+  Steady State Max Iterations = 60
   Steady State Min Iterations = 1
 
   Output File = "$name$.result"
@@ -140,7 +140,7 @@ Solver 2
 
   Linear System Solver = Direct
   Linear System Direct Method =  Mumps
-  Mumps Percentage Increase Working Space = Integer 40
+  Mumps Percentage Increase Working Space = Integer 60
   !Linear System Solver = Iterative
   !Linear System Iterative Method = GMRES
   !Linear System GMRES Restart = 100
