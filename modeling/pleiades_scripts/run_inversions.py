@@ -11,17 +11,18 @@ glacier = 'Helheim'
 # Mesh geometry
 
 meshshp = 'glacier_extent_inversion_front'
-extrude = 20
+extrude = 12
 bname = 'morlighem'
 bmodel = 'aniso'
 bsmooth = '4'
-lc = '300 300 400 500'
+lc = '200 300 400 700'
+#lc = '1000 1000 4000 5000'
 
 if glacier == 'Helheim':
-  #dates = ['20120316']
+  dates = ['20120316']
   #dates = ['20110319','20110615','20110828','20111116',\
   #         '20120624','20120908','20121205']#,\
-  dates = ['20130209','20130508','20130804','20131031','20140127']#,\
+  #dates = ['20130209','20130508','20130804','20131031','20140127']#,\
   #          '20140127','20140509','20140731','20141016']
 elif glacier == 'Kanger':
   dates = ['20110308','20110708','20110826','20111106',\
@@ -54,7 +55,7 @@ else:
 for date in dates:
 
   # Output mesh name
-  meshname = 'DEM'+date
+  meshname = 'DEM'+date_12extrude
 
   # Create mesh
   command = "python /u/lkehrl/Code/big3/modeling/meshing/"+\

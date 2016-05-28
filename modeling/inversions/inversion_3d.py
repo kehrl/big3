@@ -42,7 +42,7 @@ def get_arguments():
   parser.add_argument("-restartfile",dest="restartfile",required = False,\
        default="none",help = "Name of restart file.")
   parser.add_argument("-restartposition",dest="restartposition",required = False,\
-       default="none",type=int,\
+       default=0,type=int,\
        help = "Restart position in results file (if applicable.")  
 
   args, _ = parser.parse_known_args(sys.argv)
