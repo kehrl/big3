@@ -434,3 +434,24 @@ def smith_at_pts(xpts,ypts,glacier,model='aniso',smoothing=1,verticaldatum='geoi
 
 
   return zbed_interp
+  
+#########################################################################################
+
+def geothermalflux_grid(x,y,model='davies',method='linear'):
+
+  if model == 'davies':
+    data = np.loadtxt(os.path.join(os.getenv("DATA_HOME"),\
+       "Bed/GeothermalFlux/Davies2013/ggge20271-sup-0001-Data_Table1_Eq_area_Global_heat_flow.csv"),skiprows=1,delimiter=',')
+    
+    xg,yg = coordlib.convert(data[:,0],data[:,1],4236,3413)
+    gg = data[:,2]/1e3 # to get from mW to W
+  
+  xgrid,ygrid = np.meshgrid(x,y)
+  xflat = xgrid.flatten()
+  yflat = ygrid.flatten()
+  
+  ggridflat = scipy.interpolate.griddata((xg,yg),gg,(xflat,yflat),method=method)
+  
+  ggrid = np.reshape(ggridflat,(len(y),len(x)))
+
+  return ggrid
