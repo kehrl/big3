@@ -502,6 +502,57 @@ FUNCTION Viscosity( Model, nodenumber, dumy) RESULT(eta) !
     Return
 End
 
+!------------------------------------------------------------------!
+FUNCTION SurfaceTemperature( Model, nodenumber, dumy) RESULT(Ts) !
+!------------------------------------------------------------------!
+		USE types
+		USE DefUtils
+  	IMPLICIT NONE
+		TYPE(Model_t) :: Model
+  	REAL(kind=dp) :: dumy,Ts
+  	INTEGER :: nodenumber
+  	REAL(kind=dp) :: LinearInterp
+
+  	REAL(kind=dp),allocatable :: xx(:),yy(:),Tgrid(:,:)
+    REAL(kind=dp) :: x,y,z
+    
+    INTEGER :: nx,ny
+    INTEGER :: i,j
+		
+    LOGICAL :: FirstTimeTs=.true.
+
+    SAVE xx,yy,Tgrid,nx,ny
+    SAVE FirstTimeTs
+
+    if (FirstTimeTs) then
+
+    	FirstTimeTs=.False.
+
+
+        ! open file
+        open(10,file='inputs/t2m.xy')
+        Read(10,*) nx
+        Read(10,*) ny
+        ALLOCATE(xx(nx),yy(ny))
+        ALLOCATE(Tgrid(nx,ny))
+        Do i=1,nx
+        	Do j=1,ny
+                read(10,*) xx(i),yy(j),Tgrid(i,j)
+            End Do
+		End do
+		close(10)
+    End if
+
+    ! position current point
+    x = Model % Nodes % x (nodenumber)
+    y = Model % Nodes % y (nodenumber)
+
+    Ts = LinearInterp(Tgrid,xx,yy,nx,ny,x,y)
+		
+    Return
+End
+
+
 
 !------------------------------------------------------------------!
 include 'Interp.f90' !

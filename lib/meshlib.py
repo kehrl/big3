@@ -123,11 +123,11 @@ def xy_to_gmsh_3d(glacier,date,exterior,holes,refine,DIRM,lc1,lc2,lc3,lc4,\
   fid.write("lc3 = %f; \n" % lc3)
   fid.write("lc4 = %f; \n" % lc4)
   
-  n=1 #Set index for counting
-  ind_1=[] #Keep track of line indices for the terminus so we can set physical line
-  ind_2=[] #Glacier terminus
-  ind_3=[] #Keep track of indices for glacier margin near terminus
-  ind_4=[] #Keep track of inflow boundary
+  n=1      # Set index for counting
+  ind_1=[] # Entire mesh
+  ind_2=[] # Glacier terminus
+  ind_3=[] # Keep track of indices for glacier margin near terminus
+  ind_4=[] # Keep track of inflow boundary
   
   ############
   # Exterior #
@@ -182,12 +182,12 @@ def xy_to_gmsh_3d(glacier,date,exterior,holes,refine,DIRM,lc1,lc2,lc3,lc4,\
   # Save last line (which completes the line loop and connects the last point to 
   # the first point)
   fid.write('Line({}) = {{{}, {}}}; \n'.format(n,pt_end,1))
-  if (exterior[indices[i]-1,2] == 1 or exterior[indices[i],2] == 1):
+  if (exterior[indices[i]-1,2] == 1 or exterior[indices[i],2] == 1): # Calving front
     ind_1.append(n)
-  elif (exterior[indices[i]-1,2] == 4 and exterior[indices[i],2] == 4):
+  elif (exterior[indices[i]-1,2] == 4 and exterior[indices[i],2] == 4): # Inflow
     ind_4.append(n)
   else:
-    ind_2.append(n)
+    ind_2.append(n) # All other boundaries
   n = n+1
   
   # Save line loop

@@ -1,0 +1,401 @@
+check keywords warn
+
+! name of the run used for the outputs
+$name="temperature_steady"
+
+$ function waterpressure(Z) {\
+  rhow = 1025.0;\
+  waterline = 0.0;\
+  G = 9.81;\
+  _waterpressure = 0.0;\
+  if (Z>waterline) {\
+       _waterpressure = 0.0;\
+  }else {\
+       _waterpressure = 1.0 * rhow * G * (waterline - Z);\
+  }\
+}
+
+!! in SI units, input in Kelvin
+$ function capacity(T) { _capacity=146.3+(7.253*T)}
+
+!! in SI units, input in Kelvin
+$ function conductivity(T)  { _conductivity=9.828*exp(-5.7E-03*T)}
+
+!! pressuremeltingpoint (Pressure in MPa)
+$ function pressuremeltingpoint(PIN) {\
+  P = PIN;\
+  if (P<0.0) P=0.0;\
+  beta=9.8E-08*1.0E06;\
+  _pressuremeltingpoint=273.15-(beta*P);\
+}
+
+! Some constants
+$yearinsec = 365.25*24*60*60
+$rhoi = 917.0/(1.0e6*yearinsec^2) ! MPa - a - m
+$gravity = -9.81*yearinsec^2
+
+
+Header
+  Mesh DB "." "mesh2d"
+End
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Simulation
+  Coordinate System = Cartesian 3D
+  Simulation Type = Steady State
+
+  Extruded Mesh Levels = Integer 5
+  
+  Output Intervals = 1
+
+  Steady State Max Iterations = 20
+  Steady State Min Iterations = 1
+
+  Output File = "$name".result"
+  Post File = "$name$.vtu"
+
+  Initialize Dirichlet Conditions = Logical False
+
+  max output level = 3
+End
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Constants 
+  Gas Constant = Real 8.314 !Joule/mol x  K 
+End
+
+
+! Main ice body
+Body 1
+  Equation = 1
+  Body Force = 1
+  Material = 1
+  Initial Condition = 1
+End
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Initial Condition 1
+
+  Pressure = Real 0.0
+  Velocity 1 = Real 0.0
+  Velocity 2 = Real 0.0
+  Velocity 3 = Real 0.0
+
+End
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Body Force 1
+  Flow BodyForce 1 = Real 0.0
+  Flow BodyForce 2 = Real 0.0
+  Flow BodyForce 3 = Real $gravity
+  
+  Temp Volume Source = Equals W ! The volumetric heat source 
+End
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!! ice material properties in MPa - m - a system
+Material 1
+  Density = Real $rhoi
+
+  Viscosity Model = String "Glen"
+! Viscosity has to be set to a dummy value
+! to avoid warning output from Elmer
+  Viscosity = Real 1.0 
+  Glen Exponent = Real 3.0
+  Critical Shear Rate = Real 1.0e-10
+! Rate factors (Paterson value in MPa^-3a^-1)
+  Rate Factor 1 = Real 1.258e13  
+  Rate Factor 2 = Real 6.046e28
+! these are in SI units - no problem, as long as
+! the gas constant also is 
+  Activation Energy 1 = Real 60e3
+  Activation Energy 2 = Real 139e3  
+  Glen Enhancement Factor = Real 1.0
+! the variable taken to evaluate the Arrhenius law
+! in general this should be the temperature relative
+! to pressure melting point. The suggestion below plugs
+! in the correct value obtained with TemperateIceSolver
+  Temperature Field Variable = String "Temp Homologous"
+! the temperature to switch between the 
+! two regimes in the flow law
+  Limit Temperature = Real -10.0
+! In case there is no temperature variable
+  !Constant Temperature = Real -10.0
+  
+  Cauchy = Logical True
+  
+  ! the heat capacity as a MATC function of temperature itself
+  !-----------------------------------------------------------
+  Temp Heat Capacity = Variable Temp
+    Real MATC "capacity(tx)*yearinsec^2"
+  ! the heat conductivity as a MATC function of temperature itself
+  !--------------------------------------------------------------
+  Temp Heat Conductivity = Variable Temp
+    Real MATC "conductivity(tx)*yearinsec*1.0E-06"
+  ! Upper limit - pressure melting point
+  !  as a MATC function of the pressure (what else?)
+  !-------------------------------------------------
+  Temp Upper Limit = Variable Pressure
+    Real MATC "pressuremeltingpoint(tx)"
+  ! lower limit (to be save) as 0 K
+  !--------------------------------
+  Temp Lower Limit = Real 0.0
+End
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Solver 1
+  Exec Solver = Before simulation
+  Equation = "MapCoordinate"
+  Procedure = "StructuredMeshMapper" "StructuredMeshMapper"
+  Mesh Update Variable = String "dS"
+  Active Coordinate = Integer 3
+End
+
+Solver 2
+  Exec Solver = Before simulation
+  Equation = "Normal vector"
+  Variable = "Normal Vector"   
+  ! in 3dimensional simulations we have 3 entries
+  Variable DOFs = 3 
+  !NB: does not need to actually solve a matrix
+  !    hence no BW optimization needed
+  Optimize Bandwidth = Logical False 
+  Procedure = "ElmerIceSolvers" "ComputeNormalSolver"
+  ! if set to True, all boundary normals would be computed by default
+  ComputeAll = Logical False
+End
+
+Solver 3
+  Equation = "Navier-Stokes"
+  Stabilize = logical True
+  Flow model = Stokes
+  
+  Calculate Loads = Logical True
+  
+  Linear System Solver = Direct
+  Linear System Direct Method = mumps
+  Mumps Percentage Increase Working Space = Integer 50
+  ! Linear System Solver = Iterative
+  ! Linear System Iterative Method = GMRES
+  ! Linear System GMRES Restart = 100
+  ! Linear System Preconditioning= ILU2
+  ! Linear System Convergence Tolerance= 1.0e-08
+  ! Linear System Max Iterations = 1000
+
+!
+  Nonlinear System Max Iterations = Integer 100
+  Nonlinear System Convergence Tolerance = Real 1.0e-7
+  Nonlinear System Newton After Iterations = Integer 10
+  Nonlinear System Newton After Tolerance = Real 1.0e-03
+  Nonlinear System Relaxation Factor = Real 1.0
+
+  Nonlinear System Reset Newton = Logical True
+
+  Steady State Convergence Tolerance = Real 1.0e-12
+
+! Define some usefull Variables
+  Exported Variable 1 = Flow Solution Loads [Fx:1 Fy:1 Fz:1 CEQ Residual:1 ]
+
+  Exported Variable 2 = dS
+  Exported Variable 2 DOFS = 1
+  
+  Exported Variable 3 = Temp
+  Exported Variable 3 DOFS = 1
+  
+End
+
+!Compute the heat generated by ice deformation
+Solver 4
+  Equation = DeformationalHeat
+  Variable = W
+  Variable DOFs = 1
+
+  Procedure =  "ElmerIceSolvers" "DeformationalHeatSolver"
+
+  Linear System Solver = direct
+  Linear System direct Method = mumps
+End
+
+Solver 5
+  Equation = String "Homologous Temperature Equation"
+  Procedure =  File "ElmerIceSolvers" "TemperateIceSolver"
+  Variable = String "Temp"
+  Variable DOFs = 1
+  Linear System Solver = "Iterative"
+  Linear System Iterative Method = "BiCGStab"
+  Linear System Max Iterations = 500
+  Linear System Convergence Tolerance = 1.0E-07
+  Linear System Abort Not Converged = True
+  Linear System Preconditioning = "ILU0"
+  Linear System Residual Output = 1
+  Steady State Convergence Tolerance = 1.0E-04
+  Nonlinear System Convergence Tolerance = 1.0E-05
+  Nonlinear System Max Iterations = 50
+  Nonlinear System Relaxation Factor = Real 9.999E-01
+  ! uses the contact algorithm (aka Dirichlet algorithm)
+  !-----------------------------------------------------
+  Apply Dirichlet = Logical True
+  Stabilize = True
+  ! those two variables are needed in order to store
+  ! the relative or homologous temperature as well
+  ! as the residual
+  !-------------------------------------------------
+  Exported Variable 1 = String "Temp Homologous"
+  Exported Variable 1 DOFs = 1
+  Exported Variable 2 = String "Temp Residual"
+  Exported Variable 2 DOFs = 1
+End
+
+Solver 6
+  Equation = String "StressSolver"
+  Exec Solver = String "After all"
+  Procedure =  File "ElmerIceSolvers" "ComputeDevStress"
+  ! this is just a dummy, hence no output is needed
+  !-----------------------------------------------------------------------
+  Variable = -nooutput "Sij"
+  Variable DOFs = 1
+  ! the name of the variable containing the flow solution (U,V,W,Pressure)
+  !-----------------------------------------------------------------------
+  Flow Solver Name = String "Flow Solution"
+  ! no default value anymore for "Stress Variable Name"
+  Stress Variable Name = String "Stress"
+  !-----------------------------------------------------------------------
+  Exported Variable 1 = "Stress" ! [Sxx, Syy, Szz, Sxy] in 2D
+                                 ! [Sxx, Syy, Szz, Sxy, Syz, Szx] in 3D
+  Exported Variable 1 DOFs = 6
+  Linear System Solver = "Iterative"
+  Linear System Iterative Method = "BiCGStab"
+  Linear System Max Iterations = 300
+  Linear System Convergence Tolerance = 1.0E-09
+  Linear System Abort Not Converged = True
+  Linear System Preconditioning = "ILU0"
+  Linear System Residual Output = 1
+End
+
+Solver 7
+  Procedure = "SaveData" "SaveMaterials"
+  Parameter 1 = String "Viscosity"
+End
+
+Solver 8
+  Equation = SaveLine
+  Procedure = "SaveData" "SaveLine"
+  Exec Solver = String "After all"
+  Filename = "mesh2d/$name$.dat"
+  
+  !Parallel Reduce = Logical True
+End
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Equation 1
+  Active Solvers (8)= 1 2 3 4 5 6 7 8
+  Flow Solution Name = String "Flow Solution"
+  Convection = Computed
+  NS Convect = Logical True
+End
+
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Boundary Condition 1
+  Name = "Calving front"
+  Target Boundaries(1) = 1
+  
+ ! Dirichlet BCs
+  Velocity 1 = Variable Coordinate 1
+    Real procedure "USF_Init.so" "UWa"
+  Velocity 2 = Variable Coordinate 1
+    Real procedure "USF_Init.so" "VWa"
+
+  Save Line = Logical True
+  Save Scalars = Logical True
+  
+End
+
+Boundary Condition 2
+  Name = "Side Walls"
+  Target Boundaries(1) = 2
+  
+  ! Dirichlet BCs
+  Velocity 1 = Variable Coordinate 1
+    Real procedure "USF_Init.so" "UWa"
+  Velocity 2 = Variable Coordinate 1
+    Real procedure "USF_Init.so" "VWa"
+
+  Save Line = Logical True
+  Save Scalars = Logical True
+  
+End
+
+Boundary Condition 3
+  Name = "Inflow"
+  Target Boundaries(1) = 3
+ 
+ ! Dirichlet BCs
+  Velocity 1 = Variable Coordinate 1
+    Real procedure "USF_Init.so" "UWa"
+  Velocity 2 = Variable Coordinate 1
+    Real procedure "USF_Init.so" "VWa"
+  
+  Save Line = Logical True
+  Save Scalars = Logical True
+  
+  Temp = Variable Coordinate 1, Coordinate 2
+    REAL procedure "USF_Init.so" "SurfaceTemperature"
+End
+
+Boundary Condition 4
+  !Name= "bed" mandatory to compute regularistaion term of the cost function (int (dbeta/dx) 2)
+  Name = "bed"
+  Target Boundaries(1) = 4
+
+  Bottom Surface = Variable Coordinate 1
+    REAL   procedure "USF_Init.so" "zbIni"
+
+  Normal-Tangential Velocity = Logical True
+
+  Velocity 1 = Real 0.0e0
+
+  Slip Coefficient 2 = Variable Coordinate 1, Coordinate 2
+    Real Procedure "Sliding_Beta.so" "Linear"
+  Slip Coefficient 3 = Variable Coordinate 1, Coordinate 2
+    Real Procedure "Sliding_Beta.so" "Linear"
+  
+  Save Line = Logical True  
+  Save Scalars = Logical True 
+  
+  Mass Consistent Normals = Logical True 
+  ComputeNormal = Logical True
+  
+  !-------------------
+  ! geothermal heatflux
+  !--------------------
+  Temp Flux BC = Logical True
+  Temp Heat Flux = Real $60.0E-03*yearinsec*1.0E-6
+  !-------------------
+  ! frictional heat
+  !--------------------
+  Temp Load = Variable Velocity 1
+    Real Procedure  "ElmerIceUSF" "getFrictionLoads"  
+End
+
+! Upper Surface
+Boundary Condition 5
+  !Name= "Surface" mandatory to compute cost function
+  Name = "Surface"
+  Target Boundaries(1) = 5
+
+  Top Surface = Variable Coordinate 1
+    REAL procedure "USF_Init.so" "zsIni"
+
+  Save Line = Logical True
+  Save Scalars = Logical True
+  
+  Temp = Variable Coordinate 1, Coordinate 2
+    REAL procedure "USF_Init.so" "SurfaceTemperature"
+End 
+

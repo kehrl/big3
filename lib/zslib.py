@@ -1056,7 +1056,8 @@ def dem_continuous(glacier,xmin,xmax,ymin,ymax,date,verticaldatum='geoid',blur=F
   TDMfile = os.path.join(os.getenv("DATA_HOME"),"Elevation/TDM/"+glacier+"/all-2011-2014_"+fileend)
   
   # Gimp filename  
-  gimpfile = os.path.join(os.getenv("DATA_HOME"),'Elevation/Gimp/'+subset+fileend[5:])
+  gimpfile1 = os.path.join(os.getenv("DATA_HOME"),'Elevation/Gimp/'+subset+fileend[5:])
+  gimpfile2 = os.path.join(os.getenv("DATA_HOME"),'Elevation/Gimp/gimpdem_90m'+fileend[5:])
   
   # Directories for high res DEMs
   OUTDIR = os.path.join(os.getenv("DATA_HOME"),"Elevation/MosaicDEMs/"+glacier+"/")
@@ -1104,7 +1105,7 @@ def dem_continuous(glacier,xmin,xmax,ymin,ymax,date,verticaldatum='geoid',blur=F
       if (d in dir) and (dir.endswith(fileend)):
         files = files+' '+WVDIR+dir
 
-  files = files+' '+TDMfile+' '+gimpfile  
+  files = files+' '+TDMfile+' '+gimpfile1+ ' '+gimpfile2 
   
   CURRENTDIR = os.getcwd()
   os.chdir(OUTDIR)

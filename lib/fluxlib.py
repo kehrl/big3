@@ -224,7 +224,7 @@ def fluxgate(glacier,fluxgate_filename,bedsource='smith',dl=20.0,timing='velocit
   # Add up fluxes along glacier width
   sumQ = np.sum(Q,1)
 
-  return time, sumQ, Hbar, ubar, error, Across#L[1]
+  return time, sumQ, Hbar, ubar, error, L[1]
 
 
 def fluxgate_thinning(glacier,fluxgate_filename,bedsource='smith',dl=20.0,timing='elevation',rho_i=917.):

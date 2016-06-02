@@ -5,6 +5,8 @@ import numpy as np
 import netCDF4, jdcal
 import coordlib, datelib
 import scipy.signal as signal
+import scipy
+from scipy.spatial import cKDTree
 
 def racmo_grid(xmin,xmax,ymin,ymax,variable,epsg=3413,maskvalues='ice'):
 
@@ -114,13 +116,136 @@ def racmo_grid(xmin,xmax,ymin,ymax,variable,epsg=3413,maskvalues='ice'):
   
   if variable == 't2m':
     # Convert Kelvin to Celsius
-    var_subset=var_subset-273.15
+    var_subset=var_subset
   elif variable == 'smb' or variable == 'precip' or variable == 'runoff':
     # If variable is smb, convert kg m-2 s-1 to kg m-2 d-1
     var_subset=var_subset*(60*60*24.0)
-
   
   return xrac_subset,yrac_subset,var_subset,time
+
+def racmo_interpolate_to_cartesiangrid(x,y,variable,epsg=3413,maskvalues='ice',timing='mean'):
+
+
+  ''' 
+  Pull all values for RACMO smb, t2m, zs, or runoff values for the region defined 
+  by arrays x,y.
+  
+  xrac,yrac,var,time = racmo_grid(xmin,xmax,ymin,ymax,
+  		variable,epsg=3413,mask='ice')
+  
+  Inputs:
+  x,y : grid to interpolate RACMO values onto
+  variable : what variable you want (runoff, t2m, zs, smb)
+  maskvalues : if you want only 'ice' or 'notice' or 'both' values
+  
+  Outputs:
+  var: value of chosen variable at these points
+  time : time
+  '''
+
+  # RACMO data
+  if variable != 'zs':
+    files = [(os.path.join(os.getenv("DATA_HOME"),"Climate/RACMO/2015_09_Laura_Kehrl/RACMO2.3_GRN11_"+variable+"_daily_2001_2010.nc")), \
+           (os.path.join(os.getenv("DATA_HOME"),"Climate/RACMO/2015_09_Laura_Kehrl/RACMO2.3_GRN11_"+variable+"_daily_2011_2014.nc")), \
+           (os.path.join(os.getenv("DATA_HOME"),"Climate/RACMO/2015_09_Laura_Kehrl/RACMO2.3_GRN11_"+variable+"_daily_2015.nc"))]
+  else:
+    files = [(os.path.join(os.getenv("DATA_HOME"),"Climate/RACMO/ZS_ZGRN_V5_1960-2014_detrended_2day.nc"))]
+
+  rec1 = netCDF4.Dataset(files[0])
+  if variable != 'zs':
+    rec2 = netCDF4.Dataset(files[1])
+    rec3 = netCDF4.Dataset(files[2])
+  mask = netCDF4.Dataset(os.path.join(os.getenv("DATA_HOME"),"Climate/RACMO/2015_09_Laura_Kehrl/RACMO23_masks_ZGRN11.nc")).variables['icemask'][:]
+
+  # Load RACMO data
+  lat = np.array(rec1.variables['lat'][:])
+  lon = np.array(rec1.variables['lon'][:])
+  var1 = np.array(rec1.variables[variable][:])
+  daysfrom1950_1 = np.array(rec1.variables['time'][:])
+  if variable != 'zs':
+    var2 = np.array(rec2.variables[variable][:])
+    daysfrom1950_2 = np.array(rec2.variables['time'][:])
+    var3 = np.array(rec3.variables[variable][:])
+    if variable != 't2m':
+      var3 = np.array(var3)/(60*60*24.0)
+    days2015 = np.array(rec3.variables['time'][:])
+
+  # Convert date to fractional year
+  startday1950 = jdcal.gcal2jd(1950,1,1)
+  Nt1 = len(daysfrom1950_1)
+  if variable != 'zs':
+    Nt2 = len(daysfrom1950_2)
+    Nt3 = len(days2015)
+    time = np.zeros(Nt1+Nt2+Nt3)
+    for i in range(0,Nt1):
+      year,month,day,fracday = jdcal.jd2gcal(startday1950[0],startday1950[1]+daysfrom1950_1[i])
+      time[i] = datelib.date_to_fracyear(year,month,day) 
+    for i in range(0,Nt2):
+      year,month,day,fracday = jdcal.jd2gcal(startday1950[0],startday1950[1]+daysfrom1950_2[i])
+      time[i+Nt1] = datelib.date_to_fracyear(year,month,day)
+    for i in range(0,Nt3):
+      time[i+Nt1+Nt2] = datelib.doy_to_fracyear(2015,1+days2015[i])
+  else:
+    time = daysfrom1950_1 
+    time = time[0:-71]
+    var1 = var1[0:-71,:,:]
+  
+  # Combine variables into same file  
+  var = np.row_stack([var1[:,0,:,:],var2[:,0,:,:],var3])
+  
+  # Convert lat,lon to epsg 3413
+  xrac,yrac = coordlib.convert(lon,lat,4326,epsg)
+
+  # Get dimensions of output grid
+  nx = len(x)
+  ny = len(y)
+  
+  if maskvalues == 'ice':
+    ind = np.where((mask == 1))
+  elif maskvalues == 'notice':
+    ind = np.where((mask == 0))
+  elif maskvalues == 'both':
+    ind = np.where((mask == 1) or (mask == 0))
+  
+  # Make a KD-tree so we can do range searches fast
+  xracflat = xrac.flatten()
+  yracflat = yrac.flatten()
+  tree = cKDTree(np.column_stack([xracflat,yracflat]))
+  
+  # Make a gridded data set from the model output
+  if timing == 'mean':
+    vargrid = np.zeros([len(y),len(x)])
+    varflat = np.mean(var,axis=0).flatten()
+    time = np.mean(time)
+    
+  # For each point in the grid,
+  for i in range(ny):
+    for j in range(nx):
+      L = tree.query_ball_point( (x[j], y[i]), 10.e3 )
+      
+      # Initialize the weights to 0
+      weights = 0.0
+      
+      # For all the nearby model points,
+      for l in L:
+        xp = xracflat[l]
+        yp = yracflat[l]
+        
+        # find the distance to the current point and the
+        # appropriate weight
+        r = np.sqrt( (x[j] - xp)**2 + (y[i] - yp)**2 )
+        w = (10.e3/(r))**3
+        weights += w
+        
+        vargrid[i, j] += w * varflat[l]
+        
+      vargrid[i,j] /= weights
+
+  if variable == 'smb' or variable == 'precip' or variable == 'runoff':
+    # If variable is smb, convert kg m-2 s-1 to kg m-2 d-1
+    vargrid=vargrid*(60*60*24.0)
+  
+  return time,vargrid
 
   
 def racmo_at_pts(xpt,ypt,variable,filt_len='none',epsg=3413,method='nearest',maskvalues='ice'):
@@ -300,11 +425,11 @@ def cumsmb(xpt,ypt,epsg=3413,rho_i=900.0,method='nearest',maskvalues='ice'):
   
   return xrac,yrac,zs_smb,time
 
-def SIF_at_pts(xpts,ypts,epsg=3413,filt_len='none'):
+def SIF_at_pts(xpts,ypts,epsg=3413,filt_len='none',variable='sif'):
 
-  file = os.path.join(os.getenv("DATA_HOME"),"Climate/SeaIce/METOFFICE-GLO-SST-L4-NRT-OBS-SST-V2_1447191850310.nc")
+  #file = os.path.join(os.getenv("DATA_HOME"),"Climate/SeaIce/METOFFICE-GLO-SST-L4-NRT-OBS-SST-V2_1447191850310.nc")
   #file = os.path.join(os.getenv("DATA_HOME"),"Climate/SeaIce/METOFFICE-GLO-SST-REANALYSIS_1.nc")
-  file = os.path.join(os.getenv("DATA_HOME"),"Climate/SeaIce/METOFFICE-GLO-SST-REANALYSIS_2.nc")
+  #file = os.path.join(os.getenv("DATA_HOME"),"Climate/SeaIce/METOFFICE-GLO-SST-REANALYSIS_2.nc")
   file = os.path.join(os.getenv("DATA_HOME"),"Climate/SeaIce/METOFFICE-GLO-SST-V2.nc")
 
 
@@ -314,8 +439,10 @@ def SIF_at_pts(xpts,ypts,epsg=3413,filt_len='none'):
   lon = rec.variables['lon'][:]
   time = rec.variables['time'][:]
   mask = rec.variables['mask'][:]
-  sif = rec.variables['sea_ice_fraction'][:]
-  #sif = rec.variables['analysed_sst'][:]
+  if variable == 'sif':
+    sif = rec.variables['sea_ice_fraction'][:]
+  elif variable == 'sst':
+    sif = rec.variables['analysed_sst'][:]
   
   lon_grid,lat_grid = np.meshgrid(lon,lat)
   
@@ -340,7 +467,7 @@ def SIF_at_pts(xpts,ypts,epsg=3413,filt_len='none'):
 
   # Filter the timeseries
   if filt_len != 'none':
-    print "Filtered timeseries for SIF"
+    print "Filtered timeseries for "+variable
     cutoff=(1/(filt_len/365.25))/(1/(np.diff(fractime[1:3])*2))
     b,a=signal.butter(3,cutoff,btype='low')
     filtered = signal.filtfilt(b,a,sif[:,bestind[0],bestind[1]])

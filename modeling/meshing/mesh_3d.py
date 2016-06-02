@@ -6,7 +6,7 @@
 import os
 import shutil
 import sys
-import vellib, datelib, glaclib, flowparameterlib, meshlib, inverselib
+import vellib, datelib, glaclib, flowparameterlib, meshlib, inverselib, climlib
 from subprocess import call
 from scipy.interpolate import *
 import numpy as np
@@ -162,9 +162,28 @@ def main():
   # Output files for velocities in x,y directions (u,v)
   u,v = vellib.inversion_3D(glacier,x,y,time,inputs)
 
-  #######################
-  # Get flow parameter  #
-  #######################
+  ###############################################
+  # Get surface temperature and geothermal flux #
+  ###############################################
+  
+  xt2m = np.arange(x[0]-1e3,x[-1]+1e3,1e3)
+  yt2m = np.arange(y[0]-1e3,y[-1]+1e3,1e3)
+  timet2m,t2m = climlib.racmo_interpolate_to_cartesiangrid(xt2m,yt2m,'t2m',epsg=3413,maskvalues='ice',timing='mean')
+  #ggrid = bedlib.geothermalflux_grid(xt2m,yt2m,model='davies',method='nearest')
+
+  fidt2m = open(inputs+"t2m.xy","w")
+  fidt2m.write('{}\n{}\n'.format(len(xt2m),len(yt2m)))
+  #fidgeo = open(inputs+"geothermal.xy","w")
+  #fidgeo.write('{}\n{}\n'.format(len(xt2m),len(yt2m)))
+  for i in range(0,len(xt2m)):
+    for j in range(0,len(yt2m)):
+      fidt2m.write('{0} {1} {2}\n'.format(xt2m[i],yt2m[j],t2m[j,i]))
+      #fidgeo.write('{0} {1} {2}\n'.format(xt2m[i],yt2m[j],ggrid[j,i]))
+  fidt2m.close()
+  #fidgeo.close()
+  
+  del xt2m,yt2m,timet2m,t2m,fidt2m 
+  # del fidgeo, ggrid
 
   #print "Getting flow law parameters...\n"
   #flowA = flowparameterlib.load_kristin(glacier,x,y,type='A',dir=inputs)
