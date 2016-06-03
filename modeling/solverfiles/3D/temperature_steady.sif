@@ -1,7 +1,7 @@
 check keywords warn
 
 ! name of the run used for the outputs
-$name="temperature_steady"
+$name="temperature_transient"
 
 $ function waterpressure(Z) {\
   rhow = 1025.0;\
@@ -45,19 +45,25 @@ Simulation
   Coordinate System = Cartesian 3D
   Simulation Type = Steady State
 
+  !Simulation Type = Transient
+  !Timestepping Method = "BDF"
+  !BDF Order = 1
+  !Timestep Intervals = 50
+  !Output Intervals = 1        
+  !Timestep Sizes = 1.0
+
   Extruded Mesh Levels = Integer 5
   
   Output Intervals = 1
 
-  Steady State Max Iterations = 20
+  Steady State Max Iterations = 1
   Steady State Min Iterations = 1
 
   Output File = "$name".result"
   Post File = "$name$.vtu"
 
-  Initialize Dirichlet Conditions = Logical False
-
   max output level = 3
+  
 End
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -82,6 +88,8 @@ Initial Condition 1
   Velocity 1 = Real 0.0
   Velocity 2 = Real 0.0
   Velocity 3 = Real 0.0
+  
+  Temp = Real 263.0
 
 End
 
@@ -170,6 +178,7 @@ Solver 2
 End
 
 Solver 3
+  Exec Solver = String "Never"
   Equation = "Navier-Stokes"
   Stabilize = logical True
   Flow model = Stokes
@@ -235,7 +244,7 @@ Solver 5
   Steady State Convergence Tolerance = 1.0E-04
   Nonlinear System Convergence Tolerance = 1.0E-05
   Nonlinear System Max Iterations = 50
-  Nonlinear System Relaxation Factor = Real 9.999E-01
+  Nonlinear System Relaxation Factor = Real 0.5
   ! uses the contact algorithm (aka Dirichlet algorithm)
   !-----------------------------------------------------
   Apply Dirichlet = Logical True
@@ -277,11 +286,6 @@ Solver 6
 End
 
 Solver 7
-  Procedure = "SaveData" "SaveMaterials"
-  Parameter 1 = String "Viscosity"
-End
-
-Solver 8
   Equation = SaveLine
   Procedure = "SaveData" "SaveLine"
   Exec Solver = String "After all"
@@ -292,7 +296,7 @@ End
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 Equation 1
-  Active Solvers (8)= 1 2 3 4 5 6 7 8
+  Active Solvers (7)= 1 2 3 4 5 6 7
   Flow Solution Name = String "Flow Solution"
   Convection = Computed
   NS Convect = Logical True

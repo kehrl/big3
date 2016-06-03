@@ -212,6 +212,8 @@ def main():
       os.rename(DIRM+"/mesh2d/"+name,DIRR_lambda+'{0}{1:04d}{2}'.format(name[0:-9],int(name[-9:-5])+restartposition,'.pvtu'))
     elif name.endswith('vtu') and name.startswith(method):
       os.rename(DIRM+"/mesh2d/"+name,DIRR_lambda+'{0}{1:04d}{2}'.format(name[0:-8],int(name[-8:-4])+restartposition,'.vtu'))
+    elif name.startswith(method) and 'result' in name:
+      os.rename(DIRM+"/mesh2d/"+name,DIRR_lambda+name)
 
   bed = elmerreadlib.saveline_boundary(DIRM+"/mesh2d/",runname,bbed)
   surf = elmerreadlib.saveline_boundary(DIRM+"/mesh2d/",runname,bsurf)
