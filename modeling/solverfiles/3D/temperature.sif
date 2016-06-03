@@ -1,7 +1,7 @@
 check keywords warn
 
 ! name of the run used for the outputs
-$name="temperature_transient"
+$name="temperature"
 
 $ function waterpressure(Z) {\
   rhow = 1025.0;\
@@ -43,21 +43,12 @@ End
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 Simulation
   Coordinate System = Cartesian 3D
-  Simulation Type = Steady State
+  
+{Simulation Type}
 
-  !Simulation Type = Transient
-  !Timestepping Method = "BDF"
-  !BDF Order = 1
-  !Timestep Intervals = 50
-  !Output Intervals = 1        
-  !Timestep Sizes = 1.0
-
-  Extruded Mesh Levels = Integer 5
+  Extruded Mesh Levels = Integer {Extrude}
   
   Output Intervals = 1
-
-  Steady State Max Iterations = 1
-  Steady State Min Iterations = 1
 
   Output File = "$name".result"
   Post File = "$name$.vtu"
@@ -71,8 +62,7 @@ Constants
   Gas Constant = Real 8.314 !Joule/mol x  K 
 End
 
-
-! Main ice body
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 Body 1
   Equation = 1
   Body Force = 1
@@ -83,14 +73,12 @@ End
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 Initial Condition 1
-
   Pressure = Real 0.0
   Velocity 1 = Real 0.0
   Velocity 2 = Real 0.0
   Velocity 3 = Real 0.0
   
   Temp = Real 263.0
-
 End
 
 
@@ -149,9 +137,9 @@ Material 1
   !-------------------------------------------------
   Temp Upper Limit = Variable Pressure
     Real MATC "pressuremeltingpoint(tx)"
-  ! lower limit (to be save) as 0 K
+  ! lower limit (to be safe) as 100 K
   !--------------------------------
-  Temp Lower Limit = Real 0.0
+  Temp Lower Limit = Real 100.0
 End
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -178,7 +166,6 @@ Solver 2
 End
 
 Solver 3
-  Exec Solver = String "Never"
   Equation = "Navier-Stokes"
   Stabilize = logical True
   Flow model = Stokes
@@ -195,7 +182,6 @@ Solver 3
   ! Linear System Convergence Tolerance= 1.0e-08
   ! Linear System Max Iterations = 1000
 
-!
   Nonlinear System Max Iterations = Integer 100
   Nonlinear System Convergence Tolerance = Real 1.0e-7
   Nonlinear System Newton After Iterations = Integer 10
@@ -244,11 +230,11 @@ Solver 5
   Steady State Convergence Tolerance = 1.0E-04
   Nonlinear System Convergence Tolerance = 1.0E-05
   Nonlinear System Max Iterations = 50
-  Nonlinear System Relaxation Factor = Real 0.5
+  Nonlinear System Relaxation Factor = Real 0.9
   ! uses the contact algorithm (aka Dirichlet algorithm)
   !-----------------------------------------------------
   Apply Dirichlet = Logical True
-  Stabilize = True
+  Stabilize = Logical True
   ! those two variables are needed in order to store
   ! the relative or homologous temperature as well
   ! as the residual
@@ -309,11 +295,7 @@ Boundary Condition 1
   Name = "Calving front"
   Target Boundaries(1) = 1
   
- ! Dirichlet BCs
-  Velocity 1 = Variable Coordinate 1
-    Real procedure "USF_Init.so" "UWa"
-  Velocity 2 = Variable Coordinate 1
-    Real procedure "USF_Init.so" "VWa"
+{FrontBC}
 
   Save Line = Logical True
   Save Scalars = Logical True

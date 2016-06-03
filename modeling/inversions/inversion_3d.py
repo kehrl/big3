@@ -1,9 +1,11 @@
 #!/usr/bin/python
 
-# This script let's you choose the velocity record for the basal inversion, and then runs 
-# the Helheim inversion script.
-#
-# LMK, UW, 06/12/2014
+'''
+This script let's you choose the velocity record for the basal inversion, and then runs 
+the inversion solver file for either the adjoint or robin methods.
+
+LMK, UW, 06/12/2014
+'''
 
 import os
 import shutil
