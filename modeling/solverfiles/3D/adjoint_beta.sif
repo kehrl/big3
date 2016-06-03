@@ -36,7 +36,6 @@ Simulation
 
 ! Internal extrusion 
   Extruded Mesh Levels = Integer {Extrude}
-  ! Extruded Mesh Name = String "mesh3d"
 
   Output Intervals = 1
 
@@ -323,11 +322,6 @@ Solver 7
 End
 
 Solver 8
-  Procedure = "SaveData" "SaveMaterials"
-  Parameter 1 = String "Viscosity"
-End
-
-Solver 9
   Equation = SaveLine
   Procedure = "SaveData" "SaveLine"
   Exec Solver = String "After all"
@@ -339,7 +333,7 @@ End
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 Equation 1
-  Active Solvers (6)= 1 2 3 4 7 8 9
+  Active Solvers (6)= 1 2 3 4 7 8
   NS Convect= False
 End
 
