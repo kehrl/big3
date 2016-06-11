@@ -10,11 +10,13 @@ glacier = 'Helheim'
 # Mesh geometry
 
 meshshp = 'glacier_extent_basin_front'
-extrude = 12
+#extrude = 12
+extrude = 10
 bname = 'morlighem'
 bmodel = 'aniso'
 bsmooth = '4'
-lc = '300 500 750 2500'
+#lc = '300 500 750 2500'
+lc = '500 1000 1000 5000'
 
 if glacier == 'Helheim':
   date = '20120316'
@@ -26,11 +28,15 @@ elif glacier == 'Kanger':
 method = 'adjoint'
 regpar = '1e10' 
 
+# Temperature SIF options
+temp_simulation = 'steady'
+temp_iterations = 5
+temp_timestep = 1
 
 # Options for PBS submission
 queue = 'normal'
 model = 'ivy'
-nparts = 80
+nparts = 120
 ncpus = 20
 runtime = '8:00:00'
 
