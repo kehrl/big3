@@ -98,7 +98,7 @@ def shp_to_xy(in_file):
   return exterior
   
 def xy_to_gmsh_3d(glacier,date,exterior,holes,refine,DIRM,lc1,lc2,lc3,lc4,\
-		bedname='smith',bedmodel='aniso',bedsmoothing=4,rho_i=917.0,rho_sw=1020.0):
+		bedname='smith',bedmodel='aniso',bedsmoothing=4,rho_i=917.0,rho_sw=1020.0,dx='none'):
   
   '''
   x,y,zbed,zsur = xy_to_gmsh_3d(glacier,date,exterior,holes,refine,DIRM,lc1,lc2,lc3,lc4,bedname,bedmodel,bedsmoothing)
@@ -312,7 +312,7 @@ def xy_to_gmsh_3d(glacier,date,exterior,holes,refine,DIRM,lc1,lc2,lc3,lc4,\
 
   # Load surface DEM
   xsur,ysur,zsur_grid = zslib.dem_continuous(glacier,xmin,xmax,ymin,ymax,date,\
-  			verticaldatum='geoid',blur=True)
+  			verticaldatum='geoid',blur=True,dx=dx)
   xsur_grid,ysur_grid = np.meshgrid(xsur,ysur)
 
   # Flatten surface coordinates and interpolate bed elevations to surface coordinates

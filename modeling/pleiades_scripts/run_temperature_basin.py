@@ -17,6 +17,7 @@ bmodel = 'aniso'
 bsmooth = '4'
 #lc = '300 500 750 2500'
 lc = '500 1000 1000 5000'
+dx = 200
 
 if glacier == 'Helheim':
   date = '20120316'
@@ -67,7 +68,7 @@ job_name = glacier+"_"+date+"_basin"
 walltime = runtime
 processors = "select={0}:ncpus={1}:mpiprocs={2}:model={3}".format(nparts/ncpus,ncpus,ncpus,model)
 command = "python /u/lkehrl/Code/big3/modeling/inversions/inversion_3d.py"+\
-          " -glacier {0} -method {1} -regpar {2} -mesh {3} -extrude {4} -front {5} -n {6}".format(glacier,method,regpar,meshname,extrude,frontBC,nparts)
+          " -glacier {0} -method {1} -regpar {2} -mesh {3} -extrude {4} -front {5} -n {6} -dx {7}".format(glacier,method,regpar,meshname,extrude,frontBC,nparts,dx)
 dir = "/nobackupp8/lkehrl/Models/"+glacier+"/3D/"+meshname+"/"
 
 job_string = """

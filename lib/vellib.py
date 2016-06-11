@@ -825,7 +825,7 @@ def divergence_at_eulpoints(xpt,ypt):
   
 #########################################################################################
 
-def inversion_3D(glacier,x,y,time,dir_velocity_out='none',blur=False):
+def inversion_3D(glacier,x,y,time,dir_velocity_out='none',blur=False,dx='none'):
 
   '''
   Inputs:
@@ -840,10 +840,10 @@ def inversion_3D(glacier,x,y,time,dir_velocity_out='none',blur=False):
   y : velocity in y-dir on grid defined by x,y
   '''
   
-  xmin = np.min(x)-2.0e3
-  xmax = np.max(x)+2.0e3
-  ymin = np.min(y)-2.0e3
-  ymax = np.max(y)+2.0e3
+  xmin = np.min(x)-1.0e3
+  xmax = np.max(x)+1.0e3
+  ymin = np.min(y)-1.0e3
+  ymax = np.max(y)+1.0e3
   
   OUTDIR = os.path.join(os.getenv("DATA_HOME"),"Velocity/MosaicVelocities/"+glacier)
   
@@ -876,18 +876,22 @@ def inversion_3D(glacier,x,y,time,dir_velocity_out='none',blur=False):
   CURRENTDIR = os.getcwd()
   os.chdir(OUTDIR)
   filename_vx = 'mosaic-'+date+'-vx'
-  #if not(os.path.isfile(filename_vx+'-tile-0.tif')):
-  os.system('dem_mosaic --hole-fill-length 5 --t_projwin '+str(xmin)+' '+str(ymin)+' '+str(xmax)+\
-  		' '+str(ymax)+' --priority-blending-length 10 -o'+filename_vx+files_vx)
   filename_vy = 'mosaic-'+date+'-vy'
-  #if not(os.path.isfile(filename_vy+'-tile-0.tif')):
-  os.system('dem_mosaic --hole-fill-length 5 --t_projwin '+str(xmin)+' '+str(ymin)+' '+str(xmax)+\
+  if dx == 'none':
+    os.system('dem_mosaic --hole-fill-length 5 --t_projwin '+str(xmin)+' '+str(ymin)+' '+str(xmax)+\
+  		' '+str(ymax)+' --priority-blending-length 10 -o'+filename_vx+files_vx)
+    os.system('dem_mosaic --hole-fill-length 5 --t_projwin '+str(xmin)+' '+str(ymin)+' '+str(xmax)+\
   		' '+str(ymax)+' --priority-blending-length 10 -o'+filename_vy+files_vy) 
+  else:
+    os.system('dem_mosaic --hole-fill-length 5 --t_projwin '+str(xmin)+' '+str(ymin)+' '+str(xmax)+\
+  		' '+str(ymax)+' --tr '+str(dx)+' --priority-blending-length 10 -o'+filename_vx+files_vx)
+    os.system('dem_mosaic --hole-fill-length 5 --t_projwin '+str(xmin)+' '+str(ymin)+' '+str(xmax)+\
+  		' '+str(ymax)+' --tr '+str(dx)+' --priority-blending-length 10 -o'+filename_vy+files_vy) 
   
   xu,yu,uu = geotifflib.read(filename_vx+"-tile-0.tif")
   xv,yv,vv = geotifflib.read(filename_vy+"-tile-0.tif")
  
-  if blur == True:
+  if (blur == True) and (dx == 'none'):
     print "Blurring DEM over 17 pixels (roughly 1.5km in each direction)..."
     # 17 pixel gaussian blur
     vx_blur = scipy.ndimage.filters.gaussian_filter(uu,sigma=2,truncate=4)

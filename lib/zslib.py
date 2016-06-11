@@ -1015,7 +1015,7 @@ def grid_near_time(time,glacier,verticaldatum='geoid'):
 
   return x,y,zs,besttime
 
-def dem_continuous(glacier,xmin,xmax,ymin,ymax,date,verticaldatum='geoid',blur=False):
+def dem_continuous(glacier,xmin,xmax,ymin,ymax,date,verticaldatum='geoid',blur=False,dx='none'):
 
   '''
   xg,yg,zs = dem_continuous(glacier, date, xmin, xmax, ymin, ymax,
@@ -1111,12 +1111,17 @@ def dem_continuous(glacier,xmin,xmax,ymin,ymax,date,verticaldatum='geoid',blur=F
   os.chdir(OUTDIR)
   filename = 'mosaic-'+date+'-'+verticaldatum
   #if not(os.path.isfile(filename+'-tile-0.tif')):
-  os.system('dem_mosaic --hole-fill-length 5 --t_projwin '+str(xmin)+' '+str(ymin)+' '+str(xmax)+\
+  if dx == 'none':
+    os.system('dem_mosaic --hole-fill-length 5 --t_projwin '+str(xmin)+' '+str(ymin)+' '+str(xmax)+\
   		' '+str(ymax)+' --priority-blending-length 40 -o '+filename+files)
+  else:
+    os.system('dem_mosaic --hole-fill-length 5 --t_projwin '+str(xmin)+' '+str(ymin)+' '+str(xmax)+\
+  		' '+str(ymax)+' --tr '+str(dx)+' --priority-blending-length 40 -o '+filename+files)
+
   
   xg,yg,zs = geotifflib.read(filename+"-tile-0.tif")
   
-  if blur == True:
+  if (blur == True) and (dx == 'none'):
     print "Blurring DEM over 17 pixels (roughly 500 m in each direction)..."
     # 17 pixel gaussian blur
     zs_blur = scipy.ndimage.filters.gaussian_filter(zs,sigma=2,truncate=4)

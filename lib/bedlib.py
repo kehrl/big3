@@ -318,7 +318,7 @@ def morlighem_grid(xmin=-np.inf,xmax=np.inf,ymin=-np.inf,ymax=np.Inf,verticaldat
   # Load Bed DEM
   file = os.path.join(os.getenv("DATA_HOME"),"Bed/Morlighem_2014/MCdataset-2015-04-27.tif")
   [xb,yb,zb]=geotifflib.read(file,xmin,xmax,ymin,ymax)
-  zb[zb==-9999] = 'NaN'
+  zb[zb==-9999] = float('NaN')
   
   # Morlighem bed DEM is given as elevation above mean sea level (at geoid). So we need
   # to correct only if we want the ellipsoid height.

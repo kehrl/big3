@@ -35,11 +35,13 @@ def get_arguments():
         help = "Name of bed file (smith,morlighem,cresis).")
   parser.add_argument("-bmodel", dest="bedmodel", required = False,default='aniso',
         help = "Type of bed (aniso,iso).")
-  parser.add_argument("-bsmooth", dest="bedsmooth", type=int,required = False,\
-			default=4,help = "Smoothness of bed (1-8).")
-  parser.add_argument("-lc", dest="lc", type=int,required = False,nargs='+',\
-			default=[1000,1000,3000,5000],\
-			help = "Four numbers that define the mesh resolution for grounding-line (1000 m),channels (1000 m),regions near channels (3000 m), and entire mesh (5000 m).")
+  parser.add_argument("-bsmooth", dest="bedsmooth", type=int,required = False,
+			  default=4,help = "Smoothness of bed (1-8).")
+  parser.add_argument("-dx", dest="dx", required = False,default='none',
+			  help = "Grid size for gridded products.")
+  parser.add_argument("-lc", dest="lc", type=int,required = False,nargs='+',
+			  default=[1000,1000,3000,5000],\
+			  help = "Four numbers that define the mesh resolution for grounding-line (1000 m),channels (1000 m),regions near channels (3000 m), and entire mesh (5000 m).")
 
   # Get arguments
   args, _ = parser.parse_known_args(sys.argv)
@@ -58,6 +60,7 @@ def main():
   outputmeshname = args.output
   meshshp = args.meshshp
   glacier = args.glacier
+  dx = args.dx
 
   # Mesh refinement
   lc3,lc2,lc4,lc1 = args.lc
@@ -136,7 +139,7 @@ def main():
 
   # Gmsh .geo file
   x,y,zbed,zsur,zbot = meshlib.xy_to_gmsh_3d(glacier,date,exterior,holes,refine,DIRM,\
-		lc1,lc2,lc3,lc4,bedname,bedmodel,bedsmoothing,rho_i,rho_sw)
+		lc1,lc2,lc3,lc4,bedname,bedmodel,bedsmoothing,rho_i,rho_sw,dx=dx)
 
   # Create .msh file
   call(["gmsh","-1","-2",file_2d+".geo", "-o",os.path.join(os.getenv("HOME"),\
@@ -160,7 +163,7 @@ def main():
   ##########################################
 
   # Output files for velocities in x,y directions (u,v)
-  u,v = vellib.inversion_3D(glacier,x,y,time,inputs)
+  u,v = vellib.inversion_3D(glacier,x,y,time,inputs,dx=dx)
 
   ###############################################
   # Get surface temperature and geothermal flux #
