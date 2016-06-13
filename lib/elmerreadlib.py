@@ -5,6 +5,7 @@ from scipy.interpolate import griddata
 from matplotlib.path import Path
 from multiprocessing import Pool
 import os
+from paraview import numpy_support, simple
 
 def saveline(DIR,runname):
   '''
@@ -332,7 +333,10 @@ def result_file_partition(i, parts_dir, varnames, types, variables, maps, mesh_d
     print 'After going through partition files, data is:'
     print data
 
-  rfn = mesh_dir+result_fn + '.' + str(i)
+  if os.path.exists(result_fn + '.' + str(i)):
+    rfn = result_fn + '.' + str(i)
+  else:
+    rfn = mesh_dir+result_fn + '.' + str(i)
   if not os.path.exists(rfn):
     # allows for use of dummy file name to quickly just get coordinates
     if os.path.exists(mesh_dir+result_fn + str(i)):
@@ -443,3 +447,59 @@ def depth_averaged_variables(data):
   points = np.asarray(points)
   
   return points[varnames]
+  
+def pvtu_file(file,variables):
+  
+  # Load vtu file
+  reader = simple.XMLPartitionedUnstructuredGridReader(FileName=file)
+  vtudata = servermanager.Fetch(reader)
+  
+  # Get number of nodes
+  n = vtudata.GetNumberOfPoints()
+  
+  # Set up output array
+  varnames = ['Node Number','x','y','z']
+  types = [np.int64, np.float64, np.float64, np.float64]
+  for var in variables:
+    if var == 'velocity':
+      opts = ['velocity 1','velocity 2','velocity 3']
+      for opt in opts:
+        varnames.append(opt)
+        types.append(np.float64)
+    else:
+      types.append(np.float64)
+      varnames.append(var)
+  data = np.empty(n,dtype = zip(varnames, types))  
+
+  # Get coordinates
+  for i in range(0,n):
+    x[i],y[i],z[i] = vtudata.GetPoint(i)
+  
+  data['x'][:] = x
+  data['y'][:] = y
+  data['z'][:] = z
+  
+  # Get variables
+  for var in variables:
+    if var == 'velocity':
+      velocity = numpy_support.vtk_to_numpy(vtudata.GetPointData().GetArray(var))
+      data['velocity 1'][:] = velocity[:,0]
+      data['velocity 2'][:] = velocity[:,1]
+      data['velocity 3'][:] = velocity[:,2]
+    else:
+      data[var][:] = numpy_support.vtk_to_numpy(vtudata.GetPointData().GetArray(var))
+  
+  # Some of the nodes are shared/repeated between partitions, so we need to remove those
+  var1,ind1 = np.unique(x,return_index = True)
+  var2,ind2 = np.unique(y,return_index = True)
+  var3,ind3 = np.unique(z,return_index = True)
+  
+  ind = np.union1d(np.union1d(ind1,ind2),ind3)
+  
+  indtodelete=[]
+  for i in range(0,n):
+    if i not in ind:
+      indtodelete.append(i)
+  data = np.delete(data,indtodelete)
+
+  return data
