@@ -111,10 +111,10 @@ clip = PathPatch(clip,transform=ax.transData,facecolor='w')
 
 cx = cubehelix.cmap(start=1.2,rot=-1.1,reverse=True,minLight=0.22,sat=3)
 ax.add_patch(clip)
-cs = m.imshow(velgrid,cmap=cx,vmin=0,vmax=200,zorder=2)
+cs = m.imshow(velgrid,cmap=cx,vmin=1,vmax=1000,zorder=2,norm=matplotlib.colors.LogNorm())
 #cs.cmap.set_over('mediumvioletred')
 #cbaxes = fig.add_axes([0.58, 0.2, 0.25, 0.02]) 
-cb = m.colorbar(cs,location='bottom',ticks=[0,100,200]) 
+cb = m.colorbar(cs,location='bottom',ticks=[1,10,100,1000],format='%d') 
 plt.setp(plt.getp(cb.ax.axes, 'xticklabels'), color='w')
 cb.ax.xaxis.set_tick_params(labelsize=12)
 cb.set_label('Glacier speed (m/yr)',fontsize=16,fontname='Arial',color='w',fontweight='bold') 
@@ -127,8 +127,12 @@ m.plot(xcoast,ycoast,'k')
 xg,yg = m (-33.0,68.63333)
 m.plot(xg,yg,'ro',markersize=5,zorder=3)
 
-xg,yg = m([-38.3],[66.1])
+xg,yg = m([-38.3],[66.4])
 m.plot(xg,yg,'ro',markersize=5,zorder=3)
+
+# Jakobshavn
+#xg,yg = m([-50],[69.2])
+#m.plot(xg,yg,'ro',markersize=5,zorder=3)
 
 ax.axis('off')
 plt.tight_layout()

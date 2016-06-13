@@ -133,5 +133,28 @@ def main():
 
   returncode = elmerrunlib.run_elmer(DIRM+solverfile,n=partitions)
   
+  #####################
+  # Move output files #
+  #####################
+  
+  DIRR_output = DIRR+"temperature_"+date+"/"
+  
+  names = os.listdir(DIRM+"/mesh2d")
+  if not os.path.exists(DIRR_output):
+    os.makedirs(DIRR_output)
+  for name in names:
+    if name.endswith('pvtu') and name.startswith(method):
+      os.rename(DIRM+"/mesh2d/"+name,DIRR_output+name)
+    elif name.endswith('vtu') and name.startswith(method):
+      os.rename(DIRM+"/mesh2d/"+name,DIRR_output+name)
+    elif name.startswith(method) and 'result' in name:
+      os.rename(DIRM+"/mesh2d/"+name,DIRR_output+name)
+
+  bed = elmerreadlib.saveline_boundary(DIRM+"/mesh2d/",runname,bbed)
+  surf = elmerreadlib.saveline_boundary(DIRM+"/mesh2d/",runname,bsurf)
+
+  os.rename(DIRM+"/mesh2d/"+runname+".dat",DIRR_output+runname+".dat")
+  os.rename(DIRM+"/mesh2d/"+runname+".dat.names",DIRR_output+runname+".dat.names")
+  
 if __name__ == "__main__":
   main()
