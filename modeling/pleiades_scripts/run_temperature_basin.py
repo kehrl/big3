@@ -16,7 +16,7 @@ bname = 'morlighem'
 bmodel = 'aniso'
 bsmooth = '4'
 #lc = '300 500 750 2500'
-lc = '500 1000 1000 5000'
+lc = '400 700 1000 2000'
 dx = 200
 
 if glacier == 'Helheim':
@@ -37,7 +37,7 @@ temp_timestep = 1
 # Options for PBS submission
 queue = 'normal'
 model = 'ivy'
-nparts = 120
+nparts = 100
 ncpus = 20
 runtime = '8:00:00'
 
@@ -104,7 +104,7 @@ job_name = glacier+"_"+date+"_basin_temperature"
 walltime = runtime
 processors = "select={0}:ncpus={1}:mpiprocs={2}:model={3}".format(nparts/ncpus,ncpus,ncpus,model)
 command = "python /u/lkehrl/Code/big3/modeling/inversions/temperature_3d.py"+\
-          " -glacier {0} -s {1} -t {2} -dt {3} -mesh {3} -extrude {4} -front {5} -n {6}".format(glacier,temp_simulation,temp_iterations,temp_timestep,meshname,extrude,frontBC,nparts)
+          " -glacier {0} -s {1} -t {2} -dt {3} -mesh {4} -extrude {5} -front {6} -n {7}".format(glacier,temp_simulation,temp_iterations,temp_timestep,meshname,extrude,frontBC,nparts)
 dir = "/nobackupp8/lkehrl/Models/"+glacier+"/3D/"+meshname+"/"
 
 job_string = """

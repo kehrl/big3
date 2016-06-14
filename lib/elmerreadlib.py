@@ -452,7 +452,7 @@ def pvtu_file(file,variables):
   
   # Load vtu file
   reader = simple.XMLPartitionedUnstructuredGridReader(FileName=file)
-  vtudata = servermanager.Fetch(reader)
+  vtudata = simple.servermanager.Fetch(reader)
   
   # Get number of nodes
   n = vtudata.GetNumberOfPoints()
@@ -472,6 +472,9 @@ def pvtu_file(file,variables):
   data = np.empty(n,dtype = zip(varnames, types))  
 
   # Get coordinates
+  x = np.zeros(n)
+  y = np.zeros(n)
+  z = np.zeros(n)
   for i in range(0,n):
     x[i],y[i],z[i] = vtudata.GetPoint(i)
   

@@ -21,7 +21,7 @@ def get_arguments():
   parser.add_argument("-glacier",dest="glacier",required = True, 
         help = "Name of glacier (Kanger or Helheim)")
   parser.add_argument("-mesh", dest="mesh", required = True,
-        help = "Name of meshlib") 
+        help = "Name of mesh") 
   parser.add_argument("-front", dest="frontbc", required = True,
         help = "Calving front boundary condition (velocity or pressure).") 
   parser.add_argument("-n", dest="n", required = True,
@@ -61,7 +61,8 @@ def main():
   simulation = args.simulation
   iterations = args.iterations
   dt = args.timestepsize
-
+  restartfile = args.restartfile
+  restartposition = args.restartposition
 
   # Directories
   DIRS=os.path.join(os.getenv("CODE_HOME"),"big3/modeling/solverfiles/3D/")
@@ -154,11 +155,11 @@ def main():
   if not os.path.exists(DIRR_output):
     os.makedirs(DIRR_output)
   for name in names:
-    if name.endswith('pvtu') and name.startswith(method):
+    if name.endswith('pvtu') and name.startswith("temperature"):
       os.rename(DIRM+"/mesh2d/"+name,DIRR_output+name)
-    elif name.endswith('vtu') and name.startswith(method):
+    elif name.endswith('vtu') and name.startswith("temperature"):
       os.rename(DIRM+"/mesh2d/"+name,DIRR_output+name)
-    elif name.startswith(method) and 'result' in name:
+    elif name.startswith("temperature") and 'result' in name:
       os.rename(DIRM+"/mesh2d/"+name,DIRR_output+name)
 
   bed = elmerreadlib.saveline_boundary(DIRM+"/mesh2d/",runname,bbed)
