@@ -149,7 +149,7 @@ def main():
   # Move output files #
   #####################
   
-  DIRR_output = DIRR+"temperature_"+date+"/"
+  DIRR_output = DIRM+"/mesh2d/temperature/temperature_"+date+"/"
   
   names = os.listdir(DIRM+"/mesh2d")
   if not os.path.exists(DIRR_output):

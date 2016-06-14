@@ -73,7 +73,7 @@ def main():
   # Directories
   DIRS=os.path.join(os.getenv("CODE_HOME"),"big3/modeling/solverfiles/3D/")
   DIRM=os.path.join(os.getenv("MODEL_HOME"),glacier+"/3D/"+RES+"/")
-  DIRR=os.path.join(DIRM+'inversion_'+method+'/')
+  DIRR=os.path.join(DIRM+'mesh2d/inversion_'+method+'/')
   DIRX=os.path.join(os.getenv("DATA_HOME"),"ShapeFiles/Glaciers/3D/"+glacier)
   inputs=os.path.join(DIRM+"/inputs/")
 
