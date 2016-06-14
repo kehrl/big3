@@ -34,6 +34,11 @@ def get_arguments():
         help = "Time step size in units of year.", default=1)        
   parser.add_argument("-extrude", dest="extrude", type=int,required = False,\
        default=5,help = "Number of extrusion levels.")
+  parser.add_argument("-restartfile",dest="restartfile",required = False,\
+       default="none",help = "Name of restart file.")
+  parser.add_argument("-restartposition",dest="restartposition",required = False,\
+       default=0,type=int,\
+       help = "Restart position in results file (if applicable.")  
 
   args, _ = parser.parse_known_args(sys.argv)
 
@@ -106,6 +111,12 @@ def main():
   BDF Order = 1
   Timestep Intervals = {0}       
   Timestep Sizes = {1}""".format(iterations,dt)
+  
+  # Add in restart file and restart position into simulation text if we are using it
+  if restartfile != 'none':
+    simulation_text = simulation_text+"""
+  Restart File = {0}
+  Restart Position = {1}""".format(restartfile,restartposition)
   
 
 
