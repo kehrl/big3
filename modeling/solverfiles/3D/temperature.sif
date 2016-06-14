@@ -78,7 +78,8 @@ Initial Condition 1
   Velocity 2 = Real 0.0
   Velocity 3 = Real 0.0
   
-  Temp = Real 263.0
+  Temp Homologous = Real -15.0
+  Temp = Real 258.0
 End
 
 
