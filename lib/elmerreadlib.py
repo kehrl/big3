@@ -412,41 +412,6 @@ def bufcount(filename):
         buf = read_f(buf_size)
 
     return lines
-
-def depth_averaged_variables(data):
-  '''
-  Pull depth averaged values from pointwise data list
-    
-  Inputs:
-  data: structured array with required fields x,y,z
-  '''
-
-  # Do a quick check that we have the necessary variables
-  if not set(('Node Number', 'x', 'y')).issubset(set(data.dtype.names)):
-    print 'Not a valid dataset, does not contain Node Number, x, and y variables, returning None'
-    return None
-  # Try to get things right with what variables we are returning
-  varnames = list(data.dtype.names)
-  varnames.remove('Node Number')
-  
-  # Do the actual sorting
-  points = []
-  for x_val in np.unique(data['x']):
-    x_points = data[data['x'] == x_val]
-    for y_val in np.unique(x_points['y']):
-      y_points = x_points[x_points['y'] == y_val]
-      pt = y_points[np.argmin(y_points['z'])]
-      sorted_list = np.sort(y_points, order='z')
-      weights = (np.pad(sorted_list['z'], (1,0), 'edge')[0:-1]-np.pad(sorted_list['z'], (0,1), 'edge')[1:] ) / (sorted_list['z'][0] - sorted_list['z'][-1]) / 2.0
-      for var in varnames:
-        # The following will assume that the points are evenly spaced in the vertical direction
-        # pt[var] = np.sum(y_points[var]) / len(y_points[var])
-        # Instead, do things correctly to weight by percentage of the column
-        pt[var] = np.sum(sorted_list[var] * weights)
-      points.append(pt)
-  points = np.asarray(points)
-  
-  return points[varnames]
   
 def pvtu_file(file,variables):
   
@@ -506,3 +471,72 @@ def pvtu_file(file,variables):
   data = np.delete(data,indtodelete)
 
   return data
+
+def depth_averaged_variables(data):
+  '''
+  Pull depth averaged values from pointwise data list
+    
+  Inputs:
+  data: structured array with required fields x,y,z
+  '''
+
+  # Do a quick check that we have the necessary variables
+  if not set(('Node Number', 'x', 'y')).issubset(set(data.dtype.names)):
+    print 'Not a valid dataset, does not contain Node Number, x, and y variables, returning None'
+    return None
+  # Try to get things right with what variables we are returning
+  varnames = list(data.dtype.names)
+  varnames.remove('Node Number')
+  
+  # Do the actual sorting
+  points = []
+  for x_val in np.unique(data['x']):
+    x_points = data[data['x'] == x_val]
+    for y_val in np.unique(x_points['y']):
+      y_points = x_points[x_points['y'] == y_val]
+      pt = y_points[np.argmin(y_points['z'])]
+      sorted_list = np.sort(y_points, order='z')
+      weights = (np.pad(sorted_list['z'], (1,0), 'edge')[0:-1]-np.pad(sorted_list['z'], (0,1), 'edge')[1:] ) / (sorted_list['z'][0] - sorted_list['z'][-1]) / 2.0
+      for var in varnames:
+        # The following will assume that the points are evenly spaced in the vertical direction
+        # pt[var] = np.sum(y_points[var]) / len(y_points[var])
+        # Instead, do things correctly to weight by percentage of the column
+        pt[var] = np.sum(sorted_list[var] * weights)
+      points.append(pt)
+  points = np.asarray(points)
+  
+  return points[varnames]
+
+def values_in_column(x,y,data):
+  '''
+  Pull data at a particular point
+    
+  Inputs:
+  x,y: list of desired coordinates
+  data: structured array with required fields x,y,z
+  '''
+
+  # Do a quick check that we have the necessary variables
+  if not set(('Node Number', 'x', 'y')).issubset(set(data.dtype.names)):
+    print 'Not a valid dataset, does not contain Node Number, x, and y variables, returning None'
+    return None
+
+  varnames = list(data.dtype.names)
+  
+  # Do the actual sorting
+  points = []
+  n = len(x)
+  
+  xnode = np.unique(data['x'])
+  ynode = np.unique(data['y'])  
+  for i in range(0,n):
+    minind = np.argmin(np.sqrt((x[i]-xnode)**2+(y[i]-ynode)**2))
+    print "distance is",np.argmin(np.sqrt((x[i]-xnode)**2+(y[i]-ynode)**2))
+    ind = np.where((data['x'] == xnode[minind]) & (data['y'] == ynode[minind]))
+    for j in ind:
+      for var in varnames:
+        pt[var] = data[var][j]
+      points.append(pt)
+  points = np.asarray(points)
+  
+  return points
