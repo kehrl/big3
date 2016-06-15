@@ -6,11 +6,11 @@ from subprocess import call
 import math
 import glob
 import numpy as np
-import elmerreadlib, meshlib
+import meshlib
 import numpy as np
 import argparse
 import datetime
-import matplotlib, elmerrunlib
+import matplotlib, elmerrunlib#, elmerreadlib
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
 
