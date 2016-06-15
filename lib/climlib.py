@@ -205,17 +205,17 @@ def racmo_interpolate_to_cartesiangrid(x,y,variable,epsg=3413,maskvalues='ice',t
   elif maskvalues == 'notice':
     ind = np.where((mask == 0))
   elif maskvalues == 'both':
-    ind = np.where((mask == 1) or (mask == 0))
+    ind = np.where((mask == 1) | (mask == 0))
   
   # Make a KD-tree so we can do range searches fast
-  xracflat = xrac.flatten()
-  yracflat = yrac.flatten()
+  xracflat = xrac[ind]
+  yracflat = yrac[ind]
   tree = cKDTree(np.column_stack([xracflat,yracflat]))
   
   # Make a gridded data set from the model output
   if timing == 'mean':
     vargrid = np.zeros([len(y),len(x)])
-    varflat = np.mean(var,axis=0).flatten()
+    varflat = np.mean(var,axis=0)[ind]
     time = np.mean(time)
     
   # For each point in the grid,

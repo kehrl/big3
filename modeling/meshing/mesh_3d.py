@@ -169,27 +169,35 @@ def main():
   # Get surface temperature and geothermal flux #
   ###############################################
   
-  xt2m = np.arange(x[0]-1e3,x[-1]+1e3,1e3)
-  yt2m = np.arange(y[0]-1e3,y[-1]+1e3,1e3)
+  xt2m = np.arange(x[0]-10e3,x[-1]+10e3,1e3)
+  yt2m = np.arange(y[0]-10e3,y[-1]+10e3,1e3)
   timet2m,t2m = climlib.racmo_interpolate_to_cartesiangrid(xt2m,yt2m,'t2m',epsg=3413,maskvalues='ice',timing='mean')
+  timesmb,smb = climlib.racmo_interpolate_to_cartesiangrid(xt2m,yt2m,'smb',epsg=3413,maskvalues='both',timing='mean')
+  
   #ggrid = bedlib.geothermalflux_grid(xt2m,yt2m,model='davies',method='nearest')
 
+  # Set minimum temperature to melting temperature
+  ind = np.where(t2m > 273.15)
+  t2m[ind] = 273.15
+
   fidt2m = open(inputs+"t2m.xy","w")
+  fidsmb = open(inputs+"smb.xy","w")
   fidt2m.write('{}\n{}\n'.format(len(xt2m),len(yt2m)))
+  fidsmb.write('{}\n{}\n'.format(len(xt2m),len(yt2m)))
   #fidgeo = open(inputs+"geothermal.xy","w")
   #fidgeo.write('{}\n{}\n'.format(len(xt2m),len(yt2m)))
   for i in range(0,len(xt2m)):
     for j in range(0,len(yt2m)):
       fidt2m.write('{0} {1} {2}\n'.format(xt2m[i],yt2m[j],t2m[j,i]))
-      #fidgeo.write('{0} {1} {2}\n'.format(xt2m[i],yt2m[j],ggrid[j,i]))
+      fidsmb.write('{0} {1} {2}\n'.format(xt2m[i],yt2m[j],smb[j,i]))
   fidt2m.close()
-  #fidgeo.close()
+  fidsmb.close()
   
   del xt2m,yt2m,timet2m,t2m,fidt2m 
   # del fidgeo, ggrid
 
   #print "Getting flow law parameters...\n"
-  #flowA = flowparameterlib.load_kristin(glacier,x,y,type='A',dir=inputs)
+  #flowT = flowparameterlib.load_kristin(glacier,x,y,type='T',dir=inputs)
 
   #################################################################
   # Calculate basal sliding speed using SIA for inflow boundaries #

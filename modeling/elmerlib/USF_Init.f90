@@ -552,6 +552,56 @@ FUNCTION SurfaceTemperature( Model, nodenumber, dumy) RESULT(Ts) !
     Return
 End
 
+!------------------------------------------------------------------!
+FUNCTION Accumulation( Model, nodenumber, dumy) RESULT(a) !
+!------------------------------------------------------------------!
+		USE types
+		USE DefUtils
+  	IMPLICIT NONE
+		TYPE(Model_t) :: Model
+  	REAL(kind=dp) :: dumy,a
+  	INTEGER :: nodenumber
+  	REAL(kind=dp) :: LinearInterp
+
+  	REAL(kind=dp),allocatable :: xx(:),yy(:),smbgrid(:,:)
+    REAL(kind=dp) :: x,y,z
+    
+    INTEGER :: nx,ny
+    INTEGER :: i,j
+		
+    LOGICAL :: FirstTimea=.true.
+
+    SAVE xx,yy,smbgrid,nx,ny
+    SAVE FirstTimea
+
+    if (FirstTimea) then
+
+    	FirstTimea=.False.
+
+
+        ! open file
+        open(10,file='inputs/smb.xy')
+        Read(10,*) nx
+        Read(10,*) ny
+        ALLOCATE(xx(nx),yy(ny))
+        ALLOCATE(smbgrid(nx,ny))
+        Do i=1,nx
+        	Do j=1,ny
+                read(10,*) xx(i),yy(j),smbgrid(i,j)
+            End Do
+		End do
+		close(10)
+    End if
+
+    ! position current point
+    x = Model % Nodes % x (nodenumber)
+    y = Model % Nodes % y (nodenumber)
+
+    a = LinearInterp(smbgrid,xx,yy,nx,ny,x,y)
+		
+    Return
+End
+
 
 
 !------------------------------------------------------------------!

@@ -78,8 +78,8 @@ Initial Condition 1
   Velocity 2 = Real 0.0
   Velocity 3 = Real 0.0
   
-  Temp Homologous = Real -15.0
-  Temp = Real 258.0
+  Temp Homologous = Real -10.0
+  Temp = Real 263.15
 End
 
 
@@ -384,5 +384,10 @@ Boundary Condition 5
   
   Temp = Variable Coordinate 1, Coordinate 2
     REAL procedure "USF_Init.so" "SurfaceTemperature"
+    
+  Compute Normal = Logical True
+  Normal-Tangential Velocity = Logical True
+  Velocity 1 = Variable Coordinate 1, Coordinate 2
+    REAL procedure "USF_Init.so" "Accumulation"
 End 
 
