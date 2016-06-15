@@ -464,11 +464,7 @@ def pvtu_file(file,variables):
   
   ind = np.union1d(np.union1d(ind1,ind2),ind3)
   
-  indtodelete=[]
-  for i in range(0,n):
-    if i not in ind:
-      indtodelete.append(i)
-  data = np.delete(data,indtodelete)
+  data = data[ind]
 
   return data
 
@@ -525,17 +521,35 @@ def values_in_column(x,y,data):
   
   # Do the actual sorting
   points = []
-  n = len(x)
+  try:
+    n = len(x)
+  except:
+    n = 1
+    x2 = np.zeros(1)
+    y2 = np.zeros(1)
+    x2[0] = x
+    y2[0] = y
+    x = np.array(x2)
+    y = np.array(y2)
+    del x2,y2
+  print "Getting profiles for",n," points"
   
-  xnode = np.unique(data['x'])
-  ynode = np.unique(data['y'])  
+  # Get unique coordinates for extruded mesh
+  junk,ind1 = np.unique(data['x'],return_index = True)
+  junk,ind2 = np.unique(data['y'],return_index = True)
+  ind = np.union1d(ind1,ind2)
+  xnode = data['x'][ind]
+  ynode = data['y'][ind]
+  
+  # Grab closest coordinate to desired point  
   for i in range(0,n):
     minind = np.argmin(np.sqrt((x[i]-xnode)**2+(y[i]-ynode)**2))
-    print "distance is",np.argmin(np.sqrt((x[i]-xnode)**2+(y[i]-ynode)**2))
-    ind = np.where((data['x'] == xnode[minind]) & (data['y'] == ynode[minind]))
-    for j in ind:
-      for var in varnames:
-        pt[var] = data[var][j]
+    print "distance is",np.min(np.sqrt((x[i]-xnode)**2+(y[i]-ynode)**2))
+    ind = np.where((data['x'] == xnode[minind]) & (data['y'] == ynode[minind]))[0]
+    sortind = ind[np.argsort(data['z'][ind])]
+    for j in sortind:
+      pt = data[j]
+      pt['Node Number'] = i
       points.append(pt)
   points = np.asarray(points)
   
