@@ -5,7 +5,6 @@ from scipy.interpolate import griddata
 from matplotlib.path import Path
 from multiprocessing import Pool
 import os
-from paraview import numpy_support, simple
 
 def saveline(DIR,runname):
   '''
@@ -414,6 +413,8 @@ def bufcount(filename):
     return lines
   
 def pvtu_file(file,variables):
+
+  from paraview import numpy_support, simple  
   
   # Load vtu file
   reader = simple.XMLPartitionedUnstructuredGridReader(FileName=file)
