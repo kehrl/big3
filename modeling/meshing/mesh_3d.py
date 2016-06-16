@@ -8,7 +8,7 @@ import shutil
 import sys
 import vellib, datelib, glaclib, flowparameterlib, meshlib, inverselib, climlib
 from subprocess import call
-from scipy.interpolate import *
+from scipy.interpolate import RegularGridInterpolator
 import numpy as np
 import argparse
 
@@ -165,18 +165,21 @@ def main():
   # Output files for velocities in x,y directions (u,v)
   u,v = vellib.inversion_3D(glacier,x,y,time,inputs,dx=dx)
 
-  ###############################################
-  # Get surface temperature and geothermal flux #
-  ###############################################
+  ################################################################
+  # Get climate variables & calculate temperatures at ice divide #
+  ################################################################
   
-  xt2m = np.arange(x[0]-10e3,x[-1]+10e3,1e3)
-  yt2m = np.arange(y[0]-10e3,y[-1]+10e3,1e3)
+  # Set low resolution mesh (no reason to overkill mesh size for climate variables given 
+  # spatial resolution of RACMO2.3.
+  xt2m = np.arange(x[0],x[-1],1e3)
+  yt2m = np.arange(y[0],y[-1],1e3)
+  
+  # Get average 2-m temperatures and surface mass balance
   timet2m,t2m = climlib.racmo_interpolate_to_cartesiangrid(xt2m,yt2m,'t2m',epsg=3413,maskvalues='ice',timing='mean')
   timesmb,smb = climlib.racmo_interpolate_to_cartesiangrid(xt2m,yt2m,'smb',epsg=3413,maskvalues='both',timing='mean')
-  
   #ggrid = bedlib.geothermalflux_grid(xt2m,yt2m,model='davies',method='nearest')
 
-  # Set minimum temperature to melting temperature
+  # Set maximum temperature to melting temperature
   ind = np.where(t2m > 273.15)
   t2m[ind] = 273.15
 
@@ -192,8 +195,29 @@ def main():
       fidsmb.write('{0} {1} {2}\n'.format(xt2m[i],yt2m[j],smb[j,i]))
   fidt2m.close()
   fidsmb.close()
+ 
+  # Get surface heights on same grid as temperature and surface mass balance so that
+  # we can get vertical steady state temperatures.
+  xgrid,ygrid = np.meshgrid(xt2m,yt2m)
+  f = RegularGridInterpolator((y,x),zsur-zbed)
+  Hflat = f((ygrid.flatten(),xgrid.flatten()))
+  H = np.reshape(Hflat,[len(yt2m),len(xt2m)])
+  del Hflat,f,xgrid,ygrid
   
-  del xt2m,yt2m,timet2m,t2m,fidt2m 
+  # Get 3D grid of temperatures  
+  T = flowparameterlib.steadystate_vprofile(H,t2m,smb,levels=10)
+  
+  fidA = open(inputs+"tsteady.xyz", "w")
+  fidA.write("{0}\n{1}\n{2}\n".format(len(xt2m), len(yt2m), len(T[0,0,:])))
+  for j in range(len(xt2m)):
+    for i in range(len(yt2m)):
+      fidA.write("{0} {1} ".format(xt2m[j], yt2m[i]))
+      for k in range(len(T[0,0,:])):
+        fidA.write("{0} ".format(T[i, j, k]))
+      fidA.write("\n")
+  fidA.close()
+
+  del xt2m,yt2m,timet2m,t2m,fidt2m, H, fidA
   # del fidgeo, ggrid
 
   #print "Getting flow law parameters...\n"

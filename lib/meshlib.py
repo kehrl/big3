@@ -293,10 +293,10 @@ def xy_to_gmsh_3d(glacier,date,exterior,holes,refine,DIRM,lc1,lc2,lc3,lc4,\
   ############################################################
   
   # Set up grid extent
-  xmin = np.min(exterior[:,0])-5.0e3
-  xmax = np.max(exterior[:,0])+5.0e3
-  ymin = np.min(exterior[:,1])-5.0e3
-  ymax = np.max(exterior[:,1])+5.0e3
+  xmin = np.min(exterior[:,0])-10.0e3
+  xmax = np.max(exterior[:,0])+10.0e3
+  ymin = np.min(exterior[:,1])-10.0e3
+  ymax = np.max(exterior[:,1])+10.0e3
   
   # Load bed DEM
   if bedname == 'morlighem':

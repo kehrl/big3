@@ -5,6 +5,7 @@ import shutil
 import distlib
 import scipy
 from scipy.spatial import cKDTree
+import math
 
 def arrhenius(T):
   '''
@@ -39,7 +40,7 @@ def load_kristin(glacier,x,y,type='A',dir='none'):
     if glacier == 'Helheim':
       kristin_file=os.path.join(os.getenv("DATA_HOME"),"Climate/IceTemperature/Helheim/xyzTAhelheim_2016.txt")
     elif glacier == 'Kanger':
-      kristin_file=os.path.join(os.getenv("DATA_HOME"),"Climate/IceTemperature/Kanger/xyzTAKanger_2016.txt")
+      kristin_file=os.path.join(os.getenv("DATA_HOME"),"Climate/IceTemperature/Kanger/xyzTAkanger_2016.txt")
     else:
       sys.exit('Unknown glacier')  
   
@@ -141,7 +142,11 @@ def load_kristin(glacier,x,y,type='A',dir='none'):
         Zn.append(Z[i])
         Tn.append(T[i])
         An.append(A[i])
-
+    Xn = X
+    Yn = Y
+    Zn = Z
+    Tn = T
+    An = A
 
     # Set the number of vertical layers
     nz = 21
@@ -152,7 +157,7 @@ def load_kristin(glacier,x,y,type='A',dir='none'):
     rate[:,:,:] = arrhenius([263.])
 
     # Make a KD-tree so we can do range searches fast
-    tree = cKDTree(np.column_stack([Xn,Yn]))
+    #tree = cKDTree(np.column_stack([Xn,Yn]))
 
 		# Make a gridded data set from the model output
 
@@ -232,4 +237,49 @@ def load_kristin(glacier,x,y,type='A',dir='none'):
       fidA.close()
       
   return output
+  
+def steadystate_vprofile(H,Ts,bdot_myr,levels=20):
+
+  '''
+  To estimate temperature at the ice divide, I use the steady-state analytical 
+  solution from Cuffey and Paterson, pg. 410. These values are used as our boundary condition
+  for calculating temperatures.
+
+  T = Ts + zstar*(sqrt(pi)/2)*dTdz*(erf(z/zstar)-erf(H/zstar))
+
+  where zstar = sqrt(2*alpha*H/bdot)
+
+  Inputs:
+  H: grid of heights (m)
+  Ts: grid of Ts (K)
+  bdot_myr: grid of accumulation rates (m/yr) -- will need to be converted to m/s for these calculations
+
+
+  Output:
+  Tgrid: 3D grid of temperatures assuming steady state vertical advection/diffusion and no horizontal motion
+  
+  
+  '''
+
+  # Constants
+  Tref = 263.
+  c = 152.5+7.122*Tref # empirical formula for specific heat capacity, assuming T = 263.
+  k = 9.828*np.exp(-5.7*1e-3*Tref)
+  rho = 917. # ice density
+  alpha = k/(rho*c) # Thermal diffusivity (m2 s-1)
+  dTdz = -0.06/2.2 # Geothermal heat flux (60 mW) / thermal conductivity (K m-1)
+
+  ny,nx = np.shape(H)
+  Tgrid = np.zeros([ny,nx,levels])
+  
+  bdot = bdot_myr/(365.25*24*60*60) # change units from m/yr to m/s
+  
+  for j in range(0,ny):
+    for i in range(0,nx):
+      zstar = np.sqrt(2*alpha*H[j,i]/bdot[j,i])
+      z = np.linspace(0,H[j,i],levels)
+      for k in range(0,levels):
+        Tgrid[j,i,k] = Ts[j,i] + zstar*(np.sqrt(np.pi)/2)*dTdz*(math.erf(z[k]/zstar)-math.erf(H[j,i]/zstar))
+  
+  return Tgrid
   
