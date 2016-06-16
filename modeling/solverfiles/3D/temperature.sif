@@ -145,7 +145,7 @@ End
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 Solver 1
-  Exec Solver = Before simulation
+  Exec Solver = Before Simulation
   Equation = "MapCoordinate"
   Procedure = "StructuredMeshMapper" "StructuredMeshMapper"
   Mesh Update Variable = String "dS"
@@ -231,7 +231,7 @@ Solver 5
   Steady State Convergence Tolerance = 1.0E-04
   Nonlinear System Convergence Tolerance = 1.0E-05
   Nonlinear System Max Iterations = 50
-  Nonlinear System Relaxation Factor = Real 0.9
+  Nonlinear System Relaxation Factor = Real 0.95
   ! uses the contact algorithm (aka Dirichlet algorithm)
   !-----------------------------------------------------
   Apply Dirichlet = Logical True
@@ -331,8 +331,8 @@ Boundary Condition 3
   Save Line = Logical True
   Save Scalars = Logical True
   
-  Temp = Variable Coordinate 1, Coordinate 2
-    REAL procedure "USF_Init.so" "SurfaceTemperature"
+  Temp =  Variable Coordinate 3
+    Real Procedure "USF_Init.so" "IceDivideTemperature"
 End
 
 Boundary Condition 4
@@ -362,7 +362,7 @@ Boundary Condition 4
   ! geothermal heatflux
   !--------------------
   Temp Flux BC = Logical True
-  Temp Heat Flux = Real $60.0E-03*yearinsec*1.0E-6
+  Temp Heat Flux = Real $(60.0E-03*yearinsec*1.0E-6)
   !-------------------
   ! frictional heat
   !--------------------

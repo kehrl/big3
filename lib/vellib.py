@@ -840,10 +840,10 @@ def inversion_3D(glacier,x,y,time,dir_velocity_out='none',blur=False,dx='none'):
   y : velocity in y-dir on grid defined by x,y
   '''
   
-  xmin = np.min(x)-1.0e3
-  xmax = np.max(x)+1.0e3
-  ymin = np.min(y)-1.0e3
-  ymax = np.max(y)+1.0e3
+  xmin = np.min(x)-5.0e3
+  xmax = np.max(x)+5.0e3
+  ymin = np.min(y)-5.0e3
+  ymax = np.max(y)+5.0e3
   
   OUTDIR = os.path.join(os.getenv("DATA_HOME"),"Velocity/MosaicVelocities/"+glacier)
   

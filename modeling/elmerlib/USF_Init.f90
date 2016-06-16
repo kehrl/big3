@@ -602,6 +602,87 @@ FUNCTION Accumulation( Model, nodenumber, dumy) RESULT(a) !
     Return
 End
 
+!------------------------------------------------------------------!
+FUNCTION IceDivideTemperature( Model, nodenumber, dumy) RESULT(T) !
+!------------------------------------------------------------------!
+    USE types
+		Use DefUtils
+    implicit none
+		TYPE(Model_t) :: Model
+    Real(kind=dp) :: dumy,T
+    INTEGER :: nodenumber
+
+		Real(kind=dp),allocatable :: dem(:,:,:), xx(:), yy(:)
+		Real(kind=dp) :: x, y, z, zs , zb, dz
+		Real(kind=dp) :: alpha
+		integer :: nx, ny, nz, k, i, j
+		REAL(kind=dp) :: LinearInterp, zsIni, zbIni
+		
+		TYPE(Variable_t), POINTER :: dSVariable
+    INTEGER, POINTER :: dSPerm(:) 
+    REAL(KIND=dp), POINTER :: dSValues(:)
+
+		
+    logical :: Firsttime=.true.
+
+    SAVE dem,xx,yy,nx,ny,nz
+    SAVE Firsttime
+
+    if (Firsttime) then
+
+    	Firsttime=.False.
+
+    	! open file
+      open(10,file='inputs/tsteady.xyz')
+      Read(10,*) nx
+      Read(10,*) ny
+      Read(10,*) nz
+      
+      allocate(xx(nx), yy(ny))
+      allocate(dem(nx, ny, nz))
+
+      do i = 1, nx
+      	do j = 1, ny
+        	read(10, *) xx(i), yy(j), dem(i, j, :)
+        End do
+      End do
+      close(10)
+      
+		End if
+
+    x = Model % Nodes % x (nodenumber)
+    y = Model % Nodes % y (nodenumber)
+    z = Model % Nodes % z (nodenumber)
+    
+    !dSVariable => VariableGet( Model % Variables, 'dS' )
+    !IF (ASSOCIATED(dSVariable)) THEN
+    !	dSPerm    => dSVariable % Perm
+    !	dSValues  => dSVariable % Values
+    !ELSE
+    !  CALL FATAL('USF_Init, IceDivideTemperature','Could not find variable >dS<')
+    !END IF
+    !z = dSValues(dSPerm(nodenumber))
+
+    zs = zsIni( Model, nodenumber, dumy )
+    zb = zbIni( Model, nodenumber, dumy )		
+		
+		! Find which vertical layer the current point belongs to
+		dz = (zs - zb) / (nz - 1)
+		k = int( (z-zb) / dz)+1
+    IF (k < 1) THEN
+      T=263.
+      print k,z
+    ELSE
+      ! Interpolate the value of the temperature from nearby points in
+      ! the layers above and below it
+      alpha = (z - (zb + (k - 1) * dz)) / dz
+      T = (1 - alpha) * LinearInterp(dem(:,:,k), xx, yy, nx, ny, x, y) + alpha * LinearInterp(dem(:,:,k+1), xx, yy, nx, ny, x, y)
+    END IF
+    
+    
+        
+    Return
+End
 
 
 !------------------------------------------------------------------!
