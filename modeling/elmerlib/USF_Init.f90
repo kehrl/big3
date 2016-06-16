@@ -669,7 +669,7 @@ FUNCTION IceDivideTemperature( Model, nodenumber, dumy) RESULT(T) !
 		! Find which vertical layer the current point belongs to
 		dz = (zs - zb) / (nz - 1)
 		k = int( (z-zb) / dz)+1
-    IF (k < 1) THEN
+    IF (k < 0) THEN
       T=263.0d0
     ELSE
       ! Interpolate the value of the temperature from nearby points in
