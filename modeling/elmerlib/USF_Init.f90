@@ -671,7 +671,6 @@ FUNCTION IceDivideTemperature( Model, nodenumber, dumy) RESULT(T) !
 		k = int( (z-zb) / dz)+1
     IF (k < 1) THEN
       T=263.
-      print k,z
     ELSE
       ! Interpolate the value of the temperature from nearby points in
       ! the layers above and below it
