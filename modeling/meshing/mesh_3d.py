@@ -175,7 +175,7 @@ def main():
   yt2m = np.arange(y[0],y[-1],1e3)
   
   # Get average 2-m temperatures and surface mass balance
-  timet2m,t2m = climlib.racmo_interpolate_to_cartesiangrid(xt2m,yt2m,'t2m',epsg=3413,maskvalues='ice',timing='mean')
+  timet2m,t2m = climlib.racmo_interpolate_to_cartesiangrid(xt2m,yt2m,'t2m',epsg=3413,maskvalues='both',timing='mean')
   timesmb,smb = climlib.racmo_interpolate_to_cartesiangrid(xt2m,yt2m,'smb',epsg=3413,maskvalues='both',timing='mean')
   #ggrid = bedlib.geothermalflux_grid(xt2m,yt2m,model='davies',method='nearest')
 

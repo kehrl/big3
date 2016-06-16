@@ -652,15 +652,16 @@ FUNCTION IceDivideTemperature( Model, nodenumber, dumy) RESULT(T) !
 
     x = Model % Nodes % x (nodenumber)
     y = Model % Nodes % y (nodenumber)
+    z = Model % Nodes % z (nodenumber)
     
-    dSVariable => VariableGet( Model % Variables, 'dS' )
-    IF (ASSOCIATED(dSVariable)) THEN
-    	dSPerm    => dSVariable % Perm
-    	dSValues  => dSVariable % Values
-    ELSE
-      CALL FATAL('USF_Init, IceDivideTemperature','Could not find variable >dS<')
-    END IF
-    z = dSValues(dSPerm(nodenumber))
+    !dSVariable => VariableGet( Model % Variables, 'dS' )
+    !IF (ASSOCIATED(dSVariable)) THEN
+    !	dSPerm    => dSVariable % Perm
+    !	dSValues  => dSVariable % Values
+    !ELSE
+    !  CALL FATAL('USF_Init, IceDivideTemperature','Could not find variable >dS<')
+    !END IF
+    !z = dSValues(dSPerm(nodenumber))
 
     zs = zsIni( Model, nodenumber, dumy )
     zb = zbIni( Model, nodenumber, dumy )		
@@ -668,15 +669,18 @@ FUNCTION IceDivideTemperature( Model, nodenumber, dumy) RESULT(T) !
 		! Find which vertical layer the current point belongs to
 		dz = (zs - zb) / (nz - 1)
 		k = int( (z-zb) / dz)+1
-    IF (k < 0) THEN
-      print *,k,z,zb,zs,dz
+    IF (k < 1) THEN
+      T=263.
+      print k,z
+    ELSE
+      ! Interpolate the value of the temperature from nearby points in
+      ! the layers above and below it
+      alpha = (z - (zb + (k - 1) * dz)) / dz
+      T = (1 - alpha) * LinearInterp(dem(:,:,k), xx, yy, nx, ny, x, y) + alpha * LinearInterp(dem(:,:,k+1), xx, yy, nx, ny, x, y)
     END IF
     
-    ! Interpolate the value of the temperature from nearby points in
-    ! the layers above and below it
-    alpha = (z - (zb + (k - 1) * dz)) / dz
-    T = (1 - alpha) * LinearInterp(dem(:,:,k), xx, yy, nx, ny, x, y) + alpha * LinearInterp(dem(:,:,k+1), xx, yy, nx, ny, x, y)
     
+        
     Return
 End
 

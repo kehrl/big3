@@ -276,10 +276,15 @@ def steadystate_vprofile(H,Ts,bdot_myr,levels=20):
   
   for j in range(0,ny):
     for i in range(0,nx):
-      zstar = np.sqrt(2*alpha*H[j,i]/bdot[j,i])
-      z = np.linspace(0,H[j,i],levels)
-      for k in range(0,levels):
-        Tgrid[j,i,k] = Ts[j,i] + zstar*(np.sqrt(np.pi)/2)*dTdz*(math.erf(z[k]/zstar)-math.erf(H[j,i]/zstar))
+      # If we are in the ablation zone the solution won't work, or if ice height is unknown
+      # In that case we just set the temperature at all depths to the surface temperature
+      if bdot[j,i] < 0 or np.isnan(H[j,i]):
+        Tgrid[j,i,:] = Ts[j,i]
+      else:
+        zstar = np.sqrt(2*alpha*H[j,i]/bdot[j,i])
+        z = np.linspace(0,H[j,i],levels)
+        for k in range(0,levels):
+          Tgrid[j,i,k] = Ts[j,i] + zstar*(np.sqrt(np.pi)/2)*dTdz*(math.erf(z[k]/zstar)-math.erf(H[j,i]/zstar))
   
   return Tgrid
   
