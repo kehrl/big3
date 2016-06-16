@@ -125,7 +125,7 @@ Material 1
 ! the gas constant also is 
   Activation Energy 1 = Real 60e3
   Activation Energy 2 = Real 139e3  
-  Glen Enhancement Factor = Real 1.0
+  Glen Enhancement Factor = Real 3.0
 ! the variable taken to evaluate the Arrhenius law
 ! in general this should be the temperature relative
 ! to pressure melting point. The suggestion below plugs
