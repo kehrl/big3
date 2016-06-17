@@ -504,7 +504,47 @@ def depth_averaged_variables(data):
   
   return points[varnames]
 
-def values_in_column(x,y,data):
+def values_in_layer(data,layer='surface'):
+  '''
+  Pull values at either the surface or bed
+    
+  Inputs:
+  data: structured array with required fields x,y,z
+  '''
+
+  # Do a quick check that we have the necessary variables
+  if not set(('Node Number', 'x', 'y')).issubset(set(data.dtype.names)):
+    print 'Not a valid dataset, does not contain Node Number, x, and y variables, returning None'
+    return None
+  # Try to get things right with what variables we are returning
+  varnames = list(data.dtype.names)
+  
+  if layer == 'surface':
+    ind = -1
+  elif layer == 'bed':
+    ind = 0
+  
+  # Do the actual sorting
+  points = []
+  for x_val in np.unique(data['x']):
+    x_points = data[data['x'] == x_val]
+    for y_val in np.unique(x_points['y']):
+      y_points = x_points[x_points['y'] == y_val]
+      pt = y_points[np.argmin(y_points['z'])]
+      sorted_list = np.sort(y_points, order='z')
+      for var in varnames:
+        # The following will assume that the points are evenly spaced in the vertical direction
+        # pt[var] = np.sum(y_points[var]) / len(y_points[var])
+        # Instead, do things correctly to weight by percentage of the column
+        pt[var] = sorted_list[var][ind]
+      points.append(pt)
+  points = np.asarray(points)
+  
+  return points[varnames]
+
+
+
+def values_in_column(data,x,y):
   '''
   Pull data at a particular point
     
