@@ -42,6 +42,8 @@ def get_arguments():
   parser.add_argument("-lc", dest="lc", type=int,required = False,nargs='+',
 			  default=[1000,1000,3000,5000],\
 			  help = "Four numbers that define the mesh resolution for grounding-line (1000 m),channels (1000 m),regions near channels (3000 m), and entire mesh (5000 m).")
+  parser.add_argument("-taub", dest="frac_taub", required = False,default=0.5,
+                          help = "fraction of driving stress that basal shear stress is assumed to support; we want to vary this when we are using a smaller or full-basin domain.")
 
   # Get arguments
   args, _ = parser.parse_known_args(sys.argv)
@@ -61,7 +63,7 @@ def main():
   meshshp = args.meshshp
   glacier = args.glacier
   dx = args.dx
-
+  frac_taub = args.frac_taub
   # Mesh refinement
   lc3,lc2,lc4,lc1 = args.lc
 
@@ -228,8 +230,7 @@ def main():
   #################################################################
 
   print "Calculating basal sliding speed for inflow boundaries and guessing a beta...\n"
-  frac = 0.5
-  ub,vb,beta = inverselib.guess_beta(x,y,zsur,zbed,u,v,frac)
+  ub,vb,beta = inverselib.guess_beta(x,y,zsur,zbed,u,v,frac_taub)
 
   # Write out basal velocities and initial guess for beta
   fidub = open(inputs+"ubdem.xy","w")
