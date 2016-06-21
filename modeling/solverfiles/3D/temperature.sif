@@ -144,6 +144,7 @@ End
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 Solver 1
+  Exec Solver = Before simulation
   Equation = "MapCoordinate"
   Procedure = "StructuredMeshMapper" "StructuredMeshMapper"
   Mesh Update Variable = String "dS"
@@ -151,7 +152,8 @@ Solver 1
 End
 
 Solver 2
-  Equation = "Normal vector"
+  Exec Solver = Before simulation
+  Equation = "Normal Vector"
   Variable = "Normal Vector"   
   ! in 3dimensional simulations we have 3 entries
   Variable DOFs = 3 
@@ -184,7 +186,7 @@ Solver 3
   Nonlinear System Convergence Tolerance = Real 1.0e-7
   Nonlinear System Newton After Iterations = Integer 20
   Nonlinear System Newton After Tolerance = Real 1.0e-04
-  Nonlinear System Relaxation Factor = Real 1.0
+  Nonlinear System Relaxation Factor = Real 0.9
 
   Nonlinear System Reset Newton = Logical True
 
