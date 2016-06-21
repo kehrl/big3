@@ -144,7 +144,6 @@ End
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 Solver 1
-  Exec Solver = Before Simulation
   Equation = "MapCoordinate"
   Procedure = "StructuredMeshMapper" "StructuredMeshMapper"
   Mesh Update Variable = String "dS"
@@ -152,7 +151,6 @@ Solver 1
 End
 
 Solver 2
-  Exec Solver = Before simulation
   Equation = "Normal vector"
   Variable = "Normal Vector"   
   ! in 3dimensional simulations we have 3 entries
@@ -199,7 +197,7 @@ Solver 3
   Exported Variable 2 = Temp
   Exported Variable 2 DOFS = 1
   
-  Exported Variable 3 = Flow Solution Loads[Fx:1 Fy:1 Fz:1 CEQ Residual:1 ]
+  Exported Variable 3 = Flow Solution Loads [Fx:1 Fy:1 Fz:1 CEQ Residual:1 ]
   
 End
 
@@ -208,12 +206,12 @@ Solver 4
   Equation = DeformationalHeat
   Variable = W
   Variable DOFs = 1
-  Flow Solver Name = String "Flow Solution"
+  Flow Solution Name = String "Flow Solution"
 
   Procedure =  "ElmerIceSolvers" "DeformationalHeatSolver"
 
   Linear System Solver = Direct
-  Linear System direct Method = MUMPS
+  Linear System Direct Method = MUMPS
 End
 
 Solver 5
@@ -221,6 +219,9 @@ Solver 5
   Procedure =  File "ElmerIceSolvers" "TemperateIceSolver"
   Variable = String "Temp"
   Variable DOFs = 1
+  
+  ! Loop if nodes still aren't constrained
+  Loop While Unconstrained Nodes = Logical True
   
   !Linear System Solver = Direct
   !Linear System Direct Method = Mumps
