@@ -684,7 +684,6 @@ FUNCTION IceDivideTemperature( Model, nodenumber, dumy) RESULT(T) !
 
       ! In case we have restarted the file, we don't want to later end up with this timestep
       TimestepInit = 0
-      print *,Timestep,TimestepInit,z
     END IF
     
     RETURN
