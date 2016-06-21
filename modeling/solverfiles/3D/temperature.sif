@@ -78,7 +78,6 @@ Initial Condition 1
   Velocity 2 = Real 0.0
   Velocity 3 = Real 0.0
   
-  Temp Homologous = Real -10.0
   Temp = Real 263.15
 End
 
@@ -138,9 +137,9 @@ Material 1
   !-------------------------------------------------
   Temp Upper Limit = Variable Pressure
     Real MATC "pressuremeltingpoint(tx)"
-  ! lower limit (to be safe) as 100 K
+  ! lower limit (to be safe) as 0 K
   !--------------------------------
-  Temp Lower Limit = Real 100.0
+  Temp Lower Limit = Real 0.0
 End
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -168,13 +167,13 @@ End
 
 Solver 3
   Equation = "Navier-Stokes"
-  Stabilize = logical True
+  Stabilize = Logical True
   Flow model = Stokes
   
   Calculate Loads = Logical True
   
   Linear System Solver = Direct
-  Linear System Direct Method = mumps
+  Linear System Direct Method = Mumps
   Mumps Percentage Increase Working Space = Integer 50
   ! Linear System Solver = Iterative
   ! Linear System Iterative Method = GMRES
@@ -185,8 +184,8 @@ Solver 3
 
   Nonlinear System Max Iterations = Integer 100
   Nonlinear System Convergence Tolerance = Real 1.0e-7
-  Nonlinear System Newton After Iterations = Integer 10
-  Nonlinear System Newton After Tolerance = Real 1.0e-03
+  Nonlinear System Newton After Iterations = Integer 20
+  Nonlinear System Newton After Tolerance = Real 1.0e-04
   Nonlinear System Relaxation Factor = Real 1.0
 
   Nonlinear System Reset Newton = Logical True
@@ -194,13 +193,13 @@ Solver 3
   Steady State Convergence Tolerance = Real 1.0e-12
 
 ! Define some usefull Variables
-  Exported Variable 1 = Flow Solution Loads [Fx:1 Fy:1 Fz:1 CEQ Residual:1 ]
-
-  Exported Variable 2 = dS
+  Exported Variable 1 = dS
+  Exported Variable 1 DOFS = 1
+  
+  Exported Variable 2 = Temp
   Exported Variable 2 DOFS = 1
   
-  Exported Variable 3 = Temp
-  Exported Variable 3 DOFS = 1
+  Exported Variable 3 = Flow Solution Loads[Fx:1 Fy:1 Fz:1 CEQ Residual:1 ]
   
 End
 
@@ -209,11 +208,12 @@ Solver 4
   Equation = DeformationalHeat
   Variable = W
   Variable DOFs = 1
+  Flow Solver Name = String "Flow Solution"
 
   Procedure =  "ElmerIceSolvers" "DeformationalHeatSolver"
 
-  Linear System Solver = direct
-  Linear System direct Method = mumps
+  Linear System Solver = Direct
+  Linear System direct Method = MUMPS
 End
 
 Solver 5
@@ -221,21 +221,24 @@ Solver 5
   Procedure =  File "ElmerIceSolvers" "TemperateIceSolver"
   Variable = String "Temp"
   Variable DOFs = 1
+  
+  !Linear System Solver = Direct
+  !Linear System Direct Method = Mumps
+  !Linear System Convergence Tolerance = 1.0e-06
   Linear System Solver = "Iterative"
   Linear System Iterative Method = "BiCGStab"
-  Linear System Max Iterations = 500
-  Linear System Convergence Tolerance = 1.0E-07
+  Linear System Max Iterations = 10000
+  Linear System Convergence Tolerance = 1.0E-06
   Linear System Abort Not Converged = True
-  Linear System Preconditioning = "ILU0"
+  Linear System Preconditioning = "ILU4"
   Linear System Residual Output = 1
   Steady State Convergence Tolerance = 1.0E-04
   Nonlinear System Convergence Tolerance = 1.0E-05
   Nonlinear System Max Iterations = 50
-  Nonlinear System Relaxation Factor = Real 0.95
-  ! uses the contact algorithm (aka Dirichlet algorithm)
-  !-----------------------------------------------------
+  Nonlinear System Relaxation Factor = Real 0.9 
+  Steady State Relaxation Factor = Real 0.9
   Apply Dirichlet = Logical True
-  Stabilize = Logical True
+  Stabilize = True
   ! those two variables are needed in order to store
   ! the relative or homologous temperature as well
   ! as the residual
@@ -285,7 +288,7 @@ End
 Equation 1
   Active Solvers (7)= 1 2 3 4 5 6 7
   Flow Solution Name = String "Flow Solution"
-  Convection = Computed
+  Convection = String Computed
   NS Convect = Logical True
 End
 
@@ -383,7 +386,7 @@ Boundary Condition 5
   Save Scalars = Logical True
   
   Temp = Variable Coordinate 1, Coordinate 2
-    REAL procedure "USF_Init.so" "SurfaceTemperature"
+    Real procedure "USF_Init.so" "SurfaceTemperature"
     
   Compute Normal = Logical True
   !Normal-Tangential Velocity = Logical True

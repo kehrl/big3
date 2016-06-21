@@ -305,7 +305,7 @@ if plot_overview == 1:
   plt.subplot(gs[0, :])
   ax = plt.gca()
   ind = np.where(calvingstyle[:,1] == 'Tabular')[0]
-  plt.ylim([-6,6])
+  ax.set_ylim([-6,6])
   if vbars == 'seasonal':
     xTickPos = np.linspace(np.floor(time1)-0.25,np.ceil(time2)-0.25,(np.ceil(time2)-np.floor(time1))*2+1)
     ax.bar(xTickPos,[max(plt.ylim())-min(plt.ylim())] * len(xTickPos), (xTickPos[1]-xTickPos[0]), bottom=min(plt.ylim()), color=['0.85','w'],linewidth=0)
@@ -334,9 +334,20 @@ if plot_overview == 1:
   if plot_images == 1:
    for i in range(0,len(images)):
       plt.plot([images_time[i][3],images_time[i][3]],ax.get_ylim(),'--',color='0.3')
-  plt.legend(loc=2,fontsize=8,numpoints=1,handlelength=0.3,labelspacing=0.05,ncol=3,columnspacing=0.7,handletextpad=0.2,borderpad=0.25)
   nonnan = np.where(~(np.isnan(terminus_val)))[0]
-  plt.plot(terminus_time[nonnan],terminus_val[nonnan]/1e3,'ko',linewidth=1,markersize=2.5)
+  if glacier == 'Helheim':
+    # Get water depth at calving front
+    wdepth = np.interp(terminus_val,dists,zb)
+    ax2 = ax.twinx()
+    ax2.plot(0,0,'ko',markersize=2.5,label='Terminus')
+    ax2.plot(terminus_time,wdepth,'wo',markersize=2.5,label = 'Water depth')
+    ax2.set_ylabel('Water depth (m)',fontsize=8,fontname='Arial')
+    ax2.set_xlim([time1,time2])
+    ax2.set_ylim([-760,-490])
+    ax2.set_yticks(np.arange(-700,-400,100))
+    ax2.set_yticklabels(np.arange(700,400,-100),fontsize=8,fontname='Arial')
+    ax2.legend(loc=0,fontsize=8,numpoints=1,handlelength=0.3,labelspacing=0.05,ncol=3,columnspacing=0.7,handletextpad=0.2,borderpad=0.25)
+  ax.plot(terminus_time[nonnan],terminus_val[nonnan]/1e3,'ko',linewidth=1,markersize=2.5)
   x_formatter = matplotlib.ticker.ScalarFormatter(useOffset=False)
   ax.xaxis.set_major_formatter(x_formatter)
   ax.xaxis.set_minor_locator(AutoMinorLocator(2))
@@ -346,21 +357,25 @@ if plot_overview == 1:
   labels=[]
   for i in range(2000,2017):
     labels.append('Jan \n'+str(i))
-  plt.xticks(range(2000,2017))
+  ax.set_xticks(range(2000,2017))
   ax.set_xticklabels(labels,fontsize=8,fontname='Arial')
-  plt.xlim([time1,time2])
-  plt.yticks(np.arange(-6,8,2),fontsize=8,fontname="Arial")
-  plt.ylabel('Terminus (km)',fontsize=8,fontname="Arial")
+  ax.set_xlim([time1,time2])
+  ax.set_yticks(np.arange(-6,8,2))
+  ax.set_yticklabels(np.arange(-6,8,2),fontsize=8,fontname="Arial")
+  ax.set_ylabel('Terminus (km)',fontsize=8,fontname="Arial")
   ax.tick_params('both', length=6, width=1.25, which='major')
   ax.tick_params('both', length=3, width=1, which='minor')
+  handles, labels = ax.get_legend_handles_labels()
+  ind = [4,0,2,1,3]
+  ax.legend(loc=2,fontsize=8,numpoints=1,handlelength=0.3,labelspacing=0.05,ncol=3,columnspacing=0.7,handletextpad=0.2,borderpad=0.25)
   if glacier == 'Helheim':
-    plt.ylim([-3,3])
-    plt.text(2008.13,-2.6,'a',fontsize=10,fontname='arial',weight='bold')
+    ax.set_ylim([-4,4])
+    ax.text(2008.13,-3.5,'a',fontsize=10,fontname='arial',weight='bold')
   elif glacier == 'Kanger':
-    plt.ylim([-4.5,4.5])
-    plt.text(2008.13,-3.8,'a',fontsize=10,fontname='arial',weight='bold')
+    ax.set_ylim([-4.5,4.5])
+    ax.text(2008.13,-3.8,'a',fontsize=10,fontname='arial',weight='bold')
   else:  
-    plt.ylim(np.floor((np.min(terminus_val))/1e3),np.ceil((np.max(terminus_val))/1e3))
+    ax.set_ylim(np.floor((np.min(terminus_val))/1e3),np.ceil((np.max(terminus_val))/1e3))
 
   # Plot velocities
   ax = plt.subplot(gs[1:-3, :]) 
@@ -390,8 +405,8 @@ if plot_overview == 1:
       #plt.plot(vel_time_howat[nonnan,0],(vel_val_howat[nonnan,i])/1e3,'+',color=coloptions[i],markersize=5)
     plt.yticks(range(2,12),fontsize=8,fontname="Arial")
     if glacier == 'Helheim':
-      plt.ylim([3.5,11])
-      plt.text(2008.13,3.8,'b',fontsize=10,fontname='arial',weight='bold')
+      plt.ylim([3.7,11.3])
+      plt.text(2008.13,4.0,'b',fontsize=10,fontname='arial',weight='bold')
     elif glacier == 'Kanger':
       plt.ylim([2.5,12])
       plt.text(2008.13,3,'b',fontsize=10,fontname='arial',weight='bold')
@@ -549,6 +564,8 @@ if plot_overview == 1:
   ax2.set_yticklabels([0,25,50],fontsize=8,fontname='Arial')
   ax2.set_ylabel('Runoff (kg m$^{-2}$ d$^{-1}$)',fontsize=8,fontname='Arial')
   ax2.yaxis.set_minor_locator(AutoMinorLocator(2))
+  ax2.tick_params('both', length=6, width=1.25, which='major')
+  ax2.tick_params('both', length=3, width=1, which='minor')
   plt.legend(loc=3,borderpad=0.3,fontsize=8,numpoints=1,handlelength=0.7,labelspacing=0.05,ncol=4,columnspacing=0.7,handletextpad=0.5)
   ax.text(2008.13,0.32,'d',fontsize=10,fontname='arial',weight='bold')
   if plot_images == 1:

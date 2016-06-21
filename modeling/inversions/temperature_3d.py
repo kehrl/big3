@@ -67,7 +67,7 @@ def main():
   # Directories
   DIRS=os.path.join(os.getenv("CODE_HOME"),"big3/modeling/solverfiles/3D/")
   DIRM=os.path.join(os.getenv("MODEL_HOME"),glacier+"/3D/"+RES+"/")
-  DIRR=os.path.join(DIRM+'temperature/')
+  DIRR=os.path.join(DIRM+'mesh2d/temperature/')
   DIRX=os.path.join(os.getenv("DATA_HOME"),"ShapeFiles/Glaciers/3D/"+glacier)
   inputs=os.path.join(DIRM+"/inputs/")
   
@@ -91,10 +91,7 @@ def main():
   Velocity 1 = Variable Coordinate 1
     Real procedure "USF_Init.so" "UWa"
   Velocity 2 = Variable Coordinate 1
-    Real procedure "USF_Init.so" "VWa"
-  ! Dirichlet BC => Dirichlet = 0 for Adjoint
-  Adjoint 1 = Real 0.0
-  Adjoint 2 = Real 0.0"""
+    Real procedure "USF_Init.so" "VWa" """
   else:
     sys.exit("Unknown BC for front of glacier.")
 
@@ -110,7 +107,7 @@ def main():
   Simulation Type = Transient
   Timestepping Method = "BDF"
   BDF Order = 1
-  Timestep Intervals = {0}       
+  Timestep Intervals = {0}     
   Timestep Sizes = {1}""".format(iterations,dt)
   
   # Add in restart file and restart position into simulation text if we are using it
@@ -119,8 +116,6 @@ def main():
   Restart File = {0}
   Restart Position = {1}""".format(restartfile,restartposition)
   
-
-
   ###############################
   # Run temperature solver file #
   ###############################
@@ -149,7 +144,7 @@ def main():
   # Move output files #
   #####################
   
-  DIRR_output = DIRM+"/mesh2d/temperature/temperature_"+date+"/"
+  DIRR_output = DIRR+"temperature_"+date+"/"
   
   names = os.listdir(DIRM+"/mesh2d")
   if not os.path.exists(DIRR_output):
