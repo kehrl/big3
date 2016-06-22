@@ -59,7 +59,7 @@ xracH,yracH,precipH,timeH = climlib.racmo_at_pts(xptH,yptH,'precip',filt_len=fil
 #############
 
 time1=2008.0
-time2=2015.0
+time2=2016.0
 plt.figure(figsize=(4,4))
 gs = matplotlib.gridspec.GridSpec(3,1)
 

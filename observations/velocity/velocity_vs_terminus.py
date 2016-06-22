@@ -124,8 +124,10 @@ xrac,yrac,smbrac,timerac = climlib.racmo_at_pts(np.mean(xflux),np.mean(yflux),'s
 xrac,yrac,runrac,timerac = climlib.racmo_at_pts(np.mean(xflux),np.mean(yflux),'runoff',filt_len=14.0)
 xrac,yrac,zsrac,timeraczs = climlib.racmo_at_pts(np.mean(xflux),np.mean(yflux),'zs',filt_len=14.0)
 
-ind = np.argmin(abs(dists-np.nanmax(terminus_val)))
-xsif,ysif,sif,timesif = climlib.SIF_at_pts(x[ind],y[ind],filt_len=14.)
+if glacier == 'Helheim':
+  xsif,ysif,sif,timesif = climlib.SIF_at_pts(323714.,-2659698.,filt_len=14.)
+elif glacier == 'Kanger':
+  xsif,ysif,sif,timesif = climlib.SIF_at_pts(548497.,-2344696.,filt_len=14.)
 
 year_runoff,day1_runoff,day2_runoff,meltlength_runoff,total_runoff = climlib.seasonlength(timerac,runrac,'runoff')
 
@@ -341,7 +343,7 @@ if plot_overview == 1:
     ax2 = ax.twinx()
     ax2.plot(0,0,'ko',markersize=2.5,label='Terminus')
     ax2.plot(terminus_time,wdepth,'wo',markersize=2.5,label = 'Water depth')
-    ax2.set_ylabel('Water depth (m)',fontsize=8,fontname='Arial')
+    ax2.set_ylabel('Water depth at \n calving front (m)',fontsize=8,fontname='Arial')
     ax2.set_xlim([time1,time2])
     ax2.set_ylim([-760,-490])
     ax2.set_yticks(np.arange(-700,-400,100))
@@ -568,12 +570,18 @@ if plot_overview == 1:
   ax2.tick_params('both', length=3, width=1, which='minor')
   plt.legend(loc=3,borderpad=0.3,fontsize=8,numpoints=1,handlelength=0.7,labelspacing=0.05,ncol=4,columnspacing=0.7,handletextpad=0.5)
   ax.text(2008.13,0.32,'d',fontsize=10,fontname='arial',weight='bold')
+  ind = np.where((year_runoff > 2007.) & (year_runoff < 2016))[0]
+  for i in ind:
+    #ax2.plot([day1_runoff[i],day2_runoff[i]],[total_runoff[i]/meltlength_runoff[i],total_runoff[i]/meltlength_runoff[i]],'k',lw=1.5)
+    ax2.text(year_runoff[i]+0.65,41,'{0:.0f}'.format(total_runoff[i]),fontsize=8,fontname='Arial')
+    if i == ind[0]:
+      ax2.text(year_runoff[i]+0.65,35,r'kg m$^{-2}$',fontsize=8,fontname='Arial')
   if plot_images == 1:
    for i in range(0,len(images)):
       plt.plot([images_time[i][3],images_time[i][3]],ax.get_ylim(),'--',color='0.3')
 
   plt.tight_layout()
-  plt.subplots_adjust(hspace=0.03,wspace=0,top=0.95,right=0.93,left=0.09,bottom=0.05) 
+  plt.subplots_adjust(hspace=0.03,wspace=0,top=0.95,right=0.92,left=0.06,bottom=0.05) 
   plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+"_vel_time_"+str(int(time1))+"to"+str(int(time2))+".pdf"),FORMAT='PDF',dpi=600)
   plt.close()
 

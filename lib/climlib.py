@@ -332,7 +332,7 @@ def seasonlength(time,values,variable):
     threshold = 0.0
     values = -values
   elif variable == 't2m':
-    threshold = 0.0
+    threshold = 273.15
   
   # Set up output variables
   firstday = np.zeros(len(year)) # first day of melt season in fractional years
