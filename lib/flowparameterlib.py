@@ -2,7 +2,7 @@ import numpy as np
 import sys
 import os
 import shutil
-import distlib
+import distlib, elmerreadlib
 import scipy
 from scipy.spatial import cKDTree
 import math
@@ -24,9 +24,93 @@ def arrhenius(T):
     	
   return A 
 
-def load_temperature_model(glacier,x,y,dir='none'):
+def load_temperature_model(glacier,x,y,modelfile='none',outputdir='none'):
 
-  return T
+  # Choose file
+  if (modelfile == 'none') and (glacier == 'Helheim'):
+    modelfile = os.path.join(os.getenv("MODEL_HOME"),"Helheim/3D/BASIN20120316/mesh2d/temperature/temperature_20160621/temperature0020.pvtu")
+
+  # Get temperatures from model
+  data = elmerreadlib.pvtu_file(modelfile,['temp'])
+
+  # Get info about output grid
+  nx = len(x)
+  ny = len(y)
+  dx = x[1]-x[0]
+  dy = y[1]-y[0]
+
+  # Get temperatures in a column
+  X = []
+  Y = []
+  Z = []
+  T = []
+    
+  for x_val in np.unique(data['x']):
+    x_points = data[data['x'] == x_val]
+    for y_val in np.unique(x_points['y']):
+      X.append(x_val)
+      Y.append(y_val)
+      y_points = x_points[x_points['y'] == y_val]
+      sorted_list = np.sort(y_points, order='z')
+      Z.append(sorted_list['z'])
+      T.append(sorted_list['temp']) 
+        
+  nn = len(X)
+  X = np.asarray(X)
+  Y = np.asarray(Y)
+    
+  for k in range(nn):
+    Z[k] = np.asarray(Z[k])
+    T[k] = np.asarray(T[k])
+
+  # Set the number of vertical layers
+  nz = len(Z[0])
+    
+  temp = np.zeros((ny,nx,nz)) # Kelvin
+  temp[:,:,:] = 0.
+
+
+  # Make a KD-tree so we can do range searches fast
+  tree = cKDTree(np.column_stack([X,Y]))
+
+  # Make a gridded data set from the model output
+  # For each point in the grid,
+  for i in range(ny):
+    for j in range(nx):
+		    
+      L = tree.query_ball_point( (x[j], y[i]), 2500. )
+		    
+      # Initialize the weights to 0
+      weights = 0.0
+		    
+      # For all the nearby model points,
+      if len(L) > 0:
+		    for l in L:
+		      xp = X[l]
+		      yp = Y[l]
+		      
+		      # find the distance to the current point and the
+		      # appropriate weight
+		      r = np.sqrt( (x[j] - xp)**2 + (y[i] - yp)**2 )
+		      w = (2500./(r+dx))**3
+		      weights += w
+		      
+		      # For each point within the current vertical column,
+		      for k in range(nz):
+		        # find which point within the nearby vertical
+		        # column to interpolate from
+		        m = (k * (len(Z[l]) - 1)) / (nz - 1)
+		        
+		        # Add up the value to the running average
+		        temp[i, j, k] += w * T[l][m]
+		    
+		    # Normalize the running average by the weight sum
+		    temp[i,j,:] /= weights
+      else:
+        L = np.argmin(np.sqrt((X-x[j])**2+(Y-y[i])**2))
+        temp[i,j,:] = T[L]
+          
+  return temp
 
 def load_kristin(glacier,x,y,type='A',dir='none'):
 
