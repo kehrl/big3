@@ -24,6 +24,10 @@ def arrhenius(T):
     	
   return A 
 
+def load_temperature_model(glacier,x,y,dir='none'):
+
+  return T
+
 def load_kristin(glacier,x,y,type='A',dir='none'):
 
   # Load file if it already exists
