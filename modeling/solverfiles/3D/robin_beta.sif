@@ -39,7 +39,7 @@ Simulation
   
   Output Intervals = 1
 
-  Steady State Max Iterations = 60
+  Steady State Max Iterations = 1
   Steady State Min Iterations = 1
 
   Output File = "$name".result"
@@ -47,7 +47,7 @@ Simulation
 
   Initialize Dirichlet Conditions = Logical False
 
-  max output level = 3
+  Max Output Level = 3
 End
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -104,14 +104,6 @@ End
 !! ice material properties in MPa - m - a system
 Material 1
   Density = Real $rhoi
-  !Viscosity Model = String "power law"
-  !Viscosity = Variable Coordinate 1, Coordinate 2
-  !  Real Procedure "USF_Init.so" "Viscosity"
-  !Viscosity = Real $ (3*3.5e-25*yearinsec)^(-1.0/3.0)*1.0e-6 
-  ! Using a mixed value from Habermann (Jakobshavn) and Nick (Helheim flowline), -10 deg C, 
-  ! and an enhancement factor of 3
-  !Viscosity Exponent = Real $1.0e00/3.0e00
-  !Critical Shear Rate = Real 1.0e-10
 
   Viscosity Model = String "Glen"
 ! Viscosity has to be set to a dummy value
@@ -127,38 +119,37 @@ Material 1
   Activation Energy 1 = Real 60e3
   Activation Energy 2 = Real 139e3  
   Glen Enhancement Factor = Real 3.0
+! the temperature to switch between the 
+! two regimes in the flow law
+  Limit Temperature = Real -10.0
 ! the variable taken to evaluate the Arrhenius law
 ! in general this should be the temperature relative
 ! to pressure melting point. The suggestion below plugs
 ! in the correct value obtained with TemperateIceSolver
-  !Temperature Field Variable = String "Temp Homologous"
-! the temperature to switch between the 
-! two regimes in the flow law
-  Limit Temperature = Real -10.0
-! In case there is no temperature variable
-  Constant Temperature = Real -10.0
+{Temperature}
   
   Cauchy = Logical True
 End
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 Solver 1
-  Exec Solver = Before simulation
+  Exec Solver = Before Simulation
   Equation = "MapCoordinate"
   Procedure = "StructuredMeshMapper" "StructuredMeshMapper"
   Mesh Update Variable = String "dS"
+  Mesh Velocity First Zero = Logical True
   Active Coordinate = Integer 3
 End
 
 Solver 2
   Equation = "Navier-Stokes"
   
-  Stabilize = logical True
+  Stabilize = Logical True
   Flow model = Stokes
   
   Linear System Solver = Direct
-  Linear System Direct Method = mumps
-  Mumps Percentage Increase Working Space = Integer 50
+  Linear System Direct Method = Mumps
+  Mumps Percentage Increase Working Space = Integer 60
   ! Linear System Solver = Iterative
   ! Linear System Iterative Method = GMRES
   ! Linear System GMRES Restart = 100
@@ -326,6 +317,11 @@ Solver 7
 End
 
 Solver 8
+  Procedure = "SaveData" "SaveMaterials"
+  Parameter 1 = String "Constant Temperature"
+End
+
+Solver 9
   Equation = SaveLine
   Procedure = "SaveData" "SaveLine"
   Exec Solver = String "After all"
@@ -336,14 +332,12 @@ End
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 Equation 1
-  Active Solvers (6)= 1 2 3 4 7 8
+  Active Solvers (7)= 1 2 3 4 7 8 9
   NS Convect= False
-  Convection = Computed
 End
 
 Equation 2
  Active Solvers (2)= 5 6
- Convection = Computed
 End
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -354,7 +348,6 @@ Boundary Condition 1
 {FrontBC}
 
   Save Line = Logical True
-  Save Scalars = Logical True
 End
 
 Boundary Condition 2
@@ -383,7 +376,6 @@ Boundary Condition 2
     Real procedure "USF_Init.so" "VWa"
 
   Save Line = Logical True
-  Save Scalars = Logical True
 End
 
 Boundary Condition 3
@@ -403,7 +395,6 @@ Boundary Condition 3
     Real procedure "USF_Init.so" "VWa"
   
   Save Line = Logical True
-  Save Scalars = Logical True
 End
 
 Boundary Condition 4
@@ -414,7 +405,7 @@ Boundary Condition 4
   Body ID = Integer 2
 
   Bottom Surface = Variable Coordinate 1
-    REAL   procedure "USF_Init.so" "zbIni"
+    REAL procedure "USF_Init.so" "zbIni"
 
   Normal-Tangential Velocity = Logical True
   Normal-Tangential VeloD = Logical True
@@ -428,7 +419,6 @@ Boundary Condition 4
      REAL MATC "tx*tx"
   
   Save Line = Logical True  
-  Save Scalars = Logical True 
 End
 
 ! Upper Surface
@@ -445,5 +435,4 @@ Boundary Condition 5
   VeloD 2 = Equals Vsurfini 2
 
   Save Line = Logical True
-  Save Scalars = Logical True
 End 

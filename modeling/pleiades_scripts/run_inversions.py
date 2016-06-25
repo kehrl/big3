@@ -15,7 +15,8 @@ extrude = 12
 bname = 'morlighem'
 bmodel = 'aniso'
 bsmooth = '4'
-lc = '200 300 400 700'
+temperature = -10.0
+lc = '200 200 300 500'
 #lc = '1000 1000 4000 5000'
 
 if glacier == 'Helheim':
@@ -31,8 +32,8 @@ elif glacier == 'Kanger':
            '20140213']  
 
 # Inversion options
-method = 'robin'
-regpars = ['1e10'] 
+method = 'adjoint'
+regpars = ['1e8','1e9','1e10','1e11','1e12','1e13','1e14','1e15'] 
 
 
 # Options for PBS submission
@@ -55,7 +56,7 @@ else:
 for date in dates:
 
   # Output mesh name
-  meshname = 'DEM'+date_12extrude
+  meshname = 'DEM'+date
 
   # Create mesh
   command = "python /u/lkehrl/Code/big3/modeling/meshing/"+\
@@ -71,7 +72,7 @@ for date in dates:
     walltime = runtime
     processors = "select={0}:ncpus={1}:mpiprocs={2}:model={3}".format(nparts/ncpus,ncpus,ncpus,model)
     command = "python /u/lkehrl/Code/big3/modeling/inversions/inversion_3d.py"+\
-              " -glacier {0} -method {1} -regpar {2} -mesh {3} -extrude {4} -front {5} -n {6}".format(glacier,method,regpar,meshname,extrude,frontBC,nparts)
+              " -glacier {0} -method {1} -regpar {2} -mesh {3} -extrude {4} -front {5} -n {6} -temperature {7}".format(glacier,method,regpar,meshname,extrude,frontBC,nparts,temperature)
     dir = "/nobackupp8/lkehrl/Models/"+glacier+"/3D/"+meshname+"/"
 
     job_string = """
@@ -93,7 +94,7 @@ for date in dates:
     fid = open("PBS_"+method+"_"+regpar+".pbs","w")
     fid.write(job_string)
     fid.close()
-    try:
-      subprocess.call(['qsub','-q',queue,'PBS_'+method+'_'+regpar+'.pbs'])
-    except:
-      print "Couldn't submit job for %s for lambda=%s" % (meshname,regpar)
+    #try:
+    #  subprocess.call(['qsub','-q',queue,'PBS_'+method+'_'+regpar+'.pbs'])
+    #except:
+    #  print "Couldn't submit job for %s for lambda=%s" % (meshname,regpar)

@@ -39,7 +39,7 @@ Simulation
 
   Output Intervals = 1
 
-  Steady State Max Iterations = 60
+  Steady State Max Iterations = 100
   Steady State Min Iterations = 1
 
   Output File = "$name$.result"
@@ -85,9 +85,10 @@ Initial Condition 1
 
 ! Surface velocities (data)
   Vsurfini 1 = Variable Coordinate 1
-     Real procedure "USF_Init.so" "UIni"
+    Real procedure "USF_Init.so" "UIni"
   Vsurfini 2 = Variable Coordinate 1
-     Real procedure "USF_Init.so" "VIni"
+    Real procedure "USF_Init.so" "VIni"
+
 End
 
 
@@ -103,14 +104,6 @@ End
 !! ice material properties in MPa - m - a system 
 Material 1
   Density = Real $rhoi
-  !Viscosity Model = String "power law"
-  !Viscosity = Variable Coordinate 1, Coordinate 2
-  !  Real Procedure "USF_Init.so" "Viscosity"
-  !Viscosity = Real $ (3*3.5e-25*yearinsec)^(-1.0/3.0)*1.0e-6 
-  ! Using a mixed value from Habermann (Jakobshavn) and Nick (Helheim flowline), -10 deg C, 
-  ! and an enhancement factor of 3
-  !Viscosity Exponent = Real $1.0e00/3.0e00
-  !Critical Shear Rate = Real 1.0e-10
 
   Viscosity Model = String "Glen"
 ! Viscosity has to be set to a dummy value
@@ -126,17 +119,15 @@ Material 1
   Activation Energy 1 = Real 60e3
   Activation Energy 2 = Real 139e3  
   Glen Enhancement Factor = Real 3.0
+! the temperature to switch between the 
+! two regimes in the flow law
+  Limit Temperature = Real -10.0
 ! the variable taken to evaluate the Arrhenius law
 ! in general this should be the temperature relative
 ! to pressure melting point. The suggestion below plugs
 ! in the correct value obtained with TemperateIceSolver
-  !Temperature Field Variable = String "Temp Homologous"
-! the temperature to switch between the 
-! two regimes in the flow law
-  Limit Temperature = Real -10.0
-! In case there is no temperature variable
-  Constant Temperature = Real -10.0
-  
+{Temperature}
+     
   Cauchy = Logical True
 End
 
@@ -146,6 +137,7 @@ Solver 1
   Equation = "MapCoordinate"
   Procedure = "StructuredMeshMapper" "StructuredMeshMapper"
   Mesh Update Variable = String "dS"
+  Mesh Velocity First Zero = Logical True
   Active Coordinate = Integer 3
 End
 
@@ -153,7 +145,7 @@ End
 Solver 2
   Equation = "Navier-Stokes"
   
-  Stabilize = logical True
+  Stabilize = Logical True
   Flow Model = Stokes
   
  ! mandatory to save bulk stiffness matrix
@@ -212,8 +204,7 @@ Solver 3
   Variable = -nooutput "CostV"
   Variable DOFs = 1
 
-  procedure = "ElmerIceSolvers" "CostSolver_Adjoint"
-
+  Procedure = "ElmerIceSolvers" "CostSolver_Adjoint"
 
   Cost Variable Name = String "CostValue"  ! Name of Cost Variable
 
@@ -322,6 +313,11 @@ Solver 7
 End
 
 Solver 8
+  Procedure = "SaveData" "SaveMaterials"
+  Parameter 1 = String "Constant Temperature"
+End
+
+Solver 9
   Equation = SaveLine
   Procedure = "SaveData" "SaveLine"
   Exec Solver = String "After all"
@@ -333,7 +329,7 @@ End
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 Equation 1
-  Active Solvers (6)= 1 2 3 4 7 8
+  Active Solvers (7)= 1 2 3 4 7 8 9
   NS Convect= False
 End
 
@@ -348,6 +344,7 @@ Boundary Condition 1
 
 {FrontBC}
 
+  Save Line = Logical True
 End
 
 Boundary Condition 2
@@ -363,6 +360,8 @@ Boundary Condition 2
 ! Dirichlet BC => Dirichlet = 0 for Adjoint
   Adjoint 1 = Real 0.0
   Adjoint 2 = Real 0.0
+    
+  Save Line = Logical True
 End
 
 Boundary Condition 3
@@ -377,6 +376,8 @@ Boundary Condition 3
 ! Dirichlet BC => Dirichlet = 0 for Adjoint
   Adjoint 1 = Real 0.0
   Adjoint 2 = Real 0.0
+  
+  Save Line = Logical True
 End
 
 Boundary Condition 4
@@ -387,9 +388,7 @@ Boundary Condition 4
   Target Boundaries = 4
   
   Bottom Surface = Variable Coordinate 1
-    REAL   procedure "USF_Init.so" "zbIni"
-
-  Save Line = Logical True
+    REAL procedure "USF_Init.so" "zbIni"
 
   Normal-Tangential Velocity = Logical True  
   Normal-Tangential Adjoint = Logical True  
@@ -401,10 +400,10 @@ Boundary Condition 4
 
   Slip Coefficient 2 = Variable Beta
      REAL MATC "tx*tx"
-
   Slip Coefficient 3 = Variable Beta
      REAL MATC "tx*tx"
 
+  Save Line = Logical True  
 End
 
 ! Upper Surface
@@ -415,9 +414,6 @@ Boundary Condition 5
   
   Top Surface = Variable Coordinate 1
     REAL procedure "USF_Init.so" "zsIni"
-  
-  Save Line = Logical True
-
 
   ! Definition of the Cost function
   Adjoint Cost = Variable Velocity 1 , Vsurfini 1 , Velocity 2 , Vsurfini 2
@@ -428,5 +424,6 @@ Boundary Condition 5
     Real MATC "tx(0)-tx(1)"
   Adjoint Cost der 2 = Variable Velocity 2 , Vsurfini 2
     Real MATC "tx(0)-tx(1)"
-
+  
+  Save Line = Logical True
 End 

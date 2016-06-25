@@ -23,6 +23,7 @@ def guess_beta(x,y,zs,zb,u,v,frac):
   rho = 917 * 1.0e-6 / yearinsec**2
   g = 9.81 * yearinsec**2
   A = 3.5e-25*yearinsec*1.0e18 # For -10 deg ice
+  E = 3.0 #Enhancement factor
 
   nx = len(x)
   ny = len(y)
@@ -82,7 +83,7 @@ def guess_beta(x,y,zs,zb,u,v,frac):
         alpha = frac
         h = max(zs[i, j] - zb[i, j], 0.0)
         # internal deformation from SIA, Paterson pg. 310, eq 8.35
-        q = A * (rho * g * h)**3 * ds[i, j]**3 / 2
+        q = E * A * (rho * g * h)**3 * ds[i, j]**3 / 2
         
         # Measured surface speed
         speed = np.sqrt(u[i, j]**2 + v[i, j]**2)

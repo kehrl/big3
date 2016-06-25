@@ -10,14 +10,13 @@ glacier = 'Helheim'
 # Mesh geometry
 
 meshshp = 'glacier_extent_basin_front'
-#extrude = 12
-extrude = 10
+extrude = 12
 bname = 'morlighem'
 bmodel = 'aniso'
 bsmooth = '4'
 #lc = '300 500 750 2500'
-lc = '400 700 1000 2000'
-dx = 200
+lc = '200 400 600 1200'
+dx = 100
 
 if glacier == 'Helheim':
   date = '20120316'
@@ -31,13 +30,14 @@ regpar = '1e10'
 
 # Temperature SIF options
 temp_simulation = 'steady'
-temp_iterations = 5
+temp_iterations = 40
 temp_timestep = 1
+temperature = -10 # Constant temperature for initial inversion
 
 # Options for PBS submission
 queue = 'normal'
 model = 'ivy'
-nparts = 100
+nparts = 80
 ncpus = 20
 runtime = '8:00:00'
 
@@ -68,7 +68,7 @@ job_name = glacier+"_"+date+"_basin"
 walltime = runtime
 processors = "select={0}:ncpus={1}:mpiprocs={2}:model={3}".format(nparts/ncpus,ncpus,ncpus,model)
 command = "python /u/lkehrl/Code/big3/modeling/inversions/inversion_3d.py"+\
-          " -glacier {0} -method {1} -regpar {2} -mesh {3} -extrude {4} -front {5} -n {6}".format(glacier,method,regpar,meshname,extrude,frontBC,nparts)
+          " -glacier {0} -method {1} -regpar {2} -mesh {3} -extrude {4} -front {5} -n {6} -temperature {7}".format(glacier,method,regpar,meshname,extrude,frontBC,nparts,temperature)
 dir = "/nobackupp8/lkehrl/Models/"+glacier+"/3D/"+meshname+"/"
 
 job_string = """

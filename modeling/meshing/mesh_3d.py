@@ -220,8 +220,13 @@ def main():
   del xt2m,yt2m,timet2m,t2m,fidt2m, H, fidA
   # del fidgeo, ggrid
 
-  #print "Getting flow law parameters...\n"
-  #flowT = flowparameterlib.load_kristin(glacier,x,y,type='T',dir=inputs)
+  print "Getting temperatures from model...\n"
+  try:
+    xT = np.arange(x[0],x[-1],100)
+    yT = np.arange(y[0],y[-1],100)
+    flowT = flowparameterlib.load_temperature_model(glacier,xT,yT,outputdir=inputs)
+  except:
+    print "No model for loading temperatures"
 
   #################################################################
   # Calculate basal sliding speed using SIA for inflow boundaries #

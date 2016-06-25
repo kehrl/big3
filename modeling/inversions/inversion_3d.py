@@ -45,7 +45,9 @@ def get_arguments():
        default="none",help = "Name of restart file.")
   parser.add_argument("-restartposition",dest="restartposition",required = False,\
        default=0,type=int,\
-       help = "Restart position in results file (if applicable.")  
+       help = "Restart position in results file (if applicable.")
+  parser.add_argument("-temperature",dest="temperature",required  = False,\
+       default=10,help = "Use modeled or constant temperature.") 
 
   args, _ = parser.parse_known_args(sys.argv)
 
@@ -69,12 +71,12 @@ def main():
   glacier = args.glacier
   restartfile = args.restartfile
   restartposition = args.restartposition
+  temperature = args.temperature
 
   # Directories
   DIRS=os.path.join(os.getenv("CODE_HOME"),"big3/modeling/solverfiles/3D/")
   DIRM=os.path.join(os.getenv("MODEL_HOME"),glacier+"/3D/"+RES+"/")
   DIRR=os.path.join(DIRM+'mesh2d/inversion_'+method+'/')
-  DIRX=os.path.join(os.getenv("DATA_HOME"),"ShapeFiles/Glaciers/3D/"+glacier)
   inputs=os.path.join(DIRM+"/inputs/")
 
   extent = np.loadtxt(inputs+"mesh_extent.dat")
@@ -133,6 +135,18 @@ def main():
   VeloD 2 = Variable Coordinate 1, Coordinate 2
     Real procedure "USF_Init.so" "VWa" """
 
+  if temperature == 'model':
+    temperature_text="""
+  Constant Temperature = Variable Coordinate 1, Coordinate 2
+    Real Procedure "USF_Init.so" "ModelTemperature" """
+  else:
+    try:
+      T = float(temperature)
+      temperature_text="""
+  Constant Temperature = Real {0}""".format(T)
+    except ValueError:
+      print "Unknown temperature,", temperature
+
   #############################
   # Run inversion solver file #
   #############################
@@ -175,6 +189,7 @@ def main():
     lines=lines.replace('{Extrude}', '{0}'.format(extrude))
     lines=lines.replace('{Lambda}', '{0}'.format(regpar))
     lines=lines.replace('{FrontBC}', '{0}'.format(frontbc_text))
+    lines=lines.replace('{Temperature}', '{0}'.format(temperature_text))
     fid2.write(lines)
     fid1.close()
     fid2.close()

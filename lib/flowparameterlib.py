@@ -31,7 +31,7 @@ def load_temperature_model(glacier,x,y,modelfile='none',outputdir='none'):
     modelfile = os.path.join(os.getenv("MODEL_HOME"),"Helheim/3D/BASIN20120316/mesh2d/temperature/temperature_20160621/temperature0020.pvtu")
 
   # Get temperatures from model
-  data = elmerreadlib.pvtu_file(modelfile,['temp'])
+  data = elmerreadlib.pvtu_file(modelfile,['temp homologous'])
 
   # Get info about output grid
   nx = len(x)
@@ -53,7 +53,7 @@ def load_temperature_model(glacier,x,y,modelfile='none',outputdir='none'):
       y_points = x_points[x_points['y'] == y_val]
       sorted_list = np.sort(y_points, order='z')
       Z.append(sorted_list['z'])
-      T.append(sorted_list['temp']) 
+      T.append(sorted_list['temp homologous']) 
         
   nn = len(X)
   X = np.asarray(X)
@@ -109,6 +109,19 @@ def load_temperature_model(glacier,x,y,modelfile='none',outputdir='none'):
       else:
         L = np.argmin(np.sqrt((X-x[j])**2+(Y-y[i])**2))
         temp[i,j,:] = T[L]
+  
+  
+  if outputdir != 'none':
+    fidT = open(outputdir+"flowT.xyz", "w")
+    fidT.write("{0}\n{1}\n{2}\n".format(len(x), len(y), len(temp[0,0,:])))
+
+    for j in range(len(x)):
+      for i in range(len(y)):
+        fidT.write("{0} {1} ".format(x[j], y[i]))
+        for k in range(len(temp[0,0,:])):
+          fidT.write("{0} ".format(temp[i, j, k]))
+        fidT.write("\n")
+    fidT.close()
           
   return temp
 
