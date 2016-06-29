@@ -15,7 +15,7 @@ bname = 'morlighem'
 bmodel = 'aniso'
 bsmooth = '4'
 #lc = '300 500 750 2500'
-lc = '200 400 600 1000'
+lc = '300 400 600 1000'
 dx = 100
 
 if glacier == 'Helheim':

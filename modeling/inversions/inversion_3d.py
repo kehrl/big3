@@ -44,10 +44,9 @@ def get_arguments():
   parser.add_argument("-restartsolverfile",dest="restartfile",required = False,\
        default="none",help = "Name of restart solver file.")
   parser.add_argument("-restartposition",dest="restartposition",required = False,\
-       default=0,type=int,\
+       default=0,type=int,help = "Restart position in results file (if applicable).")
   parser.add_argument("-restartresultfile",dest="resultfile",required=False,\
-       default="none",help = "Name of result file for restarting."
-       help = "Restart position in results file (if applicable.")
+       default="none",help = "Name of result file for restarting.")
   parser.add_argument("-temperature",dest="temperature",required  = False,\
        default=10,help = "Use modeled or constant temperature.") 
 
