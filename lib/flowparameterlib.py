@@ -24,14 +24,19 @@ def arrhenius(T):
     	
   return A 
 
-def load_temperature_model(glacier,x,y,modelfile='none',outputdir='none'):
+def load_temperature_model(glacier,x,y,modelfile='none',outputdir='none',type='T'):
 
   # Choose file
   if (modelfile == 'none') and (glacier == 'Helheim'):
-    modelfile = os.path.join(os.getenv("MODEL_HOME"),"Helheim/3D/BASIN20120316/mesh2d/temperature/temperature_20160621/temperature0020.pvtu")
+    modelfile = os.path.join(os.getenv("MODEL_HOME"),"Helheim/3D/BASIN20120316/mesh2d/temperature/temperature_20160701/temperature0060.pvtu")
+
+  if type == 'T':
+    variable = 'temp homologous'
+  elif type == 'A':
+    variable = 'temp'
 
   # Get temperatures from model
-  data = elmerreadlib.pvtu_file(modelfile,['temp homologous'])
+  data = elmerreadlib.pvtu_file(modelfile,[variable])
 
   # Get info about output grid
   nx = len(x)
@@ -53,7 +58,7 @@ def load_temperature_model(glacier,x,y,modelfile='none',outputdir='none'):
       y_points = x_points[x_points['y'] == y_val]
       sorted_list = np.sort(y_points, order='z')
       Z.append(sorted_list['z'])
-      T.append(sorted_list['temp homologous']) 
+      T.append(sorted_list[variable]) 
         
   nn = len(X)
   X = np.asarray(X)
@@ -85,45 +90,52 @@ def load_temperature_model(glacier,x,y,modelfile='none',outputdir='none'):
 		    
       # For all the nearby model points,
       if len(L) > 0:
-		    for l in L:
-		      xp = X[l]
-		      yp = Y[l]
+        for l in L:
+          xp = X[l]
+          yp = Y[l]
 		      
-		      # find the distance to the current point and the
-		      # appropriate weight
-		      r = np.sqrt( (x[j] - xp)**2 + (y[i] - yp)**2 )
-		      w = (2500./(r+dx))**3
-		      weights += w
+          # find the distance to the current point and the
+	  # appropriate weight
+	  r = np.sqrt( (x[j] - xp)**2 + (y[i] - yp)**2 )
+          w = (2500./(r+dx))**3
+          weights += w
 		      
-		      # For each point within the current vertical column,
-		      for k in range(nz):
-		        # find which point within the nearby vertical
-		        # column to interpolate from
-		        m = (k * (len(Z[l]) - 1)) / (nz - 1)
+	  # For each point within the current vertical column,
+          for k in range(nz):
+            # find which point within the nearby vertical
+            # column to interpolate from
+	    m = (k * (len(Z[l]) - 1)) / (nz - 1)
 		        
-		        # Add up the value to the running average
-		        temp[i, j, k] += w * T[l][m]
+	    # Add up the value to the running average
+	    temp[i, j, k] += w * T[l][m]
 		    
-		    # Normalize the running average by the weight sum
-		    temp[i,j,:] /= weights
+        # Normalize the running average by the weight sum
+        temp[i,j,:] /= weights
+      
       else:
         L = np.argmin(np.sqrt((X-x[j])**2+(Y-y[i])**2))
         temp[i,j,:] = T[L]
   
+  if type == 'A':
+    output = arrhenius(temp.flatten()).reshape(ny,nx,nz)
+    outfile = "flowA.xyz"
+  else:
+    output = temp
+    outfile = "flowT.xyz"
   
   if outputdir != 'none':
-    fidT = open(outputdir+"flowT.xyz", "w")
-    fidT.write("{0}\n{1}\n{2}\n".format(len(x), len(y), len(temp[0,0,:])))
+    fidT = open(outputdir+outfile, "w")
+    fidT.write("{0}\n{1}\n{2}\n".format(len(x), len(y), len(output[0,0,:])))
 
     for j in range(len(x)):
       for i in range(len(y)):
         fidT.write("{0} {1} ".format(x[j], y[i]))
-        for k in range(len(temp[0,0,:])):
-          fidT.write("{0} ".format(temp[i, j, k]))
+        for k in range(len(output[0,0,:])):
+          fidT.write("{0} ".format(output[i, j, k]))
         fidT.write("\n")
     fidT.close()
           
-  return temp
+  return output
 
 def load_kristin(glacier,x,y,type='A',dir='none'):
 

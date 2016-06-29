@@ -170,7 +170,7 @@ def main():
   ################################################################
   
   # Set low resolution mesh (no reason to overkill mesh size for climate variables given 
-  # spatial resolution of RACMO2.3.
+  # spatial resolution of RACMO2.3).
   xt2m = np.arange(x[0],x[-1],1e3)
   yt2m = np.arange(y[0],y[-1],1e3)
   
@@ -179,9 +179,9 @@ def main():
   timesmb,smb = climlib.racmo_interpolate_to_cartesiangrid(xt2m,yt2m,'smb',epsg=3413,maskvalues='both',timing='mean')
   #ggrid = bedlib.geothermalflux_grid(xt2m,yt2m,model='davies',method='nearest')
 
-  # Set maximum temperature to melting temperature
-  ind = np.where(t2m > 273.15)
-  t2m[ind] = 273.15
+  # Set maximum temperature to -1 deg C
+  ind = np.where(t2m > 272.15)
+  t2m[ind] = 272.15
 
   fidt2m = open(inputs+"t2m.xy","w")
   fidsmb = open(inputs+"smb.xy","w")
@@ -205,26 +205,26 @@ def main():
   del Hflat,f,xgrid,ygrid
   
   # Get 3D grid of temperatures  
-  T = flowparameterlib.steadystate_vprofile(H,t2m,smb,levels=10)
-  
-  fidA = open(inputs+"tsteady.xyz", "w")
-  fidA.write("{0}\n{1}\n{2}\n".format(len(xt2m), len(yt2m), len(T[0,0,:])))
+  T = flowparameterlib.steadystate_vprofile(H,t2m,smb,levels=15)
+ 
+  fidT = open(inputs+"flowT_steady.xyz", "w")
+  fidT.write("{0}\n{1}\n{2}\n".format(len(xt2m), len(yt2m), len(T[0,0,:])))
   for j in range(len(xt2m)):
     for i in range(len(yt2m)):
-      fidA.write("{0} {1} ".format(xt2m[j], yt2m[i]))
+      fidT.write("{0} {1} ".format(xt2m[j], yt2m[i]))
       for k in range(len(T[0,0,:])):
-        fidA.write("{0} ".format(T[i, j, k]))
-      fidA.write("\n")
-  fidA.close()
+        fidT.write("{0} ".format(T[i, j, k]))
+      fidT.write("\n")
+  fidT.close()
 
-  del xt2m,yt2m,timet2m,t2m,fidt2m, H, fidA
+  del xt2m,yt2m,timet2m,t2m,fidt2m, H, fidT
   # del fidgeo, ggrid
 
   print "Getting temperatures from model...\n"
   try:
     xT = np.arange(x[0],x[-1],100)
     yT = np.arange(y[0],y[-1],100)
-    flowT = flowparameterlib.load_temperature_model(glacier,xT,yT,outputdir=inputs)
+    flowT = flowparameterlib.load_temperature_model(glacier,xT,yT,outputdir=inputs,type='A')
   except:
     print "No model for loading temperatures"
 

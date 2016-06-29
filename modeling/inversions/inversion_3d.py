@@ -41,10 +41,12 @@ def get_arguments():
        default='adjoint',help = "adjoint or robin.")
   parser.add_argument("-extrude", dest="extrude", type=int,required = False,\
        default=5,help = "Number of extrusion levels.")
-  parser.add_argument("-restartfile",dest="restartfile",required = False,\
-       default="none",help = "Name of restart file.")
+  parser.add_argument("-restartsolverfile",dest="restartfile",required = False,\
+       default="none",help = "Name of restart solver file.")
   parser.add_argument("-restartposition",dest="restartposition",required = False,\
        default=0,type=int,\
+  parser.add_argument("-restartresultfile",dest="resultfile",required=False,\
+       default="none",help = "Name of result file for restarting."
        help = "Restart position in results file (if applicable.")
   parser.add_argument("-temperature",dest="temperature",required  = False,\
        default=10,help = "Use modeled or constant temperature.") 
@@ -71,6 +73,7 @@ def main():
   glacier = args.glacier
   restartfile = args.restartfile
   restartposition = args.restartposition
+  resultfile = args.resultfile
   temperature = args.temperature
 
   # Directories
@@ -136,16 +139,15 @@ def main():
     Real procedure "USF_Init.so" "VWa" """
 
   if temperature == 'model':
-    temperature_text="""
-  Constant Temperature = Variable Coordinate 1, Coordinate 2
+    viscosity_text="""
+  Viscosity = Variable Coordinate 1, Coordinate 2
     Real Procedure "USF_Init.so" "ModelTemperature" """
+  elif float(temperature) == -10.0:
+    viscosity_text="""
+  Viscosity = Real $ (3*3.5e-25*yearinsec)^(-1.0/3.0)*1.0e-6
+  ! -10 deg C, and an enhancement factor of 3 """
   else:
-    try:
-      T = float(temperature)
-      temperature_text="""
-  Constant Temperature = Real {0}""".format(T)
-    except ValueError:
-      print "Unknown temperature,", temperature
+    sys.exit("Unknown temperature, +str(temperature)")
 
   #############################
   # Run inversion solver file #
@@ -172,7 +174,13 @@ def main():
       os.rename(DIRM+"gradientnormadjoint_"+method+"_beta.dat",DIRR_lambda+"gradient_"+runname+"_beforerestart.dat")
       os.rename(DIRM+"cost_"+method+"_beta.dat",DIRR_lambda+"cost_"+runname+"_beforerestart.dat")
     except:
-      pass
+      try:
+        os.rename(DIRR_lambda+"M1QN3_"+method+"_beta.out",DIRR_lambda+"M1QN3_"+method+"_beta_beforerestart.out")
+        os.rename(DIRR_lambda+"gradientnormadjoint_"+method+"_beta.dat",DIRR_lambda+"gradient_"+runname+"_beforerestart.dat")
+        os.rename(DIRR_lambda+"cost_"+method+"_beta.dat",DIRR_lambda+"cost_"+runname+"_beforerestart.dat")
+      except:
+        pass
+
 
   else: 
     # Get current date
@@ -189,7 +197,7 @@ def main():
     lines=lines.replace('{Extrude}', '{0}'.format(extrude))
     lines=lines.replace('{Lambda}', '{0}'.format(regpar))
     lines=lines.replace('{FrontBC}', '{0}'.format(frontbc_text))
-    lines=lines.replace('{Temperature}', '{0}'.format(temperature_text))
+    lines=lines.replace('{ViscosityOption}', '{0}'.format(viscosity_text))
     fid2.write(lines)
     fid1.close()
     fid2.close()

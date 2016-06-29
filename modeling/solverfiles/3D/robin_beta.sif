@@ -39,7 +39,7 @@ Simulation
   
   Output Intervals = 1
 
-  Steady State Max Iterations = 1
+  Steady State Max Iterations = 200
   Steady State Min Iterations = 1
 
   Output File = "$name".result"
@@ -104,29 +104,32 @@ End
 !! ice material properties in MPa - m - a system
 Material 1
   Density = Real $rhoi
+  Viscosity Model = String "power law"
+{ViscosityOption}  
+  Viscosity Exponent = Real $(1.0e00/3.0e00)
+  Critical Shear Rate = Real 1.0e-10
 
-  Viscosity Model = String "Glen"
+  !Viscosity Model = String "Glen"
 ! Viscosity has to be set to a dummy value
 ! to avoid warning output from Elmer
-  Viscosity = Real 1.0 
-  Glen Exponent = Real 3.0
-  Critical Shear Rate = Real 1.0e-10
+  !Viscosity = Real 1.0 
+  !Glen Exponent = Real 3.0
+  !Critical Shear Rate = Real 1.0e-10
 ! Rate factors (Paterson value in MPa^-3a^-1)
-  Rate Factor 1 = Real 1.258e13  
-  Rate Factor 2 = Real 6.046e28
+  !Rate Factor 1 = Real 1.258e13  
+  !Rate Factor 2 = Real 6.046e28
 ! these are in SI units - no problem, as long as
 ! the gas constant also is 
-  Activation Energy 1 = Real 60e3
-  Activation Energy 2 = Real 139e3  
-  Glen Enhancement Factor = Real 3.0
+  !Activation Energy 1 = Real 60e3
+  !Activation Energy 2 = Real 139e3  
+  !Glen Enhancement Factor = Real 3.0
 ! the temperature to switch between the 
 ! two regimes in the flow law
-  Limit Temperature = Real -10.0
+  !Limit Temperature = Real -10.0
 ! the variable taken to evaluate the Arrhenius law
 ! in general this should be the temperature relative
 ! to pressure melting point. The suggestion below plugs
 ! in the correct value obtained with TemperateIceSolver
-{Temperature}
   
   Cauchy = Logical True
 End
@@ -162,7 +165,7 @@ Solver 2
   Nonlinear System Convergence Tolerance = Real 1.0e-7
   Nonlinear System Newton After Iterations = Integer 10
   Nonlinear System Newton After Tolerance = Real 1.0e-03
-  Nonlinear System Relaxation Factor = Real 1.0
+  Nonlinear System Relaxation Factor = Real 0.9
 
   Nonlinear System Reset Newton = Logical True
 
@@ -333,7 +336,7 @@ End
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 Equation 1
   Active Solvers (7)= 1 2 3 4 7 8 9
-  NS Convect= False
+  NS Convect = False
 End
 
 Equation 2

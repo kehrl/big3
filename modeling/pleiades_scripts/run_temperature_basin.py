@@ -15,7 +15,7 @@ bname = 'morlighem'
 bmodel = 'aniso'
 bsmooth = '4'
 #lc = '300 500 750 2500'
-lc = '200 400 600 1200'
+lc = '200 400 600 1000'
 dx = 100
 
 if glacier == 'Helheim':
@@ -25,14 +25,14 @@ elif glacier == 'Kanger':
   date = '20110213' 
 
 # Inversion options
-method = 'adjoint'
+method = 'robin'
 regpar = '1e10' 
 
 # Temperature SIF options
 temp_simulation = 'steady'
-temp_iterations = 40
+temp_iterations = 60
 temp_timestep = 1
-temperature = -10 # Constant temperature for initial inversion
+temperature = -10.0 # Constant temperature for initial inversion
 
 # Options for PBS submission
 queue = 'normal'

@@ -7,7 +7,6 @@ import os
 #glacier = 'Kanger'
 glacier = 'Helheim'
 
-
 # Mesh geometry
 
 meshshp = 'glacier_extent_inversion_front'
@@ -16,7 +15,7 @@ bname = 'morlighem'
 bmodel = 'aniso'
 bsmooth = '4'
 temperature = -10.0
-lc = '200 200 300 500'
+lc = '300 300 300 500'
 #lc = '1000 1000 4000 5000'
 
 if glacier == 'Helheim':
@@ -32,7 +31,8 @@ elif glacier == 'Kanger':
            '20140213']  
 
 # Inversion options
-method = 'adjoint'
+method = 'robin'
+regpars = ['1e10']
 regpars = ['1e8','1e9','1e10','1e11','1e12','1e13','1e14','1e15'] 
 
 

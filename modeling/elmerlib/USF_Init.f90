@@ -417,22 +417,101 @@ FUNCTION GuessBeta( Model, nodenumber, dumy) RESULT(coeff) !
 End
 
 !------------------------------------------------------------------!
-FUNCTION ModelTemperature( Model, nodenumber, dumy) RESULT(T) !
+FUNCTION ModelViscosity( Model, nodenumber, dumy) RESULT(eta) !
 !------------------------------------------------------------------!
     USE types
 		Use DefUtils
     implicit none
 		TYPE(Model_t) :: Model
-    Real(kind=dp) :: dumy,T
+    Real(kind=dp) :: dumy,eta
     INTEGER :: nodenumber
 
 		Real(kind=dp),allocatable :: dem(:,:,:), xx(:), yy(:)
 		Real(kind=dp) :: x, y, z, zs , zb, dz
-		Real(kind=dp) :: alpha
-		INTEGER :: nx, ny, nz, k, i, j, Timestep, TimestepInit
+		Real(kind=dp) :: yearinsec, E, alpha
+		integer :: nx, ny, nz, k, i, j
 		REAL(kind=dp) :: LinearInterp, zsIni, zbIni
 		
-		TYPE(Variable_t), POINTER :: dSVariable, TimestepVariable
+		TYPE(Variable_t), POINTER :: dSVariable
+    INTEGER, POINTER :: dSPerm(:) 
+    REAL(KIND=dp), POINTER :: dSValues(:)
+
+		
+    logical :: Firsttime=.true.
+
+    SAVE dem,xx,yy,nx,ny,nz
+    SAVE Firsttime
+
+    IF (Firsttime) then
+
+      Firsttime=.False.
+
+      ! open file
+      open(10,file='inputs/flowA.xyz')
+      Read(10,*) nx
+      Read(10,*) ny
+      Read(10,*) nz
+      
+      allocate(xx(nx), yy(ny))
+      allocate(dem(nx, ny, nz))
+
+      do i = 1, nx
+      	do j = 1, ny
+          read(10, *) xx(i), yy(j), dem(i, j, :)
+        End do
+      End do
+      close(10)
+      
+    End if
+
+    x = Model % Nodes % x (nodenumber)
+    y = Model % Nodes % y (nodenumber)
+    z = Model % Nodes % y (nodenumber)
+
+    zs = zsIni( Model, nodenumber, dumy )
+    zb = zbIni( Model, nodenumber, dumy )		
+		
+    yearinsec=365.25d0*24*60*60
+		
+    ! Enhanced factor
+    E = 3.d0
+		
+    ! Find which vertical layer the current point belongs to
+    dz = (zs - zb) / (nz - 1)
+    k = int( (z-zb) / dz)+1
+    IF (k < 0) THEN
+      print *,k,z,zb,zs,dz
+    END IF
+    
+    ! Interpolate the value of the temperature from nearby points in
+    ! the layers above and below it
+    alpha = (z - (zb + (k - 1) * dz)) / dz
+    eta = (1 - alpha) * LinearInterp(dem(:,:,k), xx, yy, nx, ny, x, y) + alpha * LinearInterp(dem(:,:,k+1), xx, yy, nx, ny, x, y)
+    
+    ! Get the viscosity in the correct units
+    eta = ((E*eta*yearinsec)**(-1.0/3.0d0))*1.0e-6
+    
+    Return
+End
+
+
+!------------------------------------------------------------------!
+FUNCTION ModelTemperature( Model, nodenumber, dumy) RESULT(T) !
+!------------------------------------------------------------------!
+    USE types
+    Use DefUtils
+    implicit none
+    TYPE(Model_t) :: Model
+    Real(kind=dp) :: dumy,T
+    INTEGER :: nodenumber
+
+    Real(kind=dp),allocatable :: dem(:,:,:), xx(:), yy(:)
+    Real(kind=dp) :: x, y, z, zs , zb, dz
+    Real(kind=dp) :: alpha
+    INTEGER :: nx, ny, nz, k, i, j, Timestep, TimestepInit
+    REAL(kind=dp) :: LinearInterp, zsIni, zbIni
+		
+    TYPE(Variable_t), POINTER :: dSVariable, TimestepVariable
     INTEGER, POINTER :: dSPerm(:) 
     REAL(KIND=dp), POINTER :: dSValues(:)
 
@@ -466,7 +545,7 @@ FUNCTION ModelTemperature( Model, nodenumber, dumy) RESULT(T) !
       TimestepVariable => VariableGet( Model % Variables,'Timestep')
 	    TimestepInit=TimestepVariable % Values(1)
       
-		END IF
+    END IF
 
     ! Get coordinates
     x = Model % Nodes % x (nodenumber)
@@ -476,11 +555,11 @@ FUNCTION ModelTemperature( Model, nodenumber, dumy) RESULT(T) !
     zs = zsIni( Model, nodenumber, dumy )
     zb = zbIni( Model, nodenumber, dumy )		
 		
-		! On the first iteration, we still have z mapped from 0 to 1, so we need to check to make
-		! sure that it isn't the first iteration. If it is, we just set the temperature to a 
-		! default of -10 deg C.
-		TimestepVariable => VariableGet( Model % Variables,'Timestep')
-	  Timestep=TimestepVariable % Values(1)
+    ! On the first iteration, we still have z mapped from 0 to 1, so we need to 
+    ! check to make sure that it isn't the first iteration. If it is, we just 
+    ! set the temperature to a default of -10 deg C.
+    TimestepVariable => VariableGet( Model % Variables,'Timestep')
+    Timestep=TimestepVariable % Values(1)
     IF (Timestep == TimestepInit) THEN
       IF (z <= 1.0) THEN
         IF (z >= 0.0) THEN          
@@ -491,9 +570,9 @@ FUNCTION ModelTemperature( Model, nodenumber, dumy) RESULT(T) !
     IF (NotMapped) THEN
       T = -10.0d0
     ELSE
-    	! Find which vertical layer the current point belongs to
-		  dz = (zs - zb) / (nz - 1)
-		  k = int( (z-zb) / dz)+1
+      ! Find which vertical layer the current point belongs to
+      dz = (zs - zb) / (nz - 1)
+      k = int( (z-zb) / dz)+1
     
       ! Interpolate the value of the temperature from nearby points in
       ! the layers above and below it
@@ -501,12 +580,12 @@ FUNCTION ModelTemperature( Model, nodenumber, dumy) RESULT(T) !
 
       T = (1 - alpha) * LinearInterp(dem(:,:,k), xx, yy, nx, ny, x, y) + alpha * LinearInterp(dem(:,:,k+1), xx, yy, nx, ny, x, y)
 
-      ! In case we have restarted the file, we don't want to later end up with this timestep
+      ! In case we have restarted the file, we don't want to later end up 
+      ! with this timestep
       TimestepInit = 0
     
     END IF
   
-    
     RETURN
 END
 
