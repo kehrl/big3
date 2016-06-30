@@ -6,7 +6,7 @@ from matplotlib.path import Path
 import scipy.interpolate
 import scipy.signal
 
-def load_flowline(glacier,shapefilename='center_flowline',filt_len=2.0e3,verticaldatum='geoid',bedsource='cresis',bedmodel='aniso',bedsmoothing=4):
+def load_flowline(glacier,shapefilename='center_flowline',filt_len=2.0e3,verticaldatum='geoid',bedsource='cresis',bedmodel='aniso',bedsmoothing=4,dx=20):
 
   '''
   x,y,zb_filt,dists = load(glacier,shapefilename='center_flowline')
@@ -19,6 +19,7 @@ def load_flowline(glacier,shapefilename='center_flowline',filt_len=2.0e3,vertica
   shapefilename: shapefile to use for the flowline
   filt_len: filter length (in meters) for the bed profile
   verticaldatum: geoid or ellipsoid
+  dx: distance between points
   
   Outputs:
   x,y: x,y coordinates of flowline
@@ -38,7 +39,7 @@ def load_flowline(glacier,shapefilename='center_flowline',filt_len=2.0e3,vertica
   d = distlib.transect(flowline[:,0],flowline[:,1])
 
   # Set uniform spacing between nodes along flowline
-  dists_old = np.linspace(0,np.max(d),np.max(d)/20)
+  dists_old = np.linspace(0,np.max(d),np.max(d)/dx)
   x = np.interp(dists_old,d,flowline[:,0])
   y = np.interp(dists_old,d,flowline[:,1])
   
