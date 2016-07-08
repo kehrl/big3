@@ -207,11 +207,12 @@ def load_satimages(glacier,xmin,xmax,ymin,ymax,time1=-np.inf,time2=np.inf,data='
     for file in files:
       if file.endswith('.tif'):
         filetime = datelib.date_to_fracyear(float(file[0:4]),float(file[4:6]),float(file[6:8]))
-        if (time1 == time2) and (abs(filetime - times) < abs(time1 - times)):
-          # Last constrain is to prevent unnecessary loading of files, 
-          types = 'Landsat'
-          dirs = DIRLANDSAT+file
-          times = filetime
+        if (time1 == time2): 
+          if (abs(filetime - times) < abs(time1 - times)):
+            # Last constrain is to prevent unnecessary loading of files, 
+            types = 'Landsat'
+            dirs = DIRLANDSAT+file
+            times = filetime
         elif (filetime >= time1) and (filetime <= time2):
           types.append('Landsat')
           dirs.append(DIRLANDSAT+file)
@@ -227,10 +228,11 @@ def load_satimages(glacier,xmin,xmax,ymin,ymax,time1=-np.inf,time2=np.inf,data='
           filetime = datelib.doy_to_fracyear(float(file[14:18]),float(file[19:22]))
         elif glacier == 'Kanger':
           filetime = datelib.doy_to_fracyear(float(file[11:15]),float(file[16:19]))        
-        if (time1 == time2) and (abs(filetime - times) < abs(time1 - times)):
-          types = 'TSX'
-          dirs = DIRTSX+file
-          times = filetime
+        if (time1 == time2):
+          if (abs(filetime - times) < abs(time1 - times)):
+            types = 'TSX'
+            dirs = DIRTSX+file
+            times = filetime
         elif (filetime >= time1) and (filetime <= time2):
           types.append('TSX')
           dirs.append(DIRLANDSAT+file)
