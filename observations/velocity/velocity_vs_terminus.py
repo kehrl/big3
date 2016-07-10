@@ -493,7 +493,7 @@ if plot_overview == 1:
     plt.ylabel('  Height above flotation at K05 (m)',fontsize=8,fontname="Arial")
     plt.yticks(np.arange(-20,80,10),fontsize=8,fontname="Arial")
     plt.ylim([-25,62])
-    plt.text(2008.13,-4,'c',fontsize=10,fontname='arial',weight='bold')
+    plt.text(2008.13,-5,'c',fontsize=10,fontname='arial',weight='bold')
     ind = [0,3,4,1,5,2]
   handles, labels = ax.get_legend_handles_labels()
   labels = [labels[i] for i in ind]
@@ -573,9 +573,16 @@ if plot_overview == 1:
   ind = np.where((year_runoff > 2007.) & (year_runoff < 2016))[0]
   for i in ind:
     #ax2.plot([day1_runoff[i],day2_runoff[i]],[total_runoff[i]/meltlength_runoff[i],total_runoff[i]/meltlength_runoff[i]],'k',lw=1.5)
-    ax2.text(year_runoff[i]+0.65,41,'{0:.0f}'.format(total_runoff[i]),fontsize=8,fontname='Arial')
-    if i == ind[0]:
-      ax2.text(year_runoff[i]+0.65,35,r'kg m$^{-2}$',fontsize=8,fontname='Arial')
+    if glacier == 'Helheim':
+      ax2.text(year_runoff[i]+0.65,41,'{0:.0f}'.format(np.round(total_runoff[i],decimals=-1)),fontsize=8,fontname='Arial')
+      if i == ind[0]:
+        ax2.text(year_runoff[i]+0.65,35,r'kg m$^{-2}$',fontsize=8,fontname='Arial')
+    elif glacier == 'Kanger':
+      if i == ind[2]:
+        ax2.text(year_runoff[i]+0.58,43,'{0:.0f}'.format(np.round(total_runoff[i],decimals=-1)),fontsize=8,fontname='Arial')
+        ax2.text(year_runoff[i]+0.58,37,r'kg m$^{-2}$',fontsize=7,fontname='Arial')
+      else:
+        ax2.text(year_runoff[i]+0.59,43,'{0:.0f}'.format(np.round(total_runoff[i],decimals=-1)),fontsize=8,fontname='Arial')
   if plot_images == 1:
    for i in range(0,len(images)):
       plt.plot([images_time[i][3],images_time[i][3]],ax.get_ylim(),'--',color='0.3')
