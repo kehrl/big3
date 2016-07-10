@@ -165,7 +165,7 @@ Solver 2
   Nonlinear System Convergence Tolerance = Real 1.0e-7
   Nonlinear System Newton After Iterations = Integer 10
   Nonlinear System Newton After Tolerance = Real 1.0e-03
-  Nonlinear System Relaxation Factor = Real 0.9
+  Nonlinear System Relaxation Factor = Real 1.00
 
   Nonlinear System Reset Newton = Logical True
 
@@ -213,7 +213,7 @@ Solver 3
   Nonlinear System Convergence Tolerance = Real 1.0e-7
   Nonlinear System Newton After Iterations = Integer 10
   Nonlinear System Newton After Tolerance = Real 1.0e-03
-  Nonlinear System Relaxation Factor = Real 1.0
+  Nonlinear System Relaxation Factor = Real 1.00
 
   Nonlinear System Reset Newton = Logical True
 
@@ -321,7 +321,7 @@ End
 
 Solver 8
   Procedure = "SaveData" "SaveMaterials"
-  Parameter 1 = String "Constant Temperature"
+  Parameter 1 = String "Viscosity"
 End
 
 Solver 9

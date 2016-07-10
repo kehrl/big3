@@ -23,7 +23,7 @@ def guess_beta(x,y,zs,zb,u,v,frac):
   rho = 917 * 1.0e-6 / yearinsec**2
   g = 9.81 * yearinsec**2
   A = 3.5e-25*yearinsec*1.0e18 # For -10 deg ice
-  E = 3.0 #Enhancement factor
+  E = 1.0 #Enhancement factor
 
   nx = len(x)
   ny = len(y)

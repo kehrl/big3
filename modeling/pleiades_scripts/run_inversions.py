@@ -4,13 +4,13 @@ import subprocess
 import time
 import os
 
-#glacier = 'Kanger'
-glacier = 'Helheim'
+glacier = 'Kanger'
+#glacier = 'Helheim'
 
 # Mesh geometry
 
 meshshp = 'glacier_extent_inversion_front'
-extrude = 12
+extrude = 10
 bname = 'morlighem'
 bmodel = 'aniso'
 bsmooth = '4'
@@ -25,15 +25,16 @@ if glacier == 'Helheim':
   #dates = ['20130209','20130508','20130804','20131031','20140127']#,\
   #          '20140127','20140509','20140731','20141016']
 elif glacier == 'Kanger':
-  dates = ['20110308','20110708','20110826','20111106',\
-           '20120213','20120522','20121012','20121217'\
-           '20130210','20130714','20131004','20131204'\
-           '20140213']  
+  dates = ['20120213']
+  #dates = ['20110308','20110708','20110826','20111106',\
+  #         '20120213','20120522','20121012','20121217'\
+  #         '20130210','20130714','20131004','20131204'\
+  #         '20140213']  
 
 # Inversion options
 method = 'robin'
 regpars = ['1e10']
-regpars = ['1e8','1e9','1e10','1e11','1e12','1e13','1e14','1e15'] 
+#regpars = ['1e8','1e9','1e10','1e11','1e12','1e13','1e14','1e15'] 
 
 
 # Options for PBS submission
@@ -56,7 +57,7 @@ else:
 for date in dates:
 
   # Output mesh name
-  meshname = 'DEM'+date
+  meshname = 'DEM'+date+'_'+frontBC
 
   # Create mesh
   command = "python /u/lkehrl/Code/big3/modeling/meshing/"+\

@@ -10,12 +10,12 @@ glacier = 'Helheim'
 # Mesh geometry
 
 meshshp = 'glacier_extent_basin_front'
-extrude = 12
+extrude = 10
 bname = 'morlighem'
 bmodel = 'aniso'
 bsmooth = '4'
 #lc = '300 500 750 2500'
-lc = '300 400 600 1000'
+lc = '400 700 900 1700'
 dx = 100
 
 if glacier == 'Helheim':
@@ -37,7 +37,7 @@ temperature = -10.0 # Constant temperature for initial inversion
 # Options for PBS submission
 queue = 'normal'
 model = 'ivy'
-nparts = 80
+nparts = 120
 ncpus = 20
 runtime = '8:00:00'
 
@@ -90,10 +90,10 @@ os.chdir(dir)
 fid = open("PBS_"+method+"_"+regpar+".pbs","w")
 fid.write(job_string)
 fid.close()
-#try:
-#  subprocess.call(['qsub','-q',queue,'PBS_'+method+'_'+regpar+'.pbs'])
-#except:
-#  print "Couldn't submit job for %s for lambda=%s" % (meshname,regpar)
+try:
+  subprocess.call(['qsub','-q',queue,'PBS_'+method+'_'+regpar+'.pbs'])
+except:
+  print "Couldn't submit job for %s for lambda=%s" % (meshname,regpar)
   
 ########################################################
 # Set up temperature run for after inversion completes #

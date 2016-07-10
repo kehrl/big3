@@ -205,7 +205,7 @@ def main():
   del Hflat,f,xgrid,ygrid
   
   # Get 3D grid of temperatures  
-  T = flowparameterlib.steadystate_vprofile(H,t2m,smb,levels=15)
+  T = flowparameterlib.steadystate_vprofile(H,t2m,smb,levels=12)
  
   fidT = open(inputs+"flowT_steady.xyz", "w")
   fidT.write("{0}\n{1}\n{2}\n".format(len(xt2m), len(yt2m), len(T[0,0,:])))

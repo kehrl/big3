@@ -39,7 +39,7 @@ Simulation
 
   Output Intervals = 1
 
-  Steady State Max Iterations = 200
+  Steady State Max Iterations = 100
   Steady State Min Iterations = 1
 
   Output File = "$name$.result"
