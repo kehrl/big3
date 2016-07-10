@@ -229,7 +229,7 @@ def load_satimages(glacier,xmin,xmax,ymin,ymax,time1=-np.inf,time2=np.inf,data='
         elif glacier == 'Kanger':
           filetime = datelib.doy_to_fracyear(float(file[11:15]),float(file[16:19]))        
         if (time1 == time2):
-          if (abs(filetime - times) < abs(time1 - times)):
+          if (abs(filetime - times) <= abs(time1 - times)) and file.endswith('_1-20mgeo.tif'):
             types = 'TSX'
             dirs = DIRTSX+file
             times = filetime
