@@ -13,7 +13,7 @@ sys.path.append("/usr/local/bin/")
 from subprocess import call
 import math
 import gdal_merge
-from geodat import *
+from geodatlib import *
 import glob
 
 # Get arguments
@@ -26,9 +26,9 @@ glacier = args[1][:] # Options: Kanger, Helheim
 # Set extent for cropping based on glacier #
 ############################################
 if glacier == 'Helheim':
-  extent='270000 -2597000 320000 -2550000'
+  extent='260000 -2600000 325000 -2540000'
 elif glacier == 'Kanger':
-  extent='450000 -2308000 516000 -2262000'
+  extent='440000 -2318000 526000 -2252000'
 else:
   sys.exit("Unknown glacier")
 

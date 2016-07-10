@@ -93,7 +93,7 @@ year_runoff,day1_runoff,day2_runoff,meltlength_runoff,total_runoff = climlib.sea
 # Get velocity DEMs #
 #####################
 
-xvdem,yvdem,vdem,vtimedem = vellib.velocity_grid(glacier,xmin,xmax,ymin,ymax)
+xvdem,yvdem,vdem,vtrend,vdetrend,vrange,vcount,vtimedem = vellib.variability(glacier,time1,time2)
 
 ##############
 # Get images #
@@ -133,14 +133,19 @@ if glacier == 'Helheim':
   ptind=0
 elif glacier == 'Kanger':
   ptind=1
-  
-for imageind in range(0,len(imagetimes)):
+
+n=0  
+nonnan = np.where(~(np.isnan(zpt_dem[:,ptind])))[0]
+for time in np.unique(time_dem[nonnan]):
+
+  zsind = np.where(zstimedem == time)[0]
 
   fig = plt.figure(figsize=(11,9))
   gs = matplotlib.gridspec.GridSpec(12,3)
   matplotlib.rc('font',family='Arial')
   
   plt.subplot(gs[0:4,0])
+  imageind = np.argmin(abs(imagetimes-zstimedem[zsind[0]]))
   ax=plt.gca()
   plt.imshow(images[imageind][2],extent=[np.min(images[imageind][0]),np.max(images[imageind][0]),np.min(images[imageind][1]),np.max(images[imageind][1])],origin='lower',cmap='Greys_r')
   plt.xticks([])
@@ -162,13 +167,15 @@ for imageind in range(0,len(imagetimes)):
 
   plt.subplot(gs[4:8,0])
   ax = plt.gca()
-  velind = np.argmin(abs(vtimedem-imagetimes[imageind]))
-  p=plt.imshow(vdem[:,:,velind]/1e3,extent=[xmin,xmax,ymin,ymax],origin='lower',clim=[4,10])
+  velind = np.argmin(abs(vtimedem-zstimedem[zsind[0]]))
+  p=plt.imshow(vdem[:,:,velind]/1e3,extent=[xvdem[0],xvdem[-1],yvdem[0],yvdem[-1]],origin='lower',clim=[4,10])
   plt.plot(x,y,'k',lw=1.5)
   if glacier == 'Helheim':
     plt.plot(x[ind_eul[0]],y[ind_eul[0]],'ro',markersize=10)
+    plt.text(x[ind_eul[0]]-900,y[ind_eul[0]]-800,'H02',fontsize=12,fontname='Arial')
   elif glacier == 'Kanger':
     plt.plot(x[ind_eul[1]],y[ind_eul[1]],'bo',markersize=10)
+    plt.text(x[ind_eul[1]]-1000,y[ind_eul[1]]-1200,'K05',fontsize=12,fontname='Arial')
   plt.xticks([])
   plt.yticks([])
   plt.xlim([xmin,xmax])
@@ -182,7 +189,7 @@ for imageind in range(0,len(imagetimes)):
   patch = matplotlib.patches.PathPatch(path,edgecolor='k',facecolor='w',lw=1,zorder=3)
   ax.add_patch(patch)
   plt.text(xmin+0.04*(xmax-xmin),0.92*(ymax-ymin)+ymin,'{0:4d}-{1:02d}-{2:02d}'.format(year,month,int(np.round(day))))
-  plt.text(xmin+0.04*(xmax-xmin),0.03*(ymax-ymin)+ymin,'B',fontweight='bold',color='w')
+  plt.text(xmin+0.04*(xmax-xmin),0.03*(ymax-ymin)+ymin,'B',fontweight='bold',color='k')
   path = matplotlib.path.Path([[0.49*(xmax-xmin)+xmin,0.98*(ymax-ymin)+ymin],
   			[0.98*(xmax-xmin)+xmin,0.98*(ymax-ymin)+ymin],
   			[0.98*(xmax-xmin)+xmin,0.73*(ymax-ymin)+ymin],
@@ -197,14 +204,20 @@ for imageind in range(0,len(imagetimes)):
   
   plt.subplot(gs[8:12,0])
   ax = plt.gca()
-  zsind = np.argmin(abs(zstimedem-imagetimes[imageind]))
-  plt.imshow(demshadelib.hillshade(zsdem[:,:,zsind]),extent=[xmin,xmax,ymin,ymax],origin='lower',cmap='Greys_r')
-  p = plt.imshow((zsdem[:,:,zsind]),extent=[xmin,xmax,ymin,ymax],origin='lower',clim=[0,400],cmap='cpt_rainbow',alpha=0.6)
+  #zsind[0] = np.argmin(abs(zstimedem-imagetimes[imageind]))
+  if len(zsind) > 1:
+    plt.imshow(demshadelib.hillshade(np.nanmean(zsdem[:,:,zsind],axis=2)),extent=[xmin,xmax,ymin,ymax],origin='lower',cmap='Greys_r')
+    p = plt.imshow(np.nanmean(zsdem[:,:,zsind],axis=2),extent=[xmin,xmax,ymin,ymax],origin='lower',clim=[0,400],cmap='cpt_rainbow',alpha=0.6)  
+  else:
+    plt.imshow(demshadelib.hillshade(zsdem[:,:,zsind[0]]),extent=[xmin,xmax,ymin,ymax],origin='lower',cmap='Greys_r')
+    p = plt.imshow(zsdem[:,:,zsind[0]],extent=[xmin,xmax,ymin,ymax],origin='lower',clim=[0,400],cmap='cpt_rainbow',alpha=0.6)
   plt.plot(x,y,'k',lw=1.5)
   if glacier == 'Helheim':
     plt.plot(x[ind_eul[0]],y[ind_eul[ptind]],'ro',markersize=10)
+    plt.text(x[ind_eul[0]]-900,y[ind_eul[0]]-800,'H02',fontsize=12,fontname='Arial')
   elif glacier == 'Kanger':
     plt.plot(x[ind_eul[1]],y[ind_eul[1]],'bo',markersize=10)
+    plt.text(x[ind_eul[1]]-1000,y[ind_eul[1]]-1200,'K05',fontsize=12,fontname='Arial')
   plt.xlim([xmin,xmax])
   plt.ylim([ymin,ymax])
   plt.xticks([])
@@ -216,7 +229,7 @@ for imageind in range(0,len(imagetimes)):
   			[0.02*(xmax-xmin)+xmin,0.9*(ymax-ymin)+ymin]])
   patch = matplotlib.patches.PathPatch(path,edgecolor='k',facecolor='w',lw=1,zorder=3)
   ax.add_patch(patch)
-  year,month,day = datelib.fracyear_to_date(zstimedem[zsind])
+  year,month,day = datelib.fracyear_to_date(zstimedem[zsind[0]])
   plt.text(xmin+0.04*(xmax-xmin),0.92*(ymax-ymin)+ymin,'{0:4d}-{1:02d}-{2:02d}'.format(year,month,int(np.round(day))))
   plt.text(xmin+0.04*(xmax-xmin),0.03*(ymax-ymin)+ymin,'C',fontweight='bold',color='w')
   path = matplotlib.path.Path([[0.49*(xmax-xmin)+xmin,0.98*(ymax-ymin)+ymin],
@@ -229,8 +242,6 @@ for imageind in range(0,len(imagetimes)):
   cbaxes = fig.add_axes([0.16, 0.33, 0.085, 0.01]) 
   cb = plt.colorbar(p,cax=cbaxes,orientation='horizontal',ticks=[0,200,400]) 
   cb.set_label(r'Elevation'+' (m asl)')
-
-
   
   plt.subplot(gs[0:2,1:])
   ax = plt.gca()
@@ -268,7 +279,7 @@ for imageind in range(0,len(imagetimes)):
     plt.text(2008.2,-4,'D',fontweight='bold')
   plt.ylabel('Terminus \n (km)')
   plt.legend(loc=2,fontsize=10,numpoints=1,handlelength=0.3,labelspacing=0.05,ncol=3,columnspacing=0.7,handletextpad=0.2,borderpad=0.25)
-  plt.plot([imagetimes[imageind],imagetimes[imageind]],[-5.5,5.5],'k--',lw=2)
+  plt.plot([zstimedem[zsind[0]],zstimedem[zsind[0]]],[-5.5,5.5],'k--',lw=2)
   
   
   plt.subplot(gs[2:4,1:])
@@ -286,14 +297,14 @@ for imageind in range(0,len(imagetimes)):
   ax.set_xticklabels([])
   if glacier == 'Helheim':
     plt.yticks(np.arange(6,12,2))
-    plt.text(2008.2,6.2,'E',fontweight='bold')
+    plt.text(2008.2,6.4,'E',fontweight='bold')
     plt.ylim([6,11])
   if glacier == 'Kanger':
     plt.yticks(np.arange(7,12,1))
-    plt.text(2008.2,7.3,'E',fontweight='bold')
+    plt.text(2008.2,7.5,'E',fontweight='bold')
     plt.ylim([7,11])
   plt.ylabel('Glacier speed \n'+r'(km yr$^{-1}$)')
-  plt.plot([imagetimes[imageind],imagetimes[imageind]],[0,12],'k--',lw=2)
+  plt.plot([zstimedem[zsind[0]],zstimedem[zsind[0]]],[0,12],'k--',lw=2)
   
   plt.subplot(gs[4:6,1:])
   ax = plt.gca()
@@ -307,18 +318,18 @@ for imageind in range(0,len(imagetimes)):
   plt.xticks(range(2008,2017),fontsize=8,fontname='Arial')
   plt.xlim([time1,time2])
   plt.ylabel('dH/dt \n'+r'(m yr${-1}$)',fontname='Arial')
-  plt.yticks(np.arange(-120,120,40),fontname='Arial')
-  plt.ylim([-110,100])
+  plt.yticks(np.arange(-160,120,40),fontname='Arial')
+  plt.ylim([-165,110])
   ax.set_xticklabels([])
   #xTickPos = np.linspace(np.floor(time1)-0.25,np.ceil(time2)-0.25,(np.ceil(time2)-np.floor(time1))*2+1)
   #ax.bar(xTickPos, [max(plt.ylim())-min(plt.ylim())] * len(xTickPos), (xTickPos[1]-xTickPos[0]), bottom=min(plt.ylim()), color=['0.85','w'],linewidth=0)
   for i in range(0,len(year_runoff)):
-    path = matplotlib.path.Path([[day1_runoff[i],-120],[day1_runoff[i],100],[day2_runoff[i],100],[day2_runoff[i],-120]])
+    path = matplotlib.path.Path([[day1_runoff[i],-180],[day1_runoff[i],180],[day2_runoff[i],180],[day2_runoff[i],-180]])
     patch = matplotlib.patches.PathPatch(path,facecolor='0.85',edgecolor='none',lw=0)
     ax.add_patch(patch)
   plt.legend(loc=2,numpoints=1,ncol=3,handletextpad=0.2,fontsize=10,columnspacing=0.05,markerscale=1,handlelength=1.2,borderpad=0.2)
-  plt.plot([imagetimes[imageind],imagetimes[imageind]],[-110,110],'k--',lw=2)
-  plt.text(2008.2,-90,'F',fontweight='bold')
+  plt.plot([zstimedem[zsind[0]],zstimedem[zsind[0]]],[-110,110],'k--',lw=2)
+  plt.text(2008.2,-140,'F',fontweight='bold')
 
   plt.subplot(gs[6:8,1:])
   ax = plt.gca()
@@ -353,21 +364,24 @@ for imageind in range(0,len(imagetimes)):
   plt.plot([imagetimes[imageind],imagetimes[imageind]],[-30,40],'k--',lw=2)
 
   plt.subplot(gs[9:,1:])
-  plt.plot(dists/1e3,zb,'k',lw=1)
-  plt.plot(dcresis/1e3,zcresis,'.',color='0.5')
+  ind = np.where(dists > -4.8e3)[0]
+  plt.plot(dcresis/1e3,zcresis,'.',color='0.7')
+  plt.plot(dists[ind]/1e3,zb[ind],'k',lw=1.5)
   #plt.plot([-10,5],[0,0],'0.8',lw=0.5)
   #if i != 0:
   #   plt.plot(dists/1e3,f((y,x)),c='0.7')
   #   plt.plot(dists/1e3,floatlib.shelfbase(f(((y,x)))),c='0.7')
-
-  f = scipy.interpolate.RegularGridInterpolator((yzdem,xzdem),zsdem[:,:,zsind],bounds_error = False,method='linear',fill_value=float('nan'))
+  if len(zsind) > 1:
+    f = scipy.interpolate.RegularGridInterpolator((yzdem,xzdem),np.nanmean(zsdem[:,:,zsind],axis=2),bounds_error = False,method='linear',fill_value=float('nan'))
+  else:
+    f = scipy.interpolate.RegularGridInterpolator((yzdem,xzdem),zsdem[:,:,zsind[0]],bounds_error = False,method='linear',fill_value=float('nan'))
   plt.plot(dists/1e3,floatlib.height(zb),'k:')
   plt.plot(dists/1e3,f((y,x)),'b',lw=1.5)
   plt.plot(dists/1e3,floatlib.shelfbase(f(((y,x)))),'b',lw=1.5)
   if glacier == 'Helheim':
     plt.xticks(range(-10,5,2))
     plt.yticks(np.arange(-1200,400,200))
-    plt.ylim([-850,220])
+    plt.ylim([-950,220])
     plt.xlim([-5,4])
     plt.text(-4.8,-50,'H',fontweight='bold')
   elif glacier == 'Kanger':
@@ -384,15 +398,15 @@ for imageind in range(0,len(imagetimes)):
   plt.tight_layout()
   plt.subplots_adjust(hspace=0.1,wspace=0.4,top=0.98,right=0.98,left=0.02,bottom=0.05) 
   
-  plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/movie/"+'{0:03g}'.format(imageind)+'.png'),format='PNG',dpi=200)
+  plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/movie/"+'{0:03g}'.format(n)+'.png'),format='PNG',dpi=200)
   plt.close()
-
+  n=n+1
 
 ##############
 # Make movie #
 ##############
 
-fps=3
+fps=1
 ffmpeg_in_opt = "-r %i" % fps
 #ffmpeg_out_opt = "-r 5 -y -an -force_fps -s '%ix%i'" % newsize
 #-an disables audio

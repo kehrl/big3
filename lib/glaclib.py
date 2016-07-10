@@ -6,7 +6,7 @@ from matplotlib.path import Path
 import scipy.interpolate
 import scipy.signal
 
-def load_flowline(glacier,shapefilename='center_flowline',filt_len=2.0e3,verticaldatum='geoid',bedsource='cresis',bedmodel='aniso',bedsmoothing=4):
+def load_flowline(glacier,shapefilename='center_flowline',filt_len=2.0e3,verticaldatum='geoid',bedsource='cresis',bedmodel='aniso',bedsmoothing=4,dx=20):
 
   '''
   x,y,zb_filt,dists = load(glacier,shapefilename='center_flowline')
@@ -19,6 +19,7 @@ def load_flowline(glacier,shapefilename='center_flowline',filt_len=2.0e3,vertica
   shapefilename: shapefile to use for the flowline
   filt_len: filter length (in meters) for the bed profile
   verticaldatum: geoid or ellipsoid
+  dx: distance between points
   
   Outputs:
   x,y: x,y coordinates of flowline
@@ -38,7 +39,7 @@ def load_flowline(glacier,shapefilename='center_flowline',filt_len=2.0e3,vertica
   d = distlib.transect(flowline[:,0],flowline[:,1])
 
   # Set uniform spacing between nodes along flowline
-  dists_old = np.linspace(0,np.max(d),np.max(d)/20)
+  dists_old = np.linspace(0,np.max(d),np.max(d)/dx)
   x = np.interp(dists_old,d,flowline[:,0])
   y = np.interp(dists_old,d,flowline[:,1])
   
@@ -179,8 +180,12 @@ def load_extent(glacier,time,nofront_shapefile='glacier_extent_nofront'):
 def load_satimages(glacier,xmin,xmax,ymin,ymax,time1=-np.inf,time2=np.inf,data='all'):
 
   '''
+  images,times,types = load_satimages(glacier,xmin,xmax,ymin,ymax,time1=-np.inf,time2=np.inf,data='all')
+
   Load satellite images for a particular glacier for the grid defined by xmin,xmax,ymin,
-  ymax, over the time interval time1 to time2.
+  ymax, over the time interval time1 to time2. If time1 == time2, the code will find the 
+  sat image closest to the chosen time.
+  
   '''
   
   DIRLANDSAT = os.path.join(os.getenv("DATA_HOME"),"Imagery/Landsat/"+glacier+"/TIF/")
@@ -189,7 +194,10 @@ def load_satimages(glacier,xmin,xmax,ymin,ymax,time1=-np.inf,time2=np.inf,data='
   
   # Find files to load
   dirs = []
-  times = []
+  if time1 == time2:
+    times = 0.0
+  else:
+    times = []
   types = []
   images = []
   
@@ -199,7 +207,13 @@ def load_satimages(glacier,xmin,xmax,ymin,ymax,time1=-np.inf,time2=np.inf,data='
     for file in files:
       if file.endswith('.tif'):
         filetime = datelib.date_to_fracyear(float(file[0:4]),float(file[4:6]),float(file[6:8]))
-        if (filetime >= time1) and (filetime <= time2):
+        if (time1 == time2): 
+          if (abs(filetime - times) < abs(time1 - times)):
+            # Last constrain is to prevent unnecessary loading of files, 
+            types = 'Landsat'
+            dirs = DIRLANDSAT+file
+            times = filetime
+        elif (filetime >= time1) and (filetime <= time2):
           types.append('Landsat')
           dirs.append(DIRLANDSAT+file)
           times.append(filetime)
@@ -214,20 +228,30 @@ def load_satimages(glacier,xmin,xmax,ymin,ymax,time1=-np.inf,time2=np.inf,data='
           filetime = datelib.doy_to_fracyear(float(file[14:18]),float(file[19:22]))
         elif glacier == 'Kanger':
           filetime = datelib.doy_to_fracyear(float(file[11:15]),float(file[16:19]))        
-        if (filetime >= time1) and (filetime <= time2):
+        if (time1 == time2):
+          if (abs(filetime - times) <= abs(time1 - times)) and file.endswith('_1-20mgeo.tif'):
+            types = 'TSX'
+            dirs = DIRTSX+file
+            times = filetime
+        elif (filetime >= time1) and (filetime <= time2):
           types.append('TSX')
           dirs.append(DIRLANDSAT+file)
           times.append(filetime)
           images.append(geotifflib.read(DIRTSX+file))
   
-  sortind = np.argsort(times)
-  images_sorted = []
-  types_sorted = []
-  times_sorted = []
-  for ind in sortind:
-    images_sorted.append(images[ind])
-    types_sorted.append(types[ind])
-    times_sorted.append(times[ind])
+  if time1 != time2:
+    sortind = np.argsort(times)
+    images_sorted = []
+    types_sorted = []
+    times_sorted = []
+    for ind in sortind:
+      images_sorted.append(images[ind])
+      types_sorted.append(types[ind])
+      times_sorted.append(times[ind])
+  else:
+    images_sorted = geotifflib.read(dirs)
+    times_sorted = times
+    types_sorted = types
     
           
   return images_sorted,times_sorted,types_sorted

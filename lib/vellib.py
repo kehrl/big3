@@ -79,7 +79,7 @@ before unpacking the binary files.
   return 1
 
 #########################################################################################
-def velocity_grid(glacier,xmin=-np.Inf,xmax=np.Inf,ymin=-np.Inf,ymax=np.Inf,resolution=100,return_error=False):
+def velocity_grid(glacier,xmin=-np.Inf,xmax=np.Inf,ymin=-np.Inf,ymax=np.Inf,resolution=100):
 
   DIR_TSX = os.path.join(os.getenv("DATA_HOME"),"Velocity/TSX/"+glacier+"/")
   
@@ -105,8 +105,6 @@ def velocity_grid(glacier,xmin=-np.Inf,xmax=np.Inf,ymin=-np.Inf,ymax=np.Inf,reso
 
   # Set up variables
   velgrid = np.zeros([ny,nx,nt])
-  mask = np.zeros([ny,nx,nt])
-  velgrid_mask = np.zeros([ny,nx,nt])
   time = np.zeros(nt)
   ergrid = np.zeros([ny,nx,nt])
 
