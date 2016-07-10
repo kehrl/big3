@@ -78,8 +78,6 @@ def fluxgate(glacier,fluxgate_filename,bedsource='smith',dl=20.0,timing='velocit
     cutoff=(1/filt_len)/(1/((l[1]-l[0])*2))
     b,a=scipy.signal.butter(4,cutoff,btype='low')
     zb = scipy.signal.filtfilt(b,a,zb)
-    #if (glacier == 'Kanger') and (fluxgate_filename == 'fluxgate1_in'):
-    #  zb = zb+20
     
   # Get surface elevations
   zs_all,zs_error,ztime=zslib.dem_at_pts(x,y,glacier,verticaldatum='ellipsoid',method='linear')
@@ -105,10 +103,14 @@ def fluxgate(glacier,fluxgate_filename,bedsource='smith',dl=20.0,timing='velocit
       ind.append(i)
   
   # Velocity shape factor
-  sf = np.mean(abs(xperp*vxpt[ind,:]+yperp*vypt[ind,:]),0)/np.max(np.mean(abs(xperp*vxpt[ind,:]+yperp*vypt[ind,:]),0))
+  sf = np.nanmean(abs(xperp*vxpt[ind,:]+yperp*vypt[ind,:]),0)/np.max(np.nanmean(abs(xperp*vxpt[ind,:]+yperp*vypt[ind,:]),0))
   vperp = (xperp*vxpt+yperp*vypt)
   vperp[:,0] = sf[0]*np.nanmax(vperp,1)
   vperp[:,-1] = sf[-1]*np.nanmax(vperp,1)
+  ind = np.where(vperp < 0)
+  vperp[ind] = 0.0
+
+  midind = np.argmax(np.nanmean(vperp,axis=0))
 
   if timing == 'velocity':
     # Find DEMs where more than 90% of the data points are nonnan.
@@ -119,14 +121,20 @@ def fluxgate(glacier,fluxgate_filename,bedsource='smith',dl=20.0,timing='velocit
         ind_DEM.append(i)
   
     Q = np.zeros_like(vperp) # actual fluxes
-    Q[:,:] = float('NaN')
+    Q[:,:] = float('nan')
+    allH = np.zeros_like(vperp) # actual fluxes
+    allH[:,:] = float('nan')
+    allU = np.zeros_like(vperp) # actual fluxes
+    allU[:,:] = float('nan')
     time = tpt
     error = np.zeros_like(time)
     error[:] = float('nan')
     ubar = np.zeros_like(time)
     ubar[:] = float('NaN')
-    Hbar = np.zeros_like(time)
-    Hbar[:] = float('NaN')
+    width = np.zeros_like(time)
+    width[:] = float('NaN')
+    Hbar = np.zeros([len(time),2])
+    Hbar[:,:] = float('NaN')
     Across = np.zeros_like(time)
     Across[:] = float('nan')
     for i in range(0,len(time)):
@@ -152,47 +160,59 @@ def fluxgate(glacier,fluxgate_filename,bedsource='smith',dl=20.0,timing='velocit
         
         # Interpolate surface velocities using a shape factor for the 
         # cross-sectional velocity profile
-        vperp[i,nans_vperp] = sf[nans_vperp]*np.nanmax(vperp[i,:])
+        f = np.arange(np.nanmin(np.nanmax(vperp[:,:],axis=1))-500,np.nanmax(np.nanmax(vperp[:,:],axis=1))+500,10)
+        mindiff = 1e20
+        for j in range(0,len(f)):
+          diff = np.sqrt(np.mean(sf[nonnans_vperp]*f[j]-vperp[i,nonnans_vperp])**2)
+          if diff < mindiff:
+            mindiff = float(diff)
+            fbest = int(j)
+        vperp[i,nans_vperp] = sf[nans_vperp]*f[fbest]
         
         # Set velocity errors
         vperp_errors[nonnans_vperp] = vperp[i,nonnans_vperp]*0.03
         vperp_errors[nans_vperp] = vperp[i,nans_vperp]*0.1
       
         # Let's try filtering data before calculating ice flux
-        filt_len = 200.
+        filt_len = 300.
         
         cutoff=(1/filt_len)/(1/(np.diff(l[1:3])*2))
         b,a=scipy.signal.butter(4,cutoff,btype='low')
         zs_filt = scipy.signal.filtfilt(b,a,zs)
         vperp_filt = scipy.signal.filtfilt(b,a,vperp[i,:])
-      
-        # Calculate fluxes
-        Q[i,:] = ((vperp_filt)*(zs_filt-zb)*dl)
-        ind = np.where(zs_filt-zb > 0)[0]
-      
+        
+        # Calculate fluxes, only where zs > zb 
+        Q[i,:] = 0.0
+        ind = np.where((zs_filt-zb > 0) & (vperp_filt > 0))[0]
+        Q[i,ind] = ((vperp_filt[ind])*(zs_filt[ind]-zb[ind])*dl)
+        
         # Get average surface elevations and ice flow velocities for fluxgate
-        Hbar[i] = np.mean(zs_filt-zb)
-        ubar[i] = np.mean(vperp_filt)
-        Across[i] = np.sum((zs_filt-zb)*dl)
-      
-        # We don't want negative fluxes so let's toss them out.
-        Q[i,(zs-zb)<0] = 0.
+        sf_flux = Q[i,:]/np.nanmax(Q[i,:])
+        #Hbar[i,0] = np.nansum(sf_flux*(zs_filt-zb))/np.sum(sf_flux)
+        Hbar[i,0] = np.mean(zs_filt[midind-200:midind+201]-zb[midind-200:midind+201])
+        Hbar[i,1] = np.mean(zs_error_ind[midind-200:midind+201])/np.sqrt(2000./300.)
+        ubar[i] = np.mean(vperp_filt[midind-200:midind+201])
+        #ubar[i] = np.nansum(sf_flux*(vperp_filt))/np.sum(sf_flux)
+        Across[i] = np.sum((zs_filt[ind]-zb[ind])*dl)
+        
+        allH[i,ind] = zs_filt[ind]-zb[ind]
+        allU[i,ind] = (vperp_filt[ind])
         
         # Calculate errors
         ubar_error = np.sqrt(1/(np.sum(np.mean(1/vperp_errors)**2*np.ones(int(L[1]/500.)))))
         hbar_error = np.sqrt(1/(np.sum(np.mean(1/zs_error_ind)**2*np.ones(int(L[1]/32.)))))
-        error[i] = np.sum(Q[i,:])*np.sqrt((ubar_error/ubar[i])**2+(hbar_error/Hbar[i])**2)
+        error[i] = np.sum(Q[i,:])*np.sqrt((ubar_error/ubar[i])**2+(hbar_error/Hbar[i,0])**2)
       
   elif timing == 'elevation':
     time = ztime
-    Q = np.zeros([len(ztime),len(l)]) # actual fluxes
+    Q = np.zeros([len(time),len(l)]) # actual fluxes
     Q[:,:] = float('NaN')
     error = np.zeros_like(time)
     error[:] = float('nan')
     ubar = np.zeros_like(time)
     ubar[:] = float('NaN')
-    Hbar = np.zeros_like(time)
-    Hbar[:] = float('NaN')
+    Hbar = np.zeros([len(time),2])
+    Hbar[:,:] = float('NaN')
     Across = np.zeros_like(time)
     Across[:] = float('nan')
     for i in range(0,len(time)):
@@ -207,7 +227,7 @@ def fluxgate(glacier,fluxgate_filename,bedsource='smith',dl=20.0,timing='velocit
           nans = np.where(np.isnan(vperp[ind,:]))[0]
           
           vperp_ind = vperp[ind,:]
-          vperp_ind[nans] = np.interp(l[nans],l[nonnans],vperp[ind,nonnans]) # sf[nans]*np.nanmax(vperp[i,:]) #
+          vperp_ind[nans] = sf[nans]*np.nanmax(vperp[i,:]) #
 
           # Calculate fluxes  
           Q[i,:] = (vperp_ind*(zs_ind-zb)*dl)  
@@ -217,8 +237,9 @@ def fluxgate(glacier,fluxgate_filename,bedsource='smith',dl=20.0,timing='velocit
           
           # Get average surface elevations and ice flow velocities for fluxgate
           ind = np.where(zs_ind-zb > 0)[0]
-          Hbar[i] = np.mean(zs_ind[ind]-zb[ind])
-          ubar[i] = np.mean(vperp_ind[ind])
+          Hbar[i,0] = np.mean(zs_ind[midind-200:midind+201]-zb[midind-200:midind+201])
+          Hbar[i,1] = zs_error[i]/np.sqrt(2000./200.)
+          ubar[i] = np.mean(vperp_ind[midind-200:midind+201])
           Across[i] = np.sum((zs_ind[ind]-zb[ind])*dl)
 
   # Add up fluxes along glacier width
@@ -227,7 +248,7 @@ def fluxgate(glacier,fluxgate_filename,bedsource='smith',dl=20.0,timing='velocit
   return time, sumQ, Hbar, ubar, error, L[1]
 
 
-def fluxgate_thinning(glacier,fluxgate_filename,bedsource='smith',dl=20.0,timing='elevation',rho_i=917.):
+def fluxgate_thinning(glacier,fluxgate_filename,bedsource='smith',dl=20.0,timing='elevation',rho_i=900.):
 
   '''
   Inputs:
@@ -246,7 +267,7 @@ def fluxgate_thinning(glacier,fluxgate_filename,bedsource='smith',dl=20.0,timing
 
   # Get surface mass balance for flux box 
   xrac,yrac,zsrac,timerac = climlib.racmo_at_pts(np.mean(fluxbox_x),np.mean(fluxbox_y),'smb',filt_len='none')
-  zsrac=zsrac*365.25/900.
+  zsrac=zsrac*365.25/rho_i
 
   # Get fluxbox geometry
   fluxbox_x,fluxbox_y = fluxbox_geometry(glacier,fluxgate_filename)
@@ -269,7 +290,7 @@ def fluxgate_thinning(glacier,fluxgate_filename,bedsource='smith',dl=20.0,timing
     if time_in[i] in time_out:
       j = np.argmin(abs(time_in[i]-time_out))
       time.append(time_in[i])
-      hbar.append([hbar_in[i],hbar_out[j]])
+      hbar.append([hbar_in[i,0],hbar_out[j,0],hbar_in[i,1],hbar_out[j,1]])
       ubar.append([ubar_in[i],ubar_out[j]])
       Q.append([Q_in[i],Q_out[j]])
       error_Q.append(error_in[i]+error_out[j])
