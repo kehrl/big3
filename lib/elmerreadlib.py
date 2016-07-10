@@ -428,13 +428,21 @@ def pvtu_file(file,variables):
   types = [np.int64, np.float64, np.float64, np.float64]
   for var in variables:
     if var == 'velocity':
-      opts = ['velocity 1','velocity 2','velocity 3']
+      opts = ['velocity 1','velocity 2','velocity 3','velocity']
+      for opt in opts:
+        varnames.append(opt)
+        types.append(np.float64)
+    elif var == 'vsurfini':
+      opts = ['vsurfini 1','vsurfini 2','vsurfini']
       for opt in opts:
         varnames.append(opt)
         types.append(np.float64)
     else:
       types.append(np.float64)
       varnames.append(var)
+  if ('beta' in varnames) and ('velocity 1' in varnames):
+    varnames.append('taub')
+    types.append(np.float64) 
   data = np.empty(n,dtype = zip(varnames, types))  
 
   # Get coordinates
@@ -455,9 +463,16 @@ def pvtu_file(file,variables):
       data['velocity 1'][:] = velocity[:,0]
       data['velocity 2'][:] = velocity[:,1]
       data['velocity 3'][:] = velocity[:,2]
+      data['velocity'][:] = np.sqrt(data['velocity 1']**2+data['velocity 2']**2)
+    elif var == 'vsurfini': 
+      data['vsurfini 1'][:] = numpy_support.vtk_to_numpy(vtudata.GetPointData().GetArray('vsurfini 1'))
+      data['vsurfini 2'][:] = numpy_support.vtk_to_numpy(vtudata.GetPointData().GetArray('vsurfini 2'))
+      data['vsurfini'][:] = np.sqrt(data['vsurfini 1']**2+data['vsurfini 2']**2)
     else:
       data[var][:] = numpy_support.vtk_to_numpy(vtudata.GetPointData().GetArray(var))
-  
+  if 'taub' in varnames:
+    data['taub'][:] = data['beta']**2*np.sqrt(data['velocity 1']**2+data['velocity 2']**2) 
+ 
   # Some of the nodes are shared/repeated between partitions, so we need to remove those
   var1,ind1 = np.unique(x,return_index = True)
   var2,ind2 = np.unique(y,return_index = True)
@@ -519,7 +534,7 @@ def values_in_layer(data,layer='surface'):
   # Try to get things right with what variables we are returning
   varnames = list(data.dtype.names)
   
-  if layer == 'surface':
+  if layer.startswith('surf'):
     ind = -1
   elif layer == 'bed':
     ind = 0
@@ -620,24 +635,16 @@ def grid_to_flowline_surface(surf,xf,yf):
     return None
   # Try to get things right with what variables we are returning
   varnames = list(surf.dtype.names)
-  
-  # Do the actual sorting
-  points = []
+  varnames.remove('Node Number') 
+  types = []
   for var in varnames:
-    # The following will assume that the points are evenly spaced in the vertical direction
-    # pt[var] = np.sum(y_points[var]) / len(y_points[var])
-    # Instead, do things correctly to weight by percentage of the column
-    points[var] = griddata((surf['y'],surf['x']),surf[var],(yf,xf),method='linear')
+    types.append(np.float64)
+ 
+  # Do the actual sorting
+  points = np.empty(len(xf), dtype = zip(varnames,types))
+  nonnan = np.intersect1d(np.where(~(np.isnan(surf['x'])))[0],np.where(~(np.isnan(surf['y'])))[0])
+  for var in varnames:
+    points[var] = griddata((surf['y'][nonnan],surf['x'][nonnan]),surf[var][nonnan],(yf,xf),method='linear')
   points = np.asarray(points)
-
   
-  gridx=data['x']
-  gridy=data['x']
-  
-  variables=data.keys()
-  
-  flow={}
-  for variable in variables:
-    flow[variable]=griddata(np.column_stack([gridx,gridy]),data[variable],np.column_stack([x,y]),method='linear')
-  
-  return flow
+  return points
