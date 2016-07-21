@@ -220,34 +220,6 @@ def grid3d(data,variable,holes,extent,dx=50):
   masked = np.ma.masked_array(zz,mask)
 
   return x,y,masked
-
-def grid_to_flowline_old(data,x,y):
-  '''
-  flow = grid_to_flowline(data,x,y)
-  
-  Takes results from saveline_boundary and interpolates them to a flowline.
-  
-  Inputs:
-  data: model results from saveline_boundary
-  x,y: coordinates for flowline
-  
-  Outputs:
-  flow: same as "data", except now only for values interpolated to the flowline
-  '''
-  
-  import numpy as np
-  from scipy.interpolate import griddata
-  
-  gridx=data['coord1']
-  gridy=data['coord2']
-  
-  variables=data.keys()
-  
-  flow={}
-  for variable in variables:
-    flow[variable]=griddata(np.column_stack([gridx,gridy]),data[variable],np.column_stack([x,y]),method='linear')
-  
-  return flow
   
 def result_file(variables, mesh_dir, result_fn, maps=[], debug=False, **kwargs):
   '''
@@ -557,8 +529,6 @@ def values_in_layer(data,layer='surface'):
   
   return points[varnames]
 
-
-
 def values_in_column(data,x,y):
   '''
   Pull data at a particular point
@@ -615,7 +585,7 @@ def grid_to_flowline_surface(surf,xf,yf):
   '''
   flow = grid_to_flowline(data,x,y)
   
-  Takes results from saveline_boundary and interpolates them to a flowline.
+  Takes results and interpolates them to a flowline.
   
   Inputs:
   data: model results from saveline_boundary
@@ -648,3 +618,31 @@ def grid_to_flowline_surface(surf,xf,yf):
   points = np.asarray(points)
   
   return points
+
+# def grid_to_flowline_old(data,x,y):
+#   '''
+#   flow = grid_to_flowline(data,x,y)
+#   
+#   Takes results from saveline_boundary and interpolates them to a flowline.
+#   
+#   Inputs:
+#   data: model results from saveline_boundary
+#   x,y: coordinates for flowline
+#   
+#   Outputs:
+#   flow: same as "data", except now only for values interpolated to the flowline
+#   '''
+#   
+#   import numpy as np
+#   from scipy.interpolate import griddata
+#   
+#   gridx=data['coord1']
+#   gridy=data['coord2']
+#   
+#   variables=data.keys()
+#   
+#   flow={}
+#   for variable in variables:
+#     flow[variable]=griddata(np.column_stack([gridx,gridy]),data[variable],np.column_stack([x,y]),method='linear')
+#   
+#   return flow
