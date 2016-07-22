@@ -456,6 +456,108 @@ def pvtu_file(file,variables):
 
   return data
 
+def grid_to_cross_section(data,xf,yf,df,variable,dz=20.,method='linear'):
+
+  '''
+  Make cross section from model
+    
+  Inputs:
+  data: structured array with required fields x,y,z
+  xf,yf,df: points for cross-section
+  method: presently this module only takes the closest point from the model
+  maxdist: how far away it is acceptable to take points in the nearest neighbor interpolation
+  '''
+
+  import numpy as np
+  from scipy.interpolate import griddata
+
+  # Do a quick check that we have the necessary variables
+  if not set(('Node Number', 'x', 'y')).issubset(set(data.dtype.names)):
+    print 'Not a valid dataset, does not contain Node Number, x, and y variables, returning None'
+    return None
+
+  # This approach is a bit involved, but it's probably the best way to do this. 
+  # First we find the bed and surface for the cross-section, then we interpolate onto 
+  # a grid that extends across the full range of z values. Finally we mask out values 
+  # outside of the model domain.
+  bed = values_in_layer(data,'bed')
+  sur = values_in_layer(data,'surf') 
+  
+  zbed = griddata((bed['x'],bed['y']),bed['z'],(xf,yf),method='linear')
+  zsur = griddata((sur['x'],sur['y']),sur['z'],(xf,yf),method='linear')
+    
+  zmin = np.round(np.nanmin(zbed)-100,decimals=-2)
+  zmax = np.round(np.nanmax(zsur)+100,decimals=-2)
+  z = np.arange(zmin,zmax,dz)
+    
+  # Make grid for interpolation
+  dgrid,zgrid = np.meshgrid(df,z)
+  dgrid_flat = dgrid.flatten()
+  xgrid_flat = np.interp(dgrid_flat,df,xf)
+  ygrid_flat = np.interp(dgrid_flat,df,yf)
+  zgrid_flat = zgrid.flatten()
+    
+  outflat = griddata((data['x'],data['y'],data['z']),data[variable],(xgrid_flat,ygrid_flat,zgrid_flat),method='linear')
+  output = np.reshape(outflat,(len(z),len(df)))
+
+  # Delete points that fall outside of the model domain
+  zsur_int = np.column_stack([df,zsur])
+  zbed_int = np.column_stack([df,zbed])
+  domain = np.row_stack([zsur_int,np.flipud(zbed_int)])
+  ind = np.where(np.isnan(domain[:,1]))[0]
+  domain = np.delete(domain,ind,axis=0)
+  domainpath = Path(domain)
+  pts = domainpath.contains_points(np.column_stack((dgrid_flat,zgrid_flat)))
+  bool = ~(np.reshape(pts,(len(z),len(df))))
+
+  output[bool==1] = float('nan')
+
+  
+  return df,z,output
+
+
+# def cross_section_grid(cross_section,variable,dz=50.,dd=100.,method=method):
+# 
+#   import scipy.interpolate
+# 
+#   # Set up grid
+#   zmin = np.round(np.min(cross_section['z'])-100,decimals=-2)
+#   zmax = np.round(np.max(cross_section['z'])+100,decimals=-2)
+#   z = np.arange(zmin,zmax,dz)
+# 
+#   dmin = np.round(np.min(cross_section['dist'])-100,decimals=-2)
+#   dmax = np.round(np.max(cross_section['dist'])+100,decimals=-2)
+#   d = np.arange(dmin,dmax,dd)
+# 
+#   dgrid,zgrid = np.meshgrid(d,z)
+# 
+#   # Now interpolate points
+#   outflat = scipy.interpolate.griddata((cross_section['dist'],cross_section['z']),cross_section[variable],(dgrid.flatten(),zgrid.flatten()),method=method)
+#   output = np.reshape(outflat,(len(z),len(d)))
+#   
+#   # Get glacier geometry so we can mask out values outside of the glacier
+#   dgeo = []
+#   zsur = []
+#   zbed = []
+#   for val in np.unique(cross_section['dist']):
+#     points = cross_section[cross_section['dist'] == val]
+#     zsur.append(np.max(points['z']))
+#     zbed.append(np.min(points['z']))
+#     dgeo.append(val)
+#     
+#   zsur_int = np.column_stack([d,np.interp(d,dgeo,zsur)])
+#   zbed_int = np.column_stack([d,np.interp(d,dgeo,zbed)])
+# 
+#   exterior = Path(np.row_stack([zsur_int,np.flipud(zbed_int)]))
+#   pts = exterior.contains_points(np.column_stack((dgrid.flatten(),zgrid.flatten())))
+#   bool = ~(np.reshape(pts,(len(d),len(z))))
+#   mask = np.ones((len(d),len(z)),dtype="bool")
+#   mask[bool==0] = 0
+#   
+#   masked = np.ma.masked_array(output,mask)
+#   
+#   return masked
+
 def depth_averaged_variables(data):
   '''
   Pull depth averaged values from pointwise data list
