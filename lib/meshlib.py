@@ -300,7 +300,6 @@ def xy_to_gmsh_3d(glacier,date,exterior,holes,refine,DIRM,lc1,lc2,lc3,lc4,\
   
   # Load bed DEM
   if bedname == 'morlighem':
-    xbed,ybed,zbed_grid = bedlib.morlighem_grid(xmin-10e3,xmax+10e3,ymin-10e3,ymax+10e3,verticaldatum='geoid')
     xbed_grid,ybed_grid = np.meshgrid(xbed,ybed)
   elif bedname == 'cresis':
     xbed,ybed,zbed_grid = bedlib.cresis_grid(glacier,verticaldatum='geoid')
@@ -309,7 +308,9 @@ def xy_to_gmsh_3d(glacier,date,exterior,holes,refine,DIRM,lc1,lc2,lc3,lc4,\
     # irregular triangular grid
     xbed_grid,ybed_grid,zbed_grid = bedlib.smith_grid(glacier,\
     			model=bedmodel,smoothing=bedsmoothing,verticaldatum='geoid')
-
+    # load morlighem bed just in case mesh exceeds Ben's bed DEM
+    xbed_mor,ybed_mor,zbed_grid_mor = bedlib.morlighem_grid(xmin-10e3,xmax+10e3,ymin-10e3,ymax+10e3,verticaldatum='geoid')
+    
   # Load surface DEM
   xsur,ysur,zsur_grid = zslib.dem_continuous(glacier,xmin,xmax,ymin,ymax,date,\
   			verticaldatum='geoid',blur=True,dx=dx)
@@ -322,7 +323,12 @@ def xy_to_gmsh_3d(glacier,date,exterior,holes,refine,DIRM,lc1,lc2,lc3,lc4,\
   zsur_flattened = zsur_grid.flatten()
   zbed_flattened = scipy.interpolate.griddata((ybed_grid.flatten(),xbed_grid.flatten()),zbed_grid.flatten(),\
   					(y_flattened,x_flattened),method='linear')
-  
+  if bedname == 'smith':
+    f = scipy.interpolate.RegularGridInterpolator((ybed_mor,xbed_mor),zbed_grid_mor)
+    zbed_flattened_big = f((y_flattened,x_flattened))
+    nans = np.where(np.isnan(zbed_flattened))[0]
+    zbed_flattened[nans] = zbed_flattened_big[nans] 
+    
   zbot_interped = floatlib.icebottom(zbed_flattened,zsur_flattened,rho_i=rho_i,rho_sw=rho_sw)
 
   zbed_grid = np.reshape(zbed_flattened,(len(ysur),len(xsur)))

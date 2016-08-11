@@ -37,9 +37,9 @@ Simulation
 ! Internal extrusion 
   Extruded Mesh Levels = Integer {Extrude}
 
-  Output Intervals = 1
+  Output Intervals = 5
 
-  Steady State Max Iterations = 100
+  Steady State Max Iterations = 1000
   Steady State Min Iterations = 1
 
   Output File = "$name$.result"
@@ -288,7 +288,6 @@ Solver 6
   M1QN3 normtype = String "dfn"
   M1QN3 OutputFile = File  "M1QN3_$name$.out"
   M1QN3 ndz = Integer 20
-
 end
 
 Solver 7
@@ -318,11 +317,34 @@ Solver 7
 End
 
 Solver 8
+  Equation = "EigenStress"
+  Exec Solver = String "After all"
+  Variable = -nooutput dumy
+  Variable DOFs = 1
+
+  Procedure = "ElmerIceSolvers" "ComputeEigenValues"
+
+! 3 Eigenvalues    
+  Exported Variable 1 = "EigenStress"
+  EigenValue Variable Name = String "EigenStress"
+  Tensor Variable Name = String "Stress"
+  Exported Variable 1 DOFS = 3
+
+! Principal vectors (optional) 
+  Exported Variable 2 = EigenVector1
+  Exported Variable 2 DOFS = 3
+  Exported Variable 3 = EigenVector2
+  Exported Variable 3 DOFS =  3
+  Exported Variable 4 = EigenVector3
+  Exported Variable 4 DOFS = 3
+End
+
+Solver 9
   Procedure = "SaveData" "SaveMaterials"
   Parameter 1 = String "Viscosity"
 End
 
-Solver 9
+Solver 10
   Equation = SaveLine
   Procedure = "SaveData" "SaveLine"
   Exec Solver = String "After all"
@@ -334,7 +356,7 @@ End
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 Equation 1
-  Active Solvers (7)= 1 2 3 4 7 8 9
+  Active Solvers (8)= 1 2 3 4 7 8 9 10
   NS Convect= False
 End
 

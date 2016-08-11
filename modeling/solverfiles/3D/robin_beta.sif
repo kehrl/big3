@@ -37,9 +37,9 @@ Simulation
 
   Extruded Mesh Levels = Integer {Extrude}
   
-  Output Intervals = 1
+  Output Intervals = 5
 
-  Steady State Max Iterations = 200
+  Steady State Max Iterations = 1000
   Steady State Min Iterations = 1
 
   Output File = "$name".result"
