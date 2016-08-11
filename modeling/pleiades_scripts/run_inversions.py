@@ -11,15 +11,16 @@ glacier = 'Kanger'
 
 meshshp = 'glacier_extent_inversion_front'
 extrude = 10
+#bname = 'smith'
 bname = 'morlighem'
 bmodel = 'aniso'
 bsmooth = '4'
 temperature = -10.0
-lc = '300 300 300 500'
+lc = '300 300 400 500'
 #lc = '1000 1000 4000 5000'
 
 if glacier == 'Helheim':
-  dates = ['20120316']
+  dates = ['20140127']
   #dates = ['20110319','20110615','20110828','20111116',\
   #         '20120624','20120908','20121205']#,\
   #dates = ['20130209','20130508','20130804','20131031','20140127']#,\
@@ -32,15 +33,15 @@ elif glacier == 'Kanger':
   #         '20140213']  
 
 # Inversion options
-method = 'robin'
-regpars = ['1e10']
-#regpars = ['1e8','1e9','1e10','1e11','1e12','1e13','1e14','1e15'] 
+method = 'adjoint'
+regpars = ['1e12']
+#regpars = ['1e8','1e9','1e10','1e11','1e12','1e13','1e14'] 
 
 
 # Options for PBS submission
 queue = 'normal'
 model = 'ivy'
-nparts = 60
+nparts = 80
 ncpus = 20
 runtime = '8:00:00'
 
@@ -57,7 +58,7 @@ else:
 for date in dates:
 
   # Output mesh name
-  meshname = 'DEM'+date+'_'+frontBC
+  meshname = 'DEM'+date
 
   # Create mesh
   command = "python /u/lkehrl/Code/big3/modeling/meshing/"+\
@@ -95,7 +96,7 @@ for date in dates:
     fid = open("PBS_"+method+"_"+regpar+".pbs","w")
     fid.write(job_string)
     fid.close()
-    #try:
-    #  subprocess.call(['qsub','-q',queue,'PBS_'+method+'_'+regpar+'.pbs'])
-    #except:
-    #  print "Couldn't submit job for %s for lambda=%s" % (meshname,regpar)
+    try:
+      subprocess.call(['qsub','-q',queue,'PBS_'+method+'_'+regpar+'.pbs'])
+    except:
+      print "Couldn't submit job for %s for lambda=%s" % (meshname,regpar)

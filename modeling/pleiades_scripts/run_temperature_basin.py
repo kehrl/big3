@@ -9,24 +9,27 @@ glacier = 'Helheim'
 
 # Mesh geometry
 
-meshshp = 'glacier_extent_basin_front'
+meshshp = 'glacier_extent_basin_nofront'
 extrude = 10
-bname = 'morlighem'
+bname = 'smith'
 bmodel = 'aniso'
 bsmooth = '4'
 #lc = '300 500 750 2500'
-lc = '400 700 900 1700'
+lc = '400 700 900 1600'
 dx = 100
 
 if glacier == 'Helheim':
-  date = '20120316'
+  date = '20140127'
 
 elif glacier == 'Kanger':
   date = '20110213' 
 
 # Inversion options
-method = 'robin'
-regpar = '1e10' 
+method = 'adjoint'
+if method == 'adjoint':
+  regpar = '1e12'
+elif method == 'robin':
+  regpar = '1e10' 
 
 # Temperature SIF options
 temp_simulation = 'steady'
@@ -37,9 +40,9 @@ temperature = -10.0 # Constant temperature for initial inversion
 # Options for PBS submission
 queue = 'normal'
 model = 'ivy'
-nparts = 120
+nparts = 140
 ncpus = 20
-runtime = '8:00:00'
+runtime = '24:00:00'
 
 if meshshp.endswith('nofront'):
   frontBC = 'pressure'
