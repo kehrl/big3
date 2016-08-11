@@ -300,6 +300,7 @@ def xy_to_gmsh_3d(glacier,date,exterior,holes,refine,DIRM,lc1,lc2,lc3,lc4,\
   
   # Load bed DEM
   if bedname == 'morlighem':
+    xbed,ybed,zbed_grid = bedlib.morlighem_grid(xmin-10e3,xmax+10e3,ymin-10e3,ymax+10e3,verticaldatum='geoid')
     xbed_grid,ybed_grid = np.meshgrid(xbed,ybed)
   elif bedname == 'cresis':
     xbed,ybed,zbed_grid = bedlib.cresis_grid(glacier,verticaldatum='geoid')
