@@ -88,14 +88,20 @@ elif glacier == 'Helheim':
 # Get satellite image for background; we want the satellite image captured on the closest date
 #satimage,sattime,sattype = glaclib.load_satimages(glacier, xmin, xmax, ymin, ymax, time1=time, time2=time, data='all')
 # Image for plotting
-if glacier == "Helheim":
-  xsat,ysat,satimage = geotifflib.readrgb(os.path.join(os.getenv("DATA_HOME"),"Imagery/Landsat/Helheim/TIF/20140704140535_LC82330132014185LGN00.tif"))
-elif glacier == "Kanger":
-  xsat,ysat,satimage = geotifflib.readrgb(os.path.join(os.getenv("DATA_HOME"),"Imagery/Landsat/Kanger/TIF/20140706135251_LC82310122014187LGN00.tif"))
+try:
+  if glacier == "Helheim":
+    xsat,ysat,satimage = geotifflib.readrgb(os.path.join(os.getenv("DATA_HOME"),"Imagery/Landsat/Helheim/TIF/20140704140535_LC82330132014185LGN00.tif"))
+  elif glacier == "Kanger":
+    xsat,ysat,satimage = geotifflib.readrgb(os.path.join(os.getenv("DATA_HOME"),"Imagery/Landsat/Kanger/TIF/20140706135251_LC82310122014187LGN00.tif"))
+  sat_image = bool(True)
+except:
+  print "No satellite image for background"
+  sat_image = bool(False)
 
 fig=plt.figure(figsize=(3.4,4.0))
 ax = plt.gca()
-plt.imshow(satimage[:,:,0],extent=[xsat[0],xsat[-1],ysat[0],ysat[-1]],origin='lower',cmap='gray',clim=[0,0.6])
+if sat_image:
+  plt.imshow(satimage[:,:,0],extent=[xsat[0],xsat[-1],ysat[0],ysat[-1]],origin='lower',cmap='gray',clim=[0,0.6])
 p = plt.imshow(taub_3D[2]*1e3,extent=[taub_3D[0][0],taub_3D[0][-1],taub_3D[1][0],taub_3D[1][-1]],origin='lower',vmin=0,vmax=500)
 plt.xticks([])
 plt.yticks([])
@@ -125,6 +131,6 @@ ax.plot([xmin+0.61*(xmax-xmin),xmin+0.61*(xmax-xmin)+5e3],[ymin+0.80*(ymax-ymin)
 ax.plot([xmin+0.61*(xmax-xmin),xmin+0.61*(xmax-xmin)],[ymin+0.80*(ymax-ymin),ymin+0.78*(ymax-ymin)],'k',linewidth=1.5)
 ax.plot([xmin+0.61*(xmax-xmin)+5e3,xmin+0.61*(xmax-xmin)+5e3],[ymin+0.80*(ymax-ymin),ymin+0.78*(ymax-ymin)],'k',linewidth=1.5)
 ax.text(xmin+0.64*(xmax-xmin)+5e3,ymin+0.78*(ymax-ymin),'5 km',fontsize=8)
-plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+"_taub_"+date+".pdf"),format="PDF",dpi=400)
+plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+"_taub_"+date+"_"+regpar+".pdf"),format="PDF",dpi=400,transparent=True)
 plt.close()
 
