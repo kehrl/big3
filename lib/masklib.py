@@ -40,9 +40,9 @@ def load_grid(glacier,xmin,xmax,ymin,ymax,dx,ice=0,icefront_time='none',icefront
   
   # Set up grid
   nx = np.ceil((xmax-xmin)/dx)+1
-  x = np.linspace(xmin,xmin+dx*nx,nx)
+  x = np.linspace(xmin,xmin+dx*(nx-1),nx)
   ny = np.ceil((ymax-ymin)/dx)+1
-  y = np.linspace(ymin,ymin+dx*ny,ny)
+  y = np.linspace(ymin,ymin+dx*(ny-1),ny)
   
   if ice == 1:
     mask = np.ones([ny,nx])
