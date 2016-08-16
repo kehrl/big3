@@ -87,7 +87,7 @@ def main():
   #################
 
   # Mesh exterior
-  if meshshp.endswith('nofront'):
+  if meshshp.endswith('nofront') or meshshp.endswith('nofront.shp'):
     exterior = glaclib.load_extent(glacier,time,nofront_shapefile=meshshp)
   else:
     exterior = meshlib.shp_to_xy(DIRX+meshshp)

@@ -30,7 +30,7 @@ def get_arguments():
   parser.add_argument("-glacier",dest="glacier",required = True, 
         help = "Name of glacier (Kanger or Helheim)")
   parser.add_argument("-mesh", dest="mesh", required = True,
-        help = "Name of meshlib") 
+        help = "Name of mesh directory") 
   parser.add_argument("-front", dest="frontbc", required = True,
         help = "Calving front boundary condition (velocity or pressure).") 
   parser.add_argument("-n", dest="n", required = True,
@@ -46,7 +46,7 @@ def get_arguments():
   parser.add_argument("-restartposition",dest="restartposition",required = False,\
        default=0,type=int,help = "Restart position in results file (if applicable).")
   parser.add_argument("-temperature",dest="temperature",required  = False,\
-       default=10,help = "Use modeled or constant temperature.") 
+       default=-10.0,help = "Use modeled or constant temperature.") 
 
   args, _ = parser.parse_known_args(sys.argv)
 
@@ -143,7 +143,7 @@ def main():
   Viscosity = Real $ (3*3.5e-25*yearinsec)^(-1.0/3.0)*1.0e-6
   ! -10 deg C, and an enhancement factor of 3 """
   else:
-    sys.exit("Unknown temperature, +str(temperature)")
+    sys.exit("Unknown temperature of "+temperature)
 
   #############################
   # Run inversion solver file #
