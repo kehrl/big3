@@ -177,7 +177,6 @@ def main():
       except:
         pass
 
-
   else: 
     # Get current date
     now = datetime.datetime.now()
@@ -236,38 +235,45 @@ def main():
     elif name.startswith(method) and 'result' in name:
       os.rename(DIRM+"/mesh2d/"+name,DIRR_lambda+name)
 
-  bed = elmerreadlib.saveline_boundary(DIRM+"/mesh2d/",runname,bbed)
-  surf = elmerreadlib.saveline_boundary(DIRM+"/mesh2d/",runname,bsurf)
+  bed = elmerreadlib.saveline_boundary(DIRM+"/mesh2d/",runname,bbed,['velocity','beta'])
+  surf = elmerreadlib.saveline_boundary(DIRM+"/mesh2d/",runname,bsurf,['vsurfini','velocity'])
 
-  os.rename(DIRM+"/mesh2d/"+runname+".dat",DIRR_lambda+runname+".dat")
-  os.rename(DIRM+"/mesh2d/"+runname+".dat.names",DIRR_lambda+runname+".dat.names")
+  # Move saveline results
+  files = os.listdir(DIRM+"/mesh2d/")
+  for file in files:
+    if file.startswith(runname) and not file.endswith('names') and ('.dat' in file):
+      os.rename(DIRM+"/mesh2d/"+file,DIRR_lambda+file)
+    if name.startswith(runname) and name.endswith('names'):
+      os.rename(DIRM+"/mesh2d/"+file,DIRR_lambda+file)
+  
+  # Move outputs for optimization
   os.rename(DIRM+"M1QN3_"+method+"_beta.out",DIRR_lambda+"M1QN3_"+method+"_beta.out")
   os.rename(DIRM+"gradientnormadjoint_"+method+"_beta.dat",DIRR_lambda+"gradient_"+runname+".dat")
   os.rename(DIRM+"cost_"+method+"_beta.dat",DIRR_lambda+"cost_"+runname+".dat")
-
+  
 	################################
 	# Output friction coefficients #
 	################################
 
   # Linear Beta square
   fid = open(inputs+"beta_linear.xyz",'w')
-  fid.write('{0}\n'.format(len(bed['node'])))
-  for i in range(0,len(bed['node'])):
-    fid.write('{0} {1} {2:.4f} {3}\n'.format(bed['coord1'][i],bed['coord2'][i],\
-				bed['coord3'][i],bed['beta'][i]**2))
+  fid.write('{0}\n'.format(len(bed['Node Number'])))
+  for i in range(0,len(bed['Node Number'])):
+    fid.write('{0} {1} {2:.4f} {3}\n'.format(bed['x'][i],bed['y'][i],\
+				bed['z'][i],bed['beta'][i]**2))
   fid.close()
 
   # Weertman coefficient
   fid = open(inputs+"beta_weertman.xyz",'w')
-  fid.write('{0}\n'.format(len(bed['node'])))
-  for i in range(0,len(bed['node'])):
-    coeff=(bed['beta'][i]**2)*(bed['vel'][i]**(2.0/3.0))
-    fid.write('{0} {1} {2:.4f} {3}\n'.format(bed['coord1'][i],bed['coord2'][i],bed['coord3'][i],coeff))
+  fid.write('{0}\n'.format(len(bed['Node Number'])))
+  for i in range(0,len(bed['Node Number'])):
+    coeff=(bed['beta'][i]**2)*(bed['velocity'][i]**(2.0/3.0))
+    fid.write('{0} {1} {2:.4f} {3}\n'.format(bed['x'][i],bed['y'][i],bed['z'][i],coeff))
   fid.close() 
 
   xgrid,ygrid,taubgrid = elmerreadlib.grid3d(bed,'taub',holes,extent)
-  xgrid,ygrid,vmodgrid = elmerreadlib.grid3d(surf,'vel',holes,extent)
-  xgrid,ygrid,vmesgrid = elmerreadlib.grid3d(surf,'velmes',holes,extent)
+  xgrid,ygrid,vmodgrid = elmerreadlib.grid3d(surf,'velocity',holes,extent)
+  xgrid,ygrid,vmesgrid = elmerreadlib.grid3d(surf,'vsurfini',holes,extent)
   
   plt.figure(figsize=(6.5,3))
   plt.subplot(121)

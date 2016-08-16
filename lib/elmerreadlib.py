@@ -4,9 +4,9 @@ import math
 from scipy.interpolate import griddata
 from matplotlib.path import Path
 from multiprocessing import Pool
-import os
+import os, shutil
 
-def saveline(DIR,runname):
+def saveline(DIR,runname,variables):
   '''
   data = saveline(DIR,runname)
   
@@ -18,114 +18,98 @@ def saveline(DIR,runname):
   runname: model run name 
   
   '''
-
-  import os
-  import math
-  import numpy as np
   
-  os.chdir(DIR)
   # Find all partitions of the SaveLine results
   names=os.listdir(DIR)
   files=[]
-  varnames=[]
+  datanames = []
   for name in names:
     if name.startswith(runname) and not name.endswith('names') and ('.dat' in name):
       files.append(name)
     if name.startswith(runname) and name.endswith('names'):
-      varnames.append(name)
-
-  # Find the variable names in the ".name" file and initialize them 
-  fid = open(varnames[0],"r")
-  os.rename(varnames[0],runname+".dat.names")
-
+      datanames.append(name)
+  
+  # Find the variable names in the ".name" file and initialize them   
+  fid = open(DIR+datanames[0],"r")
   lines=fid.readlines()
   for i in range(0,4):
     lines.remove(lines[0])
-  variables=[]
+  varnames=[]
+  types = []
+  columns = []
+  n = 0
   for line in lines:
-    p=line.split()
-    variable=''
-    for i in range(1,len(p)):
-      if p[i]=='coordinate':
-        p[i]='coord'
-      elif p[i]=='step':
-        p[i]=''
-      elif p[i]=='Time':
-        p[i]='timestep'
-      elif p[i]=='Iteration':
-        p[i]='iterstep'
-      elif p[i]=='index':
-        p[i]=''
-      elif p[i]=='condition':
-        p[i]=''
-      elif p[i]=='Boundary':
-        p[i]='bound'
-      elif p[i]=='Node':
-        p[i]='node'
-      elif p[i]=='velocity':
-        p[i]='vel'
-      else:
-        pass
-      variable=variable+p[i]
-    variables.append(variable)
-      
-  R=len(variables)
+    if line[5:-1] == 'coordinate 1':
+      varnames.append('x')
+      types.append(np.float64) 
+      columns.append(n)  
+    elif line[5:-1] == 'coordinate 2':
+      varnames.append('y')
+      types.append(np.float64)  
+      columns.append(n)        
+    elif line[5:-1] == 'coordinate 3':
+      varnames.append('z')
+      types.append(np.float64)  
+      columns.append(n)  
+    elif line[5:-1] == 'Node index':
+      varnames.append('Node Number')  
+      types.append(np.int64)    
+      columns.append(n) 
+    elif line[5:-1] == 'Boundary condition':
+      varnames.append('BC')  
+      types.append(np.int64)    
+      columns.append(n) 
+    for variable in variables:
+      if line[5:-1].startswith(variable):
+        varnames.append(line[5:-1])
+        types.append(np.float64)
+        columns.append(n)     
+    n=n+1
+
+  # Adding some variables for ease of use   
+  if ('vsurfini 1') in varnames:
+    varnames.append('vsurfini')
+    types.append(np.float64)    
+  if ('velocity 1') in varnames:
+    varnames.append('velocity')
+    types.append(np.float64) 
+  if ('beta' in varnames) and ('velocity 1' in varnames):
+    varnames.append('taub')
+    types.append(np.float64) 
   
-  data={}
-  for i in range(0,R):
-    data[variables[i]]=[]
-  
-  # Read in data
+  # Get number of points 
+  n=0
   for file in files:
-    fid = open(file,"r")
+    fid = open(DIR+file,"r")
     lines = fid.readlines()
-    for line in lines:
-      p = line.split()
-      if len(p) == R:
-        for i in range(0,R):
-            data[variables[i]].append(float(p[i]))
-      else: 
-        print "The number of variables and length of the file do not agree. \n Compare the initialized variables to reported values in the .names file" 
-    fid.close()
+    n = n+len(lines)
+  data = np.empty(n,dtype = zip(varnames, types))  
+      
+  # Read in data
+  n = 0
+  for file in files:
+    datafile = np.loadtxt(DIR+file)
+    for i in range(0,len(columns)):
+      data[varnames[i]][n:len(datafile[:,0])+n] = datafile[:,columns[i]]
+    n = n+len(datafile[:,0])
   
   # Calculate velocity magnitude for 3D simulations
-  if ('velod4' in variables) or ('velocityb4' in variables):
-    data['velmes']=[]
-    data['vel']=[]
-    for i in range(0,len(data['vel1'])):
-      data['vel'].append(math.sqrt(data['vel1'][i]**2+data['vel2'][i]**2))
-      data['velmes'].append(math.sqrt(data['vsurfini1'][i]**2+data['vsurfini2'][i]**2))
-  
-  # Calculate basal shear stress
-  if 'beta' in variables:
-    data['taub']=[]
-    if ('velod4' in variables) or ('velocityb4' in variables):
-      for i in range(0,len(data['vel1'])):
-        data['taub'].append(data['beta'][i]**2*data['vel'][i])
-    else:
-      for i in range(0,len(data['vel1'])):
-        data['taub'].append(data['beta'][i]**2*data['vel1'][i])
-    
-  # Save model results for future use
-  if len(files) > 1:
-    fid = open(DIR+runname+".dat","w")
-    for i in range(0,len(data[variables[0]])):
-      for variable in variables:
-        fid.write('{} '.format(data[variable][i]))
-      fid.write('\n')
-    fid.close()
-    #for i in range(0,len(varnames)):
-      #if varnames[i] is not runname+".dat.names":
-        #os.remove(varnames[i])
-      #if files[i] is not runname+".dat": 
-        #os.remove(files[i])
-  
-  for variable in data.keys():
-    data[variable] = np.array(data[variable])
+  if ('velocity 3' in varnames):
+    data['velocity'] = np.sqrt(data['velocity 1']**2+data['velocity 2']**2)
+  elif ('velocity 2' in varnames):
+    data['velocity'] = data['velocity 1']
+  if ('vsurfini 2' in varnames):
+    data['vsurfini'] = np.sqrt(data['vsurfini 1']**2+data['vsurfini 2']**2)
+  elif ('vsurfini 1' in varnames):
+    data['vsurfini'] = data['vsurfini 1']
+   
+  # Calculate basal shear stress, if it is an inversion and we have a variable beta
+  if 'taub' in varnames:
+    data['taub']= (data['beta']**2*data['velocity'])
          
   return data
   
-def saveline_boundary(DIR,runname,bound):
+def saveline_boundary(DIR,runname,bound,variables):
   '''
   subset = saveline_boundary(DIR,runname,bound)
   
@@ -137,30 +121,17 @@ def saveline_boundary(DIR,runname,bound):
   bound: boundary number
   '''
   
-  data=saveline(DIR,runname)
-    
-  subset={}
-  variables=data.keys()
-  R1=len(variables)
-  R2=len(data['node'])
-  for i in range(0,R1):
-    subset[variables[i]]=[]
+  # Load data
+  data = saveline(DIR,runname,variables)
   
-  ind = np.where(data['bound']==float(bound))
+  # Get desired indices  
+  ind = np.where(data['BC'] == bound)[0]
   
-  subset={}
-  for variable in variables:
-    subset[variable]=data[variable][ind]
-  
-  #for i in range(0,R2):
-  #  if data['bound'][i]==float(bound):
-  #    for j in range(0,R1):
-  #      try:
-  #        subset[variables[j]].append(data[variables[j]][i])
-  #      except:
-  #        subset[variables[j]].append([])
+  points = []
+  for i in ind:
+    points.append(data[i])
+  subset = np.asarray(points)
        
-
   return subset
 
 def grid3d(data,variable,holes,extent,dx=50):
@@ -184,19 +155,19 @@ def grid3d(data,variable,holes,extent,dx=50):
   masked: masked grid
   '''
   
-  xmin=math.floor(min(data['coord1'])/100)*100
-  xmax=math.ceil(max(data['coord1'])/100)*100
-  ymin=math.floor(min(data['coord2'])/100)*100
-  ymax=math.ceil(max(data['coord2'])/100)*100
+  xmin=math.floor(min(data['x'])/100)*100
+  xmax=math.ceil(max(data['x'])/100)*100
+  ymin=math.floor(min(data['y'])/100)*100
+  ymax=math.ceil(max(data['y'])/100)*100
 
   x=np.linspace(xmin,xmax,(xmax-xmin)/dx+1)
   y=np.linspace(ymin,ymax,(ymax-ymin)/dx+1)
   
   xx,yy=np.meshgrid(x,y)
   
-  xy_i=np.column_stack([data['coord1'],data['coord2']])
+  xy_i=np.column_stack([data['x'],data['y']])
   
-  zz=griddata((data['coord1'],data['coord2']),data[variable],(xx,yy),method='linear')
+  zz=griddata((data['x'],data['y']),data[variable],(xx,yy),method='linear')
   
   # Create mask
   nx = len(x)

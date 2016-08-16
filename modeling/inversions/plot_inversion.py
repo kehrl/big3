@@ -9,7 +9,7 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument("-glacier",dest="glacier",required = True, 
   help = "Name of glacier (Kanger or Helheim)")
-parser.add_argument("-meshname", dest="meshname", required = True,
+parser.add_argument("-mesh", dest="meshname", required = True,
   help = "Name of output mesh.")
 parser.add_argument("-method", dest="method", required = True,
         help = "Method of inversion (robin or adjoint).")
@@ -36,10 +36,10 @@ for dir in dirs:
   if dir.startswith("lambda_"+regpar) and os.path.isdir(DIRR+dir):
     try:
       DIRREGPAR
-      DIRREGPAR = dir
+      DIRREGPAR = dir+"/"
       print "More than one result with that regularization parameter, defaulting to the most recent version, "+dir+", rather than "+DIREGPAR
     except:   
-      DIRREGPAR = dir
+      DIRREGPAR = dir+"/"
 try:
   DIRREGPAR
 except NameError:
@@ -68,11 +68,11 @@ except:
   holes = []
   
 # Load data for first regularization parameter
-bed_3D = elmerreadlib.saveline_boundary(DIRR+DIRREGPAR,method+"_beta.dat",bbed)
-surf_3D = elmerreadlib.saveline_boundary(DIRR+DIRREGPAR,method+"_beta.dat",bsur)
+bed_3D = elmerreadlib.saveline_boundary(DIRR+DIRREGPAR,method+"_beta.dat",bbed,['velocity','beta'])
+surf_3D = elmerreadlib.saveline_boundary(DIRR+DIRREGPAR,method+"_beta.dat",bsur,['velocity','vsurfini'])
 taub_3D = elmerreadlib.grid3d(bed_3D,'taub',holes,extent)
-vel_3D = elmerreadlib.grid3d(surf_3D,'vel',holes,extent)
-velmes_3D = elmerreadlib.grid3d(surf_3D,'velmes',holes,extent)
+vel_3D = elmerreadlib.grid3d(surf_3D,'velocity',holes,extent)
+velmes_3D = elmerreadlib.grid3d(surf_3D,'vsurfini',holes,extent)
 
 if glacier == 'Kanger':
   xmin = 468000.
