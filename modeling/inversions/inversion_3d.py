@@ -40,7 +40,7 @@ def get_arguments():
   parser.add_argument("-method", dest="method", required = False,
        default='adjoint',help = "adjoint or robin.")
   parser.add_argument("-extrude", dest="extrude", type=int,required = False,\
-       default=5,help = "Number of extrusion levels.")
+       default=10,help = "Number of extrusion levels.")
   parser.add_argument("-restartsolverfile",dest="restartfile",required = False,\
        default="none",help = "Name of restart solver file.")
   parser.add_argument("-restartposition",dest="restartposition",required = False,\
@@ -243,7 +243,7 @@ def main():
   for file in files:
     if file.startswith(runname) and not file.endswith('names') and ('.dat' in file):
       os.rename(DIRM+"/mesh2d/"+file,DIRR_lambda+file)
-    if name.startswith(runname) and name.endswith('names'):
+    if file.startswith(runname) and file.endswith('names'):
       os.rename(DIRM+"/mesh2d/"+file,DIRR_lambda+file)
   
   # Move outputs for optimization
