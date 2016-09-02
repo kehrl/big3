@@ -207,7 +207,7 @@ def main():
   # Get 3D grid of temperatures  
   T = flowparameterlib.steadystate_vprofile(H,t2m,smb,levels=12)
  
-  fidT = open(inputs+"flowT_steady.xyz", "w")
+  fidT = open(inputs+"tsteady_icedivide.xyz", "w")
   fidT.write("{0}\n{1}\n{2}\n".format(len(xt2m), len(yt2m), len(T[0,0,:])))
   for j in range(len(xt2m)):
     for i in range(len(yt2m)):

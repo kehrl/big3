@@ -722,7 +722,7 @@ FUNCTION IceDivideTemperature( Model, nodenumber, dumy) RESULT(T) !
     	Firsttime=.False.
 
     	! open file
-      open(10,file='inputs/tsteady.xyz')
+      open(10,file='inputs/tsteady_icedivide.xyz')
       Read(10,*) nx
       Read(10,*) ny
       Read(10,*) nz
