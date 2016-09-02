@@ -77,7 +77,7 @@ def main():
 
   # Densities for finding floating ice
   rho_i = 917.0
-  rho_sw = 1020.0
+  rho_sw = 1025.0
 
   # Time
   time = datelib.date_to_fracyear(int(date[0:4]),int(date[4:6]),int(date[6:8]))

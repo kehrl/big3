@@ -208,6 +208,57 @@ FUNCTION zbIni( Model, nodenumber, dumy) RESULT(zb) !
 End
 
 !------------------------------------------------------------------!
+FUNCTION Bedrock( Model, nodenumber, dumy) RESULT(zb) !
+!------------------------------------------------------------------!
+	USE types
+	implicit none
+	TYPE(Model_t) :: Model
+  Real(kind=dp) :: dumy,zb
+	INTEGER :: nodenumber
+
+  Real(kind=dp),allocatable :: dem(:,:),xx(:),yy(:)
+  Real(kind=dp) :: x,y
+  Real(kind=dp) :: LinearInterp
+
+  integer :: nx,ny
+  integer :: i,j
+
+	character(len=16) :: glacier
+  character(len=MAX_NAME_LEN) :: filin='inputs/bedrock.xy'
+
+  logical :: Firsttime=.true.
+
+  SAVE dem,xx,yy,nx,ny
+  SAVE Firsttime
+
+  if (Firsttime) then
+		Firsttime=.False.
+
+    ! open file
+    open(10,file='inputs/bedrock.xy')
+    Read(10,*) nx
+    Read(10,*) ny
+    Allocate(xx(nx),yy(ny))
+    Allocate(dem(nx,ny))
+    Do i=1,nx
+    	Do j=1,ny
+      	Read(10,*) xx(i),yy(j),dem(i,j)
+      End Do
+		End do
+		close(10)
+  End if
+
+  ! position current point
+	x=Model % Nodes % x (nodenumber)
+  y=Model % Nodes % y (nodenumber)
+
+  zb=LinearInterp(dem,xx,yy,nx,ny,x,y)
+
+  Return
+End
+
+
+!------------------------------------------------------------------!
 FUNCTION UbIni( Model, nodenumber, dumy) RESULT(ub) !
 !------------------------------------------------------------------!
 	USE types

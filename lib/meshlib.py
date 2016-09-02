@@ -335,7 +335,9 @@ def xy_to_gmsh_3d(glacier,date,exterior,holes,refine,DIRM,lc1,lc2,lc3,lc4,\
   zbed_grid = np.reshape(zbed_flattened,(len(ysur),len(xsur)))
   zbot_grid = np.reshape(zbot_interped,(len(ysur),len(xsur)))
   ind = np.where((zsur_grid-zbed_grid) < 10.)
+  ind = np.where((zsur_grid-zbot_grid) < 10.)
   zbed_grid[ind] = zsur_grid[ind]-10.
+  zbot_grid[ind] = zsur_grid[ind]-10.
   
   # Elmersolver is set up so that nodatavalue is -2.0e9
   zsur_grid_nonnan = np.array(zsur_grid)
@@ -351,12 +353,15 @@ def xy_to_gmsh_3d(glacier,date,exterior,holes,refine,DIRM,lc1,lc2,lc3,lc4,\
   # Print out surface and bed
   fids = open(DIRM+"/inputs/zsdem.xy","w")
   fidb = open(DIRM+"/inputs/zbdem.xy","w")
+  fidr = open(DIRM+"/inputs/bedrock.xy","w")
   fids.write('{}\n{}\n'.format(len(xsur),len(ysur)))
   fidb.write('{}\n{}\n'.format(len(xsur),len(ysur)))
+  fidr.write('{}\n{}\n'.format(len(xsur),len(ysur)))
   for i in range(0,len(xsur)):
     for j in range(0,len(ysur)):
       fids.write('{0} {1} {2}\n'.format(xsur[i],ysur[j],zsur_grid_nonnan[j,i]))
-      fidb.write('{0} {1} {2}\n'.format(xsur[i],ysur[j],zbed_grid_nonnan[j,i]))
+      fidb.write('{0} {1} {2}\n'.format(xsur[i],ysur[j],zbot_grid_nonnan[j,i]))
+      fidr.write('{0} {1} {2}\n'.format(xsur[i],ysur[j],zbed_grid_nonnan[j,i]))
   fids.close()
   fidb.close()
   
