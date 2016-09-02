@@ -1,5 +1,5 @@
 # This code plots an L-curve for the three dimensional model or flowline model. 
-# Inputs is : lcurve.py Flowline DEM20120624 
+#  
 #
 # LMK, UW, 5/30/2015
 
@@ -13,6 +13,8 @@ args = sys.argv
 
 # Get inputs to file
 parser = argparse.ArgumentParser()
+parser.add_argument("-glacier",dest="glacier",required = True,
+        help = "Name of glacier.")
 parser.add_argument("-mesh", dest="meshname", required = True,
         help = "Name of mesh.")
 parser.add_argument("-dim", dest="dimension",required = True,
@@ -23,9 +25,10 @@ args, _ = parser.parse_known_args(sys.argv)
 RES = args.meshname
 ver = args.dimension
 method = args.method
+glacier = args.glacier
 
 # Input directory
-DIR = os.path.join(os.getenv("MODEL_HOME"),"Helheim/"+ver+"/"+RES+"/")
+DIR = os.path.join(os.getenv("MODEL_HOME"),glacier+"/"+ver+"/"+RES+"/")
 DIRR = DIR+"mesh2d/inversion_"+method+"/"
 
 if not(os.path.isdir(DIRR)):
@@ -71,19 +74,14 @@ strings=["{:.0e}".format(i) for i in regpar]
 plt.plot(cost_bed,cost_sur,'ko--',linewidth=1.5)
 plt.xlabel('Model norm',fontsize=10)
 plt.ylabel(r'Misfit',fontsize=10)
-for i in range(0,len(strings)):
-  plt.text(cost_bed[i]+0.15,cost_sur[i]+0.25e12,strings[i],fontsize=10,rotation=45) 
 plt.xticks(fontsize=10)
-#plt.gca().set_xscale('log')
-#plt.gca().set_yscale('log')
-#plt.gca().tick_params('both', length=10, width=1.5, which='major',labelsize=10)
-#plt.gca().tick_params('both', length=5, width=1.5, which='minor',labelsize=10)
-#plt.gca().yaxis.set_minor_formatter(FormatStrFormatter("%.0E"))
-#plt.gca().xaxis.set_major_formatter(FormatStrFormatter("%.0E"))
 plt.gca().yaxis.set_major_formatter(FormatStrFormatter("%.1E"))
 plt.ylim([np.min(cost_sur)-(np.max(cost_sur)-np.min(cost_sur))/10,np.max(cost_sur)+(np.max(cost_sur)-np.min(cost_sur))/4])
+ymin,ymax = plt.ylim()
+for i in range(0,len(strings)):
+  plt.text(cost_bed[i]+0.15,cost_sur[i]+0.1*(ymax-ymin),strings[i],fontsize=10,rotation=45)
 plt.xlim([-0.4,np.max(cost_bed)+(np.max(cost_bed)-np.min(cost_bed))/4])
 plt.tight_layout()
 plt.subplots_adjust(left=0.2, bottom=0.11, right=0.98, top=0.97, wspace=0.0, hspace=0.0)
-plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/Lcurve_"+RES+".pdf"),format='PDF')
+plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/Lcurve_"+glacier+"_"+RES+".pdf"),format='PDF')
 #plt.close()
