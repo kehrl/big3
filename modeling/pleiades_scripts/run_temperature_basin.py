@@ -9,25 +9,24 @@ glacier = 'Helheim'
 
 # Mesh geometry
 
-meshshp = 'glacier_extent_basin_nofront'
+meshshp = 'glacier_extent_basin_front'
 extrude = 10
 bname = 'smith'
 bmodel = 'aniso'
 bsmooth = '4'
 #lc = '300 500 750 2500'
-lc = '400 700 900 1600'
-dx = 100
+lc = '400 800 1500 5000'
+dx = 200
 
 if glacier == 'Helheim':
   date = '20140127'
-
 elif glacier == 'Kanger':
   date = '20110213' 
 
-# Inversion options
+# Inversion options:
 method = 'adjoint'
 if method == 'adjoint':
-  regpar = '1e12'
+  regpar = '5e11'
 elif method == 'robin':
   regpar = '1e10' 
 
@@ -38,11 +37,11 @@ temp_timestep = 1
 temperature = -10.0 # Constant temperature for initial inversion
 
 # Options for PBS submission
-queue = 'normal'
+queue = 'long'
 model = 'ivy'
-nparts = 140
+nparts = 160
 ncpus = 20
-runtime = '24:00:00'
+runtime = '48:00:00'
 
 if meshshp.endswith('nofront'):
   frontBC = 'pressure'
@@ -54,7 +53,7 @@ else:
 #################
 
 # Output mesh name
-meshname = 'BASIN'+date
+meshname = 'BASIN'+date+'_'+regpar
 
 # Create mesh
 command = "python /u/lkehrl/Code/big3/modeling/meshing/"+\
