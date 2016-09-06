@@ -42,6 +42,8 @@ def get_arguments():
   parser.add_argument("-lc", dest="lc", type=int,required = False,nargs='+',
 			  default=[1000,1000,3000,5000],\
 			  help = "Four numbers that define the mesh resolution for grounding-line (1000 m),channels (1000 m),regions near channels (3000 m), and entire mesh (5000 m).")
+  parser.add_argument("-zb", dest="bottomsurface", default = 'iceshelf',
+        help = "Use 'iceshelf' base or 'bed' as bottom surface for mesh.")
 
   # Get arguments
   args, _ = parser.parse_known_args(sys.argv)
@@ -61,6 +63,7 @@ def main():
   meshshp = args.meshshp
   glacier = args.glacier
   dx = args.dx
+  bottomsurface = args.bottomsurface
   
   # Mesh refinement
   lc3,lc2,lc4,lc1 = args.lc
@@ -139,7 +142,8 @@ def main():
 
   # Gmsh .geo file
   x,y,zbed,zsur,zbot = meshlib.xy_to_gmsh_3d(glacier,date,exterior,holes,refine,DIRM,\
-		lc1,lc2,lc3,lc4,bedname,bedmodel,bedsmoothing,rho_i,rho_sw,dx=dx)
+		lc1,lc2,lc3,lc4,bedname=bedname,bedmodel=bedmodel,bedsmoothing=bedsmoothing,rho_i=rho_i,rho_sw=rho_sw,dx=dx,\
+		bottomsurface=bottomsurface)
 
   # Create .msh file
   call(["gmsh","-1","-2",file_2d+".geo", "-o",os.path.join(os.getenv("HOME"),\
