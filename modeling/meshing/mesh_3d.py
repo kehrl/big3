@@ -142,8 +142,8 @@ def main():
 
   # Gmsh .geo file
   x,y,zbed,zsur,zbot = meshlib.xy_to_gmsh_3d(glacier,date,exterior,holes,refine,DIRM,\
-		lc1,lc2,lc3,lc4,bedname=bedname,bedmodel=bedmodel,bedsmoothing=bedsmoothing,rho_i=rho_i,rho_sw=rho_sw,dx=dx,\
-		bottomsurface=bottomsurface)
+		lc1,lc2,lc3,lc4,bedname=bedname,bedmodel=bedmodel,bedsmoothing=bedsmoothing,\
+                rho_i=rho_i,rho_sw=rho_sw,dx=dx,bottomsurface=bottomsurface)
 
   # Create .msh file
   call(["gmsh","-1","-2",file_2d+".geo", "-o",os.path.join(os.getenv("HOME"),\
