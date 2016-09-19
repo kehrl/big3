@@ -12,7 +12,7 @@
 #    topographies, but doesn't work as well as MshGlacier so I don't presently use this 
 #    function (maybe should delete soon)
 
-import os
+import os, sys
 import shapefile
 import numpy as np
 import scipy.signal as signal
@@ -98,22 +98,39 @@ def shp_to_xy(in_file):
   return exterior
   
 def xy_to_gmsh_3d(glacier,date,exterior,holes,refine,DIRM,lc1,lc2,lc3,lc4,\
-		bedname='smith',bedmodel='aniso',bedsmoothing=4,rho_i=917.0,rho_sw=1020.0,dx='none'):
+		bedname='smith',bedmodel='aniso',bedsmoothing=4,rho_i=917.0,rho_sw=1020.0,\
+		dx='none',bottomsurface='iceshelf'):
   
   '''
-  x,y,zbed,zsur = xy_to_gmsh_3d(glacier,date,exterior,holes,refine,DIRM,lc1,lc2,lc3,lc4,bedname,bedmodel,bedsmoothing)
+  
+  x,y,zbed,zsur = xy_to_gmsh_3d(glacier,date,exterior,holes,refine,DIRM,lc1,lc2,lc3,lc4,bedname,bedmodel,bedsmoothing,bottomsurface='iceshelf')
   
   inputs:
   exterior: list of x,y coordinates for glacier mesh from "shp_to_xy"
   holes: list of holes with x,y coordinates for glacier mesh from "shp_to_xy"
-  refine: list of x,y coordinates for refinement, with an index number that states what level of refinment
+  refine: list of x,y coordinates for refinement, with an index number that 
+          states what level of refinment
   DIRM: mesh directory
   lc1, lc2, lc3, lc4: mesh resolution near refinement locations
   file_bed: string for what bed we should use (options: morlighem)
   file_sur: string for what surface we should use (options: gimp)
+  bedname: name of bed model (morlighem, smith, cresis)
+  bedmodel: anistropic or isotropic for smith bed DEMs
+  bedsmoothing: level of smoothing for smith bed DEMs (1-8)
+  rho_i: ice density
+  rho_sw: seawater density
+  dx: output grids at a certain resolution (if 'none', will use smallest 
+      resolution of DEMs)
+  bottom surface: use ice shelf bottom or bed as initial bottom surface
   
-  Output files: surface DEM, bed DEM, Planar.geo
+  Output files: x,y,zbed,zsur, plus some files for elmer
   '''
+  
+  # Warnings
+  if (bottomsurface != 'iceshelf') and (bottomsurface != 'bed'):
+    sys.exit('Unknown bottom surface '+bottomsurface)
+  elif (bedname != 'smith') and (bedname != 'morlighem') and (bedname != 'cresis'):
+    sys.exit('Unknown bed name '+bedname)
   
   # Open file "Planar.geo" in the mesh directory
   filename = os.path.join(DIRM+"mesh2d.geo")
@@ -357,15 +374,21 @@ def xy_to_gmsh_3d(glacier,date,exterior,holes,refine,DIRM,lc1,lc2,lc3,lc4,\
   fids.write('{}\n{}\n'.format(len(xsur),len(ysur)))
   fidb.write('{}\n{}\n'.format(len(xsur),len(ysur)))
   fidr.write('{}\n{}\n'.format(len(xsur),len(ysur)))
+  if bottomsurface == 'bed':
+    zbot_grid_nonnan_output = zbed_grid_nonnan
+    zbot_grid_output = zbed_grid
+  elif bottomsurface == 'iceshelf':
+    zbot_grid_nonnan_output = zbot_grid_nonnan
+    zbot_grid_output = zbot_grid
   for i in range(0,len(xsur)):
     for j in range(0,len(ysur)):
       fids.write('{0} {1} {2}\n'.format(xsur[i],ysur[j],zsur_grid_nonnan[j,i]))
-      fidb.write('{0} {1} {2}\n'.format(xsur[i],ysur[j],zbot_grid_nonnan[j,i]))
+      fidb.write('{0} {1} {2}\n'.format(xsur[i],ysur[j],zbot_grid_nonnan_output[j,i]))
       fidr.write('{0} {1} {2}\n'.format(xsur[i],ysur[j],zbed_grid_nonnan[j,i]))
   fids.close()
   fidb.close()
   
-  return xsur,ysur,zbed_grid,zsur_grid,zbot_grid
+  return xsur,ysur,zbed_grid,zsur_grid,zbot_grid_output
 
 ##########################################################################################
    

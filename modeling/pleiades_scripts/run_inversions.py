@@ -26,15 +26,15 @@ if glacier == 'Helheim':
   #dates = ['20130209','20130508','20130804','20131031','20140127']#,\
   #          '20140127','20140509','20140731','20141016']
 elif glacier == 'Kanger':
-  dates = ['20120213']
-  #dates = ['20110308','20110708','20110826','20111106',\
-  #         '20120213','20120522','20121012','20121217'\
-  #         '20130210','20130714','20131004','20131204'\
-  #         '20140213']  
+  #dates = ['20120213']
+  dates = ['20110308','20110708','20110826','20111106',\
+           '20120213','20120522','20121012','20121217'\
+           '20130210','20130714','20131004','20131204'\
+           '20140213']  
 
 # Inversion options
 method = 'adjoint'
-regpars = ['1e12']
+regpars = ['5e11']
 #regpars = ['1e8','1e9','1e10','1e11','1e12','1e13','1e14'] 
 
 
@@ -96,7 +96,7 @@ for date in dates:
     fid = open("PBS_"+method+"_"+regpar+".pbs","w")
     fid.write(job_string)
     fid.close()
-    try:
-      subprocess.call(['qsub','-q',queue,'PBS_'+method+'_'+regpar+'.pbs'])
-    except:
-      print "Couldn't submit job for %s for lambda=%s" % (meshname,regpar)
+    #try:
+    #  subprocess.call(['qsub','-q',queue,'PBS_'+method+'_'+regpar+'.pbs'])
+    #except:
+    #  print "Couldn't submit job for %s for lambda=%s" % (meshname,regpar)

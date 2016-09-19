@@ -74,9 +74,6 @@ def main():
   if not(os.path.exists(DIRR)):
     os.makedirs(DIRR)
 
-  # Boundary numbers 
-  bbed=4
-  bsurf=5
   runname="temperature"
 
   # Grab boundary condition for front -- it will be different if we are using an actual
@@ -156,12 +153,10 @@ def main():
       os.rename(DIRM+"/mesh2d/"+name,DIRR_output+name)
     elif name.startswith("temperature") and 'result' in name:
       os.rename(DIRM+"/mesh2d/"+name,DIRR_output+name)
+    elif name.startswith("temperature") and not name.endswith('names') and ('.dat' in name):
+      os.rename(DIRM+"/mesh2d/"+name,DIRR_output+name)
+    elif name.startswith("temperature") and name.endswith('names'):
+      os.rename(DIRM+"/mesh2d/"+name,DIRR_output+name)
 
-  bed = elmerreadlib.saveline_boundary(DIRM+"/mesh2d/",runname,bbed)
-  surf = elmerreadlib.saveline_boundary(DIRM+"/mesh2d/",runname,bsurf)
-
-  os.rename(DIRM+"/mesh2d/"+runname+".dat",DIRR_output+runname+".dat")
-  os.rename(DIRM+"/mesh2d/"+runname+".dat.names",DIRR_output+runname+".dat.names")
-  
 if __name__ == "__main__":
   main()
