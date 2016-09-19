@@ -15,11 +15,11 @@ bname = 'smith'
 bmodel = 'aniso'
 bsmooth = '4'
 #lc = '300 500 750 2500'
-lc = '400 800 1500 5000'
-dx = 200
+lc = '300 500 1000 4000'
+dx = 100
 
 if glacier == 'Helheim':
-  date = '20140127'
+  date = '20120316'
 elif glacier == 'Kanger':
   date = '20110213' 
 
@@ -32,14 +32,14 @@ elif method == 'robin':
 
 # Temperature SIF options
 temp_simulation = 'steady'
-temp_iterations = 60
+temp_iterations = 100
 temp_timestep = 1
 temperature = -10.0 # Constant temperature for initial inversion
 
 # Options for PBS submission
 queue = 'long'
 model = 'ivy'
-nparts = 160
+nparts = 140
 ncpus = 20
 runtime = '48:00:00'
 
