@@ -348,7 +348,7 @@ Solver 10
   Equation = SaveLine
   Procedure = "SaveData" "SaveLine"
   Exec Solver = String "After all"
-  Filename = "mesh2d/$name$_beta.dat"
+  Filename = "mesh2d/$name$.dat"
   
   !Parallel Reduce = Logical True
 End
