@@ -115,12 +115,12 @@ Material 1
 ! in general this should be the temperature relative
 ! to pressure melting point. The suggestion below plugs
 ! in the correct value obtained with TemperateIceSolver
-  !Temperature Field Variable = String "Temp Homologous"
+  Temperature Field Variable = String "Temp Homologous"
 ! the temperature to switch between the 
 ! two regimes in the flow law
   Limit Temperature = Real -10.0
 ! In case there is no temperature variable
-  Constant Temperature = Real -10.0
+  !Constant Temperature = Real -10.0
   
   Cauchy = Logical True
   
@@ -167,26 +167,28 @@ End
 
 Solver 3
   Equation = "Navier-Stokes"
+ 
   Stabilize = Logical True
-  Flow model = Stokes
-  
-  Calculate Loads = Logical True
-  
-  Linear System Solver = Direct
-  Linear System Direct Method = Mumps
-  Mumps Percentage Increase Working Space = Integer 50
-  ! Linear System Solver = Iterative
-  ! Linear System Iterative Method = GMRES
-  ! Linear System GMRES Restart = 100
-  ! Linear System Preconditioning= ILU2
-  ! Linear System Convergence Tolerance= 1.0e-08
-  ! Linear System Max Iterations = 1000
+  Flow Model = Stokes
+ 
+  ! mandatory to save bulk stiffness matrix
+  Calculate loads = Logical True
 
-  Nonlinear System Max Iterations = Integer 100
-  Nonlinear System Convergence Tolerance = Real 1.0e-7
-  Nonlinear System Newton After Iterations = Integer 20
-  Nonlinear System Newton After Tolerance = Real 1.0e-04
-  Nonlinear System Relaxation Factor = Real 0.9
+  Linear System Solver = Direct
+  Linear System Direct Method =  Mumps
+  Mumps Percentage Increase Working Space = Integer 60
+  !Linear System Solver = Iterative
+  !Linear System Iterative Method = GMRES
+  !Linear System GMRES Restart = 100
+  !Linear System Preconditioning= ILU0
+  !Linear System Convergence Tolerance= 1.0e-08
+  !Linear System Max Iterations = 1000
+
+  Nonlinear System Max Iterations = Integer 80
+  Nonlinear System Convergence Tolerance  = Real 1.0e-7
+  Nonlinear System Newton After Iterations = Integer 10
+  Nonlinear System Newton After Tolerance = Real 1.0e-03
+  Nonlinear System Relaxation Factor = Real 1.0
 
   Nonlinear System Reset Newton = Logical True
 
