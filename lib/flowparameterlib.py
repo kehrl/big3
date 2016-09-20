@@ -9,11 +9,26 @@ import math
 
 def arrhenius(T):
   '''
-  This function takes a temperature and outputs the flow parameter 
+  A = arrhenius(T)
+  
+  Inputs:
+  T: temperature in Kelvin
+  
+  Outputs: 
+  A: Arrhenius parameter
+  
+  This function takes a temperature in Kelvin and outputs the flow parameter 
   following Cuffey and Paterson 2010, pg. 72.
+  
   '''
   
-  A=np.zeros_like(T)
+  try:
+    n = len(T)
+  except:
+    n = 1
+    T = np.ones(n)*T
+  
+  A = np.zeros(n)
   for i in range(0,len(T)):
     if (T[i] > 273.15):
       A[i]=2.4E-24
