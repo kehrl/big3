@@ -4,8 +4,8 @@ import subprocess
 import time
 import os
 
-glacier = 'Kanger'
-#glacier = 'Helheim'
+#glacier = 'Kanger'
+glacier = 'Helheim'
 
 # Mesh geometry
 
@@ -15,21 +15,22 @@ extrude = 10
 bname = 'morlighem'
 bmodel = 'aniso'
 bsmooth = '4'
+bottomsurface = 'bed' # or 'iceshelf'
 temperature = -10.0
 lc = '300 300 400 500'
 #lc = '1000 1000 4000 5000'
 
 if glacier == 'Helheim':
-  dates = ['20140127']
-  #dates = ['20110319','20110615','20110828','20111116',\
-  #         '20120624','20120908','20121205']#,\
-  #dates = ['20130209','20130508','20130804','20131031','20140127']#,\
-  #          '20140127','20140509','20140731','20141016']
+  #dates = ['20120316']
+  dates = ['20110319','20110615','20110828','20111116',\
+           '20120624','20120908','20121205',\
+           '20130209','20130508','20130804','20131031',\
+           '20140127','20140509','20140731','20141016']
 elif glacier == 'Kanger':
-  #dates = ['20120213']
-  dates = ['20110308','20110708','20110826','20111106',\
-           '20120213','20120522','20121012','20121217'\
-           '20130210','20130714','20131004','20131204'\
+  dates = ['20110308']
+  dates = ['20110708','20110826','20111106',\
+           '20120213','20120522','20121012','20121217',\
+           '20130210','20130714','20131004','20131204',\
            '20140213']  
 
 # Inversion options
@@ -41,7 +42,7 @@ regpars = ['5e11']
 # Options for PBS submission
 queue = 'normal'
 model = 'ivy'
-nparts = 80
+nparts = 60
 ncpus = 20
 runtime = '8:00:00'
 
@@ -62,7 +63,7 @@ for date in dates:
 
   # Create mesh
   command = "python /u/lkehrl/Code/big3/modeling/meshing/"+\
-          "mesh_3d.py -glacier {0} -mesh {1} -d {2} -bname {3} -bmodel {4} -bsmooth {5} -lc {6} -n {7} -output {8}".format(glacier,meshshp,date,bname,bmodel,bsmooth,lc,nparts,meshname)
+          "mesh_3d.py -glacier {0} -mesh {1} -d {2} -bname {3} -bmodel {4} -bsmooth {5} -lc {6} -n {7} -output {8} -zb {9}".format(glacier,meshshp,date,bname,bmodel,bsmooth,lc,nparts,meshname,bottomsurface)
   print command
   os.system(command)
 
@@ -96,7 +97,7 @@ for date in dates:
     fid = open("PBS_"+method+"_"+regpar+".pbs","w")
     fid.write(job_string)
     fid.close()
-    #try:
-    #  subprocess.call(['qsub','-q',queue,'PBS_'+method+'_'+regpar+'.pbs'])
-    #except:
-    #  print "Couldn't submit job for %s for lambda=%s" % (meshname,regpar)
+    try:
+      subprocess.call(['qsub','-q',queue,'PBS_'+method+'_'+regpar+'.pbs'])
+    except:
+      print "Couldn't submit job for %s for lambda=%s" % (meshname,regpar)

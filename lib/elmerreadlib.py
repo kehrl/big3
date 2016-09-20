@@ -134,7 +134,7 @@ def saveline_boundary(DIR,runname,bound,variables):
        
   return subset
 
-def grid3d(data,variable,holes,extent,dx=50):
+def grid3d(data,variable,holes=[],extent=[],dx=50):
 
   '''
   x,y,masked = grid3d(data,variable,holes,extent,dx=50)
@@ -176,19 +176,24 @@ def grid3d(data,variable,holes,extent,dx=50):
   yR = yy.flatten()
   mask = np.ones((ny,nx),dtype="bool")
   
-  exterior = Path(np.column_stack((extent[:,0],extent[:,1])))
-  pts = exterior.contains_points(np.column_stack((xR,yR)))
-  bool = ~(np.reshape(pts,(ny,nx)))
-  mask[bool==0] = 0
+  if len(extent) > 0:
+    exterior = Path(np.column_stack((extent[:,0],extent[:,1])))
+    pts = exterior.contains_points(np.column_stack((xR,yR)))
+    bool = ~(np.reshape(pts,(ny,nx)))
+    mask[bool==0] = 0
   
-  # Mask out points inside holes
-  for i in range(0,len(holes)):
-    hole = Path(np.column_stack((holes[i][:,0],holes[i][:,1])))
-    pts = hole.contains_points(np.column_stack((xR,yR)))
-    bool = (np.reshape(pts,(ny,nx)))
-    mask[bool==1] = 1
-    
-  masked = np.ma.masked_array(zz,mask)
+  if len(holes) > 0:
+    # Mask out points inside holes
+    for i in range(0,len(holes)):
+      hole = Path(np.column_stack((holes[i][:,0],holes[i][:,1])))
+      pts = hole.contains_points(np.column_stack((xR,yR)))
+      bool = (np.reshape(pts,(ny,nx)))
+      mask[bool==1] = 1
+  
+  if (len(holes) > 0) or (len(extent) > 0):  
+    masked = np.ma.masked_array(zz,mask)
+  else:
+    masked = zz
 
   return x,y,masked
   
