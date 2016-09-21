@@ -169,7 +169,7 @@ for time in np.unique(time_dem[nonnan]):
   ax = plt.gca()
   velind = np.argmin(abs(vtimedem-zstimedem[zsind[0]]))
   p=plt.imshow(vdem[:,:,velind]/1e3,extent=[xvdem[0],xvdem[-1],yvdem[0],yvdem[-1]],origin='lower',clim=[4,10])
-  plt.plot(x,y,'k',lw=1.5)
+  plt.plot(x,y,'k',lw=2)
   if glacier == 'Helheim':
     plt.plot(x[ind_eul[0]],y[ind_eul[0]],'ro',markersize=10)
     plt.text(x[ind_eul[0]]-900,y[ind_eul[0]]-800,'H02',fontsize=12,fontname='Arial')
@@ -211,7 +211,7 @@ for time in np.unique(time_dem[nonnan]):
   else:
     plt.imshow(demshadelib.hillshade(zsdem[:,:,zsind[0]]),extent=[xmin,xmax,ymin,ymax],origin='lower',cmap='Greys_r')
     p = plt.imshow(zsdem[:,:,zsind[0]],extent=[xmin,xmax,ymin,ymax],origin='lower',clim=[0,400],cmap='cpt_rainbow',alpha=0.6)
-  plt.plot(x,y,'k',lw=1.5)
+  plt.plot(x,y,'k',lw=2)
   if glacier == 'Helheim':
     plt.plot(x[ind_eul[0]],y[ind_eul[ptind]],'ro',markersize=10)
     plt.text(x[ind_eul[0]]-900,y[ind_eul[0]]-800,'H02',fontsize=12,fontname='Arial')
@@ -252,21 +252,21 @@ for time in np.unique(time_dem[nonnan]):
   ind = np.where(calvingstyle[:,1] == 'Tabular')[0]
   for i in ind:
     if i == ind[1]:
-      plt.bar(float(calvingstyle[i,0])-0.025,10.0,width=0.025,color=[0.6,0.6,1],edgecolor='none',label='Tabular',bottom=-5)
+      plt.bar(float(calvingstyle[i,0])-0.025,10.0,width=0.03,color=[0.6,0.6,1],edgecolor='none',label='Tabular',bottom=-5)
     elif i !=0:
-      plt.bar(float(calvingstyle[i,0])-0.025,10.0,width=0.025,color=[0.6,0.6,1],edgecolor='none',bottom=-5)
+      plt.bar(float(calvingstyle[i,0])-0.025,10.0,width=0.03,color=[0.6,0.6,1],edgecolor='none',bottom=-5)
   ind = np.where((calvingstyle[:,1] == 'Mixed'))[0]
   for i in ind:
     if i == ind[1]:
-      plt.bar(float(calvingstyle[i,0])-0.025,10.0,width=0.025,color=[0.4,0.8,0.6],edgecolor='none',label='Mixed',bottom=-5)
+      plt.bar(float(calvingstyle[i,0])-0.025,10.0,width=0.03,color=[0.4,0.8,0.6],edgecolor='none',label='Mixed',bottom=-5)
     elif i != 0:
-      plt.bar(float(calvingstyle[i,0])-0.025,10.0,width=0.025,color=[0.4,0.8,0.6],edgecolor='none',bottom=-5)
+      plt.bar(float(calvingstyle[i,0])-0.025,10.0,width=0.03,color=[0.4,0.8,0.6],edgecolor='none',bottom=-5)
   ind = np.where((calvingstyle[:,1] == 'Domino'))[0]
   for i in ind:
     if i == ind[1]:
-      plt.bar(float(calvingstyle[i,0])-0.025,10.0,width=0.025,color=[1,0.6,0.6],edgecolor='none',label='Non-tabular',bottom=-5)
+      plt.bar(float(calvingstyle[i,0])-0.025,10.0,width=0.03,color=[1,0.6,0.6],edgecolor='none',label='Non-tabular',bottom=-5)
     elif i != 0:
-      plt.bar(float(calvingstyle[i,0])-0.025,10.0,width=0.025,color=[1,0.6,0.6],edgecolor='none',bottom=-5)
+      plt.bar(float(calvingstyle[i,0])-0.025,10.0,width=0.03,color=[1,0.6,0.6],edgecolor='none',bottom=-5)
   plt.plot(terminus_time,terminus_val/1e3,'k.')
   plt.xticks(range(2000,2017))
   plt.xlim([time1,time2])
@@ -309,17 +309,22 @@ for time in np.unique(time_dem[nonnan]):
   plt.subplot(gs[4:6,1:])
   ax = plt.gca()
   plt.plot([time1,time2],[0,0],'k')
-  plt.plot(timerac,smbrac*365.25/900.,'0.4',lw=1.2,label='SMB')
+  plt.plot(timerac,smbrac/900.*100,'0.4',lw=1.2,label='SMB')
   #plt.plot(timeraczs[1:],np.convolve(np.diff(zsrac)/np.diff(timeraczs),np.ones((11,))/11.,mode='same'),c='0.4',lw=1.2,label='SMB')
-  plt.errorbar(dem_time[:,0],dem_dH[:,0],xerr=dem_time[:,1],yerr=dem_dH[:,1],fmt='bo',markersize=4,capsize=1,lw=0.5,label='DEM')
-  plt.errorbar(flux_time,flux_dH[:,0]+smb_flux,fmt='rs',markersize=4,capsize=1,lw=0.5,label='Flux-gate')
+  plt.errorbar(dem_time[:,0],dem_dH[:,0]/365.25*100,xerr=dem_time[:,1],yerr=dem_dH[:,1]/365.25*100,fmt='bo',markersize=4,capsize=1,lw=0.5,label='DEM')
+  plt.errorbar(flux_time,(flux_dH[:,0]+smb_flux)/365.25*100,fmt='rs',markersize=4,capsize=1,lw=2,label='Flux-gate')
   #time_H_2,dH_H_2,Q_H_2,hbar_H_2,ubar_H_2 = fluxlib.fluxgate_thinning('Helheim','fluxgate1','cresis',10.,timing='velocity')
   #plt.plot(timezsrac_K[1:],np.diff(zsrac_K)/np.diff(timezsrac_K),c='r',lw=0.5)
   plt.xticks(range(2008,2017),fontsize=8,fontname='Arial')
   plt.xlim([time1,time2])
-  plt.ylabel('dH/dt \n'+r'(m yr${-1}$)',fontname='Arial')
-  plt.yticks(np.arange(-160,120,40),fontname='Arial')
-  plt.ylim([-165,110])
+  plt.ylabel('$dh/dt$ \n'+r'(cm d$^{-1}$)',fontname='Arial')
+  plt.yticks(np.arange(-40,40,10),fontname='Arial')
+  if glacier == 'Kanger':
+    plt.ylim([-37,29])
+    plt.text(2008.2,-32,'F',fontweight='bold')
+  elif glacier == 'Helheim':
+    plt.ylim([-42,29])
+    plt.text(2008.2,-35,'F',fontweight='bold')
   ax.set_xticklabels([])
   #xTickPos = np.linspace(np.floor(time1)-0.25,np.ceil(time2)-0.25,(np.ceil(time2)-np.floor(time1))*2+1)
   #ax.bar(xTickPos, [max(plt.ylim())-min(plt.ylim())] * len(xTickPos), (xTickPos[1]-xTickPos[0]), bottom=min(plt.ylim()), color=['0.85','w'],linewidth=0)
@@ -329,7 +334,6 @@ for time in np.unique(time_dem[nonnan]):
     ax.add_patch(patch)
   plt.legend(loc=2,numpoints=1,ncol=3,handletextpad=0.2,fontsize=10,columnspacing=0.05,markerscale=1,handlelength=1.2,borderpad=0.2)
   plt.plot([zstimedem[zsind[0]],zstimedem[zsind[0]]],[-110,110],'k--',lw=2)
-  plt.text(2008.2,-140,'F',fontweight='bold')
 
   plt.subplot(gs[6:8,1:])
   ax = plt.gca()
@@ -350,9 +354,9 @@ for time in np.unique(time_dem[nonnan]):
     plt.fill_between([time1,time2],np.ones(2)*floatlib.height(zb[ind_eul[1]]-50)-floatlib.height(zb[ind_eul[1]]),np.ones(2)*floatlib.height(zb[ind_eul[1]]+50)-floatlib.height(zb[ind_eul[1]]),
     	alpha=0.1,facecolor='b',edgecolor='b',antialiased=True,zorder=2)
     plt.plot([time1,time2],[0,0],'b:',linewidth=1.0)
-    plt.errorbar(time_wv,zpt_wv[:,1]-floatlib.height(zb[ind_eul[1]]),capsize=1,yerr=zpterror_wv,fmt='o',color='b',markersize=3.5,label='WV')
-    plt.errorbar(time_tdm,zpt_tdm[:,1]-floatlib.height(zb[ind_eul[1]]),capsize=1,yerr=zpterror_tdm,fmt='^',color='b',markersize=3.5,label='TDM')
-    plt.errorbar(time_spirit,zpt_spirit[:,1]-floatlib.height(zb[ind_eul[1]]),capsize=1,yerr=zpterror_spirit,fmt='v',color='b',markersize=3.5,label='SPIRIT')
+    plt.errorbar(time_wv,zpt_wv[:,1]-floatlib.height(zb[ind_eul[1]]),capsize=1,yerr=zpterror_wv,fmt='o',color='b',markersize=4,label='WV')
+    plt.errorbar(time_tdm,zpt_tdm[:,1]-floatlib.height(zb[ind_eul[1]]),capsize=1,yerr=zpterror_tdm,fmt='^',color='b',markersize=4,label='TDM')
+    plt.errorbar(time_spirit,zpt_spirit[:,1]-floatlib.height(zb[ind_eul[1]]),capsize=1,yerr=zpterror_spirit,fmt='v',color='b',markersize=4,label='SPIRIT')
     plt.plot(time_atm,zpt_atm[:,1]-floatlib.height(zb[ind_eul[1]]),'+',color='b',markersize=5,label='ATM')
     plt.ylim([-25,40])
     plt.text(2008.2,-7,'G',fontweight='bold')
@@ -364,9 +368,13 @@ for time in np.unique(time_dem[nonnan]):
   plt.plot([imagetimes[imageind],imagetimes[imageind]],[-30,40],'k--',lw=2)
 
   plt.subplot(gs[9:,1:])
-  ind = np.where(dists > -4.8e3)[0]
-  plt.plot(dcresis/1e3,zcresis,'.',color='0.7')
-  plt.plot(dists[ind]/1e3,zb[ind],'k',lw=1.5)
+  ind = np.where(dists < -4.8e3)[0]
+  plt.plot(dcresis/1e3,zcresis,'.',color='0.7',label='Measured bed')
+  if glacier == 'Helheim':
+    plt.plot(dists/1e3,zb,'k',lw=1,label='Smoothed bed')
+  elif glacier == 'Kanger':
+    ind = np.where(dists < -4.8e3)[0]
+    plt.plot(dists[ind]/1e3,zb[ind],color='k',linewidth=1.5,label='Smoothed bed')
   #plt.plot([-10,5],[0,0],'0.8',lw=0.5)
   #if i != 0:
   #   plt.plot(dists/1e3,f((y,x)),c='0.7')
@@ -375,9 +383,10 @@ for time in np.unique(time_dem[nonnan]):
     f = scipy.interpolate.RegularGridInterpolator((yzdem,xzdem),np.nanmean(zsdem[:,:,zsind],axis=2),bounds_error = False,method='linear',fill_value=float('nan'))
   else:
     f = scipy.interpolate.RegularGridInterpolator((yzdem,xzdem),zsdem[:,:,zsind[0]],bounds_error = False,method='linear',fill_value=float('nan'))
-  plt.plot(dists/1e3,floatlib.height(zb),'k:')
-  plt.plot(dists/1e3,f((y,x)),'b',lw=1.5)
-  plt.plot(dists/1e3,floatlib.shelfbase(f(((y,x)))),'b',lw=1.5)
+  plt.plot(dists/1e3,floatlib.height(zb),'k:',lw=2,label='Flotation threshold')
+  plt.plot(dists/1e3,f((y,x)),'b',lw=2,label='Ice surface')
+  plt.plot(dists/1e3,floatlib.shelfbase(f(((y,x)))),'b--',lw=2,dashes=[6,2],label='Ice bottom')
+  plt.legend(loc=4,borderpad=0.3,handleheight=0.1,fontsize=10,numpoints=1,handlelength=1.0,labelspacing=0.05,columnspacing=0.7,handletextpad=0.5)
   if glacier == 'Helheim':
     plt.xticks(range(-10,5,2))
     plt.yticks(np.arange(-1200,400,200))

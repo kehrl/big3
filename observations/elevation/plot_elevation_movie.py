@@ -87,8 +87,12 @@ for i in range(0,len(timedem)):
   plt.yticks([])
   
   plt.subplot(122)
-  plt.plot(dists/1e3,zb,'k',lw=1)
   plt.plot(dcresis/1e3,zcresis,'.',color='0.5',markersize=3)
+  if glacier == 'Helheim':
+    plt.plot(dists/1e3,zb,'k',lw=1)
+  elif glacier == 'Kanger':
+    ind = np.argmin(abs(dists--5e3))
+    plt.plot(dists[0:ind]/1e3,zb[0:ind],color='k',linewidth=1.5,label='Smoothed')
   plt.plot([-10,5],[0,0],'0.8',lw=0.5)
   if i != 0:
     plt.plot(dists/1e3,f((y,x)),c='0.7')

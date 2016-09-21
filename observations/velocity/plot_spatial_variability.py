@@ -58,7 +58,7 @@ xzs,yzs,zsall,zstrend,zsdetrend,zsrange,zscount,zstime = zslib.variability(glaci
 xwv,ywv,zwv,timewv = zslib.dem_grid(glacier,xmin,xmax,ymin,ymax,years='all',resolution=32,verticaldatum='geoid')
 xf,yf,zabovefloat = floatlib.extent(xwv,ywv,zwv,timewv,glacier,rho_i=917.0,rho_sw=1025.0,bedsource='cresis',verticaldatum='geoid')
 
-cutoff = 2.
+cutoff = 5.
 floatcond = np.zeros(len(xf))
 floatcond[:] = float('nan')
 for i in range(0,len(xf)):
