@@ -90,7 +90,7 @@ End
 
 ! Bedrock
 Initial Condition 3
-  Zs Bottom = Variable Coordinate 1
+  Zs Bottom = Variable Coordinate 3
     Real Procedure "ElmerIceUSF" "ZsBottomIni"
 End
 

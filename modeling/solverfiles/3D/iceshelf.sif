@@ -1,0 +1,545 @@
+check keywords warn
+
+$name = "iceshelf"
+$yearinsec = 365.25*24*60*60
+$rhoi = 917.0/(1.0e6*yearinsec^2)   
+$rhow = 1025.0/(1.0e6*yearinsec^2) 
+$gravity = -9.81*yearinsec^2
+
+Header
+  Mesh DB "." "mesh2d"
+End
+
+Constants
+  Water Density = Real $rhow  
+  Buoyancy Use Basal Melt = Logical True
+  Bottom Surface Name = String "Zs Bottom"        
+End
+
+!---------------------------------------------------
+!---------------- SIMULATION -----------------------
+!---------------------------------------------------
+
+Simulation
+  Coordinate System  = Cartesian 3D
+  Coordinate Mapping(3) = 1 2 3
+  Simulation Type = Transient
+
+! Internal extrusion 
+  Extruded Mesh Levels = Integer {Extrude}
+
+  Timestepping Method = "BDF"
+  BDF Order = 1
+  Timestep Intervals = 24
+  Output Intervals = 1        
+  Timestep Sizes = $(1/12)
+
+  Initialize Dirichlet Conditions = Logical False  
+  Steady State Max Iterations = 10
+  Steady State Min Iterations = 1
+
+  Max Output Level = 3
+
+  Output File = "$name$.result"
+  Post File = "$name$.vtu"
+End
+
+!---------------------------------------------------
+!---------------- BODIES ---------------------------
+!---------------------------------------------------
+
+!! the ice 
+Body 1
+  Name = "ice"
+  Equation = 1
+  Body Force = 1
+  Material = 1
+  Initial Condition = 1
+End
+
+!! Upper surface
+Body 2
+  Name = "top free surface"
+  Equation = 2
+  Body Force = 2
+  Material = 1
+  Initial Condition = 2
+End
+
+!! Upper surface
+Body 3
+  Name = "free surface sea/ice-shelf"
+  Equation = 3
+  Body Force = 3
+  Material = 1
+  Initial Condition = 3
+End
+
+!---------------------------------------------------
+!---------------- INITIAL CONDITIONS ---------------
+!---------------------------------------------------
+
+!! Ice core
+Initial Condition 1
+  Pressure = Real 0.0e0
+  Velocity 1 = Real 0.0e0
+  Velocity 2 = Real 0.0e0
+  Velocity 3 = Real 0.0e0
+    
+  Mesh Update 1 = Real 0.0e0
+  Mesh Update 2 = Real 0.0e0
+  Mesh Update 3 = Real 0.0e0
+End
+
+! Upper surface
+Initial Condition 2
+  ZsTopIni = Variable Coordinate 1
+    REAL procedure "USF_Init.so" "zsIni"
+  Zs Top = Variable Coordinate 1
+    REAL procedure "USF_Init.so" "zsIni"
+End
+
+! Ice shelf
+Initial Condition 3
+  Zs Bottom = Variable Coordinate 1
+    REAL procedure "USF_Init.so" "ZbIni"
+  ZsBottomIni = Variable Coordinate 1
+    REAL procedure "USF_Init.so" "ZbIni"
+    
+  Bedrock = Variable Coordinate 1
+    REAL procedure "USF_Init.so" "Bedrock"
+End
+
+
+!---------------------------------------------------
+!---------------- BODY FORCES ----------------------
+!---------------------------------------------------
+
+! Body forces
+Body Force 1
+  Flow BodyForce 1 = Real 0.0
+  Flow BodyForce 2 = Real 0.0
+  Flow BodyForce 3 = Real $gravity
+End
+
+! Top surface forces
+Body Force 2
+  Zs Top Accumulation Flux 1 = Real 0.0e0
+  Zs Top Accumulation Flux 2 = Real 0.0e0
+  Zs Top Accumulation Flux 3 = Real 0.0e0
+End
+
+Body Force 3
+  Zs Bottom Accumulation = Real 0.0e0
+End
+
+!---------------------------------------------------
+!---------------- MATERIALS ------------------------
+!---------------------------------------------------
+
+!! ice material properties in MPa - m - a system 
+Material 1
+  Density = Real $rhoi
+  
+  Viscosity Model = String "Glen"
+! Viscosity has to be set to a dummy value
+! to avoid warning output from Elmer
+  Viscosity = Real 1.0 
+  Glen Exponent = Real 3.0
+  Critical Shear Rate = Real 1.0e-10
+! Rate factors (Paterson value in MPa^-3a^-1)
+  Rate Factor 1 = Real 1.258e13  
+  Rate Factor 2 = Real 6.046e28
+! these are in SI units - no problem, as long as
+! the gas constant also is 
+  Activation Energy 1 = Real 60e3
+  Activation Energy 2 = Real 139e3  
+  Glen Enhancement Factor = Real 3.0
+! the variable taken to evaluate the Arrhenius law
+! in general this should be the temperature relative
+! to pressure melting point. The suggestion below plugs
+! in the correct value obtained with TemperateIceSolver
+  !Temperature Field Variable = String "Temp Homologous"
+! the temperature to switch between the 
+! two regimes in the flow law
+  Limit Temperature = Real -10.0
+! In case there is no temperature variable
+{Temperature}
+  
+  Sea level = Real 0.0
+
+  !! for computeDevStress
+  Cauchy = Logical True
+  
+  Min Zs Top = Variable Zs Bottom   
+    Real MATC "tx + 10.0"                          
+  Max Zs Top = Real 1.0e6
+
+  !! Bed condition
+  Min Zs Bottom = Equals Bedrock 
+  Max Zs Bottom = Real 1.0e6
+  
+  Mesh Elastic Modulus = 1.0
+  Mesh Poisson Ratio = 0.3
+End
+
+!---------------------------------------------------
+!---------------- SOLVERS --------------------------
+!---------------------------------------------------
+
+Solver 1  
+  Exec Solver = Before Simulation
+  Equation = "MapCoordinateInit"
+  Procedure = "StructuredMeshMapper" "StructuredMeshMapper"
+
+  Active Coordinate = Integer 3
+  Correct Surface = Logical True
+  Minimum Height = Real 10.0
+End
+
+Solver 2
+  Exec Solver = Before All
+  Equation = GroundedMaskIni
+  Procedure = "ElmerIceSolvers" "GroundedSolver"
+  Variable = GroundedMask
+  Variable DOFs = 1
+
+  Toler = Real 1.0e-3
+  Bedrock Variable = String "Bedrock"
+End
+
+Solver 3
+  Equation = "NormalVector"
+  Procedure = "ElmerIceSolvers" "ComputeNormalSolver"
+  Variable = String "Normal Vector"
+  Variable DOFs = 3
+
+  ComputeAll = Logical False
+  Optimize Bandwidth = Logical False
+End
+
+Solver 4
+  Equation = Fw
+  Procedure = "ElmerIceSolvers" "GetHydrostaticLoads"
+  Variable = Fw[Fwater:3]
+  Variable DOFs = 3
+End
+
+Solver 5
+  Equation = "Navier-Stokes"
+  Stabilize = Logical True
+  Flow Model = Stokes
+  Linear System Solver = Direct
+  Linear System Direct Method = MUMPS
+  Nonlinear System Max Iterations = 100
+  Nonlinear System Convergence Tolerance  = 1.0e-6
+  Nonlinear System Newton After Iterations = 100
+  Nonlinear System Newton After Tolerance = 1.0e-06
+  Nonlinear System Relaxation Factor = 0.9
+  Nonlinear System Reset Newton = Logical True
+  Steady State Convergence Tolerance = Real 1.0e-3
+  Exported Variable 1 = Flow Solution Loads[Stress Vector:3 CEQ Residual:1]
+  Calculate Loads = Logical True
+  
+  Exported Variable 2 = -dofs 1 "dS"
+  Exported variable 2 DOFS = 1
+  Exported Variable 3 = -dofs 3 "dSdt"
+  Exported Variable 4 = -dofs 1 "Bedrock"
+End
+
+Solver 6
+  !Exec Solver = "Never"
+  Equation = "Free Surface Top"
+  Procedure =  "FreeSurfaceSolver" "FreeSurfaceSolver"
+  Variable = "Zs Top"
+  Variable DOFs =  1
+  Exported Variable 1 = "Zs Top Residual"
+  Exported Variable 1 DOFs = 1
+  Exported Variable 2 = "ZsTopIni"
+  Exported Variable 2 DOFS = 1
+
+  !Before Linsolve = "EliminateDirichlet" "EliminateDirichlet"
+
+  Linear System Solver = Iterative
+  Linear System Direct Method = UMFPACK
+  Linear System Max Iterations = 1500
+  Linear System Iterative Method = BiCGStab
+  Linear System Preconditioning = ILU0
+  Linear System Convergence Tolerance = Real 1.0e-6
+  Linear System Abort Not Converged = False
+  Linear System Residual Output = 1
+
+  Nonlinear System Max Iterations = 100
+  Nonlinear System Min Iterations = 2
+  Nonlinear System Convergence Tolerance  = 1.0e-6
+  Nonlinear System Relaxation Factor = 1.0
+  
+  Flow Solution Name = String "Flow Solution"
+
+  Steady State Convergence Tolerance = 1.0e-03
+
+  Stabilization Method = Stabilized
+  Apply Dirichlet = Logical True
+
+  Relaxation Factor = Real 1.0
+  
+! Is there a maximum step-size for the displacement
+! use/or not accumulation
+  Use Accumulation = Logical True
+! take accumulation to be given normal to surface/as vector
+  Normal Flux = Logical False  
+End
+
+Solver 7
+  !Exec Solver = "Never"
+  Equation = "Free Surface Sea/Shelf"
+  Procedure =  "MyFreeSurfaceSolver.so" "FreeSurfaceSolver"
+  Variable = "Zs Bottom"
+  Variable DOFS =  1
+  Exported Variable 1 = "Zs Bottom Residual"
+  Exported Variable 1 DOFs = 1
+  Exported Variable 2 = "ZsBottomIni"
+  Exported Variable 2 DOFs = 1
+
+  !Before Linsolve = "EliminateDirichlet" "EliminateDirichlet"
+
+  Linear System Solver = Iterative
+  Linear System Max Iterations = 1500
+  Linear System Iterative Method = BiCGStab
+  Linear System Preconditioning = ILU0
+  Linear System Convergence Tolerance = Real 1.0e-6
+  Linear System Abort Not Converged = False
+  Linear System Residual Output = 1
+
+  Nonlinear System Max Iterations = 100
+  Nonlinear System Min Iterations = 2
+  Nonlinear System Convergence Tolerance  = 1.0e-6
+  Nonlinear System Relaxation Factor = 1.00
+
+  Flow Solution Name = String "Flow Solution"
+
+  Steady State Convergence Tolerance = 1.0e-03
+
+  Stabilization Method = Stabilized
+  Apply Dirichlet = Logical True
+
+  Relaxation Factor = Real 1.0
+
+! Is there a maximum step-size for the displacement
+! use/or not accumulation
+  Use Accumulation = Logical True
+! take accumulation to be given normal to surface/as vector
+  Normal Flux = Logical False
+End
+
+Solver 8
+  !Exec Solver = "Never"
+  Equation = "Mesh Update"
+  Exec Solver = "After Timestep"
+
+  Linear System Solver = Iterative
+  Linear System Iterative Method = BiCGStab
+  Linear System Max Iterations  = 500
+  Linear System Preconditioning = ILU1
+  Linear System Convergence Tolerance = 1.0e-06
+
+  Nonlinear System Max Iterations = 1
+  Nonlinear System Convergence Tolerance = 1.0e-06
+End
+
+!! Compute the Mask 
+Solver 9
+  Equation = GroundedMask
+  Procedure = "ElmerIceSolvers" "GroundedSolver"
+  Variable = GroundedMask
+  Variable DOFs = 1
+
+  Toler = Real 1.0e-3
+  Bedrock Variable = String "Bedrock"
+End
+
+Solver 10
+  Equation = String "StressSolver"
+  Procedure = "ElmerIceSolvers" "ComputeDevStress"          
+  Variable = -nooutput "Sij"
+  Variable DOFs = 1
+  Exported Variable 1 = Stress[Sxx:1 Syy:1 Szz:1 Sxy:1 Syz:1 Sxz:1]
+  Exported Variable 1 DOFs = 6
+  
+  Flow Solver Name = String "Flow Solution"
+  Stress Variable Name = String "Stress"
+  Linear System Solver = Direct         
+  Linear System Direct Method = Mumps
+End 
+
+Solver 11
+  Equation = SaveLine
+  Procedure = "SaveData" "SaveLine"
+  Exec Solver = String "After all"
+  Filename = "mesh2d/$name$.dat"
+  
+End
+
+!---------------------------------------------------
+!---------------- EQUATIONS ------------------------
+!---------------------------------------------------
+
+Equation 1
+  Active Solvers(6) = 1 3 5 8 10 11
+  Flow Solution Name = String "Flow Solution"
+End
+
+Equation 2
+  Active Solvers(1) = 6
+  Flow Solution Name = String "Flow Solution"
+  Convection = String Computed
+End
+
+Equation 3
+  Active Solvers(4) = 2 4 7 9 
+  Flow Solution Name = String "Flow Solution"
+  Convection = String Computed
+End
+
+!---------------------------------------------------
+!---------------- BOUNDARY CONDITIONS --------------
+!---------------------------------------------------
+
+Boundary Condition 1
+  Name = "front"
+  Target Boundaries(1) = 1
+  
+  Flow Force BC = Logical True
+  External Pressure = Variable Coordinate 3
+     Real Procedure "ElmerIceUSF" "SeaPressure"
+
+  Compute Sea Pressure = Logical True
+  ComputeNormal = Logical False
+   
+  Mesh Update 1 = Real 0.0e0
+  Mesh Update 2 = Real 0.0e0 
+    
+  Save Line = Logical True
+End
+
+Boundary Condition 2
+  Name = "Side Walls"
+  Target Boundaries(1) = 2
+
+  !Normal-Tangential Velocity = Logical True
+  !Flow Force BC = Logical True
+  !Slip Coefficient 2 =  Variable Coordinate 1
+  !   REAL Procedure "Sliding_Beta.so" "Linear"  
+  !Slip Coefficient 3 =  Variable Coordinate 1
+  !   REAL Procedure "Sliding_Beta.so" "Linear"                
+
+  Velocity 1 = Variable Coordinate 1
+    Real procedure "USF_Init.so" "UWa"
+  Velocity 2 = Variable Coordinate 1
+    Real procedure "USF_Init.so" "VWa"
+  Velocity 3 = Real 0.0e0
+
+  Mesh Update 1 = Real 0.0e0
+  Mesh Update 2 = Real 0.0e0
+
+  ComputeNormal = Logical False  
+  Save Line = Logical True
+End
+
+Boundary Condition 3
+  Name = "Inflow"
+  Target Boundaries(1) = 3
+
+  Velocity 1 = Variable Coordinate 1
+    Real procedure "USF_Init.so" "UWa"
+  Velocity 2 = Variable Coordinate 1
+    Real procedure "USF_Init.so" "VWa"
+
+  Mesh Update 1 = Real 0.0e0
+  Mesh Update 2 = Real 0.0e0
+
+  ComputeNormal = Logical False  
+  Save Line = Logical True
+End
+
+Boundary Condition 4
+  Name = "Bed"
+  Target Boundaries(1) = 4
+  Body Id = 3
+
+  Normal-Tangential Velocity = Logical True
+  Flow Force BC = Logical True
+
+! Grounded ice
+  Zs Bottom = Equals Bedrock 
+  Zs Bottom Condition = Variable GroundedMask
+    Real MATC "tx + 0.5"
+
+  !Grounding Line Moves = Logical False
+
+  Slip Coefficient 2 = Variable Coordinate 1
+    Real Procedure "ElmerIceUSF" "SlidCoef_Contact"
+  Slip Coefficient 3 = Variable Coordinate 1
+    Real Procedure "ElmerIceUSF" "SlidCoef_Contact"
+ 
+  !Slip Coefficient 2 =  Variable Coordinate 1
+  !  Real Procedure "ElmerIceUSF" "Sliding_Weertman"
+  !Slip Coefficient 3 =  Variable Coordinate 1
+  !  Real Procedure "ElmerIceUSF" "Sliding_Weertman"
+ 
+  Sliding Law = String "Weertman" 
+  Weertman Friction Coefficient = Variable Coordinate 1
+     REAL Procedure "Sliding_Beta.so" "Linear"                
+  Weertman Exponent = Real $(1.0/1.0)
+  Weertman Linear Velocity = Real 0.00001
+  ! Options are 'Last Grounded' (default), 'First Floating' or 'Discontinuous' 
+  ! Grounding Line Definition = String "Last Grounded"
+  Grounding Line Definition = String "Discontinuous"
+  ! Grounding Line Definition = String "First Floating"
+  Test Contact Tolerance = real 1.0e-3
+
+  Velocity 1 = Real 0.0
+  Velocity 1 Condition = Variable GroundedMask
+    Real MATC "tx + 0.5"
+
+! Shelf conditions
+  External Pressure = Variable Coordinate 3
+     Real Procedure "ElmerIceUSF" "SeaPressure"
+  
+  Slip Coefficient 1 = Variable Coordinate 3     
+     Real Procedure "ElmerIceUSF" "SeaSpring"
+
+  ComputeNormal Condition = Variable GroundedMask
+    Real MATC "tx + 0.5"
+
+  Compute Sea Pressure = Logical True
+  Compute Sea Spring = Logical True
+
+  Bottom Surface = Variable Coordinate 1
+    REAL procedure "USF_Init.so" "zbIni"
+
+  Mesh Update 1 = Real 0.0e0
+  Mesh Update 2 = Real 0.0e0
+  Mesh Update 3 = Variable Zs Bottom, ZsBottomIni
+    Real MATC "tx(0)-tx(1)"
+     
+  Save Line = Logical True
+End
+
+! Upper Surface
+Boundary Condition 5
+  Name = "Surface"
+  Target Boundaries(1) = 5
+  Body Id = 2
+
+  Top Surface = Variable Coordinate 1
+    REAL procedure "USF_Init.so" "zsIni"
+
+  Mesh Update 1 = Real 0.0e0
+  Mesh Update 2 = Real 0.0e0
+  Mesh Update 3 = Variable Zs Top, ZsTopIni
+    Real MATC "tx(0)-tx(1)"
+
+  ComputeNormal = Logical False
+  Save Line = Logical True
+End 

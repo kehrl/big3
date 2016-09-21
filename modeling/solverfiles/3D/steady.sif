@@ -1,12 +1,13 @@
 check keywords warn
 
+$name = "steady"
 $yearinsec = 365.25*24*60*60
 $rhoi = 917.0/(1.0e6*yearinsec^2)   
-$rhow = 1000.0/(1.0e6*yearinsec^2) 
-$gravity = -9.8*yearinsec^2
+$rhow = 1025.0/(1.0e6*yearinsec^2) 
+$gravity = -9.81*yearinsec^2
 
 $ function waterpressure(Z) {\
-  rhow = 1020.0;\
+  rhow = 1025.0;\
   waterline = 0.0;\
   G = 9.81;\
   _waterpressure = 0.0;\
@@ -18,13 +19,13 @@ $ function waterpressure(Z) {\
 }
 
 Header
-  Mesh DB "../../../../../Data/Meshes/3D/Helheim/Low" "elmer"
+  Mesh DB "." "mesh2d"
 End
 
 Constants
 ! For the Buoyancy User function
   Buoyancy Use Basal Melt = Logical True 
-  Bottom Surface Name = String "Zs Bottom"
+  Bottom Surface Name = String "Zb"
   Water Density = Real $rhow          
 End
 
@@ -37,7 +38,9 @@ Simulation
   Coordinate Mapping(3) = 1 2 3
   Simulation Type = Steady State
 
-  
+! Internal extrusion 
+  Extruded Mesh Levels = Integer {Extrude}
+
   !Timestepping Method = "BDF"
   !BDF Order = 1
   !Timestep Intervals = 5
@@ -48,6 +51,9 @@ Simulation
   Steady State Min Iterations = 1
 
   Max output level = 3
+
+  Output File = "$name$.result"
+  Post File = "$name$.vtu"
 End
 
 !---------------------------------------------------
@@ -69,9 +75,8 @@ End
 
 !! for ice core
 Initial Condition 1
-  Depth = Real 0.0
   Pressure = Real 0.0e0
-  Velocity 1 = Real 0
+  Velocity 1 = Real 0.0e0
   Velocity 2 = Real 0.0e0
   Velocity 3 = Real 0.0e0
 End
@@ -84,6 +89,8 @@ Body Force 1
   Flow BodyForce 1 = Real 0.0
   Flow BodyForce 2 = Real 0.0
   Flow BodyForce 3 = Real $gravity
+  
+  Zb Accumulation = Real 0.0e0
 End
 
 
@@ -93,51 +100,64 @@ End
 
 !! ice material properties in MPa - m - a system 
 Material 1
-  Density = Real $rhoi     
-  Viscosity = $(2.0*6.4*1e-25*yearinsec)^(-1.0/3.0)*1e-6 
-  Viscosity Model = String "power law"
-  Viscosity Exponent = Real $(1.0/3.0)
+  Density = Real $rhoi
+
+  Viscosity Model = String "Glen"
+! Viscosity has to be set to a dummy value
+! to avoid warning output from Elmer
+  Viscosity = Real 1.0 
+  Glen Exponent = Real 3.0
   Critical Shear Rate = Real 1.0e-10
+! Rate factors (Paterson value in MPa^-3a^-1)
+  Rate Factor 1 = Real 1.258e13  
+  Rate Factor 2 = Real 6.046e28
+! these are in SI units - no problem, as long as
+! the gas constant also is 
+  Activation Energy 1 = Real 60e3
+  Activation Energy 2 = Real 139e3  
+  Glen Enhancement Factor = Real 3.0
+! the variable taken to evaluate the Arrhenius law
+! in general this should be the temperature relative
+! to pressure melting point. The suggestion below plugs
+! in the correct value obtained with TemperateIceSolver
+  !Temperature Field Variable = String "Temp Homologous"
+! the temperature to switch between the 
+! two regimes in the flow law
+  Limit Temperature = Real -10.0
+! In case there is no temperature variable
+{Temperature}
   
   Sea level = Real 0.0
 
   !! for computeDevStress
   Cauchy = Logical True
   
-  Mesh Elastic Modulus = 1.0
-  Mesh Poisson Ratio = 0.3
 End
 
 !---------------------------------------------------
 !---------------- SOLVERS --------------------------
 !---------------------------------------------------
+
 Solver 1
-  Equation = "Flowheight"
-   Exec Solver = "Before Simulation"
-   Procedure = File "ElmerIceSolvers" "FlowDepthSolver"
-   Variable = String "Height"
-   Variable DOFs = 1
-   Linear System Solver = "Direct"
-   Linear System Direct Method = "MUMPS"
-   ! this sets the direction
-   ! -1 is negative z-direction (upside down)
-   ! +1 is positive (downside up)
-   Gradient = Real 1.0E00
-  ! switch that to True, if you want to have 
-  ! free surface gradients to be computed
-  !------------------------------------
-  Calc Free Surface = Logical True
-  ! the name for the exported (if not existing) added variable
-  ! the gradients will be stored in variables with the base
-  ! name given and "Grad1" and (in 3 dimensions) "Grad2" added,
-  ! so in our case "FreeSurfGrad1" and "FreeSurfGrad2"
-  ! again, if those variables did not exist, they will be
-  ! automatically created
-  !-----------------------------------------------------------
-  Freesurf Name = String "FreeSurf"
+  Exec Solver = Before Simulation
+  Equation = "MapCoordinate"
+  Procedure = "StructuredMeshMapper" "StructuredMeshMapper"
+  Mesh Update Variable = String "dS"
+  Mesh Velocity First Zero = Logical True
+  Active Coordinate = Integer 3
 End
 
 Solver 2
+  Equation = "NormalVector"
+  Procedure = "ElmerIceSolvers" "ComputeNormalSolver"
+  Variable = String "Normal Vector"
+  Variable DOFs = 3
+
+  ComputeAll = Logical False
+  Optimize Bandwidth = Logical False
+End
+
+Solver 3
   Equation = "Navier-Stokes"
   Stabilize = Logical True
   Flow Model = Stokes
@@ -152,9 +172,12 @@ Solver 2
   Steady State Convergence Tolerance = Real 1.0e-3
   Exported Variable 1 = Flow Solution Loads[Stress Vector:3 CEQ Residual:1]
   Calculate Loads = Logical True
+  
+  Exported Variable 1 = dS
+  Exported variable 1 DOFS = 1
 End
 
-Solver 3
+Solver 4
   Equation = String "StressSolver"
   Procedure = "ElmerIceSolvers" "ComputeDevStress"          
   Variable = -nooutput "Sij"
@@ -168,74 +191,109 @@ Solver 3
   Linear System Direct Method = Mumps
 End 
 
-Solver 4
- Exec Solver = "After TimeStep"
- Exec Interval = 1
- Equation = "result output"
- Procedure = "ResultOutputSolve" "ResultOutputSolver"
- Output File Name = file "helheim_3d."
- Output Format = String "vtu"
+Solver 5
+  Equation = SaveLine
+  Procedure = "SaveData" "SaveLine"
+  Exec Solver = String "After all"
+  Filename = "mesh2d/$name$.dat"
+  
+  !Parallel Reduce = Logical True
 End
-
 
 !---------------------------------------------------
 !---------------- EQUATIONS ------------------------
 !---------------------------------------------------
 
 Equation 1
-  Active Solvers(4) = 1 2 3 4 
+  Active Solvers(5) = 1 2 3 4 5
 End
 
 !---------------------------------------------------
 !---------------- BOUNDARY CONDITIONS --------------
 !---------------------------------------------------
 Boundary Condition 1
-  Name = "Side Walls"
-  Target Boundaries(1) = 4
-  Normal-Tangential Velocity = Logical True
-  Velocity 1 = Real 0.0
-  Velocity 2 = Real 0.0e0
-  Velocity 3 = Real 0.0e0
+  Name = "front"
+  Target Boundaries(1) = 1
+  Flow Force BC = Logical True
+  External Pressure = Variable Coordinate 3
+     Real Procedure "ElmerIceUSF" "SeaPressure"
+
+  Compute Sea Pressure = Logical True
+
+  Compute Normal = Logical False     
+  Save Line = Logical True
 End
 
 Boundary Condition 2
-  Name = "Inflow"
-  Target Boundaries(1) = 5
-  Save Line = Logical True
+  Name = "Side Walls"
+  Target Boundaries(1) = 2
+  Normal-Tangential Velocity = Logical True
 
 ! Dirichlet BCs
-  Velocity 1 = Variable Height
-    Real procedure "SIA.so" "USIA"
-  Velocity 2 = Variable Height
-    Real procedure "SIA.so" "VSIA"
+  Velocity 1 = Variable Coordinate 1
+    Real procedure "USF_Init.so" "UWa"
+  Velocity 2 = Variable Coordinate 1
+    Real procedure "USF_Init.so" "VWa"
+  Velocity 3 = Real 0.0e0
+
+  Compute Normal = Logical False   
+  Save Line = Logical True
 End
 
 Boundary Condition 3
-  Name = "bed"
-  Target Boundaries(1) = 1
+  Name = "Inflow"
+  Target Boundaries(1) = 3
+
+! Dirichlet BCs
+  Velocity 1 = Variable Coordinate 1
+    Real procedure "USF_Init.so" "UWa"
+  Velocity 2 = Variable Coordinate 1
+    Real procedure "USF_Init.so" "VWa"
+  Velocity 3 = Real 0.0e0
+
+  Compute Normal = Logical False   
+  Save Line = Logical True
+End
+
+Boundary Condition 4
+  Name = "Bed"
+  Target Boundaries(1) = 4
+
+  Bottom Surface = Variable Coordinate 1
+    REAL procedure "USF_Init.so" "zbIni"
 
   Normal-Tangential Velocity = Logical True
   Flow Force BC = Logical True
   
   Velocity 1 = Real 0.0e0
-  Slip Coefficient 2 = Variable Coordinate 1, Coordinate 2
-     REAL Procedure "Sliding_Beta.so" "Linear"
-  Slip Coefficient 3 = Variable Coordinate 1, Coordinate 2
-     REAL Procedure "Sliding_Beta.so" "Linear"
-  Height = Real 0.0e0
+  
+  !Slip Coefficient 2 = Variable Coordinate 1, Coordinate 2
+  !   REAL Procedure "Sliding_Beta.so" "Linear"
+  !Slip Coefficient 3 = Variable Coordinate 1, Coordinate 2
+  !   REAL Procedure "Sliding_Beta.so" "Linear"
+  Slip Coefficient 2 =  Variable Coordinate 1
+    Real Procedure "ElmerIceUSF" "Sliding_Weertman"
+  Slip Coefficient 3 =  Variable Coordinate 1
+    Real Procedure "ElmerIceUSF" "Sliding_Weertman"
+    
+  Weertman Friction Coefficient = Variable Coordinate 1   
+    REAL Procedure "Sliding_Beta.so" "Linear"    
+  Weertman Exponent = Real $1.0/1.0
+  Weertman Linear Velocity = Real 0.00001
+
+  Compute Normal = Logical True     
+  Save Line = Logical True
 End
 
 ! Upper Surface
-Boundary Condition 4
+Boundary Condition 5
   !Name= "Surface" mandatory to compute cost function
   Name = "Surface"
-  Target Boundaries(1) = 2
-End 
+  Target Boundaries(1) = 5
 
-Boundary Condition 5
-  Name = "front"
-  Target Boundaries(1) = 3
-  Flow Force BC = Logical True
-  External Pressure = Variable Coordinate 3 !we are in MPa units
-    Real MATC "-1.0*waterpressure(tx)*1.0E-06"
-End
+  Top Surface = Variable Coordinate 1
+    REAL procedure "USF_Init.so" "zsIni"
+
+  Compute Normal = Logical False   
+  Save Line = Logical True
+End 
