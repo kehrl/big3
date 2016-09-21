@@ -152,6 +152,8 @@ def velocity_at_eulpoints(xpt,ypt,glacier,data='all',xy_velocities='False'):
   Finds velocity at nearest gridcell to xpt, ypt for all 
   velocity maps. Output is velocity at xpt, ypt through time.
 
+  vpt_sort,tpt_sort,ept_sort = velocity_at_eulpoints(xpt,ypt,glacier,data='all',xy_velocities='False')
+
   # Inputs:
   # xpt, ypt: coordinates of flowline
   # glacier: glacier name
