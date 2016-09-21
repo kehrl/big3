@@ -192,7 +192,7 @@ def main():
     lines=lines.replace('{Extrude}', '{0}'.format(extrude))
     lines=lines.replace('{Lambda}', '{0}'.format(regpar))
     lines=lines.replace('{FrontBC}', '{0}'.format(frontbc_text))
-    lines=lines.replace('{ViscosityOption}', '{0}'.format(viscosity_text))
+    #lines=lines.replace('{ViscosityOption}', '{0}'.format(viscosity_text))
     fid2.write(lines)
     fid1.close()
     fid2.close()
