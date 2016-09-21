@@ -110,10 +110,6 @@ End
 !! ice material properties in MPa - m - a system 
 Material 1
   Density = Real $rhoi
-!  Viscosity Model = String "power law"
-!{ViscosityOption}
-!  Viscosity Exponent = Real $(1.0e00/3.0e00)
-!  Critical Shear Rate = Real 1.0e-10
 
   Viscosity Model = String "Glen"
 ! Viscosity has to be set to a dummy value
@@ -122,23 +118,23 @@ Material 1
   Glen Exponent = Real 3.0
   Critical Shear Rate = Real 1.0e-10
 ! Rate factors (Paterson value in MPa^-3a^-1)
-!  Rate Factor 1 = Real 1.258e13  
-!  Rate Factor 2 = Real 6.046e28
+  Rate Factor 1 = Real 1.258e13  
+  Rate Factor 2 = Real 6.046e28
 ! these are in SI units - no problem, as long as
 ! the gas constant also is 
-!  Activation Energy 1 = Real 60e3
-!  Activation Energy 2 = Real 139e3  
+  Activation Energy 1 = Real 60e3
+  Activation Energy 2 = Real 139e3  
   Set Arrhenius Factor = Logical True
   Arrhenius Factor = Real $(3.5e-25*yearinsec*1.0e18)
   Glen Enhancement Factor = Real 3.0
 ! the temperature to switch between the 
 ! two regimes in the flow law
-!  Limit Temperature = Real -10.0
+  Limit Temperature = Real -10.0
 ! the variable taken to evaluate the Arrhenius law
 ! in general this should be the temperature relative
 ! to pressure melting point. The suggestion below plugs
 ! in the correct value obtained with TemperateIceSolver
-!  Constant Temperature = Real -10.0   
+{Temperature} 
 
   Cauchy = Logical True
 End

@@ -578,7 +578,7 @@ FUNCTION ModelTemperature( Model, nodenumber, dumy) RESULT(T) !
     	Firsttime=.False.
 
     	! open file
-      open(10,file='inputs/flowT.xyz')
+      open(10,file='inputs/modelT.xyz')
       Read(10,*) nx
       Read(10,*) ny
       Read(10,*) nz
@@ -628,7 +628,6 @@ FUNCTION ModelTemperature( Model, nodenumber, dumy) RESULT(T) !
       ! Interpolate the value of the temperature from nearby points in
       ! the layers above and below it
       alpha = (z - (zb + (k - 1) * dz)) / dz
-
       T = (1 - alpha) * LinearInterp(dem(:,:,k), xx, yy, nx, ny, x, y) + alpha * LinearInterp(dem(:,:,k+1), xx, yy, nx, ny, x, y)
 
       ! In case we have restarted the file, we don't want to later end up 

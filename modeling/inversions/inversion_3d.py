@@ -135,15 +135,16 @@ def main():
     Real procedure "USF_Init.so" "VWa" """
 
   if temperature == 'model':
-    viscosity_text="""
-  Viscosity = Variable Coordinate 1, Coordinate 2
+    temperature_text="""
+  Constant Temperature = Variable Coordinate 1, Coordinate 2
     Real Procedure "USF_Init.so" "ModelTemperature" """
-  elif float(temperature) == -10.0:
-    viscosity_text="""
-  Viscosity = Real $ (3*3.5e-25*yearinsec)^(-1.0/3.0)*1.0e-6
-  ! -10 deg C, and an enhancement factor of 3 """
   else:
-    sys.exit("Unknown temperature of "+temperature)
+    try:
+      float(temperature)
+      temperature_text="""
+  Constant Temperature = Real """+str(temperature)
+    except:
+      sys.exit("Unknown temperature of "+temperature)
 
   #############################
   # Run inversion solver file #
@@ -192,7 +193,7 @@ def main():
     lines=lines.replace('{Extrude}', '{0}'.format(extrude))
     lines=lines.replace('{Lambda}', '{0}'.format(regpar))
     lines=lines.replace('{FrontBC}', '{0}'.format(frontbc_text))
-    #lines=lines.replace('{ViscosityOption}', '{0}'.format(viscosity_text))
+    lines=lines.replace('{Temperature}', '{0}'.format(temperature_text))
     fid2.write(lines)
     fid1.close()
     fid2.close()

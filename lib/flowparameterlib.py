@@ -43,7 +43,7 @@ def load_temperature_model(glacier,x,y,modelfile='none',outputdir='none',type='T
 
   # Choose file
   if (modelfile == 'none') and (glacier == 'Helheim'):
-    modelfile = os.path.join(os.getenv("MODEL_HOME"),"Helheim/3D/BASIN20120316/mesh2d/temperature/temperature_20160701/temperature0060.pvtu")
+    modelfile = os.path.join(os.getenv("MODEL_HOME"),"Helheim/3D/TEST/mesh2d/temperature/temperature_20160921/temperature0005.pvtu")
 
   if type == 'T':
     variable = 'temp homologous'
@@ -136,7 +136,7 @@ def load_temperature_model(glacier,x,y,modelfile='none',outputdir='none',type='T
     outfile = "flowA.xyz"
   else:
     output = temp
-    outfile = "flowT.xyz"
+    outfile = "modelT.xyz"
   
   if outputdir != 'none':
     fidT = open(outputdir+outfile, "w")
@@ -155,13 +155,13 @@ def load_temperature_model(glacier,x,y,modelfile='none',outputdir='none',type='T
 def load_kristin(glacier,x,y,type='A',dir='none'):
 
   # Load file if it already exists
-  fileA = os.path.join(os.getenv("DATA_HOME"),"Climate/IceTemperature/"+glacier+"/flowA.xyz")
-  fileT = os.path.join(os.getenv("DATA_HOME"),"Climate/IceTemperature/"+glacier+"/flowT.xyz")
+  fileA = os.path.join(os.getenv("DATA_HOME"),"Climate/IceTemperature/"+glacier+"/modelA.xyz")
+  fileT = os.path.join(os.getenv("DATA_HOME"),"Climate/IceTemperature/"+glacier+"/modelT.xyz")
   if (type=='A') and (os.path.isfile(fileA)):
-    shutil.copy(fileA,dir+"flowA.xyz")
+    shutil.copy(fileA,dir+"modelA.xyz")
     output = 'success'
   elif (type=='T') and (os.path.isfile(fileT)):
-    shutil.copy(fileT,dir+"flowT.xyz")  
+    shutil.copy(fileT,dir+"modelT.xyz")  
     output = 'success' 
   else:
     # Get modeled temperatures from Kristin's work
@@ -346,10 +346,10 @@ def load_kristin(glacier,x,y,type='A',dir='none'):
         newrate[j,i,:] = arrhenius(np.array(smoothtemp[j,i,:]))
     
     if dir != 'none':
-      fidA = open(dir+"flowA.xyz", "w")
+      fidA = open(dir+"modelA.xyz", "w")
       fidA.write("{0}\n{1}\n{2}\n".format(len(x), len(y), len(newrate[0,0,:])))
       
-      fidT = open(dir+"flowT.xyz", "w")
+      fidT = open(dir+"modelT.xyz", "w")
       fidT.write("{0}\n{1}\n{2}\n".format(len(x), len(y), len(temp[0,0,:])))
 
       for j in range(len(x)):
