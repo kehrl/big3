@@ -47,6 +47,9 @@ def get_arguments():
        default=0,type=int,help = "Restart position in results file (if applicable).")
   parser.add_argument("-temperature",dest="temperature",required  = False,\
        default=-10.0,help = "Use modeled or constant temperature.") 
+  parser.add_argument("-itmax",dest="itmax",required = False,\
+       default=1000,help = "Maximum number of steady state iterations.")
+
 
   args, _ = parser.parse_known_args(sys.argv)
 
@@ -71,6 +74,7 @@ def main():
   restartfile = args.restartfile
   restartposition = args.restartposition
   temperature = args.temperature
+  itmax = args.itmax
 
   # Directories
   DIRS=os.path.join(os.getenv("CODE_HOME"),"big3/modeling/solverfiles/3D/")
@@ -193,6 +197,7 @@ def main():
     lines=lines.replace('{Extrude}', '{0}'.format(extrude))
     lines=lines.replace('{Lambda}', '{0}'.format(regpar))
     lines=lines.replace('{FrontBC}', '{0}'.format(frontbc_text))
+    lines=lines.replace('{ItMax}', '{0}'.format(int(itmax)))
     lines=lines.replace('{Temperature}', '{0}'.format(temperature_text))
     fid2.write(lines)
     fid1.close()

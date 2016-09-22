@@ -11,11 +11,11 @@ glacier = 'Helheim'
 
 meshshp = 'glacier_extent_basin_front'
 extrude = 10
-bname = 'smith'
+bname = 'morlighem'
 bmodel = 'aniso'
 bsmooth = '4'
 #lc = '300 500 750 2500'
-lc = '300 500 1000 4000'
+lc = '300 500 1000 5000'
 dx = 100
 
 if glacier == 'Helheim':
@@ -41,7 +41,8 @@ queue = 'long'
 model = 'ivy'
 nparts = 140
 ncpus = 20
-runtime = '48:00:00'
+itmax = 300
+runtime = '60:00:00'
 
 if meshshp.endswith('nofront'):
   frontBC = 'pressure'
@@ -53,7 +54,7 @@ else:
 #################
 
 # Output mesh name
-meshname = 'BASIN'+date+'_'+regpar
+meshname = 'BASIN'+date+'_Glen'
 
 # Create mesh
 command = "python /u/lkehrl/Code/big3/modeling/meshing/"+\
@@ -70,7 +71,7 @@ job_name = glacier+"_"+date+"_basin"
 walltime = runtime
 processors = "select={0}:ncpus={1}:mpiprocs={2}:model={3}".format(nparts/ncpus,ncpus,ncpus,model)
 command = "python /u/lkehrl/Code/big3/modeling/inversions/inversion_3d.py"+\
-          " -glacier {0} -method {1} -regpar {2} -mesh {3} -extrude {4} -front {5} -n {6} -temperature {7}".format(glacier,method,regpar,meshname,extrude,frontBC,nparts,temperature)
+          " -glacier {0} -method {1} -regpar {2} -mesh {3} -extrude {4} -front {5} -n {6} -temperature {7} -itmax {8}".format(glacier,method,regpar,meshname,extrude,frontBC,nparts,temperature,itmax)
 dir = "/nobackupp8/lkehrl/Models/"+glacier+"/3D/"+meshname+"/"
 
 job_string = """
