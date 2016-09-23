@@ -223,35 +223,44 @@ def xy_to_gmsh_3d(glacier,date,exterior,holes,refine,DIRM,lc1,lc2,lc3,lc4,\
   int_ind = []
   last = 0
   d = lc1+1000
+  polyglacier = Polygon(exterior[:,0:2])
   for j in range(0,len(holes)):
-    pt1 = n
+    # Check if hole is inside glacier exterior
     Y = len(holes[j]['xy'][:,0])
+    hole_is_in_glacier = 1
     for i in range(0,Y):
-      if i != 0:
-        d=math.sqrt((holes[j]['xy'][i,0]-holes[j]['xy'][last,0])**2+(holes[j]['xy'][i,1]-holes[j]['xy'][last,1])**2)
-      if d > lc2:
-        fid.write('Point({}) = {{{}, {}, 0, lc2}}; \n'.format(n,holes[j]['xy'][i,0],holes[j]['xy'][i,1]))
-        n = n+1
-        last = i
-    pt2 = n-1
+       holepoint = Point(holes[j]['xy'][i,0],holes[j]['xy'][i,1])
+       if not(polyglacier.contains(holepoint)):
+         hole_is_in_glacier = 0
+    if hole_is_in_glacier == 1:
+      pt1 = n
+
+      for i in range(0,Y):
+        if i != 0:
+          d=math.sqrt((holes[j]['xy'][i,0]-holes[j]['xy'][last,0])**2+(holes[j]['xy'][i,1]-holes[j]['xy'][last,1])**2)
+        if d > lc2:
+          fid.write('Point({0}) = {{{1}, {2}, 0, {3}}}; \n'.format(n,holes[j]['xy'][i,0],holes[j]['xy'][i,1]),lc_holes)
+          n = n+1
+          last = i
+      pt2 = n-1
      
-    line1 = n    
-    for i in range(pt1,pt2):
-      fid.write('Line({}) = {{{}, {}}}; \n'.format(n,i,i+1))
-      ind_1.append(n)
-      n = n+1   
+      line1 = n    
+      for i in range(pt1,pt2):
+        fid.write('Line({}) = {{{}, {}}}; \n'.format(n,i,i+1))
+        ind_1.append(n)
+        n = n+1   
       
-    fid.write('Line({}) = {{{}, {}}}; \n'.format(n,pt2,pt1))
-    line2 = n+1
-    ind_1.append(n)
-    n = n+1
+      fid.write('Line({}) = {{{}, {}}}; \n'.format(n,pt2,pt1))
+      line2 = n+1
+      ind_1.append(n)
+      n = n+1
     
-    fid.write('Line Loop({}) = {{{}'.format(n,line1))
-    int_ind.append(n)
-    for i in range(line1+1,line2):
-      fid.write(',{}'.format(i))
-    fid.write('}; \n')
-    n = n+1    
+      fid.write('Line Loop({}) = {{{}'.format(n,line1))
+      int_ind.append(n)
+      for i in range(line1+1,line2):
+        fid.write(',{}'.format(i))
+      fid.write('}; \n')
+      n = n+1    
     
   ############################  
   # Add refinement locations #
@@ -261,7 +270,6 @@ def xy_to_gmsh_3d(glacier,date,exterior,holes,refine,DIRM,lc1,lc2,lc3,lc4,\
   R = len(refine[:,0])
   start = n
   nrefine = 0 
-  polyglacier = Polygon(exterior[:,0:2])
   for i in range(0,R):
     polypt = Point(refine[i,0:2])
     if polyglacier.contains(polypt):
