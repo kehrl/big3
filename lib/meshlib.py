@@ -239,7 +239,7 @@ def xy_to_gmsh_3d(glacier,date,exterior,holes,refine,DIRM,lc1,lc2,lc3,lc4,\
         if i != 0:
           d=math.sqrt((holes[j]['xy'][i,0]-holes[j]['xy'][last,0])**2+(holes[j]['xy'][i,1]-holes[j]['xy'][last,1])**2)
         if d > lc2:
-          fid.write('Point({0}) = {{{1}, {2}, 0, {3}}}; \n'.format(n,holes[j]['xy'][i,0],holes[j]['xy'][i,1]),lc_holes)
+          fid.write('Point({0}) = {{{1}, {2}, 0, lc2}}; \n'.format(n,holes[j]['xy'][i,0],holes[j]['xy'][i,1]))
           n = n+1
           last = i
       pt2 = n-1

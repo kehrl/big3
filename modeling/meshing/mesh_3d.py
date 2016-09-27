@@ -228,7 +228,7 @@ def main():
   try:
     xT = np.arange(x[0],x[-1],100)
     yT = np.arange(y[0],y[-1],100)
-    flowT = flowparameterlib.load_temperature_model(glacier,xT,yT,outputdir=inputs,type='A')
+    flowT = flowparameterlib.load_temperature_model(glacier,xT,yT,outputdir=inputs,type='T')
   except:
     print "No model for loading temperatures"
 

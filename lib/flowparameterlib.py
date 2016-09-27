@@ -43,7 +43,7 @@ def load_temperature_model(glacier,x,y,modelfile='none',outputdir='none',type='T
 
   # Choose file
   if (modelfile == 'none') and (glacier == 'Helheim'):
-    modelfile = os.path.join(os.getenv("MODEL_HOME"),"Helheim/3D/TEST/mesh2d/temperature/temperature_20160921/temperature0005.pvtu")
+    modelfile = os.path.join(os.getenv("MODEL_HOME"),"Helheim/3D/BASIN20120316_NewMesh/mesh2d/temperature/temperature_20160925/temperature0017.pvtu")
 
   if type == 'T':
     variable = 'temp homologous'
@@ -133,7 +133,7 @@ def load_temperature_model(glacier,x,y,modelfile='none',outputdir='none',type='T
   
   if type == 'A':
     output = arrhenius(temp.flatten()).reshape(ny,nx,nz)
-    outfile = "flowA.xyz"
+    outfile = "modelA.xyz"
   else:
     output = temp
     outfile = "modelT.xyz"
