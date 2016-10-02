@@ -124,8 +124,6 @@ Material 1
 ! the gas constant also is 
   Activation Energy 1 = Real 60e3
   Activation Energy 2 = Real 139e3  
-  Set Arrhenius Factor = Logical True
-  Arrhenius Factor = Real $(3.5e-25*yearinsec*1.0e18)
   Glen Enhancement Factor = Real 3.0
 ! the temperature to switch between the 
 ! two regimes in the flow law
