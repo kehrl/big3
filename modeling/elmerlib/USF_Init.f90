@@ -628,16 +628,21 @@ FUNCTION ModelTemperature( Model, nodenumber, dumy) RESULT(T) !
       ! Interpolate the value of the temperature from nearby points in
       ! the layers above and below it
       alpha = (z - (zb + (k - 1) * dz)) / dz
-      T = (1 - alpha) * LinearInterp(dem(:,:,k), xx, yy, nx, ny, x, y) + alpha * LinearInterp(dem(:,:,k+1), xx, yy, nx, ny, x, y)
-
+      IF (alpha < 0) THEN
+        alpha = 0.0d0
+      END IF
+      IF (k == 10) THEN
+        T = (1 - alpha) * LinearInterp(dem(:,:,k), xx, yy, nx, ny, x, y) 
+      ELSE
+        T = (1 - alpha) * LinearInterp(dem(:,:,k), xx, yy, nx, ny, x, y)+ alpha * LinearInterp(dem(:,:,k+1), xx, yy, nx, ny, x, y)
+      END IF
+      
       ! In case we have restarted the file, we don't want to later end up 
       ! with this timestep
       TimestepInit = 0
     
     END IF
     
-    print *,'ModelT',T 
-    T = -10.0d0 
     RETURN
 END
 

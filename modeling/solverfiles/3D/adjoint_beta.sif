@@ -128,13 +128,11 @@ Material 1
 ! the temperature to switch between the 
 ! two regimes in the flow law
   Limit Temperature = Real -10.0
-! the variable taken to evaluate the Arrhenius law
-! in general this should be the temperature relative
-! to pressure melting point. The suggestion below plugs
-! in the correct value obtained with TemperateIceSolver
-{Temperature} 
 
+  {Temperature}
+  
   Cauchy = Logical True
+  
 End
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
