@@ -635,7 +635,9 @@ FUNCTION ModelTemperature( Model, nodenumber, dumy) RESULT(T) !
       TimestepInit = 0
     
     END IF
-  
+    
+    print *,'ModelT',T 
+    T = -10.0d0 
     RETURN
 END
 
