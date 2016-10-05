@@ -228,17 +228,22 @@ def main():
   try:
     xT = np.arange(x[0],x[-1],100)
     yT = np.arange(y[0],y[-1],100)
-    flowT = flowparameterlib.load_temperature_model(glacier,xT,yT,outputdir=inputs,type='T')
+    f = scipy.interpolate.RegularGridInterpolator((y,x),zsur)
+    flowT,flowA = flowparameterlib.load_temperature_model(glacier,x,y,outputdir=inputs,type='T')
   except:
     print "No model for loading temperatures"
+
+  
 
   #################################################################
   # Calculate basal sliding speed using SIA for inflow boundaries #
   #################################################################
 
   print "Calculating basal sliding speed for inflow and ice divide boundaries and guessing a beta...\n"
-  ub_all,vb_all,beta_all = inverselib.guess_beta(x,y,zsur,zbed,u,v,frac=0.5)
-
+  try:
+    ub_all,vb_all,beta_all = inverselib.guess_beta(x,y,zsur,zbed,u,v,frac=0.5,A=np.mean(flowA,axis=2))
+  except:
+    ub_all,vb_all,beta_all = inverselib.guess_beta(x,y,zsur,zbed,u,v,frac=0.5)  
   # Write out basal velocities and initial guess for beta
   fidub = open(inputs+"ubdem.xy","w")
   fidvb = open(inputs+"vbdem.xy","w")

@@ -131,8 +131,9 @@ def load_temperature_model(glacier,x,y,modelfile='none',outputdir='none',type='T
         L = np.argmin(np.sqrt((X-x[j])**2+(Y-y[i])**2))
         temp[i,j,:] = T[L]
   
+  Agrid = arrhenius(temp.flatten()).reshape(ny,nx,nz)
   if type == 'A':
-    output = arrhenius(temp.flatten()).reshape(ny,nx,nz)
+    output = Agrid
     outfile = "modelA.xyz"
   else:
     output = temp
@@ -150,7 +151,7 @@ def load_temperature_model(glacier,x,y,modelfile='none',outputdir='none',type='T
         fidT.write("\n")
     fidT.close()
           
-  return output
+  return temp,Agrid
 
 def load_kristin(glacier,x,y,type='A',dir='none'):
 
