@@ -1,4 +1,4 @@
-def guess_beta(x,y,zs,zb,u,v,frac,A=3.5e-25*yearinsec*1.0e18):   
+def guess_beta(x,y,zs,zb,u,v,frac,A=3.5e-25*365.25*24*60*60*1.0e18):   
    
   import numpy as np 
   import math
@@ -31,10 +31,8 @@ def guess_beta(x,y,zs,zb,u,v,frac,A=3.5e-25*yearinsec*1.0e18):
   dy = y[1] - y[0]
 
   # Check if arrhenius parameter is a constant or matrix
-  try:
-    len(A)
-  except:
-    A = np.ones(ny,nx)*A
+  if len(A) < 2:
+    A = np.ones([ny,nx])*A
 
 
 
@@ -116,7 +114,7 @@ def guess_beta(x,y,zs,zb,u,v,frac,A=3.5e-25*yearinsec*1.0e18):
         
         # Note that this is the square root of beta, so that we can use it as an initial 
         # guess for beta in inversions.
-        beta[i, j] = (2*alpha**3*q / (A[j,i]*basal_speed**3))**(1.0/6)
+        beta[i, j] = (2*alpha**3*q / (A[i,j]*basal_speed**3))**(1.0/6)
         if np.isnan(beta[i,j]):
           beta[i,j] = 1.0e-2
       else:

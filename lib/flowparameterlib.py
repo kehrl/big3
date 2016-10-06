@@ -87,7 +87,7 @@ def load_temperature_model(glacier,x,y,modelfile='none',outputdir='none',type='T
   # Set the number of vertical layers
   nz = len(Z[0])
     
-  temp = np.zeros((ny,nx,nz)) # Kelvin
+  temp = np.zeros((ny,nx,nz))
   temp[:,:,:] = 0.
 
 
@@ -129,10 +129,12 @@ def load_temperature_model(glacier,x,y,modelfile='none',outputdir='none',type='T
         temp[i,j,:] /= weights
       
       else:
-        L = np.argmin(np.sqrt((X-x[j])**2+(Y-y[i])**2))
-        temp[i,j,:] = T[L]
+        # If no points within that distance, set to constant temperature value
+        temp[i,j,:] = -10.0
+        #L = np.argmin(np.sqrt((X-x[j])**2+(Y-y[i])**2))
+        #temp[i,j,:] = T[L]
   
-  Agrid = arrhenius(temp.flatten()).reshape(ny,nx,nz)
+  Agrid = arrhenius(273.15+temp.flatten()).reshape(ny,nx,nz)
   if type == 'A':
     output = Agrid
     outfile = "modelA.xyz"

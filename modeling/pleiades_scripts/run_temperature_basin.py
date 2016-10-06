@@ -4,8 +4,8 @@ import subprocess
 import time
 import os
 
-#glacier = 'Kanger'
-glacier = 'Helheim'
+glacier = 'Kanger'
+#glacier = 'Helheim'
 
 # Mesh geometry
 
@@ -21,7 +21,7 @@ dx = 100
 if glacier == 'Helheim':
   date = '20120316'
 elif glacier == 'Kanger':
-  date = '20110213' 
+  date = '20120213' 
 
 # Inversion options:
 method = 'adjoint'
@@ -42,7 +42,7 @@ model = 'ivy'
 nparts = 140
 ncpus = 20
 itmax = 300
-runtime = '60:00:00'
+runtime = '24:00:00'
 
 if meshshp.endswith('nofront'):
   frontBC = 'pressure'
@@ -54,7 +54,7 @@ else:
 #################
 
 # Output mesh name
-meshname = 'BASIN'+date+'_Glen'
+meshname = 'BASIN'+date+'_NewMesh'
 
 # Create mesh
 command = "python /u/lkehrl/Code/big3/modeling/meshing/"+\
@@ -93,10 +93,10 @@ os.chdir(dir)
 fid = open("PBS_"+method+"_"+regpar+".pbs","w")
 fid.write(job_string)
 fid.close()
-try:
-  subprocess.call(['qsub','-q',queue,'PBS_'+method+'_'+regpar+'.pbs'])
-except:
-  print "Couldn't submit job for %s for lambda=%s" % (meshname,regpar)
+#try:
+#  subprocess.call(['qsub','-q',queue,'PBS_'+method+'_'+regpar+'.pbs'])
+#except:
+#  print "Couldn't submit job for %s for lambda=%s" % (meshname,regpar)
   
 ########################################################
 # Set up temperature run for after inversion completes #

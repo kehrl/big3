@@ -16,8 +16,8 @@ bname = 'morlighem'
 bmodel = 'aniso'
 bsmooth = '4'
 bottomsurface = 'bed' # or 'iceshelf'
-temperature = -10.0
-lc = '300 300 400 500'
+temperature = 'model'
+lc = '300 300 300 300'
 #lc = '1000 1000 4000 5000'
 
 if glacier == 'Helheim':
@@ -27,16 +27,16 @@ if glacier == 'Helheim':
   #         '20130209','20130508','20130804','20131031',\
   #         '20140127','20140509','20140731','20141016']
 elif glacier == 'Kanger':
-  dates = ['20110308']
-  dates = ['20110708','20110826','20111106',\
-           '20120213','20120522','20121012','20121217',\
-           '20130210','20130714','20131004','20131204',\
-           '20140213']  
+  dates = ['20120213']
+  #dates = ['20110708','20110826','20111106',\
+  #         '20120213','20120522','20121012','20121217',\
+  #         '20130210','20130714','20131004','20131204',\
+  #         '20140213']  
 
 # Inversion options
 method = 'adjoint'
 regpars = ['5e11']
-#regpars = ['1e8','1e9','1e10','1e11','1e12','1e13','1e14'] 
+#regpars = ['1e8','1e9','1e10','1e11','5e11','1e12','1e13','1e14'] 
 
 
 # Options for PBS submission
@@ -59,11 +59,11 @@ else:
 for date in dates:
 
   # Output mesh name
-  meshname = 'DEM'+date
+  meshname = 'DEM'+date+'_variableA'
 
   # Create mesh
   command = "python /u/lkehrl/Code/big3/modeling/meshing/"+\
-          "mesh_3d.py -glacier {0} -mesh {1} -d {2} -bname {3} -bmodel {4} -bsmooth {5} -lc {6} -n {7} -output {8} -zb {9}".format(glacier,meshshp,date,bname,bmodel,bsmooth,lc,nparts,meshname,bottomsurface)
+          "mesh_3d.py -glacier {0} -mesh {1} -d {2} -bname {3} -bmodel {4} -bsmooth {5} -lc {6} -n {7} -output {8} -zb {9} -temperature {10}".format(glacier,meshshp,date,bname,bmodel,bsmooth,lc,nparts,meshname,bottomsurface,temperature)
   print command
   os.system(command)
 
@@ -97,7 +97,7 @@ for date in dates:
     fid = open("PBS_"+method+"_"+regpar+".pbs","w")
     fid.write(job_string)
     fid.close()
-    try:
-      subprocess.call(['qsub','-q',queue,'PBS_'+method+'_'+regpar+'.pbs'])
-    except:
-      print "Couldn't submit job for %s for lambda=%s" % (meshname,regpar)
+    #try:
+    #  subprocess.call(['qsub','-q',queue,'PBS_'+method+'_'+regpar+'.pbs'])
+    #except:
+    #  print "Couldn't submit job for %s for lambda=%s" % (meshname,regpar)
