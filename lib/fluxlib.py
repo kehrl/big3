@@ -80,10 +80,18 @@ def fluxgate(glacier,fluxgate_filename,bedsource='smith',dl=20.0,timing='velocit
     zb = scipy.signal.filtfilt(b,a,zb)
     
   # Get surface elevations
-  zs_all,zs_error,ztime=zslib.dem_at_pts(x,y,glacier,verticaldatum='ellipsoid',method='linear')
+  if glacier == 'Midgaard' or glacier == 'Fenris':
+    zs_all = zslib.gimp_at_pts(x,y,glacier,verticaldatum='ellipsoid')
+    zs_error = np.zeros_like(zs_all)
+    ztime = []
+  else:
+    zs_all,zs_error,ztime=zslib.dem_at_pts(x,y,glacier,verticaldatum='ellipsoid',method='linear')
   
   # Get velocities
-  vpt,tpt,ept,vxpt,vypt = vellib.velocity_at_eulpoints(x,y,glacier,data='TSX',xy_velocities='True')
+  if glacier == 'Fenris':
+    vpt,tpt,ept,vxpt,vypt = vellib.howat_optical_at_pts(x,y,'Helheim',xy_velocities='True')
+  else:
+    vpt,tpt,ept,vxpt,vypt = vellib.velocity_at_eulpoints(x,y,glacier,data='TSX',xy_velocities='True')  
   
   # Get normal to fluxgate so we can calculate flux through it
   xperp = np.zeros(len(l))
@@ -101,9 +109,11 @@ def fluxgate(glacier,fluxgate_filename,bedsource='smith',dl=20.0,timing='velocit
     nans = np.where(np.isnan(vxpt[i,:]))[0]
     if len(nans) < 1:
       ind.append(i)
+  if len(ind) < 1:
+    ind = range(0,len(tpt))
   
   # Velocity shape factor
-  sf = np.nanmean(abs(xperp*vxpt[ind,:]+yperp*vypt[ind,:]),0)/np.max(np.nanmean(abs(xperp*vxpt[ind,:]+yperp*vypt[ind,:]),0))
+  sf = np.nanmean(abs(xperp*vxpt[ind,:]+yperp*vypt[ind,:]),0)/np.nanmax(np.nanmean(abs(xperp*vxpt[ind,:]+yperp*vypt[ind,:]),0))
   vperp = (xperp*vxpt+yperp*vypt)
   vperp[:,0] = sf[0]*np.nanmax(vperp,1)
   vperp[:,-1] = sf[-1]*np.nanmax(vperp,1)
@@ -114,11 +124,12 @@ def fluxgate(glacier,fluxgate_filename,bedsource='smith',dl=20.0,timing='velocit
 
   if timing == 'velocity':
     # Find DEMs where more than 90% of the data points are nonnan.
-    ind_DEM = []
-    for i in range(0,len(ztime)):
-      nonnan = np.where(~(np.isnan(zs_all[i,:])))[0]
-      if len(nonnan) > (9./10.)*len(l):
-        ind_DEM.append(i)
+    if len(ztime) > 0:
+      ind_DEM = []
+      for i in range(0,len(ztime)):
+        nonnan = np.where(~(np.isnan(zs_all[i,:])))[0]
+        if len(nonnan) > (9./10.)*len(l):
+          ind_DEM.append(i)
   
     Q = np.zeros_like(vperp) # actual fluxes
     Q[:,:] = float('nan')
@@ -145,17 +156,21 @@ def fluxgate(glacier,fluxgate_filename,bedsource='smith',dl=20.0,timing='velocit
         # surface velocities to interpolate.
         nonnans_vperp = np.where(~(np.isnan(vperp[i,:])))[0]
         vperp_errors = np.zeros(len(l))
-              
-        # Get surface elevation for that timestep
-        zs = np.zeros(len(l))
-        zs_error_ind = np.zeros(len(l))
+        
+        if len(ztime) > 0:     
+          # Get surface elevation for that timestep
+          zs = np.zeros(len(l))
+          zs_error_ind = np.zeros(len(l))
 
-        # Linearly interpolate surface elevations from the available ones.
-        zs = np.zeros_like(l)
-        for j in range(0,len(zs)):
-          nonnan = np.where(~(np.isnan(zs_all[ind_DEM,j])))[0]
-          newind = [ind_DEM[k] for k in nonnan]
-          zs[j] = np.interp(tpt[i],ztime[newind],zs_all[newind,j])
+          # Linearly interpolate surface elevations from the available ones.
+          zs = np.zeros_like(l)
+          for j in range(0,len(zs)):
+            nonnan = np.where(~(np.isnan(zs_all[ind_DEM,j])))[0]
+            newind = [ind_DEM[k] for k in nonnan]
+            zs[j] = np.interp(tpt[i],ztime[newind],zs_all[newind,j])
+        else:
+          zs = zs_all
+          
         zs_error_ind = zs_error
         
         # Interpolate surface velocities using a shape factor for the 
