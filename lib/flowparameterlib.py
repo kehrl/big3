@@ -43,8 +43,9 @@ def load_temperature_model(glacier,x,y,modelfile='none',outputdir='none',type='T
 
   # Choose file
   if (modelfile == 'none') and (glacier == 'Helheim'):
-    modelfile = os.path.join(os.getenv("MODEL_HOME"),"Helheim/3D/TEST/mesh2d/temperature/temperature_20160921/temperature0005.pvtu")
-
+    modelfile = os.path.join(os.getenv("MODEL_HOME"),"Helheim/3D/BASIN20120316_NewMesh/mesh2d/temperature/temperature_20160925/temperature0017.pvtu")
+  elif (modelfile == 'none') and (glacier == 'Kanger'):
+    modelfile = os.path.join(os.getenv("MODEL_HOME"),"Kanger/3D/BASIN20120213_NewMesh/mesh2d/temperature/temperature_20160925/temperature0018.pvtu")
   if type == 'T':
     variable = 'temp homologous'
   elif type == 'A':
@@ -86,7 +87,7 @@ def load_temperature_model(glacier,x,y,modelfile='none',outputdir='none',type='T
   # Set the number of vertical layers
   nz = len(Z[0])
     
-  temp = np.zeros((ny,nx,nz)) # Kelvin
+  temp = np.zeros((ny,nx,nz))
   temp[:,:,:] = 0.
 
 
@@ -128,12 +129,15 @@ def load_temperature_model(glacier,x,y,modelfile='none',outputdir='none',type='T
         temp[i,j,:] /= weights
       
       else:
-        L = np.argmin(np.sqrt((X-x[j])**2+(Y-y[i])**2))
-        temp[i,j,:] = T[L]
+        # If no points within that distance, set to constant temperature value
+        temp[i,j,:] = -10.0
+        #L = np.argmin(np.sqrt((X-x[j])**2+(Y-y[i])**2))
+        #temp[i,j,:] = T[L]
   
+  Agrid = arrhenius(273.15+temp.flatten()).reshape(ny,nx,nz)
   if type == 'A':
-    output = arrhenius(temp.flatten()).reshape(ny,nx,nz)
-    outfile = "flowA.xyz"
+    output = Agrid
+    outfile = "modelA.xyz"
   else:
     output = temp
     outfile = "modelT.xyz"
@@ -150,7 +154,7 @@ def load_temperature_model(glacier,x,y,modelfile='none',outputdir='none',type='T
         fidT.write("\n")
     fidT.close()
           
-  return output
+  return temp,Agrid
 
 def load_kristin(glacier,x,y,type='A',dir='none'):
 

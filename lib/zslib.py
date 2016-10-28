@@ -91,13 +91,16 @@ def gimp_grid(xmin,xmax,ymin,ymax,glacier,verticaldatum):
   '''
   
   # Get correct tile of the GIMP DEM
-  if glacier == 'Helheim':
+  if glacier == 'Helheim' or glacier == 'Fenris':
     subset = 'gimpdem3_1'
   elif glacier == 'Kanger':
     subset = 'gimpdem4_2'
+  elif glacier == 'Midgaard':
+    subset = 'gimpdem4_1'
   else: 
-    sys.exit("Unknown glacier.")
-  
+    print "Unknown glacier, so we're defaulting to the 90-m GIMP grid"
+    subset = 'gimpdem_90m'
+    
   # Load correct file for geoid or ellipsoid heights
   if verticaldatum == 'geoid':
     fileend = '-adj.tif'

@@ -124,19 +124,15 @@ Material 1
 ! the gas constant also is 
   Activation Energy 1 = Real 60e3
   Activation Energy 2 = Real 139e3  
-  Set Arrhenius Factor = Logical True
-  Arrhenius Factor = Real $(3.5e-25*yearinsec*1.0e18)
   Glen Enhancement Factor = Real 3.0
 ! the temperature to switch between the 
 ! two regimes in the flow law
   Limit Temperature = Real -10.0
-! the variable taken to evaluate the Arrhenius law
-! in general this should be the temperature relative
-! to pressure melting point. The suggestion below plugs
-! in the correct value obtained with TemperateIceSolver
-{Temperature} 
 
+  {Temperature}
+  
   Cauchy = Logical True
+  
 End
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -344,7 +340,7 @@ End
 
 Solver 9
   Procedure = "SaveData" "SaveMaterials"
-  Parameter 1 = String "Viscosity"
+  Parameter 1 = String "Constant Temperature"
 End
 
 Solver 10

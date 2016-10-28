@@ -21,6 +21,7 @@ import shutil
 import sys
 import scipy.interpolate
 import numpy as np
+import netCDF4
 import geodatlib, icefrontlib, geotifflib, datelib, masklib, jdcal
 from scipy import stats
 
@@ -1002,6 +1003,57 @@ def inversion_2D(x,y,d,glacier,time,dir_velocity_out,filt_len='none'):
   fid.close()
 
   return filtered
+
+def rosenau_landsat_at_pts(xpt,ypt,glacier,xy_velocities='False'):
+  
+  if glacier == 'Helheim':
+    file = os.path.join(os.getenv("DATA_HOME"),"Velocity/Rosenau/Helheim/GRL_003_all.EPSG3413.vel_md.nc")
+  elif glacier == 'Kanger':
+    file = os.path.join(os.getenv("DATA_HOME"),"Velocity/Rosenau/Kanger/GRL_004_all.EPSG3413.vel_md.nc")
+
+  data = netCDF4.Dataset(file)
+  x = data.variables['x'][:]
+  y = data.variables['y'][:]
+
+  # Select data to load
+  i1 = np.argmin(abs(np.min(xpt)-x-1e3))
+  i2 = np.argmin(abs(np.max(xpt)-x+1e3))
+  j1 = np.argmin(abs(np.min(ypt)-y-1e3))
+  j2 = np.argmin(abs(np.max(ypt)-y+1e3))
+  x = x[i1:i2]
+  y = y[j1:j2]
+
+  vx = data.variables['vx'][:,j1:j2,i1:i2]
+  vy = data.variables['vy'][:,j1:j2,i1:i2]
+  v = np.sqrt(vx**2+vy**2)
+  time = datelib.date_to_fracyear(1970,1,1)+data.variables['time'][:]/365.25
+
+  try:
+    n = len(xpt)
+  except:
+    n = 1
+  
+  nt = len(time)
+  tpt = time
+  vxpt = np.zeros([nt,n])
+  vypt = np.zeros([nt,n])
+  vpt = np.zeros([nt,n])
+  
+  for k in range(0,n):
+    i = np.argmin(abs(xpt[k]-x))
+    j = np.argmin(abs(ypt[k]-y))
+    vxpt[:,k] = vx[:,j,i]*365.25
+    vypt[:,k] = vy[:,j,i]*365.25
+    vpt[:,k] = v[:,j,i]*365.25
+  
+  vxpt[vpt==0] = float('nan')
+  vxpt[vpt==0] = float('nan')
+  vpt[vpt==0] = float('nan')
+    
+  if xy_velocities == 'True':
+    return vpt,tpt,vxpt,vypt
+  else:  	  
+    return vpt,tpt
 
 def howat_optical_at_pts(xpt,ypt,glacier,xy_velocities='False'):
 

@@ -318,7 +318,7 @@ End
 
 Solver 8
   Procedure = "SaveData" "SaveMaterials"
-  Parameter 1 = String "Viscosity"
+  Parameter 1 = String "Constant Temperature"
 End
 
 Solver 9
