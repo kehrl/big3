@@ -35,7 +35,7 @@ def load_grid(glacier,xmin,xmax,ymin,ymax,dx,ice=0,icefront_time='none',icefront
   '''
 
   # Directory for holes for mask
-  DIR = os.path.join(os.getenv("DATA_HOME"),'Shapefiles/IceMasks/'+glacier+'/')
+  DIR = os.path.join(os.getenv("DATA_HOME"),'ShapeFiles/IceMasks/'+glacier+'/')
   files = os.listdir(DIR)
   
   # Set up grid
@@ -115,7 +115,7 @@ def load_points(glacier):
 
   '''
 
-  DIR = os.path.join(os.getenv("DATA_HOME"),'Shapefiles/IceMasks/'+glacier+'/')
+  DIR = os.path.join(os.getenv("DATA_HOME"),'ShapeFiles/IceMasks/'+glacier+'/')
 
   files = os.listdir(DIR)
   
