@@ -697,6 +697,27 @@ def grid_to_flowline_surface(surf,xf,yf):
   
   return points
 
+def input_file(file,dim=2):
+
+  fid = open(file,"r")
+  lines = fid.readlines()
+  nx = int(lines[0].split()[0])
+  ny = int(lines[1].split()[0])
+
+  x = np.zeros(nx)
+  y = np.zeros(ny)  
+  grid = np.zeros([ny,nx])
+
+  n = 0
+  for i in range(0,nx):
+    for j in range(0,ny):
+      x[i],y[j],grid[j,i] = lines[2+n].split()
+      n = n+1
+
+  fid.close()
+
+  return x,y,grid
+
 # def grid_to_flowline_old(data,x,y):
 #   '''
 #   flow = grid_to_flowline(data,x,y)
