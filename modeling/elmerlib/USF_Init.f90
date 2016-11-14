@@ -646,8 +646,6 @@ FUNCTION ModelTemperature( Model, nodenumber, dumy) RESULT(T) !
     RETURN
 END
 
-
-
 !------------------------------------------------------------------!
 FUNCTION SurfaceTemperature( Model, nodenumber, dumy) RESULT(Ts) !
 !------------------------------------------------------------------!
@@ -840,6 +838,210 @@ FUNCTION IceDivideTemperature( Model, nodenumber, dumy) RESULT(T) !
     
     RETURN
 END
+
+
+!------------------------------------------------------------------!
+FUNCTION UModel( Model, nodenumber, dumy) RESULT(T) !
+!------------------------------------------------------------------!
+    USE types
+    Use DefUtils
+    implicit none
+    TYPE(Model_t) :: Model
+    Real(kind=dp) :: dumy,T
+    INTEGER :: nodenumber
+
+    Real(kind=dp),allocatable :: dem(:,:,:), xx(:), yy(:)
+    Real(kind=dp) :: x, y, z, zs , zb, dz
+    Real(kind=dp) :: alpha
+    INTEGER :: nx, ny, nz, k, i, j, Timestep, TimestepInit
+    REAL(kind=dp) :: LinearInterp, zsIni, zbIni
+		
+    TYPE(Variable_t), POINTER :: dSVariable, TimestepVariable
+    INTEGER, POINTER :: dSPerm(:) 
+    REAL(KIND=dp), POINTER :: dSValues(:)
+
+		
+    LOGICAL :: Firsttime=.true.
+    LOGICAL :: NotMapped=.false.
+
+    SAVE dem,xx,yy,nx,ny,nz,TimestepInit
+    SAVE Firsttime
+
+    IF (Firsttime) THEN
+
+    	Firsttime=.False.
+
+    	! open file
+      open(10,file='inputs/modelU.xyz')
+      Read(10,*) nx
+      Read(10,*) ny
+      Read(10,*) nz
+      
+      allocate(xx(nx), yy(ny))
+      allocate(dem(nx, ny, nz))
+
+      do i = 1, nx
+      	do j = 1, ny
+        	read(10, *) xx(i), yy(j), dem(i, j, :)
+        End do
+      End do
+      close(10)
+      
+      TimestepVariable => VariableGet( Model % Variables,'Timestep')
+	    TimestepInit=TimestepVariable % Values(1)
+      
+    END IF
+
+    ! Get coordinates
+    x = Model % Nodes % x (nodenumber)
+    y = Model % Nodes % y (nodenumber)
+    z = Model % Nodes % z (nodenumber)
+
+    zs = zsIni( Model, nodenumber, dumy )
+    zb = zbIni( Model, nodenumber, dumy )		
+		
+    ! On the first iteration, we still have z mapped from 0 to 1, so we need to 
+    ! check to make sure that it isn't the first iteration. If it is, we just 
+    ! set the temperature to a default of -10 deg C.
+    TimestepVariable => VariableGet( Model % Variables,'Timestep')
+    Timestep=TimestepVariable % Values(1)
+    IF (Timestep == TimestepInit) THEN
+      IF (z <= 1.0) THEN
+        IF (z >= 0.0) THEN          
+          NotMapped = .true.
+        END IF
+      END IF
+    END IF
+    IF (NotMapped) THEN
+      T = 0
+    ELSE
+      ! Find which vertical layer the current point belongs to
+      dz = (zs - zb) / (nz - 1)
+      k = int( (z-zb) / dz)+1
+    
+      ! Interpolate the value of the temperature from nearby points in
+      ! the layers above and below it
+      alpha = (z - (zb + (k - 1) * dz)) / dz
+      IF (alpha < 0) THEN
+        alpha = 0.0d0
+      END IF
+      IF (k == 10) THEN
+        T = (1 - alpha) * LinearInterp(dem(:,:,k), xx, yy, nx, ny, x, y) 
+      ELSE
+        T = (1 - alpha) * LinearInterp(dem(:,:,k), xx, yy, nx, ny, x, y)+ alpha * LinearInterp(dem(:,:,k+1), xx, yy, nx, ny, x, y)
+      END IF
+      
+      ! In case we have restarted the file, we don't want to later end up 
+      ! with this timestep
+      TimestepInit = 0
+    
+    END IF
+    
+    RETURN
+END
+
+!------------------------------------------------------------------!
+FUNCTION VModel( Model, nodenumber, dumy) RESULT(T) !
+!------------------------------------------------------------------!
+    USE types
+    Use DefUtils
+    implicit none
+    TYPE(Model_t) :: Model
+    Real(kind=dp) :: dumy,T
+    INTEGER :: nodenumber
+
+    Real(kind=dp),allocatable :: dem(:,:,:), xx(:), yy(:)
+    Real(kind=dp) :: x, y, z, zs , zb, dz
+    Real(kind=dp) :: alpha
+    INTEGER :: nx, ny, nz, k, i, j, Timestep, TimestepInit
+    REAL(kind=dp) :: LinearInterp, zsIni, zbIni
+		
+    TYPE(Variable_t), POINTER :: dSVariable, TimestepVariable
+    INTEGER, POINTER :: dSPerm(:) 
+    REAL(KIND=dp), POINTER :: dSValues(:)
+
+		
+    LOGICAL :: Firsttime=.true.
+    LOGICAL :: NotMapped=.false.
+
+    SAVE dem,xx,yy,nx,ny,nz,TimestepInit
+    SAVE Firsttime
+
+    IF (Firsttime) THEN
+
+    	Firsttime=.False.
+
+    	! open file
+      open(10,file='inputs/modelV.xyz')
+      Read(10,*) nx
+      Read(10,*) ny
+      Read(10,*) nz
+      
+      allocate(xx(nx), yy(ny))
+      allocate(dem(nx, ny, nz))
+
+      do i = 1, nx
+      	do j = 1, ny
+        	read(10, *) xx(i), yy(j), dem(i, j, :)
+        End do
+      End do
+      close(10)
+      
+      TimestepVariable => VariableGet( Model % Variables,'Timestep')
+	    TimestepInit=TimestepVariable % Values(1)
+      
+    END IF
+
+    ! Get coordinates
+    x = Model % Nodes % x (nodenumber)
+    y = Model % Nodes % y (nodenumber)
+    z = Model % Nodes % z (nodenumber)
+
+    zs = zsIni( Model, nodenumber, dumy )
+    zb = zbIni( Model, nodenumber, dumy )		
+		
+    ! On the first iteration, we still have z mapped from 0 to 1, so we need to 
+    ! check to make sure that it isn't the first iteration. If it is, we just 
+    ! set the temperature to a default of -10 deg C.
+    TimestepVariable => VariableGet( Model % Variables,'Timestep')
+    Timestep=TimestepVariable % Values(1)
+    IF (Timestep == TimestepInit) THEN
+      IF (z <= 1.0) THEN
+        IF (z >= 0.0) THEN          
+          NotMapped = .true.
+        END IF
+      END IF
+    END IF
+    IF (NotMapped) THEN
+      T = 0
+      print *,'First iteration, z is not mapped ',z
+    ELSE
+      ! Find which vertical layer the current point belongs to
+      dz = (zs - zb) / (nz - 1)
+      k = int( (z-zb) / dz)+1
+    
+      ! Interpolate the value of the temperature from nearby points in
+      ! the layers above and below it
+      alpha = (z - (zb + (k - 1) * dz)) / dz
+      IF (alpha < 0) THEN
+        alpha = 0.0d0
+      END IF
+      IF (k == 10) THEN
+        T = (1 - alpha) * LinearInterp(dem(:,:,k), xx, yy, nx, ny, x, y) 
+      ELSE
+        T = (1 - alpha) * LinearInterp(dem(:,:,k), xx, yy, nx, ny, x, y)+ alpha * LinearInterp(dem(:,:,k+1), xx, yy, nx, ny, x, y)
+      END IF
+      
+      ! In case we have restarted the file, we don't want to later end up 
+      ! with this timestep
+      TimestepInit = 0
+    
+    END IF
+    
+    RETURN
+END
+
+
 
 
 !------------------------------------------------------------------!

@@ -9,7 +9,7 @@ glacier = 'Helheim'
 
 # Mesh geometry
 
-meshshp = 'glacier_extent_inversion_front'
+meshshp = 'glacier_extent_inversion_large_front'
 extrude = 10
 #bname = 'smith'
 bname = 'morlighem'
@@ -17,7 +17,7 @@ bmodel = 'aniso'
 bsmooth = '4'
 bottomsurface = 'bed' # or 'iceshelf'
 temperature = 'model'
-lc = '300 300 300 300'
+lc = '300 300 300 500'
 #lc = '1000 1000 4000 5000'
 
 if glacier == 'Helheim':
@@ -35,8 +35,8 @@ elif glacier == 'Kanger':
 
 # Inversion options
 method = 'adjoint'
-regpars = ['5e11']
-#regpars = ['1e8','1e9','1e10','1e11','5e11','1e12','1e13','1e14'] 
+#regpars = ['5e11']
+regpars = ['1e8','1e9','1e10','1e11','5e11','1e12','1e13','1e14'] 
 
 
 # Options for PBS submission
@@ -55,11 +55,11 @@ else:
 # Submit inversions to PBS #
 ############################
 
-# Loop over PBS jobs
+#Loop over PBS jobs
 for date in dates:
 
   # Output mesh name
-  meshname = 'DEM'+date+'_variableA'
+  meshname = 'DEM'+date+'_Lcurve'
 
   # Create mesh
   command = "python /u/lkehrl/Code/big3/modeling/meshing/"+\

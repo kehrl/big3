@@ -39,20 +39,19 @@ def arrhenius(T):
     	
   return A 
 
-def load_temperature_model(glacier,x,y,modelfile='none',outputdir='none',type='T'):
+def load_temperature_model(glacier,x,y,modelfile='none',outputdir='none'):
 
   # Choose file
   if (modelfile == 'none') and (glacier == 'Helheim'):
     modelfile = os.path.join(os.getenv("MODEL_HOME"),"Helheim/3D/BASIN20120316_NewMesh/mesh2d/temperature/temperature_20160925/temperature0017.pvtu")
   elif (modelfile == 'none') and (glacier == 'Kanger'):
     modelfile = os.path.join(os.getenv("MODEL_HOME"),"Kanger/3D/BASIN20120213_NewMesh/mesh2d/temperature/temperature_20160925/temperature0018.pvtu")
-  if type == 'T':
-    variable = 'temp homologous'
-  elif type == 'A':
-    variable = 'temp'
 
+  # What variables to load 
+  variables = ['temp homologous','velocity']
+ 
   # Get temperatures from model
-  data = elmerreadlib.pvtu_file(modelfile,[variable])
+  data = elmerreadlib.pvtu_file(modelfile,variables)
 
   # Get info about output grid
   nx = len(x)
@@ -60,11 +59,13 @@ def load_temperature_model(glacier,x,y,modelfile='none',outputdir='none',type='T
   dx = x[1]-x[0]
   dy = y[1]-y[0]
 
-  # Get temperatures in a column
+  # Get temperatures, velocities in a column
   X = []
   Y = []
   Z = []
   T = []
+  U = []
+  V = []
     
   for x_val in np.unique(data['x']):
     x_points = data[data['x'] == x_val]
@@ -74,7 +75,9 @@ def load_temperature_model(glacier,x,y,modelfile='none',outputdir='none',type='T
       y_points = x_points[x_points['y'] == y_val]
       sorted_list = np.sort(y_points, order='z')
       Z.append(sorted_list['z'])
-      T.append(sorted_list[variable]) 
+      T.append(sorted_list['temp homologous'])
+      U.append(sorted_list['velocity 1'])
+      V.append(sorted_list['velocity 2']) 
         
   nn = len(X)
   X = np.asarray(X)
@@ -89,6 +92,10 @@ def load_temperature_model(glacier,x,y,modelfile='none',outputdir='none',type='T
     
   temp = np.zeros((ny,nx,nz))
   temp[:,:,:] = 0.
+  u = np.zeros((ny,nx,nz))
+  u[:,:,:] = 0.
+  v = np.zeros((ny,nx,nz))
+  v[:,:,:] = 0.
 
 
   # Make a KD-tree so we can do range searches fast
@@ -113,7 +120,7 @@ def load_temperature_model(glacier,x,y,modelfile='none',outputdir='none',type='T
           # find the distance to the current point and the
 	  # appropriate weight
 	  r = np.sqrt( (x[j] - xp)**2 + (y[i] - yp)**2 )
-          w = (2500./(r+dx))**3
+          w = (2500./(r+dx))
           weights += w
 		      
 	  # For each point within the current vertical column,
@@ -124,37 +131,50 @@ def load_temperature_model(glacier,x,y,modelfile='none',outputdir='none',type='T
 		        
 	    # Add up the value to the running average
 	    temp[i, j, k] += w * T[l][m]
+            u[i, j, k] += w * U[l][m]
+            v[i, j, k] += w * V[l][m]
 		    
         # Normalize the running average by the weight sum
         temp[i,j,:] /= weights
-      
+        u[i,j,:] /= weights
+        v[i,j,:] /= weights  
+    
       else:
         # If no points within that distance, set to constant temperature value
         temp[i,j,:] = -10.0
+        u[i,j,:] = -2.0e9
+        v[i,j,:] = -2.0e9
         #L = np.argmin(np.sqrt((X-x[j])**2+(Y-y[i])**2))
         #temp[i,j,:] = T[L]
   
   Agrid = arrhenius(273.15+temp.flatten()).reshape(ny,nx,nz)
-  if type == 'A':
-    output = Agrid
-    outfile = "modelA.xyz"
-  else:
-    output = temp
-    outfile = "modelT.xyz"
-  
+  output = temp 
+ 
   if outputdir != 'none':
-    fidT = open(outputdir+outfile, "w")
+    fidT = open(outputdir+"modelT.xyz", "w")
     fidT.write("{0}\n{1}\n{2}\n".format(len(x), len(y), len(output[0,0,:])))
+    fidU = open(outputdir+"modelU.xyz", "w")
+    fidU.write("{0}\n{1}\n{2}\n".format(len(x), len(y), len(u[0,0,:])))        
+    fidV = open(outputdir+"modelV.xyz", "w")
+    fidV.write("{0}\n{1}\n{2}\n".format(len(x), len(y), len(v[0,0,:])))
 
     for j in range(len(x)):
       for i in range(len(y)):
         fidT.write("{0} {1} ".format(x[j], y[i]))
+        fidU.write("{0} {1} ".format(x[j], y[i]))        
+        fidV.write("{0} {1} ".format(x[j], y[i]))
         for k in range(len(output[0,0,:])):
           fidT.write("{0} ".format(output[i, j, k]))
-        fidT.write("\n")
+          fidU.write("{0} ".format(u[i, j, k]))
+          fidV.write("{0} ".format(v[i, j, k]))
+        fidT.write("\n") 
+        fidU.write("\n")
+        fidV.write("\n")
     fidT.close()
+    fidU.close()
+    fidV.close()
           
-  return temp,Agrid
+  return temp,Agrid,u,v
 
 def load_kristin(glacier,x,y,type='A',dir='none'):
 

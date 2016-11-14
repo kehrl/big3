@@ -236,7 +236,7 @@ f = RegularGridInterpolator((y,x),v)
 vT = np.reshape(f((yTgrid.flatten(),xTgrid.flatten())),[len(yT),len(xT)])  
 
 if temperature == 'model':
-  flowT,flowA = flowparameterlib.load_temperature_model(glacier,xT,yT,outputdir=inputs,type='T')
+  flowT,flowA,flowU,flowV = flowparameterlib.load_temperature_model(glacier,xT,yT,outputdir=inputs)
 
 #################################################################
 # Calculate basal sliding speed using SIA for inflow boundaries #
