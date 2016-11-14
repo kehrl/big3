@@ -247,14 +247,14 @@ vT = np.reshape(f((yTgrid.flatten(),xTgrid.flatten())),[len(yT),len(xT)])
 
 if temperature == 'model':
   flowT,flowA,flowU,flowV = flowparameterlib.load_temperature_model(glacier,xT,yT,outputdir=inputs)
-if ssa:
-  ssa_arrhenius = np.mean(flowA,axis=2)
-  fid = open(inputs+"ssa_flowA.xy","w")
-  fid.write("{0}\n{1}\n".format(len(xT), len(yT)))
-  for i in range(0,len(xT)):
-    for j in range(0,len(yT)):
-      fid.write('{0} {1} {2}\n'.format(x[i],y[j],ssa_arrhenius[j,i]))
-  fid.close()
+  if ssa:
+    ssa_arrhenius = np.mean(flowA,axis=2)
+    fid = open(inputs+"ssa_flowA.xy","w")
+    fid.write("{0}\n{1}\n".format(len(xT), len(yT)))
+    for i in range(0,len(xT)):
+      for j in range(0,len(yT)):
+        fid.write('{0} {1} {2}\n'.format(x[i],y[j],ssa_arrhenius[j,i]))
+    fid.close()
   
 #################################################################
 # Calculate basal sliding speed using SIA for inflow boundaries #
