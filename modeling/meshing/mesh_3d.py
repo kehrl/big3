@@ -42,9 +42,11 @@ parser.add_argument("-lc", dest="lc", type=int,required = False,nargs='+',
 	default=[1000,1000,3000,5000],\
 	help = "Four numbers that define the mesh resolution for grounding-line (1000 m),channels (1000 m),regions near channels (3000 m), and entire mesh (5000 m).")
 parser.add_argument("-zb", dest="bottomsurface", default = 'iceshelf',
-        help = "Use 'iceshelf' base or 'bed' as bottom surface for mesh.")
+        help = "Use 'iceshelf' base or 'bed' as bottom surface for mesh.",required = False)
 parser.add_argument("-temperature",dest="temp",required=False, default='-10.0',
         help = "Ice temperature in deg C (or model out).")
+parser.add_argument("-ssa",dest="ssa",required=False, default=False,
+        help = "SSA model.")
 
 #################
 # Get arguments #
@@ -63,6 +65,7 @@ glacier = args.glacier
 dx = args.dx
 bottomsurface = args.bottomsurface
 temperature = args.temp
+ssa = args.ssa
   
 # Mesh refinement
 lc3,lc2,lc4,lc1 = args.lc
@@ -161,6 +164,13 @@ call(["ElmerGrid","2","4","Elmer"])
 # Output files for velocities in x,y directions (u,v)
 u,v = vellib.inversion_3D(glacier,x,y,time,inputs,dx=dx)
 
+if ssa:
+  fid = open(inputs+"velocity.xyuv","w")
+  for i in range(0,len(x)):
+    for j in range(0,len(y)):
+      fid.write('{0} {1} {2} {3} \n'.format(x[i],y[j],u[j,i],v[j,i]))
+  fid.close()
+
 ################################################################
 # Get climate variables & calculate temperatures at ice divide #
 ################################################################
@@ -237,7 +247,15 @@ vT = np.reshape(f((yTgrid.flatten(),xTgrid.flatten())),[len(yT),len(xT)])
 
 if temperature == 'model':
   flowT,flowA,flowU,flowV = flowparameterlib.load_temperature_model(glacier,xT,yT,outputdir=inputs)
-
+if ssa:
+  ssa_arrhenius = np.mean(flowA,axis=2)
+  fid = open(inputs+"ssa_flowA.xy","w")
+  fid.write("{0}\n{1}\n".format(len(xT), len(yT)))
+  for i in range(0,len(xT)):
+    for j in range(0,len(yT)):
+      fid.write('{0} {1} {2}\n'.format(x[i],y[j],ssa_arrhenius[j,i]))
+  fid.close()
+  
 #################################################################
 # Calculate basal sliding speed using SIA for inflow boundaries #
 #################################################################

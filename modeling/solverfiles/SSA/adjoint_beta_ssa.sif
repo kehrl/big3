@@ -1,0 +1,291 @@
+$name="adjoint_beta_ssa"
+$Lambda={Lambda}
+
+$yearinsec = 365.25*24*60*60
+$rhoi = 917.0/(1.0e6*yearinsec^2)
+$rhow = 1028.0/(1.0e6*yearinsec^2) 
+$gravity = -9.81*yearinsec^2
+$n = 3.0
+$eta = (2.0*100.0)^(-1.0/n)
+
+Header
+  Mesh DB "." "mesh2d"
+End
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Constants
+  Gas Constant = Real 8.314 !Joule/mol x  K
+  Sea Level = Real 0.0
+End
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Simulation
+  Coordinate System  = Cartesian 2D
+  Simulation Type = Steady State
+
+  Steady State Min Iterations = 1
+  Steady State Max Iterations = {ItMax}
+
+  Post File = "$name$.vtu"
+  Output File = "$name$.result"
+
+  Max Output Level = 3
+End
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Body 1
+  Equation = 1
+  Body Force = 1
+  Material = 1
+  Initial Condition = 1
+End
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Initial Condition 1
+  ! alpha is the optimised variable
+  alpha = Variable Coordinate 1, Coordinate 2
+    Real Procedure "USF_Init.so" "GuessBeta"
+  Temperature = 263.15
+  !MuS = Variable mu
+	!REAL MATC "tx*tx"
+  !mu = variable temperature
+	!real procedure "/nobackupp8/dlilien/ssa_g_taubeta_1990s/lib/USF_Init.so" "MuIniSSA"
+  !muinit=variable temperature
+	!real matc "sqrt(glen(tx)*31556926.0^(-1.0/3.0)*1.0e-06)"
+
+  Zs = Variable Coordinate 1
+    REAL procedure "USF_Init.so" "zsIni"
+  Zb = Variable Coordinate 1
+    REAL procedure "USF_Init.so" "zbIni"
+
+! Surface velocities (data)
+  Vsurfini 1 = Variable Coordinate 1
+    Real procedure "USF_Init.so" "UIni"
+  Vsurfini 2 = Variable Coordinate 1
+    Real procedure "USF_Init.so" "VIni"
+
+  SSAVelocity 1 = Real 0.0
+  SSAVelocity 2 = Real 0.0
+End
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Body Force 1
+  Flow BodyForce 1 = Real 0.0            
+  Flow BodyForce 2 = Real 0.0              
+  Flow BodyForce 3 = Real $gravity
+
+  ! change of variable; 
+  ! DJDBeta is the derivative of the Cost fn w.r.t. the slip coeff.
+  ! as slip coeff=alpha^2 => DJDalpha=DJDBeta * DBeta / Dalpha
+  DJDalpha = Variable DJDBeta , alpha
+     REAL MATC "2.0*tx(0)*tx(1)"
+
+  ! just for update export
+  beta = Equals alpha
+End
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Material 1
+
+  Viscosity Exponent = Real $1.0e00/3.0e00
+  Critical Shear Rate = Real 1.0e-10
+
+  SSA Mean Density = Real $rhoi
+  SSA Mean Viscosity = Real 0.2
+    !Real MATC "tx*tx"
+
+  SSA Friction Law = String "linear"
+  ! The friction parameter is the square of the optimized variable to insure > 0
+  SSA Friction Parameter = Variable alpha
+      REAL MATC "tx*tx"
+End
+ 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+Solver 1
+  Equation = "SSA"
+  Variable = -dofs 2 "SSAVelocity"
+  Procedure = "AdjointSSASolvers.so" "SSABasalSolver"
+
+!! Mandatory for the adjoint 
+  Calculate Loads = Logical True
+
+  Linear System Solver = Direct
+  Linear System Direct Method = mumps
+
+  Nonlinear System Max Iterations = 50
+  Nonlinear System Convergence Tolerance  = 1.0e-10
+  Nonlinear System Newton After Iterations = 40
+  Nonlinear System Newton After Tolerance = 1.0e-06
+  Nonlinear System Relaxation Factor = 1.00
+
+  Steady State Convergence Tolerance = Real 1.0e-12
+
+  Exported Variable 1 = Zb
+  Exported Variable 2 = Zs
+  Exported Variable 3 = CostValue
+  Exported Variable 4 = DJDBeta
+  Exported Variable 5 = -dofs 2 "Velocityb"
+  Exported Variable 6 = -dofs 1 "vsurfini 1"
+  Exported Variable 7 = -dofs 1 "vsurfini 2"
+  Exported Variable 8 = mu
+End
+
+!!! Compute Cost function
+!!!!!!!!   Has to be run before the Adjoint Solver as adjoint forcing is computed here !!!!!
+!! Here the cost is the discrete sum_1^Ndata 1/2 ||u-u^obs|| evaluated at the data location (which may not correspond to mesh nodes)
+Solver 2
+  Equation = "Cost"
+
+  !!  Solver need to be associated => Define dumy variable
+  Variable = -nooutput "CostV"
+  Variable DOFs = 1
+
+  Procedure = "AdjointSSASolvers.so" "CostSolver_Disc_Adjoint"
+
+  Problem Dimension = Integer 2 !2D mesh and 2D SSA Solution
+  Cost Variable Name = String "CostValue"  ! Name of Cost Variable
+ ! save the cost as a function of iterations (iterations,Cost,rms=sqrt(2*Cost/Ndata)
+  Cost Filename = File "cost.dat"
+
+  Observed Variable Name = String "SSAVelocity"
+ ! ASCII File with data: x,y,u,v
+  Observation File Name = File "inputs/velocity.xyuv"
+  Save Used Data = Logical True
+
+  !Exported Variable 1 = MuS
+  !Exported Variable 2 = Muinit
+  !Exported Variable 3 = Temperature
+end
+!!!!  Adjoint Solution
+Solver 3
+  Equation = "Adjoint"
+  Variable = Adjoint
+  Variable Dofs = 2
+
+  Procedure = "AdjointSSASolvers.so" "AdjointSolver_SSA"
+
+!Name of the flow solution solver
+  Flow Solution Equation Name = string "SSA"
+  Linear System Solver = Direct
+  Linear System Direct Method = mumps
+End
+
+!!!!!  Compute Derivative of Cost function / Beta
+Solver 4
+  Equation = "DJDBeta"
+  Procedure = "AdjointSSASolvers.so" "DJDp_Adjoint_SSA"
+
+  !!  Solver need to be associated => Define dumy variable
+  Variable = -nooutput "DJDB"
+  Variable DOFs = 1
+
+  Flow Solution Name = String "SSAVelocity"
+  Adjoint Solution Name = String "Adjoint"
+  DJDBeta Name = String "DJDBeta"
+  Compute DJDBeta = Logical True   ! Derivative with respect to the Friction parameter
+ 
+End
+
+Solver 5
+  Equation = "UpdateExport"
+  Procedure = File "ElmerIceSolvers" "UpdateExport"
+  Variable = -nooutput "dumy"
+
+!used here to update DJDalpha from DJDbeta (see correponding line in Body Force section)
+  Exported Variable 1 = -dofs 1 alpha
+  Exported Variable 2 = -dofs 1 DJDalpha
+  Exported Variable 3 = -dofs 1 beta
+End
+
+!!!!!  Compute Regularistaion term
+!   Regularisation by default is: Lambda * int_{Pb dimension} 0.5 * (d(var)/dx)**2 
+!   A priori regularisation can also be used ( A priori Regularisation=True) :
+!                                 Lambda * int_{Pb dimension} 0.5 *(1/sigma**2)*(var-var{a_priori})**2
+!
+!     OUTPUT are : J and DJDvar
+Solver 6
+  Equation = "DJDBeta_Reg"
+  Procedure = "AdjointSSASolvers.so" "CostSolver_SSA_Regularisation"
+
+  !!  Solver need to be associated => Define dumy variable
+  Variable = -nooutput "DJDBReg"
+  Variable DOFs = 1
+
+  Problem Dimension=Integer 2
+  Cost Filename=File "costreg.dat"
+  
+  Problem Dimension=Integer 2
+  Cost Filename=File "costreg.dat"
+  Optimized Variable Name= String "alpha"
+  Gradient Variable Name= String "DJDalpha"
+  Cost Variable Name= String "CostValue"
+  Lambda= Equals $Lambda !reg. weight set to 0 here as no noise added
+  Reset Cost Value= Logical False  !=> DJDapha already initialized in solver DJDBeta; switch off initialisation to 0 at the beginning of this solver
+  A priori Regularisation= Logical False
+end
+
+!!!!! Optimization procedure : Parallel only
+Solver 7
+  Equation = "Optimize_m1qn3"
+  !!  Solver need to be associated => Define dumy variable
+  Variable = -nooutput "UB"
+  Variable DOFs = 1
+
+  Procedure = "ElmerIceSolvers" "Optimize_m1qn3Parallel"
+
+  Cost Variable Name = String "CostValue"
+  Optimized Variable Name = String "alpha"
+  Gradient Variable Name = String "DJDalpha"
+  gradient Norm File = String "GradientNormAdjoint_$name".dat"
+
+
+ ! M1QN3 Parameters
+  M1QN3 dxmin = Real 1.0e-10
+  M1QN3 epsg = Real  1.e-5
+  M1QN3 niter = Integer 400
+  M1QN3 nsim = Integer 400
+  M1QN3 impres = Integer 5
+  M1QN3 DIS Mode = Logical False
+  M1QN3 df1 = Real 0.5
+  M1QN3 normtype = String "dfn"
+  M1QN3 OutputFile = File  "M1QN3_$name".out"
+  M1QN3 ndz = Integer 20
+
+end
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Equation 1
+  Active Solvers(7) = 1 2 3 4 5 6 7
+End
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Boundary Condition 1
+  Name = "Side Walls"
+  Target Boundaries = 2
+
+  SSAVelocity 1= Equals vsurfini 1
+  SSAVelocity 2= Equals vsurfini 2
+  Adjoint 1 = Real 0.0
+  Adjoint 2 = Real 0.0
+End
+
+Boundary Condition 2
+  Name = "Inflow"
+  Target Boundaries = 3
+
+  SSAVelocity 1= Equals vsurfini 1
+  SSAVelocity 2= Equals vsurfini 2
+  Adjoint 1 = Real 0.0
+  Adjoint 2 = Real 0.0
+End
+
+Boundary Condition 3
+  Name = "Front"
+  Target Boundaries = 1
+
+  SSAVelocity 1= Equals vsurfini 1
+  SSAVelocity 2= Equals vsurfini 2
+  Adjoint 1 = Real 0.0
+  Adjoint 2 = Real 0.0
+End

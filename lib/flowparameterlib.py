@@ -7,7 +7,7 @@ import scipy
 from scipy.spatial import cKDTree
 import math
 
-def arrhenius(T):
+def arrhenius(T,paterson_version=2010):
   '''
   A = arrhenius(T)
   
