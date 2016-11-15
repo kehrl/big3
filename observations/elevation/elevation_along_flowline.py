@@ -10,6 +10,7 @@ import matplotlib.cm as cmx
 import matplotlib
 import scipy
 from matplotlib.ticker import AutoMinorLocator
+from matplotlib.patches import Ellipse
 
 sys.path.append(os.path.join(os.getenv("CODE_HOME"),"Modules/demtools"))
 import gmtColormap
@@ -146,12 +147,17 @@ if plot_overview:
     ind = np.argmin(abs(dists--5e3))
     #plt.plot(dists/1e3,zb,':',color='k',linewidth=1.5)
     plt.plot(dists[0:ind]/1e3,zb[0:ind],color='k',linewidth=1.5,label='Smoothed')
-    plt.text(-3.2,-950,'??',fontsize=8,fontname='arial')
+    plt.text(-1.5,-700,'??',fontsize=8,fontname='arial')
     plt.text(1.5,-500,'??',fontsize=8,fontname='arial')
     plt.ylim([-1300,-300])
     ax.arrow(-6,-800,0.7,-200,lw=1,fc='k',ec='k',head_width=0.5,head_length=50)
+    ax.plot([-2.8,-1.5],[-1070,-970],lw=1.5,color='r')
     ax.text(-13,-650,'Rough grounding-line',fontname='Arial',fontsize=7)
     ax.text(-13,-750,'position from 2011-2016',fontname='Arial',fontsize=7)
+    ax.text(-2.1,-860,'Potential',fontname='Arial',fontsize=7)
+    ax.text(-2.1,-940,'overdeepening',fontname='Arial',fontsize=7)
+    ellipse = Ellipse(xy=(-3.7,-1100),width=2,height=90,angle=0.0,edgecolor='r',fill=False,lw=1.5,ls=(0,(2,1)))
+    ax.add_artist(ellipse)
   plt.xlabel('Distance along flowline (km)',fontsize=8)
   plt.xticks(np.arange(-30,10,5),fontsize=8)
   plt.xlim([-21,6])

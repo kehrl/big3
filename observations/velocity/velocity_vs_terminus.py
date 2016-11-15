@@ -36,7 +36,7 @@ elif glacier == 'Kanger':
 ################
 
 time1 = 2008.0 #start time for plot
-time2 = 2016.0 # end time for plot
+time2 = 2016.75 # end time for plot
 vbars = 'runoff' # plot seasonal bars, to highlight seasonal trends
 normalized = 0
 lagrangian = 0
@@ -81,7 +81,7 @@ if lagrangian == 1:
   vel_val,vel_time,vel_error,vel_dists,vel_x,vel_y = vellib.velocity_at_lagpoints(x,y,dists,dists_eul*1e3,glacier)
 else:
   vel_val,vel_time,vel_error = vellib.velocity_at_eulpoints(x[ind_eul],y[ind_eul],glacier)
-vel_val_howat,vel_time_howat,vel_error_howat = vellib.howat_optical_at_pts(x[ind_eul],y[ind_eul],glacier)
+#vel_val_howat,vel_time_howat,vel_error_howat = vellib.howat_optical_at_pts(x[ind_eul],y[ind_eul],glacier)
 
 velmel_val,velmel_time,velmel_error,velmel_dists,velmel_x,velmel_y = vellib.velocity_at_lagpoints(x,y,dists,dists_mel*1e3,glacier)
 velocitypoints = np.column_stack([x[ind_eul],y[ind_eul]])
