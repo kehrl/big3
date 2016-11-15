@@ -259,7 +259,7 @@ print "Calculating basal sliding speed for inflow and ice divide boundaries and 
 if temperature == 'model' and ssa:
   xflowA,yflowA,flowA = elmerreadlib.input_file(dir+"ssa_flowA.xy")
   if (len(xflowA) != len(xT)) or (len(yflowA) != len(yT)):
-    f = RegularGridInterpolator((yflowA,xflowA),flowA)
+    f = RegularGridInterpolator((yflowA,xflowA),flowA,bounds_error=False)
     flowA = np.reshape(f((yTgrid.flatten(),xTgrid.flatten())),[len(yT),len(xT)])
     # If there are any nans
     ind = np.where(np.isnan(flowA))
