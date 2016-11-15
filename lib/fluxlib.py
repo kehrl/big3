@@ -50,11 +50,37 @@ def fluxgate(glacier,fluxgate_filename,bedsource='smith',dl=20.0,timing='velocit
   l = l[0:-1]+dl/2
   x = np.interp(l,L,gate_pts[:,0])
   y = np.interp(l,L,gate_pts[:,1])
-  
+    
+  # Get surface elevations
+  if glacier == 'Midgaard' or glacier == 'Fenris':
+    zs_gimp = zslib.gimp_at_pts(x,y,glacier,verticaldatum='ellipsoid')
+    zs_error = np.zeros_like(zs_gimp)
+    halfind = int(len(x)/2) # Index for halfway along fluxgate
+    zpt_atm,zptstd_atm,time_atm = zslib.atm_at_pts([x[halfind]],[y[halfind]],glacier,maxdist=200,verticaldatum='ellipsoid')
+    
+    #zs_all = zs_gimp
+    #ztime = []
+    ztime = time_atm
+    zs_all = np.zeros([len(time_atm),len(x)])
+    for i in range(0,len(time_atm)):
+      diff = zpt_atm[i] - zs_gimp[halfind]
+      zs_all[i,:] = zs_gimp + diff
+  else:
+    zs_all,zs_error,ztime=zslib.dem_at_pts(x,y,glacier,verticaldatum='ellipsoid',method='linear')
+
   # Get bed elevation along flux gates
   if bedsource == 'morlighem':
     print "Using Morlighem bed DEM, should maybe be changed to CreSIS radar transects or Smith bed DEM"
     zb = bedlib.morlighem_pts(x,y,verticaldatum='ellipsoid')
+    if glacier == 'Midgaard': 
+      # The Morlighem bed DEM is HORRIBLE for Midgaard. If it was right, the surface would
+      # currently be below the bed. Unfortunately there aren't any better options (very few
+      # ice thickness measurements), so what I'm doing is adjusting the morlighem bed DEM
+      # by a known ice thickness measurements from ~1 km downstream, which has the ice thickness
+      # at 110 m in 2013 with a surface elevation of 253 m. 
+      zpt_2013 = np.interp(2013.25,time_atm,zpt_atm[:,0])
+      diff = (zpt_2013-150)-zb[halfind]
+      zb = zb+diff
   elif bedsource == 'smith':
     print "Using Smith bed DEM"
     zb = bedlib.smith_at_pts(x,y,glacier,verticaldatum='ellipsoid')
@@ -78,18 +104,11 @@ def fluxgate(glacier,fluxgate_filename,bedsource='smith',dl=20.0,timing='velocit
     cutoff=(1/filt_len)/(1/((l[1]-l[0])*2))
     b,a=scipy.signal.butter(4,cutoff,btype='low')
     zb = scipy.signal.filtfilt(b,a,zb)
-    
-  # Get surface elevations
-  if glacier == 'Midgaard' or glacier == 'Fenris':
-    zs_all = zslib.gimp_at_pts(x,y,glacier,verticaldatum='ellipsoid')
-    zs_error = np.zeros_like(zs_all)
-    ztime = []
-  else:
-    zs_all,zs_error,ztime=zslib.dem_at_pts(x,y,glacier,verticaldatum='ellipsoid',method='linear')
   
   # Get velocities
   if glacier == 'Fenris':
     vpt,tpt,ept,vxpt,vypt = vellib.howat_optical_at_pts(x,y,'Helheim',xy_velocities='True')
+    tpt = tpt[:,0]
   else:
     vpt,tpt,ept,vxpt,vypt = vellib.velocity_at_eulpoints(x,y,glacier,data='TSX',xy_velocities='True')  
   
@@ -260,7 +279,7 @@ def fluxgate(glacier,fluxgate_filename,bedsource='smith',dl=20.0,timing='velocit
   # Add up fluxes along glacier width
   sumQ = np.sum(Q,1)
 
-  return time, sumQ, Hbar, ubar, error, L[1]
+  return time, sumQ, Hbar, ubar, error, Across #L[1]
 
 
 def fluxgate_thinning(glacier,fluxgate_filename,bedsource='smith',dl=20.0,timing='elevation',rho_i=900.):

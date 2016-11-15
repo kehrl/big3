@@ -26,14 +26,16 @@ def load_flowline(glacier,shapefilename='center_flowline',filt_len=2.0e3,vertica
   zb_filt: bed profile for flowline
   '''
 
-  if glacier == "Helheim":
+  if glacier == 'Helheim':
     file1 = 'helheim_'
-    file_flowline_in = os.path.join(os.getenv("DATA_HOME"),"ShapeFiles/Glaciers/Flowlines/Helheim/"+file1+shapefilename)
   elif glacier == 'Kanger':
     file1 = 'kanger_'
-    file_flowline_in = os.path.join(os.getenv("DATA_HOME"),"ShapeFiles/Glaciers/Flowlines/Kanger/"+file1+shapefilename)
+  elif glacier == 'Midgaard':
+    file1 = 'midgaard_'
   else:
     sys.exit("Unknown glacier.") 
+  file_flowline_in = os.path.join(os.getenv("DATA_HOME"),"ShapeFiles/Glaciers/Flowlines/"+glacier+"/"+file1+shapefilename)
+
   
   flowline = meshlib.shp_to_xy(file_flowline_in)
   d = distlib.transect(flowline[:,0],flowline[:,1])
@@ -86,7 +88,6 @@ def load_flowline(glacier,shapefilename='center_flowline',filt_len=2.0e3,vertica
     dcresis = np.array(dcresis)[ind]
     zcresis = np.array(zcresis)[ind]
     zb = np.interp(dists,dcresis,zcresis)
-
 
   if filt_len != 'none':
     ind = np.where(~(np.isnan(zb)))[0]
