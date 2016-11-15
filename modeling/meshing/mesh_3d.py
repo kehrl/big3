@@ -6,7 +6,7 @@
 import os
 import shutil
 import sys
-import vellib, datelib, glaclib, flowparameterlib, meshlib, inverselib, climlib
+import vellib, datelib, glaclib, flowparameterlib, meshlib, inverselib, climlib, elmerreadlib
 from subprocess import call
 from scipy.interpolate import RegularGridInterpolator
 import numpy as np
@@ -250,7 +250,6 @@ if temperature == 'model' and not(ssa):
 if temperature == 'model' and ssa:
   dir = os.path.join(os.getenv("MODEL_HOME"),glacier+"/Outputs/")
   shutil.copy2(dir+"ssa_flowA.xy",inputs+"ssa_flowA.xy")
-  del dir
   
 #################################################################
 # Calculate basal sliding speed using SIA for inflow boundaries #
@@ -258,9 +257,15 @@ if temperature == 'model' and ssa:
 
 print "Calculating basal sliding speed for inflow and ice divide boundaries and guessing a beta...\n"
 if temperature == 'model' and ssa:
-  A = flowparameterlib.arrhenius(273.15-10.)*yearinsec*1.0e18
-  # If there are no modeled temperatures, then just use a constant flow law parameter
-  ub_all,vb_all,beta_all = inverselib.guess_beta(xT,yT,zsT,zbT,uT,vT,frac=0.5,A=A) 
+  xflowA,yflowA,flowA = elmerreadlib.input_file(dir+"ssa_flowA.xy")
+  if (len(xflowA) != len(xT)) or (len(yflowA) != len(yT)):
+    f = RegularGridInterpolator((yflowA,xflowA),flowA)
+    flowA = np.reshape(f((yTgrid.flatten(),xTgrid.flatten())),[len(yT),len(xT)])
+    # If there are any nans
+    ind = np.where(np.isnan(flowA))
+    flowA[ind] = flowparameterlib.arrhenius(263.15)
+  del dir 
+  ub_all,vb_all,beta_all = inverselib.guess_beta(xT,yT,zsT,zbT,uT,vT,frac=0.5,A=flowA*yearinsec*1e18) 
 elif temperature == 'model' and not(ssa):
   # Try to use depth-averaged modeled temperatures for guessing
   ub_all,vb_all,beta_all = inverselib.guess_beta(xT,yT,zsT,zbT,uT,vT,frac=0.5,A=np.mean(flowA,axis=2)*yearinsec*1e18)
