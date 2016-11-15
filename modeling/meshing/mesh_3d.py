@@ -245,23 +245,23 @@ uT = np.reshape(f((yTgrid.flatten(),xTgrid.flatten())),[len(yT),len(xT)])
 f = RegularGridInterpolator((y,x),v)
 vT = np.reshape(f((yTgrid.flatten(),xTgrid.flatten())),[len(yT),len(xT)])  
 
-if temperature == 'model':
+if temperature == 'model' and not(ssa):
   flowT,flowA,flowU,flowV = flowparameterlib.load_temperature_model(glacier,xT,yT,outputdir=inputs)
-  if ssa:
-    ssa_arrhenius = np.mean(flowA,axis=2)
-    fid = open(inputs+"ssa_flowA.xy","w")
-    fid.write("{0}\n{1}\n".format(len(xT), len(yT)))
-    for i in range(0,len(xT)):
-      for j in range(0,len(yT)):
-        fid.write('{0} {1} {2}\n'.format(x[i],y[j],ssa_arrhenius[j,i]))
-    fid.close()
+if temperature == 'model' and ssa:
+  dir = os.path.join(os.getenv("MODEL_HOME"),glacier+"/Outputs/")
+  shutil.copy2(dir+"ssa_flowA.xy",inputs+"ssa_flowA.xy")
+  del dir
   
 #################################################################
 # Calculate basal sliding speed using SIA for inflow boundaries #
 #################################################################
 
 print "Calculating basal sliding speed for inflow and ice divide boundaries and guessing a beta...\n"
-if temperature == 'model':
+if temperature == 'model' and ssa:
+  A = flowparameterlib.arrhenius(273.15-10.)*yearinsec*1.0e18
+  # If there are no modeled temperatures, then just use a constant flow law parameter
+  ub_all,vb_all,beta_all = inverselib.guess_beta(xT,yT,zsT,zbT,uT,vT,frac=0.5,A=A) 
+elif temperature == 'model' and not(ssa):
   # Try to use depth-averaged modeled temperatures for guessing
   ub_all,vb_all,beta_all = inverselib.guess_beta(xT,yT,zsT,zbT,uT,vT,frac=0.5,A=np.mean(flowA,axis=2)*yearinsec*1e18)
 else:

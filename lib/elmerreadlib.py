@@ -197,7 +197,7 @@ def grid3d(data,variable,holes=[],extent=[],dx=50):
 
   return x,y,masked
   
-def result_file(variables, mesh_dir, result_fn, maps=[], debug=False, **kwargs):
+def result_file(mesh_dir, result_fn, variables, maps=[], debug=False, **kwargs):
   '''
   Pull variables from a .result file.
   
@@ -255,7 +255,31 @@ def result_file(variables, mesh_dir, result_fn, maps=[], debug=False, **kwargs):
   results = [pool.apply_async(result_file_partition, (i, parts_dir, varnames, types, variables, maps, mesh_dir, result_fn, debug)) for i in range(parts)]
   
   # Get, stack, and sort the results
-  return np.sort(np.hstack(tuple([result.get() for result in results])), order=['x', 'y', 'z'])
+  data = np.sort(np.hstack(tuple([result.get() for result in results])), order=['x', 'y', 'z'])
+  
+  # Add some additional variables for ease of use
+  if ('ssavelocity 1' in varnames) and ('ssavelocity 2' in varnames):
+    varnames.append('ssavelocity')
+    types.append(np.float64)
+  if ('beta' in varnames) and ('ssavelocity' in varnames): 
+    varnames.append('taub')
+    types.append(np.float64)
+  if ('vsurfini 1' in varnames) and ('vsurfini 2' in varnames):
+    varnames.append('vsurfini')
+    types.append(np.float64) 
+  
+  data2 = np.empty(len(data),dtype = zip(varnames,types))
+  for varname in varnames:
+    if varname == 'ssavelocity':
+      data2[varname] = np.sqrt(data['ssavelocity 1']**2+data['ssavelocity 2']**2)
+    elif varname == 'taub':
+      data2[varname] = data['beta']**2*np.sqrt(data['ssavelocity 1']**2+data['ssavelocity 2']**2)
+    elif varname == 'vsurfini':
+      data2[varname] = np.sqrt(data['vsurfini 1']**2+data['vsurfini 2']**2)
+    else:
+      data2[varname] = data[varname]
+      
+  return data2
 
 def result_file_partition(i, parts_dir, varnames, types, variables, maps, mesh_dir, result_fn, debug=False):
 

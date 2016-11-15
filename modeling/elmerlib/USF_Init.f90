@@ -468,6 +468,63 @@ FUNCTION GuessBeta( Model, nodenumber, dumy) RESULT(coeff) !
 End
 
 !------------------------------------------------------------------!
+FUNCTION SSAViscosity( Model, nodenumber, dumy) RESULT(eta) !
+!------------------------------------------------------------------!
+		USE types
+		USE DefUtils
+  	IMPLICIT NONE
+		TYPE(Model_t) :: Model
+  	REAL(kind=dp) :: dumy,eta,E,yearinsec
+  	INTEGER :: nodenumber
+  	REAL(kind=dp) :: LinearInterp
+
+  	REAL(kind=dp),allocatable :: xx(:),yy(:),flowA(:,:)
+    REAL(kind=dp) :: x,y,z
+    
+    INTEGER :: nx,ny
+    INTEGER :: i,j
+		
+    LOGICAL :: FirstTimeSSAViscosity=.true.
+
+    SAVE xx,yy,flowA,nx,ny
+    SAVE FirstTimeSSAViscosity
+
+    if (FirstTimeSSAViscosity) then
+
+    	FirstTimeSSAViscosity=.False.
+
+
+        ! open file
+        open(10,file='inputs/ssa_flowA.xy')
+        Read(10,*) nx
+        Read(10,*) ny
+        ALLOCATE(xx(nx),yy(ny))
+        ALLOCATE(flowA(nx,ny))
+        Do i=1,nx
+        	Do j=1,ny
+                read(10,*) xx(i),yy(j),flowA(i,j)
+            End Do
+		End do
+		close(10)
+    End if
+
+    ! year in seconds for conversion
+    yearinsec = 365.25*24*60*60
+    ! Enhancement factor
+    E = 3.d0
+
+    ! position current point
+    x = Model % Nodes % x (nodenumber)
+    y = Model % Nodes % y (nodenumber)
+
+    eta = LinearInterp(flowA,xx,yy,nx,ny,x,y)
+    eta = ((E*eta*yearinsec)**(-1.0/3.0d0))*1.0e-6    
+		
+    Return
+End
+
+
+!------------------------------------------------------------------!
 FUNCTION ModelViscosity( Model, nodenumber, dumy) RESULT(eta) !
 !------------------------------------------------------------------!
     USE types

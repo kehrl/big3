@@ -181,98 +181,97 @@ def main():
   # Write cost values to summary file #
   ##################################### 
 
-#   fid = open(DIRM+"cost_"+method+"_beta.dat","r")
-#   lines = fid.readlines()
-#   line=lines[-1]
-#   p=line.split()
-#   nsim = float(p[0])
-#   cost1 = float(p[1])
-#   cost2 = float(p[2])
-#   norm = float(p[3]) 
-#   fid.close()
-#   fid_info = open(DIRR+"summary.dat","a")
-#   fid_info.write('{} {} {} {} {}\n'.format(regpar,nsim+restartposition,cost1,cost2,norm))
-#   fid_info.close()
-#   del fid
+  fidcost = open(DIRM+"cost.dat","r")
+  lines = fidcost.readlines()
+  line=lines[-1]
+  p=line.split()
+  nsim = float(p[0])
+  costsur = float(p[1])
+  fidcost.close()
+  
+  fidcostreg = open(DIRM+"costreg.dat")
+  lines = fidcostreg.readlines()
+  line=lines[-1]
+  p=line.split()
+  nsim = float(p[0])
+  costbed = float(p[1])
+  fidcostreg.close()
+  
+  costtot = costsur+costbed
+
+  fid_info = open(DIRR+"summary.dat","a")
+  fid_info.write('{} {} {} {} {}\n'.format(regpar,nsim+restartposition,costtot,costsur,costbed))
+  fid_info.close()
+  del fidcost, fidcostreg
 
 	#######################################
 	# Combine elmer results into one file #
 	#######################################
 
-#   DIRR_lambda = DIRR+"lambda_"+regpar+"_"+date+"/"
-# 
-#   names = os.listdir(DIRM+"/mesh2d")
-#   if not os.path.exists(DIRR_lambda):
-#     os.makedirs(DIRR_lambda)
-#   for name in names:
-#     if name.endswith('pvtu') and name.startswith(method):
-#       os.rename(DIRM+"/mesh2d/"+name,DIRR_lambda+'{0}{1:04d}{2}'.format(name[0:-9],int(name[-9:-5])+restartposition,'.pvtu'))
-#     elif name.endswith('vtu') and name.startswith(method):
-#       os.rename(DIRM+"/mesh2d/"+name,DIRR_lambda+'{0}{1:04d}{2}'.format(name[0:-8],int(name[-8:-4])+restartposition,'.vtu'))
-#     elif name.startswith(method) and 'result' in name:
-#       os.rename(DIRM+"/mesh2d/"+name,DIRR_lambda+name)
+  DIRR_lambda = DIRR+"lambda_"+regpar+"_"+date+"/"
+ 
+  names = os.listdir(DIRM+"/mesh2d")
+  if not os.path.exists(DIRR_lambda):
+    os.makedirs(DIRR_lambda)
+  for name in names:
+    if name.endswith('pvtu') and name.startswith('adjoint'):
+      os.rename(DIRM+"/mesh2d/"+name,DIRR_lambda+'{0}{1:04d}{2}'.format(name[0:-9],int(name[-9:-5])+restartposition,'.pvtu'))
+    elif name.endswith('vtu') and name.startswith('adjoint'):
+      os.rename(DIRM+"/mesh2d/"+name,DIRR_lambda+'{0}{1:04d}{2}'.format(name[0:-8],int(name[-8:-4])+restartposition,'.vtu'))
+    elif name.startswith('adjoint') and 'result' in name:
+      os.rename(DIRM+"/mesh2d/"+name,DIRR_lambda+name)
+  bed = elmerreadlib.result_file(DIRM+"/mesh2d/",DIRR_lambda+'adjoint_beta_ssa.result',['ssavelocity 1','ssavelocity 2','beta','vsurfini 1','vsurfini 2'])
+   
+  # Move outputs for optimization
+  os.rename(DIRM+"M1QN3_adjoint_beta_ssa.out",DIRR_lambda+"M1QN3_adjoint_beta_ssa.out")
+  os.rename(DIRM+"cost.dat",DIRR_lambda+"cost.dat")
+  os.rename(DIRM+"costreg.dat",DIRR_lambda+"costreg.dat")
+  os.rename(DIRM+"gradientnormadjoint_adjoint_beta_ssa.dat",DIRR_lambda+"gradientnormadjoint_adjoint_beta_ssa.dat")
 
-#   bed = elmerreadlib.saveline_boundary(DIRM+"/mesh2d/",runname,bbed,['velocity','beta'])
-#   surf = elmerreadlib.saveline_boundary(DIRM+"/mesh2d/",runname,bsurf,['vsurfini','velocity'])
-# 
-#   # Move saveline results
-#   files = os.listdir(DIRM+"/mesh2d/")
-#   for file in files:
-#     if file.startswith(runname) and not file.endswith('names') and ('.dat' in file):
-#       os.rename(DIRM+"/mesh2d/"+file,DIRR_lambda+file)
-#     if file.startswith(runname) and file.endswith('names'):
-#       os.rename(DIRM+"/mesh2d/"+file,DIRR_lambda+file)
-#   
-#   # Move outputs for optimization
-#   os.rename(DIRM+"M1QN3_"+method+"_beta.out",DIRR_lambda+"M1QN3_"+method+"_beta.out")
-#   os.rename(DIRM+"gradientnormadjoint_"+method+"_beta.dat",DIRR_lambda+"gradient_"+runname+".dat")
-#   os.rename(DIRM+"cost_"+method+"_beta.dat",DIRR_lambda+"cost_"+runname+".dat")
-  
 	################################
 	# Output friction coefficients #
 	################################
 
   # Linear Beta square
-#   fid = open(inputs+"beta_linear.xyz",'w')
-#   fid.write('{0}\n'.format(len(bed['Node Number'])))
-#   for i in range(0,len(bed['Node Number'])):
-#     fid.write('{0} {1} {2:.4f} {3}\n'.format(bed['x'][i],bed['y'][i],\
-# 				bed['z'][i],bed['beta'][i]**2))
-#   fid.close()
-# 
-#   # Weertman coefficient
-#   fid = open(inputs+"beta_weertman.xyz",'w')
-#   fid.write('{0}\n'.format(len(bed['Node Number'])))
-#   for i in range(0,len(bed['Node Number'])):
-#     coeff=(bed['beta'][i]**2)*(bed['velocity'][i]**(2.0/3.0))
-#     fid.write('{0} {1} {2:.4f} {3}\n'.format(bed['x'][i],bed['y'][i],bed['z'][i],coeff))
-#   fid.close() 
-# 
-#   xgrid,ygrid,taubgrid = elmerreadlib.grid3d(bed,'taub',holes,extent)
-#   xgrid,ygrid,vmodgrid = elmerreadlib.grid3d(surf,'velocity',holes,extent)
-#   xgrid,ygrid,vmesgrid = elmerreadlib.grid3d(surf,'vsurfini',holes,extent)
-#   
-#   plt.figure(figsize=(6.5,3))
-#   plt.subplot(121)
-#   plt.imshow(taubgrid*1e3,origin='lower',clim=[0,500])
-#   plt.xticks([])
-#   plt.yticks([])
-#   cb = plt.colorbar(ticks=np.arange(0,600,100))
-#   cb.ax.tick_params(labelsize=10)
-#   cb.set_label('Basal shear stress (kPa)')
-#   
-#   plt.subplot(122)
-#   plt.imshow(vmodgrid-vmesgrid,origin='lower',clim=[-500,500],cmap='RdBu_r')
-#   plt.xticks([])
-#   plt.yticks([])
-#   cb = plt.colorbar(ticks=np.arange(-500,600,100))
-#   cb.ax.tick_params(labelsize=10)
-#   cb.set_label('Modeled-Measured (m/yr)')
-#   
-#   plt.tight_layout()
-#   
-#   plt.savefig(DIRR+'lambda_'+regpar+'_'+date+'.pdf',format='PDF',dpi=400)
-#   plt.close()
-# 	
+  fid = open(inputs+"beta_linear.xyz",'w')
+  fid.write('{0}\n'.format(len(bed['Node Number'])))
+  for i in range(0,len(bed['Node Number'])):
+    fid.write('{0} {1} {2}\n'.format(bed['x'][i],bed['y'][i],bed['beta'][i]**2))
+  fid.close()
+  
+  # Weertman coefficient
+  fid = open(inputs+"beta_weertman.xyz",'w')
+  fid.write('{0}\n'.format(len(bed['Node Number'])))
+  for i in range(0,len(bed['Node Number'])):
+    coeff=(bed['beta'][i]**2)*(bed['ssavelocity'][i]**(2.0/3.0))
+    fid.write('{0} {1} {2}\n'.format(bed['x'][i],bed['y'][i],coeff))
+  fid.close() 
+  
+  xgrid,ygrid,taubgrid = elmerreadlib.grid3d(bed,'taub',holes,extent)
+  xgrid,ygrid,vmodgrid = elmerreadlib.grid3d(bed,'ssavelocity',holes,extent)
+  xgrid,ygrid,vmesgrid = elmerreadlib.grid3d(bed,'vsurfini',holes,extent)
+   
+  plt.figure(figsize=(6.5,3))
+  plt.subplot(121)
+  plt.imshow(taubgrid*1e3,origin='lower',clim=[0,500])
+  plt.xticks([])
+  plt.yticks([])
+  cb = plt.colorbar(ticks=np.arange(0,600,100))
+  cb.ax.tick_params(labelsize=10)
+  cb.set_label('Basal shear stress (kPa)')
+   
+  plt.subplot(122)
+  plt.imshow(vmodgrid-vmesgrid,origin='lower',clim=[-500,500],cmap='RdBu_r')
+  plt.xticks([])
+  plt.yticks([])
+  cb = plt.colorbar(ticks=np.arange(-500,600,100))
+  cb.ax.tick_params(labelsize=10)
+  cb.set_label('Modeled-Measured (m/yr)')
+   
+  plt.tight_layout()
+   
+  plt.savefig(DIRR+'lambda_'+regpar+'_'+date+'.pdf',format='PDF',dpi=400)
+  plt.close()
+ 	
 if __name__ == "__main__":
   main()

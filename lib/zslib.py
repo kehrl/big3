@@ -260,7 +260,7 @@ def atm_along_flowline(xpts,ypts,glacier,years='all',cutoff='none',maxdist=200,m
 def atm_at_pts(xpts,ypts,glacier,years='all',maxdist=200,verticaldatum='geoid',method='average',cutoff='none'):
 
   '''
-  zpts,time = atm_at_pts(xpts,ypts,glacier,years='all',maxdist=200,verticaldatum='geoid')
+  zpts,zptstd,time = atm_at_pts(xpts,ypts,glacier,years='all',maxdist=200,verticaldatum='geoid')
   
   Find ATM surface elevations at xpts,ypts.
   

@@ -26,7 +26,6 @@ Simulation
   Steady State Min Iterations = 1
   Steady State Max Iterations = {ItMax}
 
-  Post File = "$name$.vtu"
   Output File = "$name$.result"
 
   Max Output Level = 3
@@ -45,13 +44,10 @@ Initial Condition 1
   ! alpha is the optimised variable
   alpha = Variable Coordinate 1, Coordinate 2
     Real Procedure "USF_Init.so" "GuessBeta"
-  Temperature = 263.15
-  !MuS = Variable mu
-	!REAL MATC "tx*tx"
-  !mu = variable temperature
-	!real procedure "/nobackupp8/dlilien/ssa_g_taubeta_1990s/lib/USF_Init.so" "MuIniSSA"
-  !muinit=variable temperature
-	!real matc "sqrt(glen(tx)*31556926.0^(-1.0/3.0)*1.0e-06)"
+
+  Temperature = Real 263.15
+  mu = Variable Coordinate 1, Coordinate 2
+    Real Procedure "USF_Init.so" "SSAViscosity"
 
   Zs = Variable Coordinate 1
     REAL procedure "USF_Init.so" "zsIni"
@@ -91,8 +87,7 @@ Material 1
   Critical Shear Rate = Real 1.0e-10
 
   SSA Mean Density = Real $rhoi
-  SSA Mean Viscosity = Real 0.2
-    !Real MATC "tx*tx"
+  SSA Mean Viscosity = Equals mu
 
   SSA Friction Law = String "linear"
   ! The friction parameter is the square of the optimized variable to insure > 0
@@ -153,10 +148,8 @@ Solver 2
   Observation File Name = File "inputs/velocity.xyuv"
   Save Used Data = Logical True
 
-  !Exported Variable 1 = MuS
-  !Exported Variable 2 = Muinit
-  !Exported Variable 3 = Temperature
-end
+End
+
 !!!!  Adjoint Solution
 Solver 3
   Equation = "Adjoint"
@@ -165,7 +158,7 @@ Solver 3
 
   Procedure = "AdjointSSASolvers.so" "AdjointSolver_SSA"
 
-!Name of the flow solution solver
+  !Name of the flow solution solver
   Flow Solution Equation Name = string "SSA"
   Linear System Solver = Direct
   Linear System Direct Method = mumps
@@ -212,15 +205,12 @@ Solver 6
   Variable = -nooutput "DJDBReg"
   Variable DOFs = 1
 
-  Problem Dimension=Integer 2
-  Cost Filename=File "costreg.dat"
-  
-  Problem Dimension=Integer 2
+  Problem Dimension = Integer 2
   Cost Filename=File "costreg.dat"
   Optimized Variable Name= String "alpha"
   Gradient Variable Name= String "DJDalpha"
   Cost Variable Name= String "CostValue"
-  Lambda= Equals $Lambda !reg. weight set to 0 here as no noise added
+  Lambda= Real {Lambda} !reg. weight set to 0 here as no noise added
   Reset Cost Value= Logical False  !=> DJDapha already initialized in solver DJDBeta; switch off initialisation to 0 at the beginning of this solver
   A priori Regularisation= Logical False
 end
