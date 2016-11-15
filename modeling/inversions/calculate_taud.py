@@ -1,15 +1,24 @@
 # Calculate taud for Helheim for various time periods. 
 
 import zslib, bedlib, vellib, datelib, geotifflib, glaclib, masklib
-import os
+import os, sys
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import RegularGridInterpolator
 import scipy
 import matplotlib
-#from scipy.spatial import cKDTree
+import cubehelix
+import argparse
 
-glacier = 'Kanger'
+args = sys.argv
+
+# Get inputs to file
+parser = argparse.ArgumentParser()
+parser.add_argument("-glacier", dest="glacier",required = True,
+        help = "Glacier name.")
+
+args, _ = parser.parse_known_args(sys.argv)
+glacier = args.glacier
 
 # Parameters
 rho_i = 917.0
@@ -20,15 +29,15 @@ if glacier == 'Kanger':
   xmax = 500800.
   ymin = -2300000.
   ymax = -2260200.
-  ximage,yimage,image = geotifflib.readrgb(os.path.join(os.getenv("DATA_HOME"),"Imagery/Landsat/Helheim/TIF/20140704140535_LC82330132014185LGN00.tif"))
+  ximage,yimage,image = geotifflib.readrgb(os.path.join(os.getenv("DATA_HOME"),"Imagery/Landsat/Kanger/TIF/20140706135251_LC82310122014187LGN00.tif"))
 elif glacier == 'Helheim':
   xmin = 280200.
   xmax = 313000.
   ymin = -2585100.
   ymax = -2545300.
-  ximage,yimage,image = geotifflib.readrgb(os.path.join(os.getenv("DATA_HOME"),"Imagery/Landsat/Kanger/TIF/20140706135251_LC82310122014187LGN00.tif"))
+  ximage,yimage,image = geotifflib.readrgb(os.path.join(os.getenv("DATA_HOME"),"Imagery/Landsat/Helheim/TIF/20140704140535_LC82330132014185LGN00.tif"))
 
-dx = 200.
+dx = 300.
 x = np.arange(xmin-1e3,xmax+1e3,dx)
 y = np.arange(ymin-1e3,ymax+1e3,dx)
 
@@ -40,6 +49,7 @@ xbed,ybed,zbed = bedlib.morlighem_grid(xmin-2e3,xmax+2e3,ymin-2e3,ymax+2e3,verti
 #for k in range(0,len(timedem)):
 #  zdem_blur[:,:,k] = scipy.ndimage.filters.gaussian_filter(zdem[:,:,k],sigma=2,truncate=4)
 #  # "Blurring DEM over 17 pixels (roughly 500 m in each direction)..."
+#zdem = zdem_blur
 
 # Interpolate bed onto grid
 x_grid,y_grid = np.meshgrid(x,y)
@@ -172,6 +182,6 @@ xf,yf,zbf,dists = glaclib.load_flowline(glacier)
 
 taud_u_flow = np.zeros([len(dists),len(timedem)])
 for k in range(0,len(timedem)):
-  f = RegularGridInterpolator((y,x),taud_u[:,:,k]-mean_taud_u,bounds_error=False,fill_value=float('nan'))
+  f = RegularGridInterpolator((y,x),taud_u[:,:,k],bounds_error=False,fill_value=float('nan'))
   taud_u_flow[:,k] = f((yf,xf))
   
