@@ -3,8 +3,10 @@
 #
 # LMK, UW, 5/30/2015
 
+import numpy as np
 import sys
 import os
+import matplotlib
 import matplotlib.pyplot as plt
 from pylab import *
 import argparse
@@ -75,7 +77,7 @@ plt.plot(cost_bed,cost_sur,'ko--',linewidth=1.5)
 plt.xlabel('Model norm',fontsize=10)
 plt.ylabel(r'Misfit',fontsize=10)
 plt.xticks(fontsize=10)
-plt.gca().yaxis.set_major_formatter(FormatStrFormatter("%.1E"))
+plt.gca().yaxis.set_major_formatter(matplotlib.ticker.FormatStrFormatter("%.1E"))
 plt.ylim([np.min(cost_sur)-(np.max(cost_sur)-np.min(cost_sur))/10,np.max(cost_sur)+(np.max(cost_sur)-np.min(cost_sur))/4])
 ymin,ymax = plt.ylim()
 for i in range(0,len(strings)):
