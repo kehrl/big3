@@ -41,7 +41,7 @@ Simulation
 ! Internal extrusion 
   Extruded Mesh Levels = Integer {Extrude}
 
-  Output Intervals = 5
+  Output Intervals = 50
 
   Steady State Max Iterations = {ItMax}
   Steady State Min Iterations = 1
