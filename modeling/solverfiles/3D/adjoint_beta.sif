@@ -47,7 +47,7 @@ Simulation
   Steady State Min Iterations = 1
 
   Output File = "$name$.result"
-  Post File = "$name$.vtu"
+  !Post File = "$name$.vtu"
 
   Initialize Dirichlet Conditions = Logical False
 
@@ -352,10 +352,20 @@ Solver 10
   !Parallel Reduce = Logical True
 End
 
+Solver 11
+  Equation = "ResultOutput"
+  Exec Solver = "After All"
+
+  Procedure = File "ResultOutputSolve" "ResultOutputSolver"
+
+  Output File Name = File "$name""
+  Vtu Format = Logical True
+End
+
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 Equation 1
-  Active Solvers (8)= 1 2 3 4 7 8 9 10
+  Active Solvers (9)= 1 2 3 4 7 8 9 10 11
   NS Convect= False
 End
 

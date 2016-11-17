@@ -27,6 +27,7 @@ Simulation
   Steady State Max Iterations = {ItMax}
 
   Output File = "$name$.result"
+  Output Intervals(1) = 50
 
   Max Output Level = 3
 End
@@ -244,9 +245,19 @@ Solver 7
 
 end
 
+Solver 8
+  Equation = "ResultOutput"
+  Exec Solver = "After All"
+
+  Procedure = File "ResultOutputSolve" "ResultOutputSolver"
+
+  Output File Name = File "$name""
+  Vtu Format = Logical True
+End
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 Equation 1
-  Active Solvers(7) = 1 2 3 4 5 6 7
+  Active Solvers(8) = 1 2 3 4 5 6 7 8
 End
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

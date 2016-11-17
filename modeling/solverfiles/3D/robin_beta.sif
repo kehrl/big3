@@ -37,13 +37,13 @@ Simulation
 
   Extruded Mesh Levels = Integer {Extrude}
   
-  Output Intervals = 5
+  Output Intervals = 50
 
   Steady State Max Iterations = {ItMax}
   Steady State Min Iterations = 1
 
   Output File = "$name".result"
-  Post File = "$name$.vtu"
+  !Post File = "$name$.vtu"
 
   Initialize Dirichlet Conditions = Logical False
 
@@ -330,9 +330,19 @@ Solver 9
   !Parallel Reduce = Logical True
 End
 
+Solver 10
+  Equation = "ResultOutput"
+  Exec Solver = "After All"
+
+  Procedure = File "ResultOutputSolve" "ResultOutputSolver"
+
+  Output File Name = File "$name""
+  Vtu Format = Logical True
+End
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 Equation 1
-  Active Solvers (7)= 1 2 3 4 7 8 9
+  Active Solvers (8)= 1 2 3 4 7 8 9 10
   NS Convect = False
 End
 
