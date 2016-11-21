@@ -86,6 +86,6 @@ plt.xlim([-0.4,np.max(cost_bed)+(np.max(cost_bed)-np.min(cost_bed))/4])
 plt.tight_layout()
 plt.subplots_adjust(left=0.2, bottom=0.11, right=0.98, top=0.97, wspace=0.0, hspace=0.0)
 plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/Lcurve_"+glacier+"_"+RES+".pdf"),format='PDF')
-#plt.close()
+plt.close()
 
 print "Saving as "+os.path.join(os.getenv("HOME"),"Bigtmp/Lcurve_"+glacier+"_"+RES+".pdf")

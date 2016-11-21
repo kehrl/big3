@@ -47,8 +47,7 @@ Initial Condition 1
     Real Procedure "USF_Init.so" "GuessBeta"
 
   Temperature = Real 263.15
-  mu = Variable Coordinate 1, Coordinate 2
-    Real Procedure "USF_Init.so" "SSAViscosity"
+{Temperature}
 
   Zs = Variable Coordinate 1
     REAL procedure "USF_Init.so" "zsIni"

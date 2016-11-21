@@ -15,7 +15,7 @@ from subprocess import call
 import math
 import glob
 import numpy as np
-import elmerreadlib, meshlib
+import elmerreadlib, meshlib, flowparameterlib
 import numpy as np
 import argparse
 import datetime
@@ -92,17 +92,19 @@ def main():
   bsurf=5
   runname="adjoint_beta_ssa"
 
-#   if temperature == 'model':
-#     temperature_text="""
-#   Constant Temperature = Variable Coordinate 1, Coordinate 2
-#     Real Procedure "USF_Init.so" "ModelTemperature" """
-#   else:
-#     try:
-#       float(temperature)
-#       temperature_text="""
-#   Constant Temperature = Real """+str(temperature)
-#     except:
-#       sys.exit("Unknown temperature of "+temperature)
+  if temperature == 'model':
+     temperature_text="""
+  mu = Variable Coordinate 1, Coordinate 2
+    Real Procedure "USF_Init.so" "SSAViscosity"""""
+  else:
+    try:
+      print float(temperature)
+      A = flowparameterlib.arrhenius(273.15+float(temperature))
+      E = 3
+      temperature_text="""
+  mu = Real $(("""+str(E)+'*'+str(A[0])+'*'+'yearinsec)^(-1.0/3.0)*1.0e-6)'
+    except:
+      sys.exit("Unknown temperature of "+temperature)
 
   ################################################
   # Compile fortran libraries for adjoint solver #
@@ -169,7 +171,7 @@ def main():
     lines=fid1.read()
     lines=lines.replace('{Lambda}', '{0}'.format(regpar))
     lines=lines.replace('{ItMax}', '{0}'.format(int(itmax)))
-    #lines=lines.replace('{Temperature}', '{0}'.format(temperature_text))
+    lines=lines.replace('{Temperature}', '{0}'.format(temperature_text))
     fid2.write(lines)
     fid1.close()
     fid2.close()
@@ -186,7 +188,8 @@ def main():
   line=lines[-1]
   p=line.split()
   nsim = float(p[0])
-  costsur = float(p[1])
+  costtot = float(p[1])
+  costsur = float(p[2])
   fidcost.close()
   
   fidcostreg = open(DIRM+"costreg.dat")
@@ -197,7 +200,7 @@ def main():
   costbed = float(p[1])
   fidcostreg.close()
   
-  costtot = costsur+costbed
+  #costtot = costsur+costbed
 
   fid_info = open(DIRR+"summary.dat","a")
   fid_info.write('{} {} {} {} {}\n'.format(regpar,nsim+restartposition,costtot,costsur,costbed))

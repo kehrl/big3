@@ -397,8 +397,6 @@ Boundary Condition 5
     Real procedure "USF_Init.so" "SurfaceTemperature"
     
   Compute Normal = Logical True
-  !Normal-Tangential Velocity = Logical True
-  !Velocity 1 = Variable Coordinate 1, Coordinate 2
-  !  REAL procedure "USF_Init.so" "Accumulation"
+
 End 
 
