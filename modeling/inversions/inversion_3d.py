@@ -273,7 +273,7 @@ def main():
   fid = open(inputs+"beta_weertman.xyz",'w')
   fid.write('{0}\n'.format(len(bed['Node Number'])))
   for i in range(0,len(bed['Node Number'])):
-    coeff=(bed['beta'][i]**2)*(bed['velocity'][i]**(2.0/3.0))
+    coeff=(bed['beta'][i]**2)*(bed['velocity'][i]**(-2.0/3.0))
     fid.write('{0} {1} {2:.4f} {3}\n'.format(bed['x'][i],bed['y'][i],bed['z'][i],coeff))
   fid.close() 
 
