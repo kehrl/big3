@@ -316,10 +316,24 @@ plt.close()
 
 fig = plt.figure(figsize=(3.75,3))
 matplotlib.rc('font',family='Arial')
-gs = matplotlib.gridspec.GridSpec(1,2)
+gs = matplotlib.gridspec.GridSpec(1,4)
+
+plt.subplot(gs[0:2])
+ax = plt.gca()
+grid_vsurf = elmerreadlib.grid3d(modelT_surf,'velocity',holes,extent)
+grid_vbed = elmerreadlib.grid3d(modelT_bed,'velocity',holes,extent)
+plt.imshow(image[:,:,0],extent=[np.min(ximage),np.max(ximage),np.min(yimage),np.max(yimage)],cmap='Greys_r',origin='lower',clim=[0,0.6])
+p=plt.imshow(grid_vbed[2]/grid_vsurf[2],extent=[grid_vsurf[0][0],grid_vsurf[0][-1],grid_vsurf[1][0],grid_vsurf[1][-1]],origin='lower',vmin=0,vmax=1)
+plt.xticks([])
+plt.yticks([])
+plt.xlim([xmin,xmax])
+plt.ylim([ymin,ymax])
+for i in range(0,len(pts[:,0])):
+  plt.plot(pts[i,0],pts[i,1],'o',color=colorlabels[i])
+  plt.text(pts[i,0]+1000,pts[i,1]-800,labels[i],fontsize=9,fontname='Arial')
 
 for i in range(0,len(pts[:,0])):
-  plt.subplot(gs[i])
+  plt.subplot(gs[i+2])
   ax = plt.gca()
   column = elmerreadlib.values_in_column(modelT,pts[i,0],pts[i,1])
   column2 = elmerreadlib.values_in_column(lowT,pts[i,0],pts[i,1])
