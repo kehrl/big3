@@ -9,7 +9,7 @@ import cubehelix
 from matplotlib.path import Path
 import numpy as np
 import matplotlib
-impot matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 
 ##########
 # Inputs #
