@@ -96,10 +96,5 @@ SUBROUTINE ChangeMesh(Model,Solver,dt,TransientSimulation )
 
   Var => VariableGet( OldMesh % Variables, GetString(GetSolverParams(),'Interpolant'))
 
-  !OldMesh % Next => Null()
-  !CALL ReleaseMesh( OldMesh )
-  
-  CALL MeshStabParams( ExtrudedNewMesh )
-  ExtrudedNewMesh % Changed = .TRUE.
 
 END SUBROUTINE ChangeMesh

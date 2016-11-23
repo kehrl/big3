@@ -144,7 +144,7 @@ velocities = np.zeros([len(dists),len(time)])
 velocities_measured = np.zeros([len(dists),len(time)])
 for i in range(0,len(time)):
   for j in range(0,len(dists)):
-    ratios[j,i] = ((tau_d[j,i]+tau_f[j,i]+fudge)/(tau_d[j,i]+fudge+tau_f_ref[j]))**3
+    ratios[j,i] = ((np.nanmean(tau_d[j,:])+tau_f[j,i]+fudge)/(np.nanmean(tau_d[j,:])+fudge+tau_f_ref[j]))**3
   ind = np.where((ratios[:,i] > 5) | (ratios[:,i] < 0.5))
   ratios[ind,i] = float('NaN')
   velocities[:,i] = ratios[:,i]*vel_ref
