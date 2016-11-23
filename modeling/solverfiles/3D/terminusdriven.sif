@@ -1,13 +1,13 @@
 check keywords warn
 
-$name = "iceshelf"
+$name = "terminusdriven"
 $yearinsec = 365.25*24*60*60
 $rhoi = 917.0/(1.0e6*yearinsec^2)   
 $rhow = 1025.0/(1.0e6*yearinsec^2) 
 $gravity = -9.81*yearinsec^2
 
 Header
-  Mesh DB "." "mesh2d"
+  Mesh DB "." "mesh1"
 End
 
 Constants
@@ -38,7 +38,7 @@ Simulation
   Steady State Max Iterations = 10
   Steady State Min Iterations = 1
 
-  Max Output Level = 3
+  Max Output Level = 20
 
   Output File = "$name$.result"
   Post File = "$name$.vtu"
@@ -229,6 +229,7 @@ Solver 4
 End
 
 Solver 5
+  Exec Solver = "Never"
   Equation = "Navier-Stokes"
   Stabilize = Logical True
   Flow Model = Stokes
@@ -362,6 +363,7 @@ Solver 9
 End
 
 Solver 10
+  Exec Solver = "Never"
   Equation = String "StressSolver"
   Procedure = "ElmerIceSolvers" "ComputeDevStress"          
   Variable = -nooutput "Sij"
@@ -376,11 +378,11 @@ Solver 10
 End 
 
 Solver 11
-  Equation = SaveLine
-  Procedure = "SaveData" "SaveLine"
-  Exec Solver = String "After all"
-  Filename = "mesh2d/$name$.dat"
-  
+  Exec Solver = string "After Timestep"
+  Equation = String "ChangeMesh"
+  Procedure = "TerminusDriven.so" "ChangeMesh"
+
+  Interpolant = String "Velocity 1"
 End
 
 !---------------------------------------------------
@@ -434,16 +436,6 @@ Boundary Condition 2
   Velocity 1 = Real 0.0e0
   Slip Coefficient 2 = Real 0.01
   Slip Coefficient 3 = Real 0.01
-  !Slip Coefficient 2 =  Variable Coordinate 1
-  !   REAL Procedure "Sliding_Beta.so" "Linear"  
-  !Slip Coefficient 3 =  Variable Coordinate 1
-  !   REAL Procedure "Sliding_Beta.so" "Linear"                
-
-  !Velocity 1 = Variable Coordinate 1
-  !  Real procedure "USF_Init.so" "UWa"
-  !Velocity 2 = Variable Coordinate 1
-  !  Real procedure "USF_Init.so" "VWa"
-  !Velocity 3 = Real 0.0e0
 
   Mesh Update 1 = Real 0.0e0
   Mesh Update 2 = Real 0.0e0
@@ -487,11 +479,6 @@ Boundary Condition 4
     Real Procedure "ElmerIceUSF" "SlidCoef_Contact"
   Slip Coefficient 3 = Variable Coordinate 1
     Real Procedure "ElmerIceUSF" "SlidCoef_Contact"
- 
-  !Slip Coefficient 2 =  Variable Coordinate 1
-  !  Real Procedure "ElmerIceUSF" "Sliding_Weertman"
-  !Slip Coefficient 3 =  Variable Coordinate 1
-  !  Real Procedure "ElmerIceUSF" "Sliding_Weertman"
  
   Sliding Law = String "Weertman" 
   Weertman Friction Coefficient = Variable Coordinate 1
