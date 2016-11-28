@@ -161,11 +161,7 @@ del dhdx,dhdy,rho_i,g,H,ny,nx
 # Make plot of inversions for different temperatures #
 ######################################################
 
-fig = plt.figure(figsize=(7.2,3))
-matplotlib.rc('font',family='Arial')
-gs = matplotlib.gridspec.GridSpec(1,3)
-
-plt.subplot(gs[0])
+fig = plt.figure(figsize=(2.4,3))
 ax = plt.gca()
 plt.imshow(image[:,:,0],extent=[np.min(ximage),np.max(ximage),np.min(yimage),np.max(yimage)],cmap='Greys_r',origin='lower',clim=[0,0.6])
 p = plt.imshow(tauds_flow/1e3,extent=[xb[0],xb[-1],yb[0],yb[-1]],origin='lower',vmin=-500,vmax=500,cmap='RdBu_r')
@@ -191,8 +187,15 @@ ax.plot([xmin+0.63*(xmax-xmin),xmin+0.63*(xmax-xmin)],[ymin+0.81*(ymax-ymin),ymi
 ax.plot([xmin+0.63*(xmax-xmin)+5e3,xmin+0.63*(xmax-xmin)+5e3],[ymin+0.81*(ymax-ymin),ymin+0.79*(ymax-ymin)],'k',linewidth=1.5)
 ax.text(xmin+0.67*(xmax-xmin)+5e3,ymin+0.79*(ymax-ymin),'5 km',fontsize=8)
 ax.text(xmin+0.03*(xmax-xmin),ymin+0.93*(ymax-ymin),'a',fontweight='bold',fontsize=10)
+plt.tight_layout()
+plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+"_inversions_ssa_drivingstress.pdf"),FORMAT='PDF',dpi=600)
+plt.close()
 
-plt.subplot(gs[1])
+fig = plt.figure(figsize=(4.8,3))
+matplotlib.rc('font',family='Arial')
+gs = matplotlib.gridspec.GridSpec(1,2)
+
+plt.subplot(gs[0])
 ax = plt.gca()
 grid = elmerreadlib.grid3d(lowT_bed,'taub',holes,extent)
 plt.imshow(image[:,:,0],extent=[np.min(ximage),np.max(ximage),np.min(yimage),np.max(yimage)],cmap='Greys_r',origin='lower',clim=[0,0.6])
@@ -203,18 +206,18 @@ plt.xticks([])
 plt.yticks([])
 path = matplotlib.path.Path([[0.57*(xmax-xmin)+xmin,0.98*(ymax-ymin)+ymin],
                         [0.98*(xmax-xmin)+xmin,0.98*(ymax-ymin)+ymin],
-                        [0.98*(xmax-xmin)+xmin,0.81*(ymax-ymin)+ymin],
-                        [0.57*(xmax-xmin)+xmin,0.81*(ymax-ymin)+ymin],
+                        [0.98*(xmax-xmin)+xmin,0.79*(ymax-ymin)+ymin],
+                        [0.57*(xmax-xmin)+xmin,0.79*(ymax-ymin)+ymin],
                         [0.57*(xmax-xmin)+xmin,0.98*(ymax-ymin)+ymin]])
 patch = matplotlib.patches.PathPatch(path,edgecolor='k',facecolor='w',lw=1)
 ax.add_patch(patch)
-cbaxes = fig.add_axes([0.535, 0.91, 0.11, 0.025])
+cbaxes = fig.add_axes([0.305, 0.91, 0.16, 0.025])
 cb = plt.colorbar(p,cax=cbaxes,orientation='horizontal',ticks=np.arange(0,600,200))
-ax.text(xmin+0.68*(xmax-xmin),ymin+0.83*(ymax-ymin),r'$\tau_b$ (kPa)',fontsize=8)
-cb.ax.tick_params(labelsize=8)
-ax.text(xmin+0.03*(xmax-xmin),ymin+0.93*(ymax-ymin),'b',fontweight='bold',fontsize=10)
+ax.text(xmin+0.68*(xmax-xmin),ymin+0.81*(ymax-ymin),r'$\tau_b$ (kPa)',fontsize=11)
+cb.ax.tick_params(labelsize=12)
+ax.text(xmin+0.03*(xmax-xmin),ymin+0.92*(ymax-ymin),'a',fontweight='bold',fontsize=16)
 
-plt.subplot(gs[2])
+plt.subplot(gs[1])
 ax = plt.gca()
 grid = elmerreadlib.grid3d(modelT_bed,'taub',holes,extent)
 plt.imshow(image[:,:,0],extent=[np.min(ximage),np.max(ximage),np.min(yimage),np.max(yimage)],cmap='Greys_r',origin='lower',clim=[0,0.6])
@@ -225,16 +228,16 @@ plt.xticks([])
 plt.yticks([])
 path = matplotlib.path.Path([[0.57*(xmax-xmin)+xmin,0.98*(ymax-ymin)+ymin],
                         [0.98*(xmax-xmin)+xmin,0.98*(ymax-ymin)+ymin],
-                        [0.98*(xmax-xmin)+xmin,0.81*(ymax-ymin)+ymin],
-                        [0.57*(xmax-xmin)+xmin,0.81*(ymax-ymin)+ymin],
+                        [0.98*(xmax-xmin)+xmin,0.79*(ymax-ymin)+ymin],
+                        [0.57*(xmax-xmin)+xmin,0.79*(ymax-ymin)+ymin],
                         [0.57*(xmax-xmin)+xmin,0.98*(ymax-ymin)+ymin]])
 patch = matplotlib.patches.PathPatch(path,edgecolor='k',facecolor='w',lw=1)
 ax.add_patch(patch)
-cbaxes = fig.add_axes([0.865, 0.91, 0.11, 0.025])
+cbaxes = fig.add_axes([0.8, 0.91, 0.16, 0.025])
 cb = plt.colorbar(p,cax=cbaxes,orientation='horizontal',ticks=np.arange(0,600,200))
-ax.text(xmin+0.68*(xmax-xmin),ymin+0.83*(ymax-ymin),r'$\tau_b$ (kPa)',fontsize=8)
-cb.ax.tick_params(labelsize=8)
-ax.text(xmin+0.03*(xmax-xmin),ymin+0.93*(ymax-ymin),'c',fontweight='bold',fontsize=10)
+ax.text(xmin+0.68*(xmax-xmin),ymin+0.81*(ymax-ymin),r'$\tau_b$ (kPa)',fontsize=11)
+cb.ax.tick_params(labelsize=12)
+ax.text(xmin+0.03*(xmax-xmin),ymin+0.93*(ymax-ymin),'d',fontweight='bold',fontsize=16)
 
 plt.tight_layout()
 plt.subplots_adjust(hspace=0.02,wspace=0.02,top=0.99,right=0.99,left=0.01,bottom=0.01)
