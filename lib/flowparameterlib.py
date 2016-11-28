@@ -22,6 +22,12 @@ def arrhenius(T,paterson_version=2010):
   
   '''
   
+  R = 8.314         # gas constant
+  Tstar = 263.15    # temperature where activation energy flips
+  Qbelow = 60.0E3
+  Qabove = 115.0E3
+  Ao = 3.5E-25
+  
   try:
     n = len(T)
   except:
@@ -31,13 +37,51 @@ def arrhenius(T,paterson_version=2010):
   A = np.zeros(n)
   for i in range(0,len(T)):
     if (T[i] > 273.15):
-      A[i]=2.4E-24
-    elif (T[i] > 263.15):
-      A[i]=3.5E-25* np.exp(-115.0E03/8.314 * (1/T[i] - 1/263.15))
+      A[i] = 2.4E-24
+    elif (T[i] > Tstar):
+      A[i] = Ao* np.exp(-1*Qabove/R * (1/T[i] - 1/Tstar))
     else:
-      A[i]=3.5E-25 * np.exp(-60.0E03/8.314 * (1/T[i] - 1/263.15))
+      A[i] = Ao * np.exp(-Qbelow/R * (1/T[i] - 1/Tstar))
     	
   return A 
+
+def arrhenius_reverse(A,paterson_version=2010):
+  '''
+  A = arrhenius(T)
+  
+  Inputs:
+  T: temperature in Kelvin
+  
+  Outputs: 
+  A: Arrhenius parameter
+  
+  This function takes a temperature in Kelvin and outputs the flow parameter 
+  following Cuffey and Paterson 2010, pg. 72.
+  
+  '''
+  
+  R = 8.314         # gas constant
+  Tstar = 263.15    # temperature where activation energy flips
+  Qbelow = 60.0E3
+  Qabove = 115.0E3
+  Ao = 3.5E-25
+  
+  try:
+    n = len(A)
+  except:
+    n = 1
+    A = np.ones(n)*A
+  
+  T = np.zeros(n)
+  for i in range(0,len(T)):
+    if (A[i] >= 2.4E-24):
+      T[i] = 273.15
+    elif (A[i] > 3.5E-25):
+      T[i] = 1/((-R/Qabove)*np.log(A[i]/Ao)+1/Tstar)
+    else:
+      T[i] = 1/((-R/Qbelow)*np.log(A[i]/Ao)+1/Tstar)
+      	
+  return T
 
 def load_temperature_model(glacier,x,y,modelfile='none',outputdir='none'):
 

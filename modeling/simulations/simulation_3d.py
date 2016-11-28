@@ -25,11 +25,16 @@ parser.add_argument("-n", dest="n", required = True,
 parser.add_argument("-extrude", dest="extrude", type=int,required = False,\
        default=10,help = "Number of extrusion levels.")
 parser.add_argument("-restartsolverfile",dest="restartfile",required = False,\
-       default="none",help = "Name of restart solver file.")
+       default="none",help = "Name of restart solver file (if applicable).")
 parser.add_argument("-restartposition",dest="restartposition",required = False,\
        default=0,type=int,help = "Restart position in results file (if applicable).")
 parser.add_argument("-temperature",dest="temperature",required  = False,\
-       default=-10.0,help = "Use modeled or constant temperature.") 
+       default=-10.0,help = "Use modeled or constant temperature (-10.0 deg C).") 
+parser.add_argument("-nt",dest="nt",required  = False,type=str,\
+       default='10',help = "Number of timesteps (10).") 
+parser.add_argument("-dt",dest="dt",required  = False,type=str,\
+       default='1/365.25',help = "Timestep size (1/365.25, i.e., 1 day).") 
+
 
 args, _ = parser.parse_known_args(sys.argv)
 
@@ -42,6 +47,8 @@ glacier = args.glacier
 restartfile = args.restartfile
 restartposition = args.restartposition
 temperature = args.temperature
+dt = args.dt
+nt = args.nt
 
 # Directories
 DIRS=os.path.join(os.getenv("CODE_HOME"),"big3/modeling/solverfiles/3D/")
@@ -101,6 +108,9 @@ lines=fid1.read()
 lines=lines.replace('{Extrude}', '{0}'.format(extrude))
 lines=lines.replace('{FrontBC}', '{0}'.format(frontbc_text))
 lines=lines.replace('{Temperature}', '{0}'.format(temperature_text))
+lines=lines.replace('{TimeStepSize}', '$({0})'.format(dt))
+lines=lines.replace('{TimeSteps}', '{0}'.format(nt))
+
 fid2.write(lines)
 fid1.close()
 fid2.close()
