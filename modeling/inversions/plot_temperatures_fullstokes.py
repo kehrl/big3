@@ -188,7 +188,7 @@ ax.plot([xmin+0.63*(xmax-xmin)+5e3,xmin+0.63*(xmax-xmin)+5e3],[ymin+0.81*(ymax-y
 ax.text(xmin+0.67*(xmax-xmin)+5e3,ymin+0.79*(ymax-ymin),'5 km',fontsize=8)
 ax.text(xmin+0.03*(xmax-xmin),ymin+0.93*(ymax-ymin),'a',fontweight='bold',fontsize=10)
 plt.tight_layout()
-plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+"_inversions_ssa_drivingstress.pdf"),FORMAT='PDF',dpi=600)
+plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+"_inversions_fullstokes_drivingstress.pdf"),FORMAT='PDF',dpi=600)
 plt.close()
 
 fig = plt.figure(figsize=(4.8,3))
