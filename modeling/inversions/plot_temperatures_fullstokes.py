@@ -238,7 +238,7 @@ ax.text(xmin+0.03*(xmax-xmin),ymin+0.93*(ymax-ymin),'c',fontweight='bold',fontsi
 
 plt.tight_layout()
 plt.subplots_adjust(hspace=0.02,wspace=0.02,top=0.99,right=0.99,left=0.01,bottom=0.01)
-plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+"_inversions_temperature.pdf"),FORMAT='PDF',dpi=600)
+plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+"_inversions_temperature_fullstokes.pdf"),FORMAT='PDF',dpi=600)
 plt.close()
 
 ####################################################################
@@ -311,50 +311,103 @@ plt.xlim([-16,0])
 
 plt.tight_layout()
 plt.subplots_adjust(hspace=0.02,wspace=0.02,top=0.97,right=0.86,left=0.01,bottom=0.12)
-plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+"_fs_temperature.pdf"),FORMAT='PDF',dpi=600)
+plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+"_temperature.pdf"),FORMAT='PDF',dpi=600)
 plt.close()
 
-fig = plt.figure(figsize=(3.75,3))
-matplotlib.rc('font',family='Arial')
-gs = matplotlib.gridspec.GridSpec(1,4)
+######################
+# Plot sliding ratio #
+######################
 
-plt.subplot(gs[0:2])
+fig = plt.figure(figsize=(4.9,3))
+matplotlib.rc('font',family='Arial')
+gs = matplotlib.gridspec.GridSpec(1,2)
+
+cx = cubehelix.cmap(start=1.2,rot=-1.1,reverse=True,minLight=0.1,sat=2)
+
+plt.subplot(gs[0])
 ax = plt.gca()
-grid_vsurf = elmerreadlib.grid3d(modelT_surf,'velocity',holes,extent)
-grid_vbed = elmerreadlib.grid3d(modelT_bed,'velocity',holes,extent)
+grid_vsur = elmerreadlib.grid3d(lowT_sur,'velocity',holes,extent)
+grid_vbed = elmerreadlib.grid3d(lowT_bed,'velocity',holes,extent)
 plt.imshow(image[:,:,0],extent=[np.min(ximage),np.max(ximage),np.min(yimage),np.max(yimage)],cmap='Greys_r',origin='lower',clim=[0,0.6])
-p=plt.imshow(grid_vbed[2]/grid_vsurf[2],extent=[grid_vsurf[0][0],grid_vsurf[0][-1],grid_vsurf[1][0],grid_vsurf[1][-1]],origin='lower',vmin=0,vmax=1)
+p=plt.imshow(grid_vbed[2]/grid_vsur[2],extent=[grid_vsur[0][0],grid_vsur[0][-1],grid_vsur[1][0],grid_vsur[1][-1]],origin='lower',vmin=0,vmax=1)
 plt.xticks([])
 plt.yticks([])
 plt.xlim([xmin,xmax])
 plt.ylim([ymin,ymax])
-for i in range(0,len(pts[:,0])):
-  plt.plot(pts[i,0],pts[i,1],'o',color=colorlabels[i])
-  plt.text(pts[i,0]+1000,pts[i,1]-800,labels[i],fontsize=9,fontname='Arial')
+#for i in range(0,len(pts[:,0])):
+#  plt.plot(pts[i,0],pts[i,1],'o',color=colorlabels[i])
+#  plt.text(pts[i,0]+1000,pts[i,1]-800,labels[i],fontsize=9,fontname='Arial')
 
-for i in range(0,len(pts[:,0])):
-  plt.subplot(gs[i+2])
-  ax = plt.gca()
-  column = elmerreadlib.values_in_column(modelT,pts[i,0],pts[i,1])
-  column2 = elmerreadlib.values_in_column(lowT,pts[i,0],pts[i,1])
-  plt.plot(column['velocity']/column['velocity'][-1],np.max(column['z'])-column['z'],'-',lw=1.5,color='k',label='Model')
-  plt.plot(column2['velocity']/column['velocity'][-1],np.max(column['z'])-column['z'],'--',lw=1.5,color='k',label='Constant')
-  plt.plot(column['velocity']/column['velocity'][-1],np.max(column['z'])-column['z'],'-',lw=1.5,color=colorlabels[i])
-  plt.plot(column2['velocity']/column['velocity'][-1],np.max(column['z'])-column['z'],'--',lw=1.5,color=colorlabels[i])
-  plt.ylim([0,1600])
-  plt.xlim([0,1.1])
-  plt.xticks(np.arange(0,1.1,0.5),fontsize=8,fontname='Arial')
-  plt.yticks(np.arange(0,1800,200),fontsize=8,fontname='Arial')
-  ax.invert_yaxis()
-  plt.text(0.1,100,labels[i],fontsize=10,fontname='Arial')
-  if i==0:
-    plt.xlabel('                              Velocity / surface velocity',fontsize=8,fontname='Arial')
-    plt.ylabel('Depth (m)',fontsize=8,fontname='Arial')
-    plt.legend(loc=3,borderpad=0.3,fontsize=8,numpoints=1,handlelength=2.0,handletextpad=0.5,labelspacing=0.1,ncol=1,columnspacing=0.8)
-  elif i==1:
-    ax.set_yticklabels([])
+xmin,xmax = plt.xlim()
+ymin,ymax = plt.ylim()
+path = matplotlib.path.Path([[0.42*(xmax-xmin)+xmin,0.98*(ymax-ymin)+ymin],
+                        [0.99*(xmax-xmin)+xmin,0.98*(ymax-ymin)+ymin],
+                        [0.99*(xmax-xmin)+xmin,0.73*(ymax-ymin)+ymin],
+                        [0.42*(xmax-xmin)+xmin,0.73*(ymax-ymin)+ymin],
+                        [0.42*(xmax-xmin)+xmin,0.98*(ymax-ymin)+ymin]])
+patch = matplotlib.patches.PathPatch(path,edgecolor='k',facecolor='w',lw=1)
+ax.add_patch(patch)
+cbaxes = fig.add_axes([0.24, 0.91, 0.22, 0.025])
+cb = plt.colorbar(p,cax=cbaxes,orientation='horizontal',ticks=np.arange(0,1.5,0.5))
+ax.text(xmin+0.48*(xmax-xmin),ymin+0.81*(ymax-ymin),'Sliding ratio',fontsize=8)
+cb.ax.tick_params(labelsize=8)
+ax.plot([xmin+0.63*(xmax-xmin),xmin+0.63*(xmax-xmin)+5e3],[ymin+0.78*(ymax-ymin),ymin+0.78*(ymax-ymin)],'k',linewidth=1.5)
+ax.plot([xmin+0.63*(xmax-xmin),xmin+0.63*(xmax-xmin)],[ymin+0.78*(ymax-ymin),ymin+0.76*(ymax-ymin)],'k',linewidth=1.5)
+ax.plot([xmin+0.63*(xmax-xmin)+5e3,xmin+0.63*(xmax-xmin)+5e3],[ymin+0.78*(ymax-ymin),ymin+0.76*(ymax-ymin)],'k',linewidth=1.5)
+ax.text(xmin+0.67*(xmax-xmin)+5e3,ymin+0.76*(ymax-ymin),'5 km',fontsize=8)
+ax.text(xmin+0.03*(xmax-xmin),ymin+0.93*(ymax-ymin),'a',fontweight='bold',fontsize=10)
+
+plt.subplot(gs[1])
+ax = plt.gca()
+grid_vsur = elmerreadlib.grid3d(modelT_sur,'velocity',holes,extent)
+grid_vbed = elmerreadlib.grid3d(modelT_bed,'velocity',holes,extent)
+plt.imshow(image[:,:,0],extent=[np.min(ximage),np.max(ximage),np.min(yimage),np.max(yimage)],cmap='Greys_r',origin='lower',clim=[0,0.6])
+p=plt.imshow(grid_vbed[2]/grid_vsur[2],extent=[grid_vsur[0][0],grid_vsur[0][-1],grid_vsur[1][0],grid_vsur[1][-1]],origin='lower',vmin=0,vmax=1)
+plt.xticks([])
+plt.yticks([])
+plt.xlim([xmin,xmax])
+plt.ylim([ymin,ymax])
+#for i in range(0,len(pts[:,0])):
+#  plt.plot(pts[i,0],pts[i,1],'o',color=colorlabels[i])
+#  plt.text(pts[i,0]+1000,pts[i,1]-800,labels[i],fontsize=9,fontname='Arial')
+
+xmin,xmax = plt.xlim()
+ymin,ymax = plt.ylim()
+path = matplotlib.path.Path([[0.42*(xmax-xmin)+xmin,0.98*(ymax-ymin)+ymin],
+                        [0.99*(xmax-xmin)+xmin,0.98*(ymax-ymin)+ymin],
+                        [0.99*(xmax-xmin)+xmin,0.78*(ymax-ymin)+ymin],
+                        [0.42*(xmax-xmin)+xmin,0.78*(ymax-ymin)+ymin],
+                        [0.42*(xmax-xmin)+xmin,0.98*(ymax-ymin)+ymin]])
+patch = matplotlib.patches.PathPatch(path,edgecolor='k',facecolor='w',lw=1)
+ax.add_patch(patch)
+cbaxes = fig.add_axes([0.74, 0.91, 0.22, 0.025])
+cb = plt.colorbar(p,cax=cbaxes,orientation='horizontal',ticks=np.arange(0,1.5,0.5))
+ax.text(xmin+0.48*(xmax-xmin),ymin+0.81*(ymax-ymin),'Sliding ratio',fontsize=8)
+cb.ax.tick_params(labelsize=8)
+ax.text(xmin+0.03*(xmax-xmin),ymin+0.93*(ymax-ymin),'b',fontweight='bold',fontsize=10)
+
+#plt.subplot(gs[2])
+#for i in range(0,len(pts[:,0])):
+#  column = elmerreadlib.values_in_column(modelT,pts[i,0],pts[i,1])
+#  column2 = elmerreadlib.values_in_column(lowT,pts[i,0],pts[i,1])
+#  if i==0:
+#    plt.plot(column['velocity']/column['velocity'][-1],np.max(column['z'])-column['z'],'-',lw=1.5,color='k',label='Model')
+#    plt.plot(column2['velocity']/column['velocity'][-1],np.max(column['z'])-column['z'],'--',lw=1.5,color='k',label='Constant')
+#  plt.plot(column['velocity']/column['velocity'][-1],np.max(column['z'])-column['z'],'-',lw=1.5,color=colorlabels[i])
+#  plt.plot(column2['velocity']/column['velocity'][-1],np.max(column['z'])-column['z'],'--',lw=1.5,color=colorlabels[i])
+#ax = plt.gca()
+#ax.yaxis.tick_right()
+#ax.yaxis.set_label_position('right')
+#plt.ylim([0,1600])
+#plt.xlim([0,1.1])
+#plt.xticks(np.arange(0,1.1,0.5),fontsize=8,fontname='Arial')
+#plt.yticks(np.arange(0,1800,200),fontsize=8,fontname='Arial')
+#ax.invert_yaxis()
+#plt.xlabel('Sliding ratio',fontsize=8,fontname='Arial')
+#plt.ylabel('Depth (m)',fontsize=8,fontname='Arial')
+#plt.legend(loc=1,borderpad=0.3,fontsize=8,numpoints=1,handlelength=1.5,handletextpad=0.5,labelspacing=0.1,ncol=1,columnspacing=0.8)
 
 plt.tight_layout()
-plt.subplots_adjust(hspace=0.05,wspace=0.05,top=0.97,right=0.98,left=0.15,bottom=0.12)
-plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+"_temperature_velocity.pdf"),FORMAT='PDF',dpi=600)
+plt.subplots_adjust(hspace=0.02,wspace=0.02,top=0.99,right=0.99,left=0.01,bottom=0.01)
+plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+"_temperature_slidingratio.pdf"),FORMAT='PDF',dpi=600)
 plt.close()
