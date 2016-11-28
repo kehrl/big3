@@ -3,7 +3,7 @@ import os
 import matplotlib.pyplot as plt
 from pylab import *
 import argparse
-import masklib, elmerreadlib, glaclib, colorlib, datelib
+import masklib, meshlib, elmerreadlib, glaclib, colorlib, datelib
 import scipy
 from matplotlib.path import Path
 
@@ -49,7 +49,8 @@ for k in argsort:
   DEMDIR = DEMDIRs[k]
 
   # Mesh boundaries
-  extent = np.loadtxt(DIR+DEMDIR+"/inputs/mesh_extent.dat")
+  # extent = np.loadtxt(DIR+DEMDIR+"/inputs/mesh_extent.dat")
+  extent = meshlib.shp_to_xy(os.path.join(os.getenv("DATA_HOME"),"ShapeFiles/Glaciers/3D/"+glacier+"/glacier_extent_inversion_small_front.shp"))
   try:
     hole1 = np.loadtxt(DIR+DEMDIR+"/inputs/mesh_hole1.dat")
     hole2 = np.loadtxt(DIR+DEMDIR+"/inputs/mesh_hole2.dat")
@@ -81,6 +82,7 @@ for k in argsort:
     tauds_flow = np.zeros([ny,nx,nt])
     betas = np.zeros([ny,nx,nt])
     vsurf = np.zeros([ny,nx,nt])
+    vbed = np.zeros([ny,nx,nt])
     xb = xgrid
     yb = ygrid
     xm = bed['x']
@@ -107,8 +109,9 @@ for k in argsort:
         masks[bool==1,:] = 1
 
   taubs[:,:,n] = np.reshape(scipy.interpolate.griddata((bed['x'],bed['y']),bed['taub'],(xb_flat,yb_flat)),(ny,nx))
-  betas[:,:,n] = np.reshape(scipy.interpolate.griddata((bed['x'],bed['y']),bed['beta'],(xb_flat,yb_flat)),(ny,nx))
-  vsurf[:,:,n] = np.reshape(scipy.interpolate.griddata((bed['x'],bed['y']),surf['vsurfini'],(xb_flat,yb_flat)),(ny,nx))
+  betas[:,:,n] = np.reshape(scipy.interpolate.griddata((bed['x'],bed['y']),bed['beta']**2,(xb_flat,yb_flat)),(ny,nx))
+  vbed[:,:,n] = np.reshape(scipy.interpolate.griddata((bed['x'],bed['y']),bed['velocity'],(xb_flat,yb_flat)),(ny,nx))
+  vsurf[:,:,n] = np.reshape(scipy.interpolate.griddata((surf['x'],surf['y']),surf['vsurfini'],(xb_flat,yb_flat)),(ny,nx))
   times[n] = datelib.date_to_fracyear(int(DEMDIR[3:7]),int(DEMDIR[7:9]),int(DEMDIR[9:11]))
 
   # Get velocities and interpolate to grid
@@ -139,6 +142,7 @@ for k in argsort:
 
 # Mask variables outside of mesh extent
 vsurf = np.ma.masked_array(vsurf,masks)
+vbed = np.ma.masked_array(vbed,masks)
 taubs = np.ma.masked_array(taubs,masks)
 tauds = np.ma.masked_array(tauds,masks)
 betas = np.ma.masked_array(betas,masks)
@@ -239,46 +243,39 @@ plt.close()
  # plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+"_inversion_"+DEMDIR[3:]+".pdf"),format='PDF')
  # plt.close()
 
+extent_region1 = meshlib.shp_to_xy(os.path.join(os.getenv("DATA_HOME"),"ShapeFiles/Glaciers/3D/"+glacier+"/glacier_region1.shp"))
+extent_region2 = meshlib.shp_to_xy(os.path.join(os.getenv("DATA_HOME"),"ShapeFiles/Glaciers/3D/"+glacier+"/glacier_region2.shp"))
 
-#plt.figure(1)
-#plt.legend(loc=2,ncol=2)
-#plt.ylabel('Surface velocity (m/yr)')
-#plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+"_inversion_surface_velocity.pdf"),format='PDF')
+taubs_upper = np.zeros(len(times))
+tauds_upper = np.zeros(len(times))
+betas_upper = np.zeros(len(times))
+vbed_upper = np.zeros(len(times))
+taubs_lower = np.zeros(len(times))
+tauds_lower = np.zeros(len(times))
+betas_lower = np.zeros(len(times))
+vbed_lower = np.zeros(len(times))
 
-#plt.figure(2)
-#plt.legend(ncol=2)
-#plt.ylabel('Beta^2')
-#plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+"_inversion_betas.pdf"),format='PDF')
-#plt.close()
+region1 = Path(np.column_stack((extent_region1[:,0],extent_region1[:,1])))
+region2 = Path(np.column_stack((extent_region2[:,0],extent_region2[:,1])))
 
-#plt.figure(3)
-#plt.legend(ncol=2)
-#plt.ylabel('tau_b (kPa)')
-#plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+"_inversion_taub.pdf"),format='PDF')
-#plt.close()
-
-#plt.figure(4)
-#plt.legend(ncol=2)
-#plt.ylabel('tau_d (kPa)')
-#plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+"_inversion_taud.pdf"),format='PDF')
-#plt.close()
-
-#plt.figure(5)
-#plt.legend(ncol=2)
-#plt.ylabel('tau_b/tau_d')
-#plt.ylim([0,2])
-#nonnan = np.where(~(np.isnan(flowbed['taub'])))[0]
-#plt.plot([dists[nonnan[0]]/1e3,dists[nonnan[-1]]/1e3],[1,1],'k',lw=2)
-#plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+"_inversion_taudb.pdf"),format='PDF')
-#plt.close()
-
-#plt.figure(1)
-#jet = plt.get_cmap('RdBu_r') 
-#cNorm  = matplotlib.colors.Normalize(vmin=-800, vmax=800)
-#scalarMap = matplotlib.cm.ScalarMappable(norm=cNorm, cmap=jet)
-#ind = np.argmin(abs(dists--5.0e3))
-#for i in range(0,len(times)):
-#  colorval = scalarMap.to_rgba(vel_flow[ind,i]-np.mean(vel_flow[ind,:]))
-#  plt.plot(dists,taubs_flow[:,i]*1e3,c=colorval[0])
-#plt.plot(dists,np.mean(taubs_flow,axis=1)*1e3,'k')
-
+ind1_x = []
+ind1_y = []
+ind2_x = []
+ind2_y = []
+for i in range(0,len(xb)):
+ for j in range(0,len(yb)): 
+   if region1.contains_point([xb[i],yb[j]]):
+     ind1_x.append(i)
+     ind1_y.append(j)
+   if region2.contains_point([xb[i],yb[j]]): 
+     ind2_x.append(i)
+     ind2_y.append(j)
+for i in range(0,len(times)):
+ tauds_upper[i] = np.nanmean(tauds_flow[ind1_y,ind1_x,i])
+ taubs_upper[i] = np.nanmean(taubs[ind1_y,ind1_x,i])
+ betas_upper[i] = np.nanmean(betas[ind1_y,ind1_x,i])
+ vbed_upper[i] = np.nanmean(vbed[ind1_y,ind1_x,i])
+ tauds_lower[i] = np.nanmean(tauds_flow[ind2_y,ind2_x,i])
+ taubs_lower[i] = np.nanmean(taubs[ind2_y,ind2_x,i])
+ betas_lower[i] = np.nanmean(betas[ind2_y,ind2_x,i])
+ vbed_lower[i] = np.nanmean(vbed[ind2_y,ind2_x,i])
