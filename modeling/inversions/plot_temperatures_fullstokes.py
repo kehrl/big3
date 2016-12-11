@@ -237,7 +237,7 @@ cbaxes = fig.add_axes([0.8, 0.91, 0.16, 0.025])
 cb = plt.colorbar(p,cax=cbaxes,orientation='horizontal',ticks=np.arange(0,600,200))
 ax.text(xmin+0.68*(xmax-xmin),ymin+0.81*(ymax-ymin),r'$\tau_b$ (kPa)',fontsize=11)
 cb.ax.tick_params(labelsize=12)
-ax.text(xmin+0.03*(xmax-xmin),ymin+0.93*(ymax-ymin),'d',fontweight='bold',fontsize=16)
+ax.text(xmin+0.03*(xmax-xmin),ymin+0.93*(ymax-ymin),'b',fontweight='bold',fontsize=16)
 
 plt.tight_layout()
 plt.subplots_adjust(hspace=0.02,wspace=0.02,top=0.99,right=0.99,left=0.01,bottom=0.01)
