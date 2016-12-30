@@ -6,7 +6,7 @@
 import os
 import sys
 import shapefile
-import datelib
+import datelib, distlib
 from shapely.geometry import LineString, Polygon
 import numpy as np
 from subprocess import call
@@ -303,10 +303,10 @@ def position(x,y,dists,glacier,time):
 
   return terminus
 
-def load_all(time1,time2,glacier,type='icefront'):
+def load_all(time1,time2,glacier,type='icefront',datatypes='all'):
   
   '''
-  termx,termy,termt = load_all(time1,time2,type,glacier)
+  termx,termy,termt = load_all(time1,time2,glacier,type='icefront')
   
   Load all terminus positions for the chosen glacier.
   
@@ -324,20 +324,35 @@ def load_all(time1,time2,glacier,type='icefront'):
   elif type is 'rift':
     DIRI=os.path.join(os.getenv("DATA_HOME"),"ShapeFiles/Rifts/"+glacier+"/")
 
-  files = os.listdir(DIRI)
+  if datatypes == 'all':
+    datatypes = ['TSX','Landsat7','Landsat8','WV','ASTER']
 
+  files = os.listdir(DIRI)
   shapefiles = []
   termt = []
   for file in files:
     if file.endswith('.shp') and (not "moon" in file):
       # Time of that terminus position
-      if ("TSX" in file) or ("moon" in file):
+      try:
+        del time
+      except:
+        pass
+      if ('TSX' in file) and ('TSX' in datatypes):
         time = datelib.doy_to_fracyear(float(file[0:4]),float(file[5:8]))
-      elif ("ASTER" in file) or ("Landsat" in file) or ("WV" in file):
+      elif ("ASTER" in file) and ('ASTER' in datatypes):
         time = datelib.date_to_fracyear(float(file[0:4]),float(file[5:7]),float(file[8:10]))
-      if (time > time1) and (time < time2):
-        termt.append(time)
-        shapefiles.append(file)
+      elif ("Landsat7" in file) and ('Landsat7' in datatypes):
+        time = datelib.date_to_fracyear(float(file[0:4]),float(file[5:7]),float(file[8:10]))
+      elif ("Landsat" in file) and ("Landsat7" not in file) and ('Landsat8' in datatypes):
+        time = datelib.date_to_fracyear(float(file[0:4]),float(file[5:7]),float(file[8:10]))
+      elif ("WV" in file) and ('WV' in datatypes):
+        time = datelib.date_to_fracyear(float(file[0:4]),float(file[5:7]),float(file[8:10]))
+      try:
+        if (time > time1) and (time < time2):
+          termt.append(time)
+          shapefiles.append(file)
+      except:
+        pass
 
   n = len(shapefiles)
 
@@ -361,8 +376,40 @@ def load_all(time1,time2,glacier,type='icefront'):
           numpoints = numpoints+len(termpts[:,0])
       except:
         pass
+ 
+  # Sort by time
+  sortind = np.argsort(termt)
+  termt = [termt[i] for i in sortind]
+  termx = termx[:,sortind]
+  termy = termy[:,sortind]
       
   return termx, termy, termt
+
+def width(time1,time2,glacier,type='icefront',datatypes='all'):
+  '''
+  termt,termwidth = width(time1,time2,glacier,type='icefront')
+  
+  Calculate calving-front width (i.e., integrate distances along ice front).
+  
+  Inputs:
+  time1,time2: load terminus positions from time1 to time2
+  glacier: glacier name
+  type: icefront or rift
+  
+  Outputs:
+  termwidth: width of calving front at termt
+  '''
+
+  # Load desired values for "glacier"
+  termx,termy,termt = load_all(time1,time2,glacier,type='icefront',datatypes=datatypes)
+
+  # Calculate width for each time  
+  termwidth = np.zeros(len(termt))
+  for i in range(0,len(termt)):
+    dists = distlib.transect(termx[:,i],termy[:,i])
+    termwidth[i] = np.nanmax(dists)
+
+  return termt,termwidth
 
 def near_time(time,glacier,type='all'):
 

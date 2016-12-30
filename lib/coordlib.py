@@ -1,4 +1,5 @@
 import numpy as np
+import gdal
 from osgeo import osr
 
 

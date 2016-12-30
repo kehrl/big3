@@ -43,7 +43,7 @@ def cresis(year,glacier,verticaldatum='geoid',cleanup=True):
     H=data[:,3]
     x2,y2 = coordlib.convert(x,y,4326,3413)
     
-    surf = zslib.atm('2001','ellipsoid')
+    surf = zslib.atm('2001',verticaldatum='ellipsoid')
     if glacier == 'Helheim':
       zs = scipy.interpolate.griddata(surf['20010521'][:,0:2],surf['20010521'][:,2],np.column_stack([x2,y2]),method='nearest')
       dates = np.ones(len(x2))*20010521

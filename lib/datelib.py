@@ -182,3 +182,25 @@ def yearlength(year):
   days = day2[1]-day1[1]
   
   return days
+
+def monthly_stats(time,variable):
+  '''
+  Get average monthly values for variable
+  '''
+
+  month = range(1,14)
+  averages = np.zeros(12)
+  samples = np.zeros(12)
+  std = np.zeros(12)
+  for j in range(1,len(month)):
+    values = []
+    n = 0
+    for i in range(0,len(time)):
+      if (time[i] >= date_to_fracyear(np.floor(time[i]),month[j-1],1)) and (time[i] < date_to_fracyear(np.floor(time[i]),month[j],1)):
+        values.append(variable[i])
+        n = n+1
+    averages[j-1] = np.sum(values)/n
+    std[j-1] = np.std(values)
+    samples[j-1] = n
+    
+  return range(1,13),averages,std,samples

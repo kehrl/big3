@@ -22,8 +22,10 @@ DIR = os.path.join(os.getenv("HOME"),"Bigtmp/Twila/")
 # Ice flux for Helheim #
 ########################
 
-time_Q_u, Q_u, Hbar_u, ubar_u, error_u, across_u= fluxlib.fluxgate('Helheim',fluxgate_filename='fluxgate_for_twila',bedsource='cresis',dl=10.0,timing='velocity')
-#time_Q_zs, Q_zs, Hbar_zs, ubar_zs, error_zs, across_zs = fluxlib.fluxgate(glacier,fluxgate_filename='fluxgate_for_twila',bedsource='cresis',dl=10.0,timing='elevation')
+time_Q_u, Q_u, Hbar_u, ubar_u, error_u, across_u= fluxlib.fluxgate('Helheim',\
+			fluxgate_filename='fluxgate_for_twila',bedsource='cresis',dl=10.0,timing='velocity')
+#time_Q_zs, Q_zs, Hbar_zs, ubar_zs, error_zs, across_zs = fluxlib.fluxgate(glacier,\
+#			fluxgate_filename='fluxgate_for_twila',bedsource='cresis',dl=10.0,timing='elevation')
 
 fid = open(DIR+"iceflux_helheim_11062016.dat","w")
 
@@ -45,7 +47,8 @@ fid.close()
 # magnitude as the estimated flux and ~five orders of magnitude smaller than the flux from the
 # west branch.
 
-time_mid,Q_mid,Hbar_mid,ubar_mid,error_mid,across_mid = fluxlib.fluxgate('Midgaard',fluxgate_filename='fluxgate_midgaard_west.shp',bedsource='morlighem',dl=10.0,timing='velocity')
+time_mid,Q_mid,Hbar_mid,ubar_mid,error_mid,across_mid = fluxlib.fluxgate('Midgaard',\
+			fluxgate_filename='fluxgate_midgaard_west.shp',bedsource='morlighem',dl=10.0,timing='velocity')
 
 fid = open(DIR+"iceflux_midgaard_west_11062016.dat","w")
 
@@ -63,7 +66,8 @@ fid.close()
 # OK. So we don't have any TSX velocities for Fenris (at least I think). So let's just
 # play around with Howat's velocities and see what happens.
 
-time_fen,Q_fen,Hbar_fen,ubar_fen,error_fen,across_fen = fluxlib.fluxgate('Fenris','fluxgate_fenris.shp',bedsource='morlighem',dl=10.0,timing='velocity')
+time_fen,Q_fen,Hbar_fen,ubar_fen,error_fen,across_fen = fluxlib.fluxgate('Fenris',\
+			'fluxgate_fenris.shp',bedsource='morlighem',dl=10.0,timing='velocity')
 
 fid = open(DIR+"iceflux_fenris_11062016.dat","w")
 
@@ -74,3 +78,24 @@ for i in ind:
   fid.write('{0:.6f} {1:.2f} {2:.2f}\n'.format(time_fen[i],Q_fen[i],across_fen[i])) 
 fid.close()
 
+####################
+# Ice-front widths #
+####################
+
+# Dustin needs ice-front widths for his plume-melt model, preferably on a monthly average 
+# from 2008-2013. We have picked ice-front positions for Helheim and Midgaard, so should
+# be able to do this pretty easily for those two glaciers.
+
+# Helheim
+termx_H,termy_H,termt_H = icefrontlib.load_all(2008,2013,'Helheim',type='icefront',datatypes = ['WV','Landsat8','TSX','ASTER'])
+termt_H,termwidth_H = icefrontlib.width(2008,2013,'Helheim',type='icefront',datatypes = ['WV','Landsat8','TSX','ASTER'])
+
+# Get monthly stats
+month_H,average_H,std_H,n_H = datelib.monthly_stats(termt_H,termwidth_H)
+
+# Midgaard
+termx_M,termy_M,termt_M = icefrontlib.load_all(2008,2013,'Midgaard',type='icefront',datatypes = ['WV','Landsat8','TSX','ASTER'])
+termt_M,termwidth_M = icefrontlib.width(2008,2013,'Midgaard',type='icefront',datatypes = ['WV','Landsat8','TSX','ASTER'])
+
+# Get monthly stats
+month_M,average_M,std_M,n_M = datelib.monthly_stats(termt_M,termwidth_M)
