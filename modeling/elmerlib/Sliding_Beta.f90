@@ -37,7 +37,7 @@ FUNCTION Linear( Model, nodenumber, dumy) RESULT(coeff) !
   x=Model % Nodes % x (nodenumber)
   y=Model % Nodes % y (nodenumber)
   ! Find the height of the current point
-  z=Model % Nodes % z (nodenumber)
+  !z=Model % Nodes % z (nodenumber)
 		
 	ind=minloc(sqrt((x-xb)**2+(y-yb)**2),1)
   dist=minval(sqrt((x-xb)**2+(y-yb)**2),1)
@@ -84,7 +84,7 @@ FUNCTION Weertman( Model, nodenumber, dumy) RESULT(coeff) !
   x=Model % Nodes % x (nodenumber)
   y=Model % Nodes % y (nodenumber)
   ! Find the height of the current point
-  z=Model % Nodes % z (nodenumber)
+  !z=Model % Nodes % z (nodenumber)
 		
 	ind=minloc(sqrt((x-xb)**2+(y-yb)**2),1)
   dist=minval(sqrt((x-xb)**2+(y-yb)**2),1)

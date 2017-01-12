@@ -6,7 +6,6 @@ $rhoi = 917.0/(1.0e6*yearinsec^2)
 $rhow = 1028.0/(1.0e6*yearinsec^2) 
 $gravity = -9.81*yearinsec^2
 $n = 3.0
-$eta = (2.0*100.0)^(-1.0/n)
 
 Header
   Mesh DB "." "mesh2d"
@@ -16,6 +15,7 @@ End
 Constants
   Gas Constant = Real 8.314 !Joule/mol x  K
   Sea Level = Real 0.0
+  Water density = Real $rhow
 End
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -284,8 +284,5 @@ Boundary Condition 3
   Name = "Front"
   Target Boundaries = 1
 
-  SSAVelocity 1= Equals vsurfini 1
-  SSAVelocity 2= Equals vsurfini 2
-  Adjoint 1 = Real 0.0
-  Adjoint 2 = Real 0.0
+{FrontBC}
 End

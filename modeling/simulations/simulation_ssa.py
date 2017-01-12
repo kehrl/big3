@@ -39,7 +39,7 @@ parser.add_argument("-dt",dest="dt",required  = False,type=str,\
 args, _ = parser.parse_known_args(sys.argv)
 
 RES = args.mesh
-partitions = int(args.n)
+partitions = str(args.n)
 extrude = str(args.extrude)
 frontbc = str(args.frontbc)
 solverfile_in = args.solverfile
@@ -51,7 +51,7 @@ dt = args.dt
 nt = args.nt
 
 # Directories
-DIRS=os.path.join(os.getenv("CODE_HOME"),"big3/modeling/solverfiles/3D/")
+DIRS=os.path.join(os.getenv("CODE_HOME"),"big3/modeling/solverfiles/SSA/")
 DIRM=os.path.join(os.getenv("MODEL_HOME"),glacier+"/3D/"+RES+"/")
 DIRR=os.path.join(DIRM+"mesh2d/simulation/")
 inputs=os.path.join(DIRM+"/inputs/")
@@ -120,4 +120,4 @@ del fid1, fid2
 # Run Elmersolver #
 ###################
 
-returncode = elmerrunlib.run_elmer(DIRM+solverfile_out+'.sif',n=partitions,email=False)
+returncode = elmerrunlib.run_elmer(DIRM+solverfile_out+'.sif',n=partitions)

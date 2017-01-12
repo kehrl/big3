@@ -1,7 +1,8 @@
 import os
 import sys
-import icefrontlib, meshlib, distlib, bedlib, geotifflib, datelib
+import icefrontlib, meshlib, distlib, bedlib, geotifflib, datelib, vellib
 import numpy as np
+from shapely.geometry import LineString
 from matplotlib.path import Path
 import scipy.interpolate
 import scipy.signal
@@ -147,7 +148,6 @@ def load_extent(glacier,time,nofront_shapefile='glacier_extent_nofront'):
   if yterminus[-1] > yterminus[0]:
     xterminus = np.flipud(xterminus)
     yterminus = np.flipud(yterminus)
-    bound = np.flipud(bound)
   
   glacierperimeter = Path(extent[:,0:2])
   ind = glacierperimeter.contains_points(np.column_stack([xterminus,yterminus]))
@@ -177,6 +177,230 @@ def load_extent(glacier,time,nofront_shapefile='glacier_extent_nofront'):
       bound = np.r_[np.delete(bound[0:ind1],range(ind2+1,ind1)),boundterminus,bound[ind1+1:]]
   
   return np.column_stack([xextent,yextent,bound])
+
+def load_extent_timeseries(glacier,time1,time2,dt,nofront_shapefile='glacier_extent_nofront',datatypes=['Landsat','TSX','WV']):
+
+  '''
+  time, xextents, yxextents, bounds = load_extent_timeseries(glacier,time1,
+     time2,dt,nofront_shapefile='glacier_extent_nofront',
+     datatypes=['Landsat','TSX','WV'])
+     
+  Interpolates ice-front positions from picked ice-front positions to create 
+  a timeseries of meshes to be used in the terminus-driven model.
+  
+  Inputs:
+  glacier           : glacier name (Helheim, Kanger)
+  time1             : fractional start time for timeseries
+  time2             : fractional end time for timeseries
+  dt                : timestep
+  nofront_shapefile : nofront shapefile name for mesh extent
+  datatypes         : satellite image types for picked ice fronts
+  
+  Outputs:
+  time     : interpolated time between time1,time2 with timestep dt
+  xextents : 2-d array of x-coordinates of extents
+  yextents : 2-d array of y-coordinates of extents
+  bounds   : boundary numbers for extents
+  '''
+
+  # Glacier extent with no ice front
+  extent = meshlib.shp_to_xy(os.path.join(os.getenv("DATA_HOME"),"ShapeFiles/Glaciers/3D/"+glacier+"/"+nofront_shapefile))
+  if extent[1,1] > extent[0,1]:
+    extent = np.flipud(extent)
+  
+  xextent = extent[:,0]
+  yextent = extent[:,1]
+  bound_extent = extent[:,2]
+
+  # Interpolate glacier extent to a finer grid to make ice-front interpolation easier
+  dextent = distlib.transect(xextent,yextent)
+  #dextent = np.arange(0,dold[-1],20.0)
+  #xextent = np.interp(dextent,dold,xextent)
+  #yextent = np.interp(dextent,dold,yextent)
+  #f = scipy.interpolate.interp1d(dold,bound,kind='nearest')
+  #bound = f(dextent)
+  extent = LineString(np.column_stack([extent[:,0:2]]))
+
+  # Load all ice front positions for that time period
+  termx,termy,termt = icefrontlib.load_all(time1-0.5,time2+0.5,glacier,type='icefront',datatypes=datatypes)
+
+  # Load a velocity profile to use as interpolation direction to figure out ice-front position
+  # on timesteps that fall between picked ice fronts
+  x = np.arange(np.nanmin(termx)-1.0e3,np.nanmax(termx)+1.0e3,100.)
+  y = np.arange(np.nanmin(termy)-1.0e3,np.nanmax(termy)+1.0e3,100.)
+  u,v = vellib.inversion_3D(glacier,x,y,(time1+time2)/2)
+  fu = scipy.interpolate.RegularGridInterpolator((y,x),u)
+  fv = scipy.interpolate.RegularGridInterpolator((y,x),v)
+
+  # Get ice-front position for each timestep
+  time = np.arange(time1,time2+dt,dt)
+  timeseries_x = np.zeros([len(termx[:,0]),len(time)])
+  timeseries_y = np.zeros([len(termx[:,0]),len(time)])
+  xextents = np.zeros([len(termx[:,0])+len(xextent),len(time)])
+  yextents = np.zeros([len(termx[:,0])+len(xextent),len(time)])
+  bounds = np.zeros([len(termx[:,0])+len(xextent),len(time)])
+  for i in range(0,len(time)):
+    # Find picked ice-front positions for before and after timestep for the interpolation
+    ind = np.argmin(abs(time[i]-termt))
+    if termt[ind] < time[i]:
+      ind1 = ind
+      ind2 = ind+1
+    else:
+      ind1 = ind-1
+      ind2 = ind
+    
+    # Fractional time between ind1,ind2 to use for interpolation
+    frac = (time[i]-termt[ind1])/(termt[ind2]-termt[ind1])
+    
+    # Get picked ice-front positions that we will use for the interpolation
+    nonnan = np.where(~(np.isnan(termx[:,ind1])))[0]
+    termx1 = termx[nonnan,ind1]
+    termy1 = termy[nonnan,ind1]
+    nonnan = np.where(~(np.isnan(termx[:,ind2])))[0]
+    termx2 = termx[nonnan,ind2]
+    termy2 = termy[nonnan,ind2]   
+    
+    if termy1[-1] > termy1[0]:
+      termx1 = np.flipud(termx1)
+      termy1 = np.flipud(termy1)
+    if termy2[-1] > termy2[0]:
+      termx2 = np.flipud(termx2)
+      termy2 = np.flipud(termy2)
+  
+    # Get locations where interpolate ice front intersects the glacier extent
+    # First, get intersection pts for two closest ice-front positions in time
+    term1 = LineString(np.column_stack([termx1,termy1]))
+    intersect = extent.intersection(term1)
+    try:
+      if len(intersect) == 2:
+        if intersect[0].y > intersect[1].y:
+          top1 = [intersect[0].x,intersect[0].y]
+          bot1 = [intersect[1].x,intersect[1].y]
+        else:
+          top1 = [intersect[1].x,intersect[1].y]
+          bot1 = [intersect[0].x,intersect[0].y]
+      else:
+        print "Need to look at date ", datelib.fracyear_to_date(termt[ind1])
+    except:
+      print "Need to look at date ", datelib.fracyear_to_date(termt[ind1])
+    
+    term2 = LineString(np.column_stack([termx2,termy2]))
+    intersect = extent.intersection(term2)
+    try:
+      if len(intersect) == 2:
+        if intersect[0].y > intersect[1].y:
+          top2 = [intersect[0].x,intersect[0].y]
+          bot2 = [intersect[1].x,intersect[1].y]
+        else:
+          top2 = [intersect[1].x,intersect[1].y]
+          bot2 = [intersect[0].x,intersect[0].y]
+      else:
+        print "Need to look at date ", datelib.fracyear_to_date(termt[ind2])
+    except:
+      print "Need to look at date ", datelib.fracyear_to_date(termt[ind2])
+    # Now find new intersection points
+    if top1[0] < top2[0]: # advancing on this side
+      ind_top = np.where((xextent > top1[0]) & (xextent < top2[0]) & (abs(top1[1]-yextent) < 500.))[0]
+      sortind = np.argsort(xextent[ind_top])
+      xtops = np.r_[top1[0],xextent[ind_top[sortind]],top2[0]]
+      ytops = np.r_[top1[1],yextent[ind_top[sortind]],top2[1]]
+      dtops = distlib.transect(xtops,ytops)
+      dtop = dtops[-1]*frac
+    elif top1[0] > top2[0]: # retreating on this side
+      ind_top = np.where((xextent < top1[0]) & (xextent > top2[0]) & (abs(top1[1]-yextent) < 500.))[0]
+      sortind = np.argsort(xextent[ind_top])
+      xtops = np.r_[top2[0],xextent[ind_top[sortind]],top1[0]]
+      ytops = np.r_[top2[1],yextent[ind_top[sortind]],top1[1]]
+      dtops = distlib.transect(xtops,ytops)
+      dtop = dtops[-1]*(1-frac)
+    else:
+      print "not advancing or retreating on top"
+    xtop = np.interp(dtop,dtops,xtops)
+    ytop = np.interp(dtop,dtops,ytops) 
+      
+    if bot1[0] < bot2[0]: # advancing on this side
+      ind_bot = np.where((xextent > bot1[0]) & (xextent < bot2[0]) & (abs(bot1[1]-yextent) < 500.))[0]
+      sortind = np.argsort(xextent[ind_bot])
+      xbots = np.r_[bot1[0],xextent[ind_bot[sortind]],bot2[0]]
+      ybots = np.r_[bot1[1],yextent[ind_bot[sortind]],bot2[1]]
+      dbots= distlib.transect(xbots,ybots)
+      dbot = (dbots[-1])*frac
+    elif bot1[0] > bot2[0]: # retreating on this side
+      ind_bot = np.where((xextent < bot1[0]) & (xextent > bot2[0]) & (abs(bot1[1]-yextent) < 500.))[0]
+      sortind = np.argsort(xextent[ind_bot])
+      xbots = np.r_[bot2[0],xextent[ind_bot[sortind]],bot1[0]]
+      ybots = np.r_[bot2[1],yextent[ind_bot[sortind]],bot1[1]]
+      dbots= distlib.transect(xbots,ybots)
+      dbot = (dbots[-1])*(1-frac)
+    else:
+      print "not advancing or retreating on bot"
+
+    xbot = np.interp(dbot,dbots,xbots)
+    ybot = np.interp(dbot,dbots,ybots)
+
+    # Now that we know the bottom and top points (extent of the ice front), we can start
+    # calculating the shape, again based on linear interpolation
+    # May need to change next expression to find indices between the sidewalls for Kanger, 
+    # but this should work for Helheim
+    ind_term1 = np.where((termy1 > bot1[1]) & (termy1 < top1[1]))[0]
+    icefront_x = []
+    icefront_y = []
+    icefront_x.append(xtop)
+    icefront_y.append(ytop)
+    for j in ind_term1:
+      # Get velocities to create a line, to interpolate between ice fronts
+      uj = fu((termy1[j],termx1[j]))
+      vj = fv((termy1[j],termx1[j]))
+    
+      # Create flowline that intersects that point of the ice front
+      xunit = uj/(np.sqrt(uj**2+vj**2))
+      yunit = vj/(np.sqrt(uj**2+vj**2))
+      b = termy1[j] - (yunit/xunit)*termx1[j]
+      flowlinex = np.arange(-3000.,3005.,10) + termx1[j]
+      flowliney = (yunit/xunit)*flowlinex + b
+      flowline = LineString(np.column_stack([flowlinex,flowliney]))
+    
+      # Find where flowline intersects the next ice-front position
+      intersect = flowline.intersection(term2)
+      add = False
+      try:   
+        if len(intersect) > 0: 
+          ind = np.argmin(abs([intersect[k].x for k in range(0,len(intersect))]-termx1[j]))
+          term2_flowline = [intersect[ind].x,intersect[ind].y]
+          add = True
+      except:
+        try:
+          term2_flowline = [intersect.x,intersect.y]
+          add = True
+        except:
+          pass
+      if add == True:
+        dflow = distlib.between_pts(termx1[j],termy1[j],term2_flowline[0],term2_flowline[1])
+        dmid = frac*dflow
+        xmid = np.interp(dmid,[0,dflow],[termx1[j],term2_flowline[0]])
+        ymid = np.interp(dmid,[0,dflow],[termy1[j],term2_flowline[1]])
+        icefront_x.append(xmid)
+        icefront_y.append(ymid)
+    
+    icefront_x.append(xbot)
+    icefront_y.append(ybot)
+    timeseries_x[0:len(icefront_x),i] = icefront_x
+    timeseries_y[0:len(icefront_y),i] = icefront_y
+    
+    # Now create mesh extent and BC numbers using the interpolated ice front
+    boundterminus = np.ones(len(icefront_x))*2.0
+    ind1 = np.where((xextent > xbot) & (abs(yextent - ybot) < 1.0e3))[0][0] 
+    ind2 = np.where((xextent > xtop) & (abs(yextent - ytop) < 1.0e3))[0][-1]
+
+    extent_x = np.r_[xextent[0:ind1],np.flipud(icefront_x),xextent[ind2+1:]]
+    extent_y = np.r_[yextent[0:ind1],np.flipud(icefront_y),yextent[ind2+1:]]
+    bound = np.r_[bound_extent[0:ind1],boundterminus,bound_extent[ind2+1:]]
+    
+    xextents[0:len(extent_x),i] = extent_x
+    yextents[0:len(extent_x),i] = extent_y
+    bounds[0:len(extent_x),i] = bound    
+    
+  return  time, xextents, yextents, bounds
 
 def load_satimages(glacier,xmin,xmax,ymin,ymax,time1=-np.inf,time2=np.inf,data='all'):
 
@@ -255,8 +479,6 @@ def load_satimages(glacier,xmin,xmax,ymin,ymax,time1=-np.inf,time2=np.inf,data='
     types_sorted = types
     
           
-  return images_sorted,times_sorted,types_sorted
-     
-          
+  return images_sorted,times_sorted,types_sorted        
        
     

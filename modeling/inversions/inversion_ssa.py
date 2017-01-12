@@ -31,8 +31,8 @@ def get_arguments():
         help = "Name of glacier (Kanger or Helheim)")
   parser.add_argument("-mesh", dest="mesh", required = True,
         help = "Name of mesh directory") 
-  #parser.add_argument("-front", dest="frontbc", required = True,
-  #      help = "Calving front boundary condition (velocity or pressure).") 
+  parser.add_argument("-front", dest="frontbc", required = True,
+        help = "Calving front boundary condition (velocity or pressure).") 
   parser.add_argument("-n", dest="n", required = True,
         help = "Number of partitions.")
   parser.add_argument("-regpar", dest="regpar", required = False,
@@ -63,7 +63,7 @@ def main():
   RES = args.mesh
   partitions = str(args.n)
   regpar = str(args.regpar)
-  #frontbc = str(args.frontbc)
+  frontbc = str(args.frontbc)
   glacier = args.glacier
   restartfile = args.restartfile
   restartposition = args.restartposition
@@ -94,7 +94,7 @@ def main():
 
   if temperature == 'model':
      temperature_text="""
-  mu = Variable Coordinate 1, Coordinate 2
+  mu = Variable Coordinate 1, Coordinate 2\r
     Real Procedure "USF_Init.so" "SSAViscosity"""""
   else:
     try:
@@ -105,6 +105,16 @@ def main():
   mu = Real $(("""+str(E)+'*'+str(A[0])+'*'+'yearinsec)^(-1.0/3.0)*1.0e-6)'
     except:
       sys.exit("Unknown temperature of "+temperature)
+
+  if frontbc == 'velocity' or frontbc == 'dirichlet':
+    frontbc_text = """
+  SSAVelocity 1= Equals vsurfini 1\r
+  SSAVelocity 2= Equals vsurfini 2\r
+  Adjoint 1 = Real 0.0\r
+  Adjoint 2 = Real 0.0"""
+  elif frontbc == 'pressure' or frontbc == 'neumann':
+    frontbc_text = """
+  Calving Front = Logical True"""
 
   ################################################
   # Compile fortran libraries for adjoint solver #
@@ -172,6 +182,7 @@ def main():
     lines=lines.replace('{Lambda}', '{0}'.format(regpar))
     lines=lines.replace('{ItMax}', '{0}'.format(int(itmax)))
     lines=lines.replace('{Temperature}', '{0}'.format(temperature_text))
+    lines=lines.replace('{FrontBC}', '{0}'.format(frontbc_text))
     fid2.write(lines)
     fid1.close()
     fid2.close()

@@ -26,7 +26,7 @@ parser.add_argument("-output", dest="output", required = True,
         help = "Name of output mesh.")
 parser.add_argument("-mesh", dest="meshshp", required = True,
         help = "Name for input shapefile.")
-parser.add_argument("-d", dest="date", required = True,
+parser.add_argument("-d", dest="date1", required = True,
         help = "Date for mesh.")
 parser.add_argument("-n", dest="n", required = True,
         help = "Number of partitions.")
@@ -44,9 +44,16 @@ parser.add_argument("-lc", dest="lc", type=int,required = False,nargs='+',
 parser.add_argument("-zb", dest="bottomsurface", default = 'iceshelf',
         help = "Use 'iceshelf' base or 'bed' as bottom surface for mesh.",required = False)
 parser.add_argument("-temperature",dest="temp",required=False, default='-10.0',
-        help = "Ice temperature in deg C (or model out).")
-parser.add_argument("-ssa",dest="ssa",required=False, default=False,
+        help = "Ice temperature in deg C (or model).")
+parser.add_argument("-ssa",dest="ssa",required=False, default='False',
         help = "SSA model.")
+parser.add_argument("-timeseries",dest="timeseries",required=False, default='False',
+        help = "Calculate a timeseries of meshes.")
+parser.add_argument("-d2", dest="date2", required = False,
+        help = "Date for end of timeseries.")
+parser.add_argument("-dt", dest="dt", required = False, default = 1/365.25,
+        help = "Timestep for timeseries.")
+
 
 #################
 # Get arguments #
@@ -54,7 +61,7 @@ parser.add_argument("-ssa",dest="ssa",required=False, default=False,
 
 args, _ = parser.parse_known_args(sys.argv)
 
-date = args.date
+date1 = args.date1
 partitions = args.n
 bedname = args.bedname
 bedmodel = args.bedmodel
@@ -65,7 +72,10 @@ glacier = args.glacier
 dx = args.dx
 bottomsurface = args.bottomsurface
 temperature = args.temp
-ssa = args.ssa
+ssa = eval(args.ssa)
+timeseries = eval(args.timeseries)
+date2 = args.date2
+dt = eval(args.dt)
   
 # Mesh refinement
 lc3,lc2,lc4,lc1 = args.lc
@@ -86,7 +96,7 @@ rho_sw = 1025.0
 yearinsec = 365.25*24*60*60
 
 # Time
-time = datelib.date_to_fracyear(int(date[0:4]),int(date[4:6]),int(date[6:8]))
+time1 = datelib.date_to_fracyear(int(date1[0:4]),int(date1[4:6]),int(date1[6:8]))
 
 #################
 # Mesh Geometry #
@@ -94,7 +104,16 @@ time = datelib.date_to_fracyear(int(date[0:4]),int(date[4:6]),int(date[6:8]))
 
 # Mesh exterior
 if meshshp.endswith('nofront') or meshshp.endswith('nofront.shp'):
-  exterior = glaclib.load_extent(glacier,time,nofront_shapefile=meshshp)
+  if timeseries == True:
+    if len(date2) < 8:
+      sys.exit("Need an end date (-d2) to calculate a timeseries of meshes.")
+    time2 = datelib.date_to_fracyear(int(date2[0:4]),int(date2[4:6]),int(date2[6:8]))
+    times,xextents,yextents,bounds = glaclib.load_extent_timeseries(glacier,time1,time2,dt,nofront_shapefile=meshshp)
+    print "Calculating timeseries of meshes from "+date1+" to "+date2
+    ind = np.where(xextents[:,0] != 0)[0]
+    exterior = np.column_stack([xextents[ind,0],yextents[ind,0],bounds[ind,0]])
+  else:
+    exterior = glaclib.load_extent(glacier,time1,nofront_shapefile=meshshp)
 else:
   exterior = meshlib.shp_to_xy(DIRX+meshshp)
 np.savetxt(inputs+"mesh_extent.dat",exterior[:,0:2])
@@ -122,15 +141,22 @@ file_2d=os.path.join(DIRM+"mesh2d")
   
 fid = open(DIRM+'mesh_info.txt','w')
 fid.write('glacier = {}\n'.format(glacier))
-fid.write('date = {}\n'.format(date))
+fid.write('date = {}\n'.format(date1))
+if timeseries:
+  fid.write('date2 = {}\n'.format(date2))
+  fid.write('dt = {}\n'.format(dt))
 fid.write('meshshapefile = {}\n'.format(meshshp))
 fid.write('lc1 = {}\n'.format(lc1))
 fid.write('lc2 = {}\n'.format(lc2))
 fid.write('lc3 = {}\n'.format(lc3))
 fid.write('lc4 = {}\n'.format(lc4))
+fid.write('dx = {}\n'.format(dx))
+fid.write('bottomsurface = {}\n'.format(bottomsurface))
 fid.write('bed = {}\n'.format(bedname))
-fid.write('bed model = {}\n'.format(bedmodel))
-fid.write('bed smoothness = {}'.format(bedsmoothing))
+if bedname == 'smith':
+  fid.write('bedmodel = {}\n'.format(bedmodel))
+  fid.write('bedsmoothing = {}'.format(bedsmoothing))
+fid.write('temperature = {}'.format(temperature))
   
 fid.close()
   
@@ -139,7 +165,7 @@ fid.close()
 #############
 
 # Gmsh .geo file
-x,y,zbed,zsur,zbot = meshlib.xy_to_gmsh_3d(glacier,date,exterior,holes,refine,DIRM,\
+x,y,zbed,zsur,zbot = meshlib.xy_to_gmsh_3d(glacier,date1,exterior,holes,refine,DIRM,\
 		lc1,lc2,lc3,lc4,bedname=bedname,bedmodel=bedmodel,bedsmoothing=bedsmoothing,\
                 rho_i=rho_i,rho_sw=rho_sw,dx=dx,bottomsurface=bottomsurface)
 
@@ -148,21 +174,40 @@ call(["gmsh","-1","-2",file_2d+".geo", "-o",os.path.join(os.getenv("HOME"),\
 		file_2d+".msh")])
 
 # Create elmer mesh
-call(["ElmerGrid","14","2",file_2d+".msh","-autoclean"])
+call(["ElmerGrid","14","2",file_2d+".msh","-autoclean","-metis",partitions,"1"])
 
 # Partition mesh for parallel processing
-os.chdir(DIRM)
-call(["ElmerGrid","2","2","mesh2d","dir","-metis",partitions,"0"])
+#os.chdir(DIRM)
+#call(["ElmerGrid","2","2","mesh2d","dir","-metis",partitions,"0"])
 
 # Output as gmsh file so we can look at it
 call(["ElmerGrid","2","4","Elmer"])
+
+#####################################################
+# Create additional meshes, if we want a timeseries #
+#####################################################
+
+if timeseries == True:
+  for i in range(0,len(times)):
+    ind = np.where(xextents[:,i] != 0)[0]
+    file_2d_temp = DIRM+"mesh"+str(i+1)
+    exterior_temp = np.column_stack([xextents[ind,i],yextents[ind,i],bounds[ind,i]])
+    xnew,ynew,zbed_new,zsur_new,zbot_new = meshlib.xy_to_gmsh_3d(glacier,date1,exterior_temp,holes,refine,DIRM,\
+		  lc1,lc2,lc3,lc4,bedname=bedname,bedmodel=bedmodel,bedsmoothing=bedsmoothing,\
+                rho_i=rho_i,rho_sw=rho_sw,dx=dx,bottomsurface=bottomsurface,outputgeometry=False)
+    call(["gmsh","-1","-2",file_2d+".geo", "-o",os.path.join(os.getenv("HOME"),\
+		file_2d_temp+".msh")])
+
+    # Create elmer mesh
+    call(["ElmerGrid","14","2",file_2d_temp+".msh","-autoclean","-metis",partitions,"1"])
+    
 
 ##########################################
 # Print out velocity data for inversions #
 ##########################################
 
 # Output files for velocities in x,y directions (u,v)
-u,v = vellib.inversion_3D(glacier,x,y,time,inputs,dx=dx)
+u,v = vellib.inversion_3D(glacier,x,y,time1,inputs,dx=dx)
 
 if ssa:
   fid = open(inputs+"velocity.xyuv","w")
@@ -245,9 +290,9 @@ uT = np.reshape(f((yTgrid.flatten(),xTgrid.flatten())),[len(yT),len(xT)])
 f = RegularGridInterpolator((y,x),v)
 vT = np.reshape(f((yTgrid.flatten(),xTgrid.flatten())),[len(yT),len(xT)])  
 
-if temperature == 'model' and not(ssa):
+if (temperature == 'model') and (ssa != True):
   flowT,flowA,flowU,flowV = flowparameterlib.load_temperature_model(glacier,xT,yT,outputdir=inputs)
-if temperature == 'model' and ssa:
+elif (temperature == 'model') and (ssa == True):
   dir = os.path.join(os.getenv("MODEL_HOME"),glacier+"/Outputs/")
   shutil.copy2(dir+"ssa_flowA.xy",inputs+"ssa_flowA.xy")
   
@@ -256,7 +301,7 @@ if temperature == 'model' and ssa:
 #################################################################
 
 print "Calculating basal sliding speed for inflow and ice divide boundaries and guessing a beta...\n"
-if temperature == 'model' and ssa:
+if (temperature == 'model') and (ssa == True):
   xflowA,yflowA,flowA = elmerreadlib.input_file(dir+"ssa_flowA.xy")
   if (len(xflowA) != len(xT)) or (len(yflowA) != len(yT)):
     f = RegularGridInterpolator((yflowA,xflowA),flowA,bounds_error=False)
@@ -266,7 +311,7 @@ if temperature == 'model' and ssa:
     flowA[ind] = flowparameterlib.arrhenius(263.15)
   del dir 
   ub_all,vb_all,beta_all = inverselib.guess_beta(xT,yT,zsT,zbT,uT,vT,frac=0.5,A=flowA*yearinsec*1e18) 
-elif temperature == 'model' and not(ssa):
+elif (temperature == 'model') and (ssa != True):
   # Try to use depth-averaged modeled temperatures for guessing
   ub_all,vb_all,beta_all = inverselib.guess_beta(xT,yT,zsT,zbT,uT,vT,frac=0.5,A=np.mean(flowA,axis=2)*yearinsec*1e18)
 else:

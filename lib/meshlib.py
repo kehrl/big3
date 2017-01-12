@@ -18,7 +18,7 @@ import numpy as np
 import scipy.signal as signal
 import math
 from scipy import interpolate
-import bedlib, floatlib, zslib, coordlib
+import coordlib, bedlib, floatlib, zslib
 from shapely.geometry import Polygon,Point
 import scipy.interpolate
 
@@ -99,31 +99,42 @@ def shp_to_xy(in_file):
   
 def xy_to_gmsh_3d(glacier,date,exterior,holes,refine,DIRM,lc1,lc2,lc3,lc4,\
 		bedname='smith',bedmodel='aniso',bedsmoothing=4,rho_i=917.0,rho_sw=1020.0,\
-		dx='none',bottomsurface='iceshelf'):
+		dx='none',bottomsurface='iceshelf',outputgeometry=True):
   
   '''
   
-  x,y,zbed,zsur = xy_to_gmsh_3d(glacier,date,exterior,holes,refine,DIRM,lc1,lc2,lc3,lc4,bedname,bedmodel,bedsmoothing,bottomsurface='iceshelf')
+  x,y,zbed,zsur = xy_to_gmsh_3d(glacier,date,exterior,holes,refine,DIRM,
+    lc1,lc2,lc3,lc4,bedname,bedmodel,bedsmoothing,bottomsurface='iceshelf',
+    outputgeometry=True)
   
-  inputs:
-  exterior: list of x,y coordinates for glacier mesh from "shp_to_xy"
-  holes: list of holes with x,y coordinates for glacier mesh from "shp_to_xy"
-  refine: list of x,y coordinates for refinement, with an index number that 
-          states what level of refinment
-  DIRM: mesh directory
-  lc1, lc2, lc3, lc4: mesh resolution near refinement locations
-  file_bed: string for what bed we should use (options: morlighem)
-  file_sur: string for what surface we should use (options: gimp)
-  bedname: name of bed model (morlighem, smith, cresis)
-  bedmodel: anistropic or isotropic for smith bed DEMs
-  bedsmoothing: level of smoothing for smith bed DEMs (1-8)
-  rho_i: ice density
-  rho_sw: seawater density
-  dx: output grids at a certain resolution (if 'none', will use smallest 
-      resolution of DEMs)
-  bottom surface: use ice shelf bottom or bed as initial bottom surface
+  Inputs:
+  glacier       : glacier name
+  date          : date string for surface elevation data
+  exterior      : list of x,y coordinates for glacier mesh from "shp_to_xy"
+  holes         : list of holes with x,y coordinates for glacier mesh 
+                  from "shp_to_xy"
+  refine        : list of x,y coordinates for refinement, with an index 
+                  number that states what level of refinement
+  DIRM          : mesh directory
+  lc1,...,lc4   : mesh resolution 
+  bedname       : name of bed model (morlighem, smith, cresis)
+  bedmodel      : anistropic or isotropic for smith bed DEMs
+  bedsmoothing  : level of smoothing for smith bed DEMs (1-8)
+  rho_i         : ice density
+  rho_sw        : seawater density
+  dx            : output grids at a certain resolution (if 'none', will use 
+                  smallest resolution of DEMs)
+  bottomsurface : use "iceshelf" bottom or "bed" as initial bottom surface
+  outputgeometry: calculate geometry geometry and output zsdem.xy, 
+                  zbdem.xy, bedrock.xy
   
-  Output files: x,y,zbed,zsur, plus some files for elmer
+  Outputs:
+  x,y  : x,y grid coordinates
+  zbed : grid of bed elevations
+  zsur : grid of surface elevations
+  
+  Output files : mesh2d.geo, optional with "outputgeometry" : zsdem.xy, 
+  zbdem.xy, bedrock.xy 
   '''
   
   # Warnings
@@ -317,84 +328,94 @@ def xy_to_gmsh_3d(glacier,date,exterior,holes,refine,DIRM,lc1,lc2,lc3,lc4,\
   # Set up bedrock and surface topographies for Extrude mesh #
   ############################################################
   
-  # Set up grid extent
-  xmin = np.min(exterior[:,0])-10.0e3
-  xmax = np.max(exterior[:,0])+10.0e3
-  ymin = np.min(exterior[:,1])-10.0e3
-  ymax = np.max(exterior[:,1])+10.0e3
+  if outputgeometry:
   
-  # Load bed DEM
-  if bedname == 'morlighem':
-    xbed,ybed,zbed_grid = bedlib.morlighem_grid(xmin-10e3,xmax+10e3,ymin-10e3,ymax+10e3,verticaldatum='geoid')
-    xbed_grid,ybed_grid = np.meshgrid(xbed,ybed)
-  elif bedname == 'cresis':
-    xbed,ybed,zbed_grid = bedlib.cresis_grid(glacier,verticaldatum='geoid')
-    xbed_grid,ybed_grid = np.meshgrid(xbed,ybed)
-  elif bedname == 'smith':
-    # irregular triangular grid
-    xbed_grid,ybed_grid,zbed_grid = bedlib.smith_grid(glacier,\
+    # Set up grid extent
+    xmin = np.min(exterior[:,0])-10.0e3
+    xmax = np.max(exterior[:,0])+10.0e3
+    ymin = np.min(exterior[:,1])-10.0e3
+    ymax = np.max(exterior[:,1])+10.0e3
+  
+    # Load bed DEM
+    if bedname == 'morlighem':
+      xbed,ybed,zbed_grid = bedlib.morlighem_grid(xmin-10e3,xmax+10e3,ymin-10e3,ymax+10e3,verticaldatum='geoid')
+      xbed_grid,ybed_grid = np.meshgrid(xbed,ybed)
+    elif bedname == 'cresis':
+      xbed,ybed,zbed_grid = bedlib.cresis_grid(glacier,verticaldatum='geoid')
+      xbed_grid,ybed_grid = np.meshgrid(xbed,ybed)
+    elif bedname == 'smith':
+      # irregular triangular grid
+      xbed_grid,ybed_grid,zbed_grid = bedlib.smith_grid(glacier,\
     			model=bedmodel,smoothing=bedsmoothing,verticaldatum='geoid')
-    # load morlighem bed just in case mesh exceeds Ben's bed DEM
-    xbed_mor,ybed_mor,zbed_grid_mor = bedlib.morlighem_grid(xmin-10e3,xmax+10e3,ymin-10e3,ymax+10e3,verticaldatum='geoid')
+      # load morlighem bed just in case mesh exceeds Ben's bed DEM
+      xbed_mor,ybed_mor,zbed_grid_mor = bedlib.morlighem_grid(xmin-10e3,xmax+10e3,ymin-10e3,ymax+10e3,verticaldatum='geoid')
     
-  # Load surface DEM
-  xsur,ysur,zsur_grid = zslib.dem_continuous(glacier,xmin,xmax,ymin,ymax,date,\
+    # Load surface DEM
+    xsur,ysur,zsur_grid = zslib.dem_continuous(glacier,xmin,xmax,ymin,ymax,date,\
   			verticaldatum='geoid',blur=True,dx=dx)
-  xsur_grid,ysur_grid = np.meshgrid(xsur,ysur)
+    xsur_grid,ysur_grid = np.meshgrid(xsur,ysur)
 
-  # Flatten surface coordinates and interpolate bed elevations to surface coordinates
-  # so that we have grids.
-  x_flattened = xsur_grid.flatten()
-  y_flattened = ysur_grid.flatten()
-  zsur_flattened = zsur_grid.flatten()
-  zbed_flattened = scipy.interpolate.griddata((ybed_grid.flatten(),xbed_grid.flatten()),zbed_grid.flatten(),\
+    # Flatten surface coordinates and interpolate bed elevations to surface coordinates
+    # so that we have grids.
+    x_flattened = xsur_grid.flatten()
+    y_flattened = ysur_grid.flatten()
+    zsur_flattened = zsur_grid.flatten()
+    zbed_flattened = scipy.interpolate.griddata((ybed_grid.flatten(),xbed_grid.flatten()),zbed_grid.flatten(),\
   					(y_flattened,x_flattened),method='linear')
-  if bedname == 'smith':
-    f = scipy.interpolate.RegularGridInterpolator((ybed_mor,xbed_mor),zbed_grid_mor)
-    zbed_flattened_big = f((y_flattened,x_flattened))
-    nans = np.where(np.isnan(zbed_flattened))[0]
-    zbed_flattened[nans] = zbed_flattened_big[nans] 
+    if bedname == 'smith':
+      f = scipy.interpolate.RegularGridInterpolator((ybed_mor,xbed_mor),zbed_grid_mor)
+      zbed_flattened_big = f((y_flattened,x_flattened))
+      nans = np.where(np.isnan(zbed_flattened))[0]
+      zbed_flattened[nans] = zbed_flattened_big[nans] 
     
-  zbot_interped = floatlib.icebottom(zbed_flattened,zsur_flattened,rho_i=rho_i,rho_sw=rho_sw)
+    zbot_interped = floatlib.icebottom(zbed_flattened,zsur_flattened,rho_i=rho_i,rho_sw=rho_sw)
 
-  zbed_grid = np.reshape(zbed_flattened,(len(ysur),len(xsur)))
-  zbot_grid = np.reshape(zbot_interped,(len(ysur),len(xsur)))
-  ind = np.where((zsur_grid-zbed_grid) < 10.)
-  ind = np.where((zsur_grid-zbot_grid) < 10.)
-  zbed_grid[ind] = zsur_grid[ind]-10.
-  zbot_grid[ind] = zsur_grid[ind]-10.
+    zbed_grid = np.reshape(zbed_flattened,(len(ysur),len(xsur)))
+    zbot_grid = np.reshape(zbot_interped,(len(ysur),len(xsur)))
+    #ind = np.where((zsur_grid-zbed_grid) < 10.)
+    #zbed_grid[ind] = zsur_grid[ind]-10.
+    ind = np.where((zsur_grid-zbot_grid) < 10.)
+    zbot_grid[ind] = zsur_grid[ind]-10.
   
-  # Elmersolver is set up so that nodatavalue is -2.0e9
-  zsur_grid_nonnan = np.array(zsur_grid)
-  zbed_grid_nonnan = np.array(zbed_grid)
-  zbot_grid_nonnan = np.array(zbot_grid)
-  ind = np.where(np.isnan(zsur_grid))
-  zsur_grid_nonnan[ind] = -2.0e9
-  ind = np.where(np.isnan(zbed_grid))
-  zbed_grid_nonnan[ind] = -2.0e9
-  ind = np.where(np.isnan(zbot_grid))
-  zbot_grid_nonnan[ind] = -2.0e9
+    # Elmersolver is set up so that nodatavalue is -2.0e9
+    zsur_grid_nonnan = np.array(zsur_grid)
+    zbed_grid_nonnan = np.array(zbed_grid)
+    zbot_grid_nonnan = np.array(zbot_grid)
+    ind = np.where(np.isnan(zsur_grid))
+    zsur_grid_nonnan[ind] = -2.0e9
+    ind = np.where(np.isnan(zbed_grid))
+    zbed_grid_nonnan[ind] = -2.0e9
+    ind = np.where(np.isnan(zbot_grid))
+    zbot_grid_nonnan[ind] = -2.0e9
   
-  # Print out surface and bed
-  fids = open(DIRM+"/inputs/zsdem.xy","w")
-  fidb = open(DIRM+"/inputs/zbdem.xy","w")
-  fidr = open(DIRM+"/inputs/bedrock.xy","w")
-  fids.write('{}\n{}\n'.format(len(xsur),len(ysur)))
-  fidb.write('{}\n{}\n'.format(len(xsur),len(ysur)))
-  fidr.write('{}\n{}\n'.format(len(xsur),len(ysur)))
-  if bottomsurface == 'bed':
-    zbot_grid_nonnan_output = zbed_grid_nonnan
-    zbot_grid_output = zbed_grid
-  elif bottomsurface == 'iceshelf':
-    zbot_grid_nonnan_output = zbot_grid_nonnan
-    zbot_grid_output = zbot_grid
-  for i in range(0,len(xsur)):
-    for j in range(0,len(ysur)):
-      fids.write('{0} {1} {2}\n'.format(xsur[i],ysur[j],zsur_grid_nonnan[j,i]))
-      fidb.write('{0} {1} {2}\n'.format(xsur[i],ysur[j],zbot_grid_nonnan_output[j,i]))
-      fidr.write('{0} {1} {2}\n'.format(xsur[i],ysur[j],zbed_grid_nonnan[j,i]))
-  fids.close()
-  fidb.close()
+    # Print out surface and bed
+    fids = open(DIRM+"/inputs/zsdem.xy","w")
+    fidb = open(DIRM+"/inputs/zbdem.xy","w")
+    fidr = open(DIRM+"/inputs/bedrock.xy","w")
+    fids.write('{}\n{}\n'.format(len(xsur),len(ysur)))
+    fidb.write('{}\n{}\n'.format(len(xsur),len(ysur)))
+    fidr.write('{}\n{}\n'.format(len(xsur),len(ysur)))
+    if bottomsurface == 'bed':
+      zbot_grid_nonnan_output = zbed_grid_nonnan
+      zbot_grid_output = zbed_grid
+    elif bottomsurface == 'iceshelf':
+      zbot_grid_nonnan_output = zbot_grid_nonnan
+      zbot_grid_output = zbot_grid
+    for i in range(0,len(xsur)):
+      for j in range(0,len(ysur)):
+        fids.write('{0} {1} {2}\n'.format(xsur[i],ysur[j],zsur_grid_nonnan[j,i]))
+        fidb.write('{0} {1} {2}\n'.format(xsur[i],ysur[j],zbot_grid_nonnan_output[j,i]))
+        fidr.write('{0} {1} {2}\n'.format(xsur[i],ysur[j],zbed_grid_nonnan[j,i]))
+    fids.close()
+    fidb.close()
+    fidr.close()
+ 
+  else: # we don't want the glacier geometry, so just set the values to nothing
+    xsur = []
+    ysur = []
+    zbed_grid = []
+    zsur_grid = []
+    zbot_grid_output = []
   
   return xsur,ysur,zbed_grid,zsur_grid,zbot_grid_output
 
@@ -412,18 +433,18 @@ def xy_to_gmsh_box(x,y,dists,zb,zs,terminus,glacier,DIRM,filename,lc,lc_d,layers
   These files are used by "MshGlacier."
 
   inputs:
-  x,y,dists,zb: output from glacier_flowline
-  glacier: glacier name
-  date: date for surface DEM
-  DIRM: mesh directory
-  filename: filename for .geo file
-  lc: array for mesh sizes
-  lc_d: distance between different mesh sizes
-  layers: how many vertical layers for mesh
-  filt_len: filter length (in meters) for the surface elevations
+  x,y,dists,zb : output from glacier_flowline
+  glacier      : glacier name
+  date         : date for surface DEM
+  DIRM         : mesh directory
+  filename     : filename for .geo file
+  lc           : array for mesh sizes
+  lc_d         : distance between different mesh sizes
+  layers       : how many vertical layers for mesh
+  filt_len     : filter length (in meters) for the surface elevations
   
   Outputs:
-  flowline: four column array with distance along flowline, x coordinate, 
+  flowline : four column array with distance along flowline, x coordinate, 
   		y coordinate, bed elevation, and surface elevation
   some files in the DIRM directory
   '''

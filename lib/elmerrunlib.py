@@ -24,10 +24,10 @@ def send_email(text,subject='Elmer has finished',to=['kehrl@uw.edu']):
     except:
         print "failed to send email"
 
-def run_elmer(sif_file,n=20,to=['kehrl@uw.edu']):
+def run_elmer(sif_file,n=20,to=['kehrl@uw.edu'],email=True):
   os.system('echo '+sif_file+'>ELMERSOLVER_STARTINFO')
   
-  cmd=['mpiexec', 'ElmerSolver_mpi']
+  cmd=['mpiexec','-n', str(n), 'ElmerSolver_mpi']
     
   outfile=open(sif_file+'.log','w')
   try:
@@ -46,7 +46,8 @@ def run_elmer(sif_file,n=20,to=['kehrl@uw.edu']):
 	  tail=subprocess.Popen(['tail','-n','2',sif_file+'.log'],stdout=subprocess.PIPE).stdout.read()
 	  subject=sif_file+' finished successfully'
 	  text=str(sif_file)+' finished running on '+socket.gethostname()+' at '+now+'.\n Last two lines of the log file are:\n'+tail
-	  send_email(text,subject=subject,to=to)
+	  if email:
+	    send_email(text,subject=subject,to=to)
   elif returncode=='interrupt':
 	  print 'You chose to stop running '+sif_file
   else:

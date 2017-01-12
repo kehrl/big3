@@ -1,0 +1,218 @@
+$name="terminusdriven"
+
+$yearinsec = 365.25*24*60*60
+$rhoi = 917.0/(1.0e6*yearinsec^2)
+$rhow = 1028.0/(1.0e6*yearinsec^2) 
+$gravity = -9.81*yearinsec^2
+$n = 3.0
+$eta = (2.0*100.0)^(-1.0/n)
+
+Header
+  Mesh DB "." "mesh2d"
+End
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Constants
+  Gas Constant = Real 8.314 !Joule/mol x  K
+  Sea Level = Real 0.0
+  Water density = Real $rhow
+End
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Simulation
+  Coordinate System  = Cartesian 2D
+  Simulation Type = Transient
+
+  Steady State Min Iterations = 1
+  Steady State Max Iterations = 20
+  
+  Timestepping Method = "bdf"
+  BDF Order = 1
+  Timestep Intervals = {TimeSteps}
+  Output Intervals = 1        
+  Timestep Sizes = {TimeStepSize}
+
+  Output File = "$name$.result"
+  Post File = "$name$.vtu"
+
+  Max Output Level = 19
+End
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Body 1
+  Equation = 1
+  Body Force = 1
+  Material = 1
+  Initial Condition = 1
+End
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Initial Condition 1
+  Temperature = Real 263.15
+
+  Zs = Variable Coordinate 1
+    REAL procedure "USF_Init.so" "zsIni"
+  Zb = Variable Coordinate 1
+    REAL procedure "USF_Init.so" "zbIni"
+  H = Variable Zs, Zb
+    REAL MATC "tx(0)-tx(1)"
+  
+! Surface velocities (data)
+  Vsurfini 1 = Variable Coordinate 1
+    Real procedure "USF_Init.so" "UIni"
+  Vsurfini 2 = Variable Coordinate 1
+    Real procedure "USF_Init.so" "VIni"
+
+  SSAVelocity 1 = Real 0.0
+  SSAVelocity 2 = Real 0.0
+End
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Body Force 1
+  Flow BodyForce 1 = Real 0.0            
+  Flow BodyForce 2 = Real 0.0              
+  Flow BodyForce 3 = Real $gravity
+  
+  Top Surface Accumulation = Real 0.0
+  Bottom Surface Accumulation = Real 0.0  
+  
+  Zs = Variable Zb , H
+     REAL MATC "tx(0)+tx(1)"
+End
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Material 1
+
+  Viscosity Exponent = Real $1.0e00/3.0e00
+  Critical Shear Rate = Real 1.0e-10
+
+  SSA Mean Density = Real $rhoi
+  SSA Mean Viscosity = Real $((3*3.5e-25*yearinsec)^(-1.0/3.0)*1.0e-6)
+
+  SSA Friction Law = String "linear"
+  ! The friction parameter is the square of the optimized variable to insure > 0
+  SSA Friction Parameter = Variable Coordinate 1, Coordinate 2
+     REAL Procedure "Sliding_Beta.so" "Linear"
+  
+  Min H = Real 0.0
+End
+ 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+Solver 1
+  Exec Solver = "Never"
+  Equation = "SSA"
+  Variable = -dofs 2 "SSAVelocity"
+  Procedure = "AdjointSSASolvers.so" "SSABasalSolver"
+
+!! Mandatory for the adjoint 
+  Calculate Loads = Logical True
+
+  Linear System Solver = Direct
+  Linear System Direct Method = mumps
+
+  Nonlinear System Max Iterations = 50
+  Nonlinear System Convergence Tolerance  = 1.0e-10
+  Nonlinear System Newton After Iterations = 40
+  Nonlinear System Newton After Tolerance = 1.0e-06
+  Nonlinear System Relaxation Factor = 1.00
+
+  Steady State Convergence Tolerance = Real 1.0e-12
+
+  Exported Variable 1 = -dofs 1 "vsurfini 1"
+  Exported Variable 2 = -dofs 1 "vsurfini 2"
+End
+
+!! Thickness solver
+Solver 2
+  Exec Solver = "Never"
+  Equation = "Thickness"
+  Variable = -dofs 1 "H"
+
+  Exported Variable 1 = -dofs 1 "H Residual"
+  Exported Variable 2 = -dofs 1 "dHdt"
+
+  Compute dHdT = Logical True
+
+  Procedure = "ElmerIceSolvers" "ThicknessSolver"
+  Before Linsolve = "EliminateDirichlet" "EliminateDirichlet"
+
+  Linear System Solver = Iterative
+  Linear System Max Iterations = 1500
+  Linear System Iterative Method = BiCGStab
+  Linear System Preconditioning = ILU0
+  Linear System Convergence Tolerance = Real 1.0e-12
+  Linear System Abort Not Converged = False
+  Linear System Residual Output = 1500
+
+! equation is linear if no min/max
+  Nonlinear System Max Iterations = 50
+  Nonlinear System Convergence Tolerance  = 1.0e-6
+  Nonlinear System Relaxation Factor = 1.00
+
+  Stabilization Method = stabilized
+  Apply Dirichlet = Logical True
+
+!!  the convection velocity (mean horizontal velocity)
+  Flow Solution Name = String "SSAVelocity"
+End
+
+Solver 3
+  Equation = "UpdateExport"
+  Procedure = File "ElmerIceSolvers" "UpdateExport"
+  Variable = -nooutput "dumy"
+
+  Exported Variable 1 = -dofs 1 "Zs"
+  Exported Variable 2 = -dofs 1 "Zb"
+End
+
+Solver 4
+  Exec Solver = string "After TimeStep"
+  Equation = String "ChangeMesh"
+  Procedure = "TerminusDriven_SSA.so" "ChangeMesh"
+  
+  Linear System Solver = Iterative
+  Linear System Iterative Method = BiCGStab
+  Linear System Max Iterations = 500
+  Linear System Convergence Tolerance = 1.0e-8
+  Linear System Preconditioning = ILU1
+  Linear System ILUT Tolerance = 1.0e-3
+  Linear System Abort Not Converged = False
+  Linear System Residual Output = 1
+  Linear System Precondition Recompute = 1
+
+  Variable 1 = SSAVelocity 1
+  Variable 2 = SSAVelocity 2
+  Variable 3 = Zs
+  Variable 4 = Zb
+  Variable 5 = H
+End
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Equation 1
+  Active Solvers(3) = 1 2 3
+End
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Boundary Condition 1
+  Name = "Side Walls"
+  Target Boundaries = 2
+
+  SSAVelocity 1= Equals vsurfini 1
+  SSAVelocity 2= Equals vsurfini 2
+End
+
+Boundary Condition 2
+  Name = "Inflow"
+  Target Boundaries = 3
+
+  SSAVelocity 1= Equals vsurfini 1
+  SSAVelocity 2= Equals vsurfini 2
+End
+
+Boundary Condition 3
+  Name = "Front"
+  Target Boundaries = 1
+
+  Calving Front = Logical True
+End
