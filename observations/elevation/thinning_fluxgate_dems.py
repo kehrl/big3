@@ -151,7 +151,7 @@ plt.xlim([-35,22])
 plt.ylabel('Flux-gate $dh/dt$ (cm d$^{-1}$)',fontsize=9)
 plt.xlabel('DEM $dh/dt$ (cm d$^{-1}$)',fontsize=9)
 plt.tight_layout()
-#plt.legend(loc=4,borderpad=0.3,fontsize=8,numpoints=1,handlelength=0.7,labelspacing=0.05,columnspacing=0.7,handletextpad=0.5)
+plt.legend(loc=4,borderpad=0.3,fontsize=8,numpoints=1,handlelength=0.7,labelspacing=0.05,columnspacing=0.7,handletextpad=0.5)
 plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/"+"Thinning_comparison.pdf"),FORMAT='PDF',dpi=600)
 plt.close()
 

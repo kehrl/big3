@@ -271,7 +271,7 @@ for glacier in ['Helheim']:
   for k in range(0,1):
     
     plt.figure(figsize=(7.45,6))
-    time1 = 2010.0; time2 = 2016.75; 
+    time1 = 2008.0; time2 = 2016.75; 
     years = np.arange(np.floor(time1),np.ceil(time2)+1)
  
     gs = matplotlib.gridspec.GridSpec(7,1)
@@ -333,7 +333,7 @@ for glacier in ['Helheim']:
     ax.tick_params('both', length=6, width=1.25, which='major')
     ax.tick_params('both', length=3, width=1, which='minor')
     plt.ylim([-3,3])
-    plt.text(2010.15,-2.3,'a',fontsize=12,fontname='Arial',fontweight='bold')
+    plt.text(2008.25,-2.3,'a',fontsize=12,fontname='Arial',fontweight='bold')
 
     # Plot velocities
     ax = plt.subplot(gs[1:3, :]) 
@@ -369,7 +369,7 @@ for glacier in ['Helheim']:
         ax.add_patch(patch)  
     plt.xlim([time1,time2])
     plt.ylim([3.5,11])
-    plt.text(2010.15,3.8,'b',fontsize=12,fontname='Arial',fontweight='bold')
+    plt.text(2008.25,3.8,'b',fontsize=12,fontname='Arial',fontweight='bold')
 
     # Plot surface elevations
     plt.subplot(gs[-4:-2, :])
@@ -390,10 +390,10 @@ for glacier in ['Helheim']:
         path = matplotlib.path.Path([[years[i]+0.25,-50],[years[i]+0.25,240],[years[i]+0.75,240],[years[i]+0.75,-50]])
         patch = matplotlib.patches.PathPatch(path,facecolor='0.85',edgecolor='none',lw=0)
         ax.add_patch(patch)  
-    plt.fill_between([time1,time2],np.ones(2)*floatlib.height(zb[ind_eul[0]]-50)-floatlib.height(zb[ind_eul[0]]),np.ones(2)*floatlib.height(zb[ind_eul[0]]+50)-floatlib.height(zb[ind_eul[0]]),alpha=0.1,facecolor='r',edgecolor='r',antialiased=True,zorder=2)
-    plt.plot([time1,time2],[0,0],'r:',linewidth=1.0)
+    #plt.fill_between([time1,time2],np.ones(2)*floatlib.height(zb[ind_eul[0]]-50)-floatlib.height(zb[ind_eul[0]]),np.ones(2)*floatlib.height(zb[ind_eul[0]]+50)-floatlib.height(zb[ind_eul[0]]),alpha=0.1,facecolor='r',edgecolor='r',antialiased=True,zorder=2)
+    #plt.plot([time1,time2],[0,0],'r:',linewidth=1.0)
+    plt.plot(time_atm,zpt_atm[:,0]-floatlib.height(zb[ind_eul[0]]),'+',color=coloptions[0],markersize=6,markeredgewidth=2)    
     plt.errorbar(time_dem,zpt_dem[:,0]-floatlib.height(zb[ind_eul[0]]),capsize=1,yerr=zpterror_dem,fmt='o',color=coloptions[0],markersize=4)
-    plt.plot(time_atm,zpt_atm[:,0]-floatlib.height(zb[ind_eul[0]]),'+',color=coloptions[0],markersize=6,markeredgewidth=2)
     x_formatter = matplotlib.ticker.ScalarFormatter(useOffset=False)
     ax.xaxis.set_major_formatter(x_formatter)
     ax.xaxis.set_minor_locator(AutoMinorLocator(2))
@@ -405,23 +405,24 @@ for glacier in ['Helheim']:
     ax.tick_params('both', length=3, width=1, which='minor')
     plt.ylabel('  Height above flotation \n at H02 (m)',fontsize=12,fontname="Arial")
     plt.yticks(np.arange(-10,50,10),fontsize=12,fontname="Arial")
-    plt.ylim([-5,45])
+    plt.ylim([-5,50])
     ind = [0,3,1,2]
     handles, labels = ax.get_legend_handles_labels()
     labels = [labels[i] for i in ind]
     handles = [handles[i] for i in ind]
-    plt.legend(handles,labels,loc=2,borderpad=0.3,handleheight=0.1,fontsize=10,numpoints=1,handlelength=0.4,labelspacing=0.05,ncol=4,columnspacing=0.7,handletextpad=0.5)
-    plt.text(2010.15,-2,'c',fontsize=12,fontname='Arial',fontweight='bold')
+    plt.legend(handles,labels,loc=1,borderpad=0.3,handleheight=0.1,fontsize=10,numpoints=1,handlelength=0.4,labelspacing=0.05,ncol=4,columnspacing=0.7,handletextpad=0.5)
+    plt.text(2008.25,-2,'c',fontsize=12,fontname='Arial',fontweight='bold')
 
     ax2 = ax.twinx()
-    ax2.errorbar(time_dem,zpt_dem[:,1]-floatlib.height(zb[ind_eul[1]]),capsize=1,yerr=zpterror_dem,fmt='o',color=coloptions[1],markersize=4,label='WV')
     ax2.plot(time_atm,zpt_atm[:,1]-floatlib.height(zb[ind_eul[1]]),'+',color=coloptions[1],markersize=6,markeredgewidth=2,label='ATM')
+    ax2.errorbar(time_dem,zpt_dem[:,1]-floatlib.height(zb[ind_eul[1]]),capsize=1,yerr=zpterror_dem,fmt='o',color=coloptions[1],markersize=4,label='WV')
+    ax2.plot(time_dem,zpt_dem[:,1]-floatlib.height(zb[ind_eul[1]]),'o',color=coloptions[1],markersize=4)
     ax2.set_xlim([time1,time2])
     ax2.tick_params('both', length=6, width=1.25, which='major')
     ax2.tick_params('both', length=3, width=1, which='minor')
     ax2.yaxis.set_minor_locator(AutoMinorLocator(2))
     ax2.set_yticks(np.arange(60,120,10))
-    ax2.set_ylim([55,105])
+    ax2.set_ylim([55,110])
     ax2.set_yticklabels([60,70,80,90,100],fontsize=12,fontname='arial')
     ax2.set_ylabel('    Height above flotation at H05 (m)',fontsize=12,fontname='Arial')
 
@@ -435,7 +436,7 @@ for glacier in ['Helheim']:
     plt.plot(timerac_H,smbrac_H/900.*100,'0.4',lw=2,label='SMB')
     plt.errorbar(time,(dH[:,0]+smb)/365.25*100,yerr=3,fmt='rs',markersize=4,capsize=1,lw=1.5,label='Flux-gate')
     plt.errorbar(dem_time[:,0],dem_dH[:,0]/365.25*100,xerr=dem_time[:,1],yerr=dem_dH[:,1]/365.25*100,fmt='bo',markersize=4,capsize=1,lw=0.5,label='DEM')
-    plt.legend(loc=2,numpoints=1,ncol=3,handletextpad=0.2,fontsize=10,columnspacing=0.05,markerscale=1,handlelength=1.2,borderpad=0.2)
+    plt.legend(loc=2,numpoints=1,ncol=3,handletextpad=0.5,fontsize=10,columnspacing=0.7,markerscale=1,handlelength=1.0,borderpad=0.3)
     plt.ylabel(r'dh/dt (cm/d)',fontname='Arial',fontsize=12)
     plt.yticks(np.arange(-40,30,10),fontsize=12,fontname='Arial')
     plt.ylim([-45,25])
@@ -461,7 +462,7 @@ for glacier in ['Helheim']:
     ax.tick_params('both', length=3, width=1, which='minor')
     ax.set_xticklabels(labels,fontsize=12,fontname='Arial')
     plt.xlim([time1,time2])
-    plt.text(2010.15,-40,'d',fontsize=12,fontname='Arial',fontweight='bold')
+    plt.text(2008.25,-40,'d',fontsize=12,fontname='Arial',fontweight='bold')
 
     plt.tight_layout()
     plt.subplots_adjust(hspace=0.03,wspace=0,top=0.93,right=0.91,left=0.1,bottom=0.06) 
