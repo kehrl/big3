@@ -1015,8 +1015,8 @@ CONTAINS
     interpedValue = 0.0_dp
     DO i=1,NoSuppNodes
       SuppPoint(1) = Mesh % Nodes % x(SuppNodes(i))
-      SuppPoint(1) = Mesh % Nodes % y(SuppNodes(i))
-      SuppPoint(1) = Mesh % Nodes % z(SuppNodes(i))
+      SuppPoint(2) = Mesh % Nodes % y(SuppNodes(i))
+      SuppPoint(3) = Mesh % Nodes % z(SuppNodes(i))
       SuppPoint(HeightDimensions) = 0.0_dp
 
       distance = 0.0_dp
@@ -1061,6 +1061,10 @@ CONTAINS
 
       END IF
     END DO
+    !PRINT *,ParEnv % MyPE,' Supporting nodes: ', NoSuppNodes, &
+    !           ' x:', Mesh % Nodes % x(i),&
+    !           ' y:', Mesh % Nodes % y(i),&
+    !           ' z:', Mesh % Nodes % z(i)
 
     !PARALLEL STUFF
     IF(HasNeighbours) THEN
@@ -1128,5 +1132,580 @@ CONTAINS
     IF(HasNeighbours) DEALLOCATE(NeighbourParts)
 
   END SUBROUTINE InterpolateUnfoundPoint
+
+!!!!!!!!!!!!!!!!!!!!!!!
+! InterpolateUnfoundPointNearest
+
+  !Subroutine designed to interpolate single missing points from the edges of the mesh 
+  ! (using values from the old mesh), which occur due to glacier advance
+  SUBROUTINE InterpolateUnfoundPointsNearest(UnfoundNodes, OldMesh, NewMesh, HeightName, & 
+      HeightDimensions, Variables )
+
+    TYPE(Mesh_t), TARGET, INTENT(IN)  :: OldMesh
+    TYPE(Mesh_t), TARGET, INTENT(INOUT)  :: NewMesh
+    TYPE(Variable_t), POINTER, OPTIONAL :: Variables
+    CHARACTER(LEN=*) :: HeightName
+    INTEGER, POINTER :: HeightDimensions(:)
+    LOGICAL, POINTER :: UnfoundNodes(:)
+    !------------------------------------------------------------------------------
+    TYPE(Variable_t), POINTER :: OldHeightVar, NewHeightVar, OldVar, NewVar
+    REAL(KIND=dp), ALLOCATABLE, TARGET :: BB(:,:), nodes_x(:), nodes_y(:), nodes_z(:), &
+        xpart(:), ypart(:), zpart(:), mindists(:), minheights(:), partmindists(:),&
+        partminheights(:), interped(:,:), partinterped(:,:)
+    TYPE(Element_t),POINTER :: Element
+    LOGICAL :: Parallel, Debug
+    LOGICAL, ALLOCATABLE :: ValidNode(:), NoNearest(:), PartNoNearest(:)
+    REAL(KIND=dp) :: Point(3), SuppPoint(3), dist, myBB(6), maxdist, partmindist
+    INTEGER :: i, j, k, l, n, m, p, idx, proc, status(MPI_STATUS_SIZE), &
+        ierr, npart, nn, VarNo, varn
+    INTEGER, ALLOCATABLE :: perm(:), mininds(:), partmininds(:), partinterpedvar(:)
+    !------------------------------------------------------------------------------
+    TYPE ProcRecv_t
+       INTEGER :: n = 0
+       REAL(KIND=dp), ALLOCATABLE :: nodes_x(:), nodes_y(:), nodes_z(:)
+    END TYPE ProcRecv_t
+    TYPE(ProcRecv_t),  ALLOCATABLE, TARGET :: ProcRecv(:)
+
+    TYPE ProcSend_t
+       INTEGER :: n = 0
+       INTEGER, ALLOCATABLE :: perm(:)
+    END TYPE ProcSend_t
+    TYPE(ProcSend_t),  ALLOCATABLE :: ProcSend(:)
+    !------------------------------------------------------------------------------
+
+    Debug = .TRUE.
+    Parallel = ParEnv % PEs > 1
+
+    OldHeightVar => VariableGet( OldMesh % Variables, HeightName, &
+         ThisOnly = .TRUE. )
+    NewHeightVar => VariableGet( NewMesh % Variables, HeightName, &
+         ThisOnly = .TRUE. )
+
+    ! Initial minimum distance
+    maxdist = 1.0e3
+
+    ! Get this partition's bounding box:                             
+    ! ----------------------------------                              
+    myBB(1) = MINVAL(OldMesh % Nodes % x)
+    myBB(2) = MINVAL(OldMesh % Nodes % y)
+    myBB(3) = MINVAL(OldMesh % Nodes % z)
+    myBB(4) = MAXVAL(OldMesh % Nodes % x)
+    myBB(5) = MAXVAL(OldMesh % Nodes % y)
+    myBB(6) = MAXVAL(OldMesh % Nodes % z)
+    !TODO: make this related to maxdist, but for some reason not working with large maxdist
+    myBB(1:3) = myBB(1:3) - 1.0e3
+    myBB(4:6) = myBB(4:6) + 1.0e3
+
+    myBB(HeightDimensions) = 0.0_dp
+    myBB(HeightDimensions + 3) = 0.0_dp
+
+    ! Get all partitions' bounding boxes:                             
+    ! ---------------------------------- 
+    ALLOCATE(BB(6,ParEnv % PEs))
+    DO i=1,ParEnv % PEs
+       IF ( Parenv % MyPE == i-1 .OR. .NOT. ParEnv % Active(i) ) CYCLE
+       proc = i-1
+       CALL MPI_BSEND( myBB, 6, MPI_DOUBLE_PRECISION, proc, &
+            1399, MPI_COMM_WORLD, ierr )
+    END DO
+    DO i=1,COUNT(ParEnv % Active)-1
+       CALL MPI_RECV( myBB, 6, MPI_DOUBLE_PRECISION, MPI_ANY_SOURCE, &
+            1399, MPI_COMM_WORLD, status, ierr )
+       proc = status(MPI_SOURCE)
+       BB(:,proc+1) = myBB
+    END DO   
+
+    ! Get valid nodes for this partition:                             
+    ! ---------------------------------- 
+    ALLOCATE(ValidNode(OldMesh % NumberOfNodes))
+    ValidNode = .FALSE.
+    
+    ! Knock down nodes with 0 perm
+    DO i=1,OldMesh % NumberOfNodes
+      IF(OldHeightVar % Perm(i) > 0) ValidNode(i) = .TRUE.
+    END DO
+
+    ! Count variables                             
+    ! ---------------------------------- 
+    IF(PRESENT(Variables)) THEN   
+      IF (Debug) PRINT *, ParEnv % MyPE, 'Variables present'
+      OldVar => Variables
+      VarNo = 1
+      DO WHILE(ASSOCIATED(OldVar))
+        !Is the variable valid?
+        IF((SIZE(OldVar % Values) == OldVar % DOFs) .OR. & !-global
+              (OldVar % DOFs > 1) .OR. &                    !-multi-dof
+              (OldVar % Name(1:10)=='coordinate') .OR. &    !-coord var
+              (OldVar % Name == HeightName) .OR. &          !-already got
+              OldVar % Secondary) THEN                      !-secondary
+          OldVar => OldVar % Next
+          CYCLE
+        END IF
+        
+        NewVar => VariableGet(NewMesh % Variables, OldVar % Name, .TRUE.)
+        IF(.NOT. ASSOCIATED(NewVar)) THEN
+          OldVar => OldVar % Next 
+          CYCLE
+        END IF
+          
+        VarNo = VarNo+1
+        OldVar => OldVar % Next 
+      END DO
+      IF (Debug) PRINT *,ParEnv % MyPE, 'Counted ',VarNo,'variables'
+    END IF
+    
+    ! Get closest points to unfound nodes for this partition:                             
+    ! ---------------------------------- 
+    n = COUNT(UnfoundNodes)
+    IF (n > 0) THEN
+      ALLOCATE(mindists(n),minheights(n),mininds(n),NoNearest(n))
+      mindists = maxdist
+      minheights = 0
+      NoNearest = .TRUE.
+      m = 0
+      DO nn=1,SIZE(UnfoundNodes)    
+        IF (UnfoundNodes(nn)) THEN
+          
+          m = m+1        
+          
+          Point(1) = NewMesh % Nodes % x(nn)
+          Point(2) = NewMesh % Nodes % y(nn)
+          Point(3) = NewMesh % Nodes % z(nn)
+          Point(HeightDimensions) = 0.0_dp
+          
+          PRINT *,'UnfoundNode',nn,Point(1),Point(2)
+
+          !Cycle through boundary elements of old mesh, find closest node to unfound node in new mesh
+          DO i=OldMesh % NumberOfBulkElements+1,OldMesh % NumberOfBulkElements &
+            + OldMesh % NumberOfBoundaryElements
+            Element => OldMesh % Elements(i)
+            n = Element % TYPE % NumberOfNodes
+  
+            !Cycle element nodes
+            DO j=1,n
+              idx = Element % NodeIndexes(j)
+    
+              IF(mininds(m) == idx) CYCLE !already got
+              IF(.NOT. ValidNode(idx)) CYCLE !invalid
+          
+              ! Get coordinates for node
+              SuppPoint(1) = OldMesh % Nodes % x(idx)
+              SuppPoint(2) = OldMesh % Nodes % y(idx)
+              SuppPoint(3) = OldMesh % Nodes % z(idx)
+              SuppPoint(HeightDimensions) = 0.0_dp
+
+              ! Get distance from unfound point
+              dist = 0.0_dp
+              DO k=1,3
+                dist = dist + (Point(k) - SuppPoint(k))**2.0_dp
+              END DO
+              dist = dist**0.5_dp
+              
+              ! If it's the closest point so far, save it
+              IF (dist < mindists(m)) THEN
+                mindists(m) = dist
+                minheights(m) = OldHeightVar % Values(OldHeightVar % Perm(idx))
+                mininds(m) = idx
+                !minind = idx
+                NoNearest(m) = .FALSE. 
+              END IF
+            END DO
+          END DO
+        END IF
+      END DO
+      
+      ! Mark unfound nodes as huge                            
+      ! ---------------------------------- 
+      IF (Debug) PRINT *,ParEnv % MyPE, 'Marking ',COUNT(NoNearest), 'nodes as still unfound'
+      m = 0
+      DO i=1,SIZE(UnfoundNodes)
+        IF (UnfoundNodes(i)) THEN
+          m = m+1
+          IF (NoNearest(m)) THEN
+            minheights(m) = HUGE(minheights(m))
+            mininds(m) = 1
+          END IF
+        END IF
+      END DO     
+
+      ! Save interped values for variables, if minind exists                             
+      ! ---------------------------------- 
+      IF(PRESENT(Variables)) THEN  
+        ALLOCATE(interped(VarNo,COUNT(UnfoundNodes)))
+        interped = 0
+        OldVar => Variables
+        varn = 1
+        DO WHILE(ASSOCIATED(OldVar))
+          !Is the variable valid?
+          IF((SIZE(OldVar % Values) == OldVar % DOFs) .OR. & !-global
+              (OldVar % DOFs > 1) .OR. &                    !-multi-dof
+              (OldVar % Name(1:10)=='coordinate') .OR. &    !-coord var
+              (OldVar % Name == HeightName) .OR. &          !-already got
+              OldVar % Secondary) THEN                      !-secondary
+            OldVar => OldVar % Next
+            CYCLE
+          END IF
+        
+          NewVar => VariableGet(NewMesh % Variables, OldVar % Name, .TRUE.)
+          IF(.NOT. ASSOCIATED(NewVar)) THEN
+            OldVar => OldVar % Next 
+            CYCLE
+          END IF
+          
+          m = 0
+          DO nn=1,SIZE(UnfoundNodes)    
+            IF (UnfoundNodes(nn)) THEN
+              m = m+1  
+              IF (.NOT. NoNearest(m)) THEN
+                interped(varn,m) = OldVar % Values(OldVar % Perm(mininds(m)))
+              ELSE
+                interped(varn,m) = HUGE(interped(varn,m))   
+              END IF  
+            END IF
+          END DO           
+          
+          varn = varn+1
+          OldVar => OldVar % Next 
+        END DO
+        IF (Debug) PRINT *,ParEnv % MyPE,'Successfully interped ',VarNo,'variables' 
+        
+      END IF !Variables present
+    
+    END IF !UnfoundNodes are present in partition
+
+    ! Send out unfound nodes to other processes
+    ! ---------------------------------- 
+    n = COUNT(UnfoundNodes)
+    IF (n == 0) THEN
+      DO i=1,ParEnv % PEs
+        IF ( (Parenv % MyPE == i-1) .OR. (.NOT. ParEnv % Active(i)) ) CYCLE
+        proc = i-1
+        CALL MPI_BSEND( n, 1, MPI_INTEGER, proc, &
+            1201, MPI_COMM_WORLD, ierr )
+      END DO
+    ELSE
+      !IF (Debug) PRINT *,ParEnv % MyPE,'Getting unfound nodes ready to send'  
+       
+      ALLOCATE( perm(n), nodes_x(n), nodes_y(n),nodes_z(n) ); perm=0
+      j = 0
+      ! Extract nodes that we didn't find
+      DO i=1,NewMesh % NumberOfNodes
+        IF ( .NOT. UnFoundNodes(i) ) CYCLE
+        j = j + 1
+        perm(j) = i
+        nodes_x(j) = NewMesh % Nodes % x(i)
+        nodes_y(j) = NewMesh % Nodes % y(i)
+        nodes_z(j) = NewMesh % Nodes % z(i)
+      END DO
+      IF(ANY(HeightDimensions==1)) nodes_x = 0.0_dp
+      IF(ANY(HeightDimensions==2)) nodes_y = 0.0_dp       
+      IF(ANY(HeightDimensions==3)) nodes_z = 0.0_dp
+    
+      ! And ask for nodes from others
+      ALLOCATE(ProcSend(ParEnv % PEs))
+      DO i=1,ParEnv % PEs
+        IF ( Parenv % MyPE == i-1 .OR. .NOT. ParEnv % Active(i) ) CYCLE
+        proc = i-1
+        ! extract those of the missing nodes that are within the other
+        ! partions' bounding boxes                                    
+        ! --------------------------------------------------------  
+        myBB = BB(:,i) !Actually theirBB, but saves var names...
+        npart = 0
+        DO j=1,n
+          IF ( nodes_x(j)<myBB(1) .OR. nodes_x(j)>myBB(4) .OR. &
+                  nodes_y(j)<myBB(2) .OR. nodes_y(j)>myBB(5) .OR. &
+                  nodes_z(j)<myBB(3) .OR. nodes_z(j)>myBB(6) ) CYCLE
+          npart = npart+1
+        END DO
+        ProcSend(proc+1) % n = npart
+        IF ( npart>0 ) THEN
+          ALLOCATE( xpart(npart),ypart(npart),zpart(npart),ProcSend(proc+1) % perm(npart) )
+          npart = 0
+          DO j=1,n
+            IF ( nodes_x(j)<myBB(1) .OR. nodes_x(j)>myBB(4) .OR. &
+                  nodes_y(j)<myBB(2) .OR. nodes_y(j)>myBB(5) .OR. &
+                  nodes_z(j)<myBB(3) .OR. nodes_z(j)>myBB(6) ) CYCLE
+            npart=npart+1
+            ProcSend(proc+1) % perm(npart)=j
+            xpart(npart) = nodes_x(j)
+            ypart(npart) = nodes_y(j)
+            zpart(npart) = nodes_z(j)
+          END DO
+        END IF
+        
+        ! send count...                                               
+        IF (Debug) PRINT *,ParEnv % MyPE,'Sending count of ',npart,' out of ',n,'to partition',&
+            proc                                             
+        CALL MPI_BSEND( npart, 1, MPI_INTEGER, proc, &
+               1201, MPI_COMM_WORLD, ierr )
+        IF ( npart==0 ) CYCLE
+        ! ...and points                                                                                             
+        CALL MPI_BSEND( xpart, npart, MPI_DOUBLE_PRECISION, proc, &
+               1202, MPI_COMM_WORLD, ierr )
+        CALL MPI_BSEND( ypart, npart, MPI_DOUBLE_PRECISION, proc, &
+               1203, MPI_COMM_WORLD, ierr )
+        CALL MPI_BSEND( zpart, npart, MPI_DOUBLE_PRECISION, proc, &
+               1204, MPI_COMM_WORLD, ierr )
+        DEALLOCATE(xpart,ypart,zpart)
+      
+      END DO
+      
+      DEALLOCATE(nodes_x,nodes_y,nodes_z,BB)
+ 
+    END IF
+
+    ! Receive points from others
+    ! ----------------------------------
+    ALLOCATE(ProcRecv(ParEnv % PEs))                                                                      
+    DO i=1,COUNT(ParEnv % Active)-1
+      CALL MPI_RECV( n, 1, MPI_INTEGER, MPI_ANY_SOURCE, &
+            1201, MPI_COMM_WORLD, status, ierr )
+
+      proc = status(MPI_SOURCE)
+      ProcRecv(proc+1) % n = n
+      
+      IF ( n<=0 ) CYCLE ! No points sent from that partition
+
+      ALLOCATE(ProcRecv(proc+1) % nodes_x(n), ProcRecv(proc+1) % nodes_y(n), &
+          ProcRecv(proc+1) % nodes_z(n))
+
+      CALL MPI_RECV( ProcRecv(proc+1) % nodes_x, n, MPI_DOUBLE_PRECISION, proc, &
+            1202, MPI_COMM_WORLD, status, ierr )
+      CALL MPI_RECV( ProcRecv(proc+1) % nodes_y, n, MPI_DOUBLE_PRECISION, proc, &
+            1203, MPI_COMM_WORLD, status, ierr )
+      CALL MPI_RECV( ProcRecv(proc+1) % nodes_z, n, MPI_DOUBLE_PRECISION, proc, &
+            1204, MPI_COMM_WORLD, status, ierr )            
+    END DO
+
+
+    ! Interpolate points sent by other partitions and send back
+    ! ----------------------------------
+    DO i=1,ParEnv % PEs
+      IF ( Parenv % MyPE == i-1 .OR. .NOT. ParEnv % Active(i) ) CYCLE
+      
+      proc = i-1
+      n = ProcRecv(i) % n 
+      
+      CALL MPI_BSEND( n, 1, MPI_INTEGER, proc, &
+            1205, MPI_COMM_WORLD, status, ierr )
+     
+      IF ( n<=0 ) CYCLE ! No points to interpolate and send
+     
+      ALLOCATE(partmindists(n),partmininds(n),partminheights(n),PartNoNearest(n))
+      partmindists = maxdist
+      partmininds = 0
+      partminheights = 0
+      PartNoNearest = .TRUE.
+      DO j=1,n
+                  
+        Point(1) = ProcRecv(proc+1) % nodes_x(j)
+        Point(2) = ProcRecv(proc+1) % nodes_y(j)
+        Point(3) = ProcRecv(proc+1) % nodes_z(j)
+        Point(HeightDimensions) = 0.0_dp
+
+        !Cycle through boundary elements of old mesh, find closest node to unfound node in new mesh
+        DO l=OldMesh % NumberOfBulkElements+1,OldMesh % NumberOfBulkElements &
+            + OldMesh % NumberOfBoundaryElements
+          Element => OldMesh % Elements(l)
+          nn = Element % TYPE % NumberOfNodes
+  
+          !Cycle element nodes
+          DO p=1,nn
+            idx = Element % NodeIndexes(p)
+    
+            IF(partmininds(j) == idx) CYCLE !already got
+            IF(.NOT. ValidNode(idx)) CYCLE !invalid
+          
+            ! Get coordinates for node
+            SuppPoint(1) = OldMesh % Nodes % x(idx)
+            SuppPoint(2) = OldMesh % Nodes % y(idx)
+            SuppPoint(3) = OldMesh % Nodes % z(idx)
+            SuppPoint(HeightDimensions) = 0.0_dp
+
+            ! Get distance from unfound point
+            dist = 0.0_dp
+            DO k=1,3
+              dist = dist + (Point(k) - SuppPoint(k))**2.0_dp
+            END DO
+            dist = dist**0.5_dp
+              
+            ! If it's the closest point so far, save it
+            IF (dist < partmindists(j)) THEN
+              partmindists(j) = dist
+              partminheights(j) = OldHeightVar % Values(OldHeightVar % Perm(idx))
+              partmininds(j) = idx
+              PartNoNearest(j) = .FALSE.
+            END IF
+          END DO
+        END DO 
+      END DO
+     
+      ! ... and send back interpolated values
+      ! ----------------------------------   
+      CALL MPI_BSEND( partmindists, n, MPI_DOUBLE_PRECISION, proc, &
+               1206, MPI_COMM_WORLD, ierr )
+      CALL MPI_BSEND( partminheights, n, MPI_DOUBLE_PRECISION, proc, &
+               1207, MPI_COMM_WORLD, ierr )    
+
+      DEALLOCATE( ProcRecv(i) % nodes_x, ProcRecv(i) % nodes_y, ProcRecv(i) % nodes_z  )
+      
+      IF(PRESENT(Variables)) THEN  
+        ALLOCATE(partinterped(VarNo,n))
+        partinterped = 0
+        OldVar => Variables
+        varn = 1
+        DO WHILE(ASSOCIATED(OldVar))
+          !Is the variable valid?
+          IF((SIZE(OldVar % Values) == OldVar % DOFs) .OR. & !-global
+              (OldVar % DOFs > 1) .OR. &                    !-multi-dof
+              (OldVar % Name(1:10)=='coordinate') .OR. &    !-coord var
+              (OldVar % Name == HeightName) .OR. &          !-already got
+              OldVar % Secondary) THEN                      !-secondary
+            OldVar => OldVar % Next
+            CYCLE
+          END IF
+        
+          NewVar => VariableGet(NewMesh % Variables, OldVar % Name, .TRUE.)
+          IF(.NOT. ASSOCIATED(NewVar)) THEN
+            OldVar => OldVar % Next 
+            CYCLE
+          END IF
+          
+          DO m=1,n    
+            IF (.NOT. PartNoNearest(m)) THEN
+              partinterped(varn,m) = OldVar % Values(OldVar % Perm(partmininds(m)))
+            ELSE
+              partinterped(varn,m) = HUGE(interped(varn,m))   
+            END IF  
+          END DO           
+          
+          varn = varn+1
+          OldVar => OldVar % Next 
+        END DO
+
+        DO j=1,n
+          CALL MPI_BSEND(partinterped(:,j),VarNo, MPI_DOUBLE_PRECISION, proc, &
+               1350+j, MPI_COMM_WORLD, ierr )
+        END DO
+
+        DEALLOCATE(partinterped)        
+      END IF !Variables present
+     
+      DEALLOCATE( partminheights, partmindists, PartNoNearest, partmininds)
+
+    END DO
+
+    ! Collect interpolated values from other partitions and compare to our value
+    ! ----------------------------------  
+    DO i=1,COUNT(ParEnv % Active)-1
+
+      ! recv count:                                                   
+      ! -----------                                                   
+      CALL MPI_RECV( n, 1, MPI_INTEGER, MPI_ANY_SOURCE, &
+            1205, MPI_COMM_WORLD, status, ierr )
+      
+      proc = status(MPI_SOURCE)
+      PRINT *,ParEnv % MyPE,'Receiving ',n,'from ',proc
+      
+      IF ( n<=0 ) THEN
+         IF ( ALLOCATED(ProcSend) ) THEN
+            IF ( ALLOCATED(ProcSend(proc+1) % perm)) &
+                 DEALLOCATE(ProcSend(proc+1) % perm)
+         END IF
+         CYCLE
+      END IF  
+      
+      ALLOCATE( partmindists(n), partminheights(n) )
+
+      CALL MPI_RECV( partmindists, n, MPI_DOUBLE_PRECISION, proc, &
+               1206, MPI_COMM_WORLD, status, ierr )
+      CALL MPI_RECV( partminheights, n, MPI_DOUBLE_PRECISION, proc, &
+               1207, MPI_COMM_WORLD, status, ierr )
+            
+      DO j=1,n
+        k = ProcSend(proc+1) % perm(j)
+        IF ( mindists(k) > partmindists(j)) THEN
+          !IF (Debug) PRINT *,ParEnv % MyPE, 'Improving dist from   ',mindists(k),'to ',partmindists(j)
+          !IF (Debug) PRINT *,ParEnv % MyPE, 'Improving height from ',minheights(k),'to ',partminheights(j)
+          
+          mindists(k) = partmindists(j)
+          minheights(k) = partminheights(j)
+          NoNearest = .FALSE.
+            
+          IF(PRESENT(Variables)) THEN
+            ALLOCATE( partinterpedvar(VarNo))  
+            CALL MPI_RECV( partinterpedvar, VarNo, MPI_DOUBLE_PRECISION, proc, &
+                  1350+j, MPI_COMM_WORLD, status, ierr )
+            interped(:,k) = partinterpedvar
+            DEALLOCATE( partinterpedvar)
+          END IF
+        END IF
+      END DO
+      
+      DEALLOCATE( partmindists, partminheights, ProcSend(proc+1) % perm )
+    END DO
+
+  IF ((ALLOCATED(NoNearest)) .AND. (Debug)) PRINT *,ParEnv % MyPE, 'Still cant find ',COUNT(NoNearest)  
+  
+  ! Finally, put interped values in their places
+  ! ----------------------------------   
+  n = COUNT(UnfoundNodes)
+  IF (n > 0) THEN
+    ! Put interpolated heights in their place
+    IF (DEBUG) PRINT *,ParEnv % MyPE, 'Putting interpolated heights in their places'
+    DO i=1,n
+      j = perm(i)
+      PRINT *,ParEnv % MyPE,'new height for ',j,': ',minheights(i)
+      NewHeightVar % Values(NewHeightVar % Perm(j)) = minheights(i)
+    END DO
+
+    ! ...and put variable values in their place
+    IF(PRESENT(Variables)) THEN
+      IF (DEBUG) PRINT *,ParEnv % MyPE, 'Putting interpolated variables in their places'
+      varn = 1
+      OldVar => Variables
+      DO WHILE(ASSOCIATED(OldVar))
+
+        !Is the variable valid?
+        IF((SIZE(OldVar % Values) == OldVar % DOFs) .OR. & !-global
+               (OldVar % DOFs > 1) .OR. &                    !-multi-dof
+               (OldVar % Name(1:10)=='coordinate') .OR. &    !-coord var
+               (OldVar % Name == HeightName) .OR. &          !-already got
+               OldVar % Secondary) THEN                      !-secondary
+          OldVar => OldVar % Next
+          CYCLE
+        END IF
+        
+        NewVar => VariableGet(NewMesh % Variables, OldVar % Name, .TRUE.)
+        IF(.NOT. ASSOCIATED(NewVar)) THEN
+          OldVar => OldVar % Next
+          CYCLE
+        END IF
+
+        DO i=1,n
+          j = perm(i)
+          NewVar % Values(NewVar % Perm(j)) = interped(varn,i)
+        END DO
+        
+        varn = varn + 1        
+        OldVar => OldVar % Next
+      END DO
+      
+      DEALLOCATE(interped)
+      
+    END IF
+  END IF !n>0
+
+  IF (DEBUG) PRINT *,ParEnv % MyPE,'DONE!!!! Running deallocations...'
+
+  ! Deallocations
+  ! ---------------------------------- 
+  DEALLOCATE(ValidNode)
+  IF ( ALLOCATED(mindists) ) DEALLOCATE( mindists, minheights, mininds, NoNearest)
+  IF ( ALLOCATED(perm) ) DEALLOCATE(perm, ProcSend)
+  DEALLOCATE(ProcRecv)
+
+  END SUBROUTINE InterpolateUnfoundPointsNearest
+
 
 END MODULE InterpVarToVar

@@ -33,9 +33,12 @@ Simulation
   Timestep Intervals = {TimeSteps}
   Output Intervals = 1        
   Timestep Sizes = {TimeStepSize}
+  
+  !Restart File = "$name$.result"
+  !Restart Position = 2
 
   Initialize Dirichlet Conditions = Logical False  
-  Steady State Max Iterations = 10
+  Steady State Max Iterations = 1
   Steady State Min Iterations = 1
 
   Max Output Level = 3
@@ -386,7 +389,7 @@ Solver 10
 End
 
 Solver 11
-  Exec Solver = "Never"
+  !Exec Solver = "Never"
   Equation = String "StressSolver"
   Procedure = "ElmerIceSolvers" "ComputeDevStress"          
   Variable = -nooutput "Sij"
@@ -401,17 +404,39 @@ Solver 11
 End 
 
 Solver 12
-  Exec Solver = String "After All"
+  Exec Solver = String "After TimeStep"
   Equation = "Save Mesh"
   Procedure = "SaveMesh" "SaveMesh"
   Variable = "-global -nooutput SaveMeshDummy"
   Save Mesh = Logical True
   Mesh Name = "$name"" !"
   Save Mesh Directory = String "./mesh2d/"
-  Save All Timesteps = Logical True
+  !Save All Timesteps = Logical True
 End
 
 Solver 13
+  Equation = String "StrainSolver"
+  Procedure =  File "ElmerIceSolvers" "ComputeStrainRate"
+  Variable = -nooutput "Eij"
+  Variable DOFs = 1
+  Solver Timing = Logical True
+  Exec Intervals = 10
+
+  Exported Variable 1 = "StrainRate"
+  Exported Variable 1 DOFs = 7
+
+  Flow Solver Name = String "Flow Solution"
+
+  Linear System Solver = "Iterative"
+  Linear System Iterative Method = "BiCGStab"
+  Linear System Max Iterations = 300
+  Linear System Convergence Tolerance = 1.0E-09
+  Linear System Abort Not Converged = False
+  Linear System Preconditioning = "ILU0"
+  Linear System Residual Output = 0
+End
+
+Solver 14
   Equation = "ResultOutput"
   !Exec Solver = String "After All"
   Exec Solver = String "After Timestep"
@@ -422,7 +447,7 @@ Solver 13
   Vtu Format = Logical True
 End
 
-Solver 14
+Solver 15
   !Exec Solver = "Never"
   Exec Solver = String "After Timestep"
   Equation = String "ReMesh"
@@ -442,9 +467,10 @@ Solver 14
   FreeSurface Variable 2 = String "Zs Bottom"
   Mesh Update Variable 1 = String "Mesh Update"
   Mesh Velocity Variable 1 = String "Mesh Velocity"
+  Strain Rate Variable = String "StrainRate"
 End
 
-Solver 15
+Solver 16
   Equation = "Remesh Map Coordinate"
   Procedure = "StructuredMeshMapper" "StructuredMeshMapper"
   Exec Solver = "Never"
@@ -459,7 +485,7 @@ End
 !---------------------------------------------------
 
 Equation 1
-  Active Solvers(10) = 1 3 5 6 9 11 12 13 14 15
+  Active Solvers(10) = 1 3 5 6 9 11 12 13 14 15 16
   Flow Solution Name = String "Flow Solution"
   Convection = String Computed
 End
@@ -483,6 +509,7 @@ End
 Boundary Condition 1
   Name = "front"
   Target Boundaries(1) = 1
+  Calving Mask = Logical True
   
   Flow Force BC = Logical True
   External Pressure = Variable Coordinate 3
@@ -555,8 +582,8 @@ Boundary Condition 4
     Real Procedure "ElmerIceUSF" "SlidCoef_Contact"
  
   Sliding Law = String "Weertman" 
-  Weertman Friction Coefficient = Variable Coordinate 1
-     REAL Procedure "Sliding_Beta.so" "Linear"                
+  Weertman Friction Coefficient = Real 0.001 !Variable Coordinate 1
+     !REAL Procedure "Sliding_Beta.so" "Linear"                
   Weertman Exponent = Real $(1.0/1.0)
   Weertman Linear Velocity = Real 0.00001
   ! Options are 'Last Grounded' (default), 'First Floating' or 'Discontinuous' 
