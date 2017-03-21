@@ -246,20 +246,30 @@ def main():
 	# Output friction coefficients #
 	################################
 
-  # Linear Beta square
-  fid = open(inputs+"beta_linear.xyz",'w')
-  fid.write('{0}\n'.format(len(bed['Node Number'])))
-  for i in range(0,len(bed['Node Number'])):
-    fid.write('{0} {1} {2}\n'.format(bed['x'][i],bed['y'][i],bed['beta'][i]**2))
-  fid.close()
+  # Gridded linear beta square
+  x,y,u = elmerreadlib.input_file(inputs+"udem.xy", dim=2)
+  xx,yy = np.meshgrid(x,y)
+  beta_linear = scipy.interpolate.griddata((bed['x'],bed['y']),bed['beta']**2,(xx,yy),method='nearest')
+  beta_linear_lin = scipy.interpolate.griddata((bed['x'],bed['y']),bed['beta']**2,(xx,yy),method='linear')
+  beta_weertman = scipy.interpolate.griddata((bed['x'],bed['y']),\
+      (bed['beta']**2)*(bed['velocity']**(-2.0/3.0)),(xx,yy),method='linear')
+  ind = np.where(~(np.isnan(beta_linear_lin)))
+  beta_linear[ind] = beta_linear_lin[ind]
+  ind = np.where(np.isnan(beta_weertman))
+  beta_weertman[ind] = -2.0e9
+  del beta_linear_lin
   
-  # Weertman coefficient
-  fid = open(inputs+"beta_weertman.xyz",'w')
-  fid.write('{0}\n'.format(len(bed['Node Number'])))
-  for i in range(0,len(bed['Node Number'])):
-    coeff=(bed['beta'][i]**2)*(bed['ssavelocity'][i]**(-2.0/3.0))
-    fid.write('{0} {1} {2}\n'.format(bed['x'][i],bed['y'][i],coeff))
-  fid.close() 
+  fidl = open(inputs+"beta_linear.xy",'w')
+  fidw = open(inputs+"beta_weertman.xy",'w')
+  fidl.write('{}\n{}\n'.format(len(x),len(y)))
+  fidw.write('{}\n{}\n'.format(len(x),len(y)))
+  for i in range(0,len(x)):
+    for j in range(0,len(y)):
+      fidl.write('{0} {1} {2}\n'.format(x[i],y[j],beta_linear[j,i]))
+      fidw.write('{0} {1} {2}\n'.format(x[i],y[j],beta_weertman[j,i]))
+  fidl.close()
+  fidw.close()
+  del beta_linear, beta_weertman, u, x, y, fidl, fidw, xx, yy
   
   xgrid,ygrid,taubgrid = elmerreadlib.grid3d(bed,'taub',holes,extent)
   xgrid,ygrid,vmodgrid = elmerreadlib.grid3d(bed,'ssavelocity',holes,extent)
