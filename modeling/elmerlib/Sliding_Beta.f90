@@ -10,39 +10,39 @@ FUNCTION Linear( Model, nodenumber, dumy) RESULT(coeff) !
 	IMPLICIT NONE
 	TYPE(Model_t) :: Model
 	TYPE(Solver_t), TARGET :: Solver
-	INTEGER :: nodenumber, Nb, i, ind(1)
-	REAL(KIND=dp) :: x, y, z, dumy, coeff, beta 
-	REAL(KIND=dp) :: Zbed, znode, dist(1)
-	REAL(KIND=dp), ALLOCATABLE :: xb(:), yb(:), zb(:), betas(:)
+	INTEGER :: nodenumber, nx, ny, i, j
+	REAL(KIND=dp) :: x, y, dumy, coeff 
+	REAL(KIND=dp), ALLOCATABLE :: xb(:), yb(:), betas(:,:)
 	LOGICAL :: FirstTime=.True.
-	CHARACTER(len=MAX_NAME_LEN) :: filin='inputs/beta_linear.xyz'
+	CHARACTER(len=MAX_NAME_LEN) :: filin='inputs/beta_linear.xy'
+	REAL(kind=dp) :: LinearInterp
 
-	SAVE xb, yb, zb, betas
-	SAVE Firsttime
+  SAVE betas, xb, yb, nx, ny
+  SAVE FirstTime
 
-	if (Firsttime) then
+  IF (FirstTime) THEN
 
-    	Firsttime=.False.
+    FirstTime=.False.
 
-       	! open file
-       	open(10,file='inputs/beta_linear.xyz')
-    	Read(10,*) Nb
-        ALLOCATE(xb(Nb), yb(Nb), zb(Nb), betas(Nb))
-        READ(10,*)(xb(i), yb(i), zb(i), betas(i), i=1,Nb)
-		close(10)
-				
-	End if
+    ! open file
+    OPEN(10,file='inputs/beta_linear.xy')
+    READ(10,*) nx
+    READ(10,*) ny
+    ALLOCATE(xb(nx),yb(ny))
+    ALLOCATE(betas(nx,ny))
+    DO i=1,nx
+    	DO j=1,ny
+      	READ(10,*) xb(i),yb(j),betas(i,j)
+      END DO
+		END DO
+		CLOSE(10)
+  END IF
 
-	! position current point
-  x=Model % Nodes % x (nodenumber)
-  y=Model % Nodes % y (nodenumber)
-  ! Find the height of the current point
-  !z=Model % Nodes % z (nodenumber)
-		
-	ind=minloc(sqrt((x-xb)**2+(y-yb)**2),1)
-  dist=minval(sqrt((x-xb)**2+(y-yb)**2),1)
-  beta=betas(ind(1))
-  coeff=beta
+  ! position current point
+  x = Model % Nodes % x (nodenumber)
+  y = Model % Nodes % y (nodenumber)
+
+  coeff = LinearInterp(betas,xb,yb,nx,ny,x,y)
 
   Return
 End
@@ -57,40 +57,43 @@ FUNCTION Weertman( Model, nodenumber, dumy) RESULT(coeff) !
 	IMPLICIT NONE
 	TYPE(Model_t) :: Model
 	TYPE(Solver_t), TARGET :: Solver
-	INTEGER :: nodenumber, Nb, i, ind(1)
-	REAL(KIND=dp) :: x, y, z, dumy, coeff, beta 
-	REAL(KIND=dp) :: Zbed, znode, dist(1)
-	REAL(KIND=dp), ALLOCATABLE :: xb(:), yb(:), zb(:), betas(:)
+	INTEGER :: nodenumber, i, j, nx, ny
+	REAL(KIND=dp) :: x, y, dumy, coeff
+	REAL(KIND=dp), ALLOCATABLE :: xb(:), yb(:), betas(:,:)
 	LOGICAL :: FirstTime=.True.
-	CHARACTER(len=MAX_NAME_LEN) :: filin='inputs/beta_weertman.xyz'
+	CHARACTER(len=MAX_NAME_LEN) :: filin='inputs/beta_weertman.xy'
+	REAL(kind=dp) :: LinearInterp
+	
+  SAVE betas, xb, yb, nx, ny
+  SAVE FirstTime
 
-	SAVE xb, yb, zb, betas
-	SAVE Firsttime
+  IF (FirstTime) THEN
 
-	if (Firsttime) then
+    FirstTime=.False.
 
-    	Firsttime=.False.
+    ! open file
+    OPEN(10,file='inputs/beta_weertman.xy')
+    READ(10,*) nx
+    READ(10,*) ny
+    ALLOCATE(xb(nx),yb(ny))
+    ALLOCATE(betas(nx,ny))
+    DO i=1,nx
+    	DO j=1,ny
+      	READ(10,*) xb(i),yb(j),betas(i,j)
+      END DO
+		END DO
+		CLOSE(10)
+  END IF
 
-       	! open file
-       	open(10,file='inputs/beta_weertman.xyz')
-    	Read(10,*) Nb
-        ALLOCATE(xb(Nb), yb(Nb), zb(Nb), betas(Nb))
-        READ(10,*)(xb(i), yb(i), zb(i), betas(i), i=1,Nb)
-		close(10)
-				
-	End if
+  ! position current point
+  x = Model % Nodes % x (nodenumber)
+  y = Model % Nodes % y (nodenumber)
 
-	! position current point
-  x=Model % Nodes % x (nodenumber)
-  y=Model % Nodes % y (nodenumber)
-  ! Find the height of the current point
-  !z=Model % Nodes % z (nodenumber)
-		
-	ind=minloc(sqrt((x-xb)**2+(y-yb)**2),1)
-  dist=minval(sqrt((x-xb)**2+(y-yb)**2),1)
-    
-  beta=betas(ind(1))
-  coeff=beta
+  coeff = LinearInterp(betas,xb,yb,nx,ny,x,y)
 
   Return
 End
+
+!------------------------------------------------------------------!
+include 'Interp.f90' !
+!------------------------------------------------------------------!
