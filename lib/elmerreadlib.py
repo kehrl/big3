@@ -155,19 +155,19 @@ def grid3d(data,variable,holes=[],extent=[],dx=50):
   masked: masked grid
   '''
   
-  xmin=math.floor(min(data['x'])/100)*100
-  xmax=math.ceil(max(data['x'])/100)*100
-  ymin=math.floor(min(data['y'])/100)*100
-  ymax=math.ceil(max(data['y'])/100)*100
+  xmin = math.floor(min(data['x'])/100)*100
+  xmax = math.ceil(max(data['x'])/100)*100
+  ymin = math.floor(min(data['y'])/100)*100
+  ymax = math.ceil(max(data['y'])/100)*100
 
-  x=np.linspace(xmin,xmax,(xmax-xmin)/dx+1)
-  y=np.linspace(ymin,ymax,(ymax-ymin)/dx+1)
+  x = np.linspace(xmin,xmax,(xmax-xmin)/dx+1)
+  y = np.linspace(ymin,ymax,(ymax-ymin)/dx+1)
   
-  xx,yy=np.meshgrid(x,y)
+  xx,yy = np.meshgrid(x,y)
   
-  xy_i=np.column_stack([data['x'],data['y']])
+  xy_i = np.column_stack([data['x'],data['y']])
   
-  zz=griddata((data['x'],data['y']),data[variable],(xx,yy),method='linear')
+  zz = griddata((data['x'],data['y']),data[variable],(xx,yy),method='linear')
   
   # Create mask
   nx = len(x)
@@ -722,6 +722,18 @@ def grid_to_flowline_surface(surf,xf,yf):
   return points
 
 def input_file(file,dim=2):
+  '''
+  x,y,grid = input_file(file,dim=2)
+  
+  Load input grid file for elmersolver.
+  
+  Inputs:
+  file: filename
+  dim: dimension of file, currently only works for 2
+  
+  Outputs:
+  x,y,grid values of file
+  '''
 
   fid = open(file,"r")
   lines = fid.readlines()
