@@ -248,9 +248,7 @@ def main():
   # Move saveline results
   files = os.listdir(DIRM+"/mesh2d/")
   for file in files:
-    if file.startswith(runname) and not file.endswith('names') and ('.dat' in file):
-      os.rename(DIRM+"/mesh2d/"+file,DIRR_lambda+file)
-    if file.startswith(runname) and file.endswith('names'):
+    if file.startswith(runname) and ('.dat' in file):
       os.rename(DIRM+"/mesh2d/"+file,DIRR_lambda+file)
   
   # Move outputs for optimization

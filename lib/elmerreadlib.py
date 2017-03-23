@@ -24,7 +24,7 @@ def saveline(DIR,runname,variables):
   files=[]
   datanames = []
   for name in names:
-    if name.startswith(runname) and not name.endswith('names') and ('.dat' in name):
+    if name.startswith(runname) and not('names' in name) and ('.dat' in name):
       files.append(name)
     if name.startswith(runname) and name.endswith('names'):
       datanames.append(name)
@@ -32,39 +32,36 @@ def saveline(DIR,runname,variables):
   # Find the variable names in the ".name" file and initialize them   
   fid = open(DIR+datanames[0],"r")
   lines=fid.readlines()
-  for i in range(0,4):
-    lines.remove(lines[0])
   varnames=[]
   types = []
   columns = []
-  n = 0
   for line in lines:
-    if line[5:-1] == 'coordinate 1':
+    p = line.split()
+    if ' '.join(p[1:]) == 'coordinate 1':
       varnames.append('x')
       types.append(np.float64) 
-      columns.append(n)  
-    elif line[5:-1] == 'coordinate 2':
+      columns.append(int(p[0][0:-1])-1)  
+    elif ' '.join(p[1:]) == 'coordinate 2':
       varnames.append('y')
       types.append(np.float64)  
-      columns.append(n)        
-    elif line[5:-1] == 'coordinate 3':
+      columns.append(int(p[0][0:-1])-1)        
+    elif ' '.join(p[1:]) == 'coordinate 3':
       varnames.append('z')
       types.append(np.float64)  
-      columns.append(n)  
-    elif line[5:-1] == 'Node index':
+      columns.append(int(p[0][0:-1])-1)  
+    elif ' '.join(p[1:]) == 'Node index':
       varnames.append('Node Number')  
       types.append(np.int64)    
-      columns.append(n) 
-    elif line[5:-1] == 'Boundary condition':
+      columns.append(int(p[0][0:-1])-1) 
+    elif ' '.join(p[1:]) == 'Boundary condition':
       varnames.append('BC')  
       types.append(np.int64)    
-      columns.append(n) 
+      columns.append(int(p[0][0:-1])-1)
     for variable in variables:
-      if line[5:-1].startswith(variable):
-        varnames.append(line[5:-1])
+      if ' '.join(p[1:]).startswith(variable):
+        varnames.append(' '.join(p[1:]))
         types.append(np.float64)
-        columns.append(n)     
-    n=n+1
+        columns.append(int(p[0][0:-1])-1)     
 
   # Adding some variables for ease of use   
   if ('vsurfini 1') in varnames:
@@ -753,31 +750,3 @@ def input_file(file,dim=2):
   fid.close()
 
   return x,y,grid
-
-# def grid_to_flowline_old(data,x,y):
-#   '''
-#   flow = grid_to_flowline(data,x,y)
-#   
-#   Takes results from saveline_boundary and interpolates them to a flowline.
-#   
-#   Inputs:
-#   data: model results from saveline_boundary
-#   x,y: coordinates for flowline
-#   
-#   Outputs:
-#   flow: same as "data", except now only for values interpolated to the flowline
-#   '''
-#   
-#   import numpy as np
-#   from scipy.interpolate import griddata
-#   
-#   gridx=data['coord1']
-#   gridy=data['coord2']
-#   
-#   variables=data.keys()
-#   
-#   flow={}
-#   for variable in variables:
-#     flow[variable]=griddata(np.column_stack([gridx,gridy]),data[variable],np.column_stack([x,y]),method='linear')
-#   
-#   return flow
