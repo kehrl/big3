@@ -265,15 +265,19 @@ def main():
   # Gridded linear beta square
   x,y,u = elmerreadlib.input_file(inputs+"udem.xy", dim=2)
   xx,yy = np.meshgrid(x,y)
-  beta_linear = scipy.interpolate.griddata((bed['x'],bed['y']),bed['beta']**2,(xx,yy),method='nearest')
-  beta_linear_lin = scipy.interpolate.griddata((bed['x'],bed['y']),bed['beta']**2,(xx,yy),method='linear')
+  beta_linear = scipy.interpolate.griddata((bed['x'],bed['y']),\
+    bed['beta']**2, (xx,yy), method='nearest')
+  beta_linear_lin = scipy.interpolate.griddata((bed['x'],bed['y']),\
+    bed['beta']**2, (xx,yy), method='linear')
   beta_weertman = scipy.interpolate.griddata((bed['x'],bed['y']),\
-      (bed['beta']**2)*(bed['velocity']**(-2.0/3.0)),(xx,yy),method='linear')
+      (bed['beta']**2)*(bed['velocity']**(-2.0/3.0)), (xx,yy), method='nearest')
+  beta_weertman_lin = scipy.interpolate.griddata((bed['x'],bed['y']),\
+      (bed['beta']**2)*(bed['velocity']**(-2.0/3.0)), (xx,yy), method='linear')
   ind = np.where(~(np.isnan(beta_linear_lin)))
   beta_linear[ind] = beta_linear_lin[ind]
-  ind = np.where(np.isnan(beta_weertman))
+  ind = np.where(np.isnan(beta_weertman_lin))
   beta_weertman[ind] = -2.0e9
-  del beta_linear_lin
+  del beta_linear_lin, beta_weertman_lin
   
   fidl = open(inputs+"beta_linear.xy",'w')
   fidw = open(inputs+"beta_weertman.xy",'w')
