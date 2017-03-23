@@ -485,14 +485,6 @@ SUBROUTINE ReMesh(Model,Solver,dt,Transient )
      END IF
      Var % Values = 0.0_dp
   END DO  
-  
-  ! TODO: Try setting temperature to a given value
-  Var => VariableGet( Model % Mesh % Variables, "Temp Homologous", .TRUE.)
-  IF(.NOT. ASSOCIATED(Var)) THEN
-    WRITE(Message,'(A,A)') "Listed temperature variable but cant find: ","Temp Homologous"
-    CALL Fatal(SolverName, Message)
-  END IF
-  Var % Values = -10.0_dp
 
   !----------------------------------------------
   ! Deal with free surface variables for next time step

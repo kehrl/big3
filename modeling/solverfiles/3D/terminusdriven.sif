@@ -95,8 +95,6 @@ Initial Condition 1
   Mesh Velocity 2 = Real 0.0e0
   Mesh Velocity 3 = Real 0.0e0
   
-  Temp Homologous = Real -10.0
-  
 End
 
 ! Upper surface
@@ -172,8 +170,7 @@ Material 1
 ! two regimes in the flow law
   Limit Temperature = Real -10.0
 ! In case there is no temperature variable
-
-  Temperature Field Variable = String "Temp Homologous" 
+{Temperature}
   
   Sea level = Real 0.0
 
@@ -258,7 +255,6 @@ Solver 5
   Exported variable 2 DOFS = 1
   Exported Variable 3 = -dofs 3 "dSdt"
   !Exported Variable 4 = -dofs 1 "Bedrock"
-  Exported Variable 4 = -dofs 1 "Temp Homologous"
 End
 
 Solver 6
