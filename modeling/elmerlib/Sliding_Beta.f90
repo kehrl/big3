@@ -39,8 +39,8 @@ FUNCTION Linear( Model, nodenumber, dumy) RESULT(coeff) !
   END IF
 
   ! position current point
-  x = Model % Nodes % x (nodenumber)
-  y = Model % Nodes % y (nodenumber)
+  x = Model % Mesh % Nodes % x (nodenumber)
+  y = Model % Mesh % Nodes % y (nodenumber)
 
   coeff = LinearInterp(betas,xb,yb,nx,ny,x,y)
 
@@ -86,9 +86,9 @@ FUNCTION Weertman( Model, nodenumber, dumy) RESULT(coeff) !
   END IF
 
   ! position current point
-  x = Model % Nodes % x (nodenumber)
-  y = Model % Nodes % y (nodenumber)
-
+  x = Model % Mesh % Nodes % x (nodenumber)
+  y = Model % Mesh % Nodes % y (nodenumber)
+  
   coeff = LinearInterp(betas,xb,yb,nx,ny,x,y)
 
   Return

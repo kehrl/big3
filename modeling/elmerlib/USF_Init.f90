@@ -39,8 +39,8 @@ FUNCTION UIni( Model, nodenumber, dumy) RESULT(U) !
   END IF
 
   ! position current point
-  x = Model % Nodes % x (nodenumber)
-  y = Model % Nodes % y (nodenumber)
+  x = Model % Mesh % Nodes % x (nodenumber)
+  y = Model % Mesh % Nodes % y (nodenumber)
 
   U = LinearInterp(dem, xx, yy, nx, ny, x, y)
 
@@ -88,8 +88,8 @@ FUNCTION VIni( Model, nodenumber, dumy) RESULT(V) !
   END IF
 
   ! position current point
-  x = Model % Nodes % x (nodenumber)
-  y = Model % Nodes % y (nodenumber)
+  x = Model % Mesh % Nodes % x (nodenumber)
+  y = Model % Mesh % Nodes % y (nodenumber)
 
   V = LinearInterp(dem, xx, yy, nx, ny, x, y)
 
@@ -184,8 +184,8 @@ FUNCTION zbIni( Model, nodenumber, dumy) RESULT(zb) !
   END IF
 
   ! position current point
-	x = Model % Nodes % x (nodenumber)
-  y = Model % Nodes % y (nodenumber)
+  x = Model % Mesh % Nodes % x (nodenumber)
+  y = Model % Mesh % Nodes % y (nodenumber)
 
   zb = LinearInterp(dem, xx, yy, nx, ny, x, y)
 
@@ -231,8 +231,8 @@ FUNCTION Bedrock( Model, nodenumber, dumy) RESULT(zb) !
   END IF
 
   ! position current point
-	x = Model % Nodes % x (nodenumber)
-  y = Model % Nodes % y (nodenumber)
+  x = Model % Mesh % Nodes % x (nodenumber)
+  y = Model % Mesh % Nodes % y (nodenumber)
 
   zb = LinearInterp(dem, xx, yy, nx, ny, x, y)
 
@@ -279,8 +279,8 @@ FUNCTION UbIni( Model, nodenumber, dumy) RESULT(ub) !
   END IF
 
   ! position current point
-	x = Model % Nodes % x (nodenumber)
-  y = Model % Nodes % y (nodenumber)
+  x = Model % Mesh % Nodes % x (nodenumber)
+  y = Model % Mesh % Nodes % y (nodenumber)
 
   ub = LinearInterp(dem, xx, yy, nx, ny, x, y)
 
@@ -326,8 +326,8 @@ FUNCTION VbIni( Model, nodenumber, dumy) RESULT(vb) !
   END IF
 
   ! position current point
-	x = Model % Nodes % x (nodenumber)
-  y = Model % Nodes % y (nodenumber)
+  x = Model % Mesh % Nodes % x (nodenumber)
+  y = Model % Mesh % Nodes % y (nodenumber)
 
   vb = LinearInterp(dem, xx, yy, nx, ny, x, y)
 
@@ -396,106 +396,106 @@ END
 !------------------------------------------------------------------!
 FUNCTION GuessBeta( Model, nodenumber, dumy) RESULT(coeff) !
 !------------------------------------------------------------------!
-		USE types
-		USE DefUtils
-  	IMPLICIT NONE
-		TYPE(Model_t) :: Model
-  	REAL(kind=dp) :: dumy,coeff
-  	INTEGER :: nodenumber
-  	REAL(kind=dp) :: LinearInterp
+	USE types
+	USE DefUtils
+  IMPLICIT NONE
+	TYPE(Model_t) :: Model
+  REAL(kind=dp) :: dumy,coeff
+  INTEGER :: nodenumber
+  REAL(kind=dp) :: LinearInterp
 
-  	REAL(kind=dp),ALLOCATABLE :: xx(:), yy(:), beta0(:,:)
-    REAL(kind=dp) :: x, y, z
+  REAL(kind=dp),ALLOCATABLE :: xx(:), yy(:), beta0(:,:)
+  REAL(kind=dp) :: x, y, z
     
-    INTEGER :: nx, ny, i, j
+  INTEGER :: nx, ny, i, j
 		
-    LOGICAL :: FirstTimeBeta=.true.
+  LOGICAL :: FirstTimeBeta=.true.
 
-    SAVE xx, yy, beta0, nx, ny
-    SAVE FirstTimeBeta
+  SAVE xx, yy, beta0, nx, ny
+  SAVE FirstTimeBeta
 
-    IF (FirstTimeBeta) THEN
+  IF (FirstTimeBeta) THEN
 
-    	FirstTimeBeta=.False.
+    FirstTimeBeta=.False.
 
-      ! open file
-      OPEN(10,file='inputs/beta0.xy')
-      READ(10,*) nx
-      READ(10,*) ny
-      ALLOCATE(xx(nx),yy(ny))
-      ALLOCATE(beta0(nx,ny))
-      DO i=1,nx
-        DO j=1,ny
-        	READ(10,*) xx(i),yy(j),beta0(i,j)
-        END DO
-			END DO
-			CLOSE(10)
+    ! open file
+    OPEN(10,file='inputs/beta0.xy')
+    READ(10,*) nx
+    READ(10,*) ny
+    ALLOCATE(xx(nx),yy(ny))
+    ALLOCATE(beta0(nx,ny))
+    DO i=1,nx
+      DO j=1,ny
+        READ(10,*) xx(i),yy(j),beta0(i,j)
+      END DO
+		END DO
+		CLOSE(10)
 			
-    END IF
+  END IF
 
-    ! position current point
-    x = Model % Nodes % x (nodenumber)
-    y = Model % Nodes % y (nodenumber)
+  ! position current point
+  x = Model % Mesh % Nodes % x (nodenumber)
+  y = Model % Mesh % Nodes % y (nodenumber)
 
-    coeff = LinearInterp(beta0, xx, yy, nx, ny, x, y)
+  coeff = LinearInterp(beta0, xx, yy, nx, ny, x, y)
 		
-    RETURN
+  RETURN
 END
 
 !------------------------------------------------------------------!
 FUNCTION SSAViscosity( Model, nodenumber, dumy) RESULT(eta) !
 !------------------------------------------------------------------!
-		USE types
-		USE DefUtils
-  	IMPLICIT NONE
-		TYPE(Model_t) :: Model
-  	REAL(kind=dp) :: dumy, eta, E, yearinsec
-  	INTEGER :: nodenumber
-  	REAL(kind=dp) :: LinearInterp
+	USE types
+	USE DefUtils
+  IMPLICIT NONE
+	TYPE(Model_t) :: Model
+  REAL(kind=dp) :: dumy, eta, E, yearinsec
+  INTEGER :: nodenumber
+  REAL(kind=dp) :: LinearInterp
 
-  	REAL(kind=dp),ALLOCATABLE :: xx(:), yy(:), flowA(:,:)
-    REAL(kind=dp) :: x, y, z
+  REAL(kind=dp),ALLOCATABLE :: xx(:), yy(:), flowA(:,:)
+  REAL(kind=dp) :: x, y, z
     
-    INTEGER :: nx, ny, i, j
+  INTEGER :: nx, ny, i, j
 		
-    LOGICAL :: FirstTimeSSAViscosity=.true.
+  LOGICAL :: FirstTimeSSAViscosity=.true.
 
-    SAVE xx,yy,flowA,nx,ny
-    SAVE FirstTimeSSAViscosity
+  SAVE xx,yy,flowA,nx,ny
+  SAVE FirstTimeSSAViscosity
 
-    IF (FirstTimeSSAViscosity) THEN
+  IF (FirstTimeSSAViscosity) THEN
 
-    	FirstTimeSSAViscosity=.False.
+    FirstTimeSSAViscosity=.False.
 
-      ! open file
-      OPEN(10,file='inputs/ssa_flowA.xy')
-      READ(10,*) nx
-      READ(10,*) ny
-      ALLOCATE(xx(nx),yy(ny))
-      ALLOCATE(flowA(nx,ny))
-      DO i=1,nx
-        DO j=1,ny
-        	READ(10,*) xx(i),yy(j),flowA(i,j)
-        END DO
-			END DO
-			CLOSE(10)
+    ! open file
+    OPEN(10,file='inputs/ssa_flowA.xy')
+    READ(10,*) nx
+    READ(10,*) ny
+    ALLOCATE(xx(nx),yy(ny))
+    ALLOCATE(flowA(nx,ny))
+    DO i=1,nx
+      DO j=1,ny
+        READ(10,*) xx(i),yy(j),flowA(i,j)
+      END DO
+		END DO
+		CLOSE(10)
     
-    END IF
+  END IF
 
-    ! year in seconds for conversion
-    yearinsec = 365.25*24*60*60
+  ! year in seconds for conversion
+  yearinsec = 365.25*24*60*60
     
-    ! Enhancement factor
-    E = 3.d0
+  ! Enhancement factor
+  E = 3.d0
 
-    ! position current point
-    x = Model % Nodes % x (nodenumber)
-    y = Model % Nodes % y (nodenumber)
+  ! position current point
+  x = Model % Mesh % Nodes % x (nodenumber)
+  y = Model % Mesh % Nodes % y (nodenumber)
 
-    eta = LinearInterp(flowA, xx, yy, nx, ny, x, y)
-    eta = ((E * eta * yearinsec)**(-1.0/3.0d0)) * 1.0e-6    
+  eta = LinearInterp(flowA, xx, yy, nx, ny, x, y)
+  eta = ((E * eta * yearinsec)**(-1.0/3.0d0)) * 1.0e-6    
 		
-    RETURN
+  RETURN
 END
 
 
@@ -546,9 +546,9 @@ FUNCTION ModelViscosity( Model, nodenumber, dumy) RESULT(eta) !
       
     END IF
 
-    x = Model % Nodes % x (nodenumber)
-    y = Model % Nodes % y (nodenumber)
-    z = Model % Nodes % y (nodenumber)
+  	x = Model % Mesh % Nodes % x (nodenumber)
+  	y = Model % Mesh % Nodes % y (nodenumber)
+    z = Model % Mesh % Nodes % y (nodenumber)
 
     zs = zsIni( Model, nodenumber, dumy )
     zb = zbIni( Model, nodenumber, dumy )		
@@ -632,9 +632,9 @@ FUNCTION ModelTemperature( Model, nodenumber, dumy) RESULT(T) !
     END IF
 
     ! Get coordinates
-    x = Model % Nodes % x (nodenumber)
-    y = Model % Nodes % y (nodenumber)
-    z = Model % Nodes % z (nodenumber)
+  	x = Model % Mesh % Nodes % x (nodenumber)
+  	y = Model % Mesh % Nodes % y (nodenumber)
+    z = Model % Mesh % Nodes % z (nodenumber)
 
     zs = zsIni( Model, nodenumber, dumy )
     zb = zbIni( Model, nodenumber, dumy )		
@@ -721,8 +721,8 @@ FUNCTION SurfaceTemperature( Model, nodenumber, dumy) RESULT(Ts) !
     END IF
 
     ! position current point
-    x = Model % Nodes % x (nodenumber)
-    y = Model % Nodes % y (nodenumber)
+  	x = Model % Mesh % Nodes % x (nodenumber)
+  	y = Model % Mesh % Nodes % y (nodenumber)
 
     Ts = LinearInterp(Tgrid, xx, yy, nx, ny, x, y)
 		
@@ -771,8 +771,8 @@ FUNCTION Accumulation( Model, nodenumber, dumy) RESULT(a) !
     END IF
 
     ! position current point
-    x = Model % Nodes % x (nodenumber)
-    y = Model % Nodes % y (nodenumber)
+  	x = Model % Mesh % Nodes % x (nodenumber)
+  	y = Model % Mesh % Nodes % y (nodenumber)
 
     a = LinearInterp(smbgrid, xx, yy, nx, ny, x, y)
 		
@@ -831,9 +831,9 @@ FUNCTION IceDivideTemperature( Model, nodenumber, dumy) RESULT(T) !
     END IF
 
     ! Get coordinates
-    x = Model % Nodes % x (nodenumber)
-    y = Model % Nodes % y (nodenumber)
-    z = Model % Nodes % z (nodenumber)
+  	x = Model % Mesh % Nodes % x (nodenumber)
+  	y = Model % Mesh % Nodes % y (nodenumber)
+    z = Model % Mesh % Nodes % z (nodenumber)
 
     zs = zsIni( Model, nodenumber, dumy )
     zb = zbIni( Model, nodenumber, dumy )		
@@ -925,9 +925,9 @@ FUNCTION UModel( Model, nodenumber, dumy) RESULT(T) !
     END IF
 
     ! Get coordinates
-    x = Model % Nodes % x (nodenumber)
-    y = Model % Nodes % y (nodenumber)
-    z = Model % Nodes % z (nodenumber)
+  	x = Model % Mesh % Nodes % x (nodenumber)
+  	y = Model % Mesh % Nodes % y (nodenumber)
+    z = Model % Mesh % Nodes % z (nodenumber)
 
     zs = zsIni( Model, nodenumber, dumy )
     zb = zbIni( Model, nodenumber, dumy )		
@@ -1025,9 +1025,9 @@ FUNCTION VModel( Model, nodenumber, dumy) RESULT(T) !
     END IF
 
     ! Get coordinates
-    x = Model % Nodes % x (nodenumber)
-    y = Model % Nodes % y (nodenumber)
-    z = Model % Nodes % z (nodenumber)
+  	x = Model % Mesh % Nodes % x (nodenumber)
+  	y = Model % Mesh % Nodes % y (nodenumber)
+    z = Model % Mesh % Nodes % z (nodenumber)
 
     zs = zsIni( Model, nodenumber, dumy )
     zb = zbIni( Model, nodenumber, dumy )		
