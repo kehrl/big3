@@ -30,20 +30,19 @@ SUBROUTINE ReMesh(Model,Solver,dt,Transient )
   TYPE(Solver_t), POINTER :: PSolver
   INTEGER :: ExtrudeLevels, i, j, k, ierr, n, NodesPerLevel, dim, dummyint, active, &
       Timestep, nxbed, nybed, FrontBC, idx, nn
-  INTEGER, POINTER :: OldTopVarPerm(:)=>NULL(), OldTopPerm(:)=>NULL(), OldBotPerm(:)=>NULL(), &
-      OldBotVarPerm(:)=>NULL(), TopVarPerm(:)=>NULL(), BotVarPerm(:)=>NULL(), &
-      WorkPerm(:), InterpDim(:)=>NULL(), TopPointer(:), BotPointer(:), MidPointer(:)
-  INTEGER, ALLOCATABLE :: Columns(:)
+  INTEGER, POINTER :: OldTopVarPerm(:)=>NULL(), OldTopPerm(:)=>NULL(), &
+      OldBotPerm(:)=>NULL(), OldBotVarPerm(:)=>NULL(), TopVarPerm(:)=>NULL(), &
+      BotVarPerm(:)=>NULL(), WorkPerm(:), InterpDim(:)=>NULL(), TopPointer(:), &
+      BotPointer(:), MidPointer(:)
   REAL(KIND=dp), POINTER :: TopVarValues(:), BotVarValues(:), WorkReal(:), ForceVector(:)
   CHARACTER(LEN=MAX_NAME_LEN) :: Name, OldMeshName, NewMeshName, SolverName, VarName, &
       TopMaskName, BotMaskName, BotVarName, TopVarName, GLVarName, FrontMaskName
-  REAL(KIND=dp), ALLOCATABLE :: STIFF(:,:), FORCE(:), BedHeight(:), dembed(:,:), &
-      xxbed(:),yybed(:)
-  LOGICAL :: Boss, Debug, Found, Parallel, FirstTime=.TRUE., DoGL, First, ThisBC
+  REAL(KIND=dp), ALLOCATABLE :: BedHeight(:), dembed(:,:), xxbed(:),yybed(:)
+  LOGICAL :: Boss, Debug, Found, Parallel, FirstTime=.TRUE., DoGL, First, ThisBC, GotIt
   LOGICAL, POINTER :: UnfoundNodesBot(:)=>NULL(), UnfoundNodesTop(:)=>NULL(), &
       OldMaskLogical(:), NewMaskLogical(:)
   LOGICAL, ALLOCATABLE :: IsOutsideMesh(:)
-  REAL(kind=dp) :: global_eps, local_eps, top, bot, x, y, zb
+  REAL(kind=dp) :: global_eps, local_eps, top, bot, x, y, zb, groundtoler
   Real(kind=dp) :: LinearInterp
   
   SAVE :: FirstTime, BotMaskName, TopMaskName
@@ -65,6 +64,7 @@ SUBROUTINE ReMesh(Model,Solver,dt,Transient )
   IF (FirstTime) THEN
     TopMaskName = "Top Surface Mask"
     BotMaskName = "Bottom Surface Mask"
+    FrontMaskName = "Calving Mask"
   END IF !FirstTime
   
   ! Get current mesh
@@ -79,7 +79,7 @@ SUBROUTINE ReMesh(Model,Solver,dt,Transient )
 	TimestepVar => VariableGet( Model % Variables,'Timestep')
 	Timestep = TimestepVar % Values(1)
 	WRITE (NewMeshName, "(A4,I1)") "mesh", Timestep
-  !NewMeshName = "mesh1"
+  !NewMeshName = "mesh2"
   
   FootPrintMesh => LoadMesh2( Model, NewMeshName, NewMeshName, &
        .FALSE., Parenv % PEs, ParEnv % myPE) ! May need to adjust parameters to account for parallel mesh
@@ -145,6 +145,12 @@ SUBROUTINE ReMesh(Model,Solver,dt,Transient )
   OldGLVar => VariableGet(OldMesh % Variables, GLVarName, .TRUE.)
   IF(ASSOCIATED(OldGLVar)) THEN
     DoGL = .TRUE.
+    
+    groundtoler = GetConstReal(Params, 'Grounded Toler', GotIt)
+    IF (.NOT.GotIt) THEN
+      CALL FATAL(SolverName, 'No tolerance given for the Grounded Mask.')
+    END IF
+  
   ELSE
     DoGL = .FALSE.
     IF(Found) THEN
@@ -152,6 +158,7 @@ SUBROUTINE ReMesh(Model,Solver,dt,Transient )
     ELSE
       CALL Info(SolverName, "Didn't find GroundedMask, not accounting for Grounding Line in remeshing.")
     END IF
+  
   END IF
 
   !----------------------------------------------
@@ -168,6 +175,9 @@ SUBROUTINE ReMesh(Model,Solver,dt,Transient )
   OldBotVar => VariableGet(OldMesh % Variables, BotVarName, .TRUE.)
   IF(.NOT.ASSOCIATED(OldBotVar)) CALL Fatal(SolverName, "Couldn't get variable:&
         &RemeshBottomSurf")
+
+  ! Run in parallel
+  CALL ParallelActive(.TRUE.)
 
   !When the model initialises, these two exported variables
   !share a perm with other vars, so we don't want to deallocate
@@ -246,9 +256,6 @@ SUBROUTINE ReMesh(Model,Solver,dt,Transient )
       ALLOCATE(NewGLVar % PrevValues(SIZE(NewGLVar % Values), SIZE(OldGLVar % PrevValues,2)))
     END IF
   END IF  
-  
-  ! Run in parallel
-  CALL ParallelActive(.TRUE.)
 
   ! Interpolate surface variable to mesh
   CALL InterpolateVarToVarReduced(OldMesh, ExtrudedMesh, TopVarName, InterpDim, UnfoundNodesTop,&
@@ -263,7 +270,6 @@ SUBROUTINE ReMesh(Model,Solver,dt,Transient )
     CALL Warn(SolverName, Message)
   END IF
          
-
   ! Remove grounding line variable during interpolation
   IF(DoGL) THEN
     WorkVar => OldMesh % Variables
@@ -308,7 +314,6 @@ SUBROUTINE ReMesh(Model,Solver,dt,Transient )
     CALL Warn(SolverName, Message)
   END IF
 
-
   ! Check that new surfaces were interpolated onto mesh
   NewTopVar => NULL(); NewBotVar => NULL()
   NewTopVar => VariableGet(ExtrudedMesh % Variables, TopVarName, .TRUE.)
@@ -346,21 +351,29 @@ SUBROUTINE ReMesh(Model,Solver,dt,Transient )
     ! Set grounded ice to same elevation as bedrock
     DO i=1,ExtrudedMesh % NumberOfNodes
       IF(NewGLVar % Perm(i) > 0) THEN
-!        IF (UnfoundNodesBot(i)) THEN
-!          x = ExtrudedMesh % Nodes % x (i)
-!          y = ExtrudedMesh % Nodes % y (i)
-!          IF (NewBotVar % Values(NewBotVar % Perm(i)) > LinearInterp(dembed,xxbed,yybed,nxbed,nybed,x,y)) THEN
-!            NewGLVar % Values(NewGLVar % Perm(i)) = -1
-!          ELSE 
-!            NewGLVar % Values(NewGLVar % Perm(i)) = 0
-!          END IF
-!        END IF
+        x = ExtrudedMesh % Nodes % x (i)
+        y = ExtrudedMesh % Nodes % y (i)
+        
+        ! Adjust grounding line mask if node is one of the unfound ones
+        IF (UnfoundNodesBot(i)) THEN
+          IF ((NewBotVar % Values(NewBotVar % Perm(i))) > &
+                (LinearInterp(dembed,xxbed,yybed,nxbed,nybed,x,y) + groundtoler)) THEN
+             NewGLVar % Values(NewGLVar % Perm(i)) = -1.0_dp
+          ELSE
+            IF ((NewBotVar % Values(NewBotVar % Perm(i))) < &
+                (LinearInterp(dembed,xxbed,yybed,nxbed,nybed,x,y) - groundtoler)) THEN
+              NewGLVar % Values(NewGLVar % Perm(i)) = 1.0_dp
+            ELSE
+              NewGLVar % Values(NewGLVar % Perm(i)) = 0.0_dp
+            END IF
+          END IF
+        END IF
+        
+        ! Depending on grounding mask, adjust bed elevation
         IF((NewGLVar % Values(NewGLVar % Perm(i)) > -0.5)) THEN
-          x = ExtrudedMesh % Nodes % x (i)
-          y = ExtrudedMesh % Nodes % y (i)
-          !print *,'BED',x,y,NewBotVar % Values(NewBotVar % Perm(i)), LinearInterp(dembed,xxbed,yybed,nxbed,nybed,x,y)
           NewBotVar % Values(NewBotVar % Perm(i)) = LinearInterp(dembed,xxbed,yybed,nxbed,nybed,x,y)
         END IF
+        
       END IF
     END DO
   END IF
@@ -378,37 +391,6 @@ SUBROUTINE ReMesh(Model,Solver,dt,Transient )
     WRITE(Message,'(A,A)') "Listed strain rate variable but cant find: ",VarName
     CALL Fatal(SolverName, Message)
   END IF
-
-! Find new nodes that fall outside old mesh
-!  ALLOCATE(IsOutsideMesh(ExtrudedMesh % NumberOfNodes))
-!  IsOutsideMesh = .FALSE.  
-!  DO i=1,ExtrudedMesh % NumberOfNodes
-!    Point(1) = NewMesh % Nodes % x(i)
-!    Point(2) = NewMesh % Nodes % y(i)
-!    Point(3) = NewMesh % Nodes % z(i)
-!
-!    DO j=1,OldMesh % NumberOfBulkElements + OldMesh % NumberOfBoundaryElements
-!      IF (PointinElement(OldMesh % Elements(j),
-!    END DO
-!  END DO
-
-    ! Figure out which nodes are on the calving front, so that we can exclude them when we
-    ! force the grounded ice to have the same elevation as the bedrock.
-!    ALLOCATE(IsOutsideMesh(ExtrudedMesh % NumberOfNodes))
-!    IsOutsideMesh = .FALSE.
-!    DO i=ExtrudedMesh % NumberOfBulkElements+1,ExtrudedMesh % NumberOfBulkElements &
-!         + ExtrudedMesh % NumberOfBoundaryElements
-!      Element => ExtrudedMesh % Elements(i)
-!
-!      IF (Element % BoundaryInfo % Constraint == FrontBC) THEN
-!        nn = Element % TYPE % NumberOfNodes
-!        DO j=1,nn
-!          idx = Element % NodeIndexes(j)
-!          IsOutsideMesh(j) = .TRUE.
-!        END DO
-!      END IF
-!    END DO
-
 
   !----------------------------------------------
   ! Map coordinates to extrudedmesh
@@ -445,6 +427,8 @@ SUBROUTINE ReMesh(Model,Solver,dt,Transient )
   IF(Parallel) CALL MPI_BARRIER(MPI_COMM_WORLD, ierr)
   CALL ReleaseMesh(FootprintMesh)
   DEALLOCATE(FootprintMesh)
+  
+  DEALLOCATE(UnfoundNodesBot, UnfoundNodesTop)
 
   !----------------------------------------------
   ! Remove top, bottom variables from extrudedmesh so that we don't affect SwitchMesh
@@ -489,18 +473,26 @@ SUBROUTINE ReMesh(Model,Solver,dt,Transient )
   END DO
 
    ! TODO: check to see if this actually helps  
-!  DO i = 1,999
-!     WRITE(Message,'(A,I0)') 'Mesh Velocity Variable ',i
-!     VarName = ListGetString( Params, Message, Found)
-!     IF( .NOT. Found) EXIT
-!
-!     Var => VariableGet( Model % Mesh % Variables, VarName, .TRUE. )
-!     IF(.NOT. ASSOCIATED(Var)) THEN
-!        WRITE(Message,'(A,A)') "Listed mesh velocity variable but cant find: ",VarName
-!        CALL Fatal(SolverName, Message)
-!     END IF
-!     Var % Values = 0.0_dp
-!  END DO  
+  DO i = 1,999
+     WRITE(Message,'(A,I0)') 'Mesh Velocity Variable ',i
+     VarName = ListGetString( Params, Message, Found)
+     IF( .NOT. Found) EXIT
+
+     Var => VariableGet( Model % Mesh % Variables, VarName, .TRUE. )
+     IF(.NOT. ASSOCIATED(Var)) THEN
+        WRITE(Message,'(A,A)') "Listed mesh velocity variable but cant find: ",VarName
+        CALL Fatal(SolverName, Message)
+     END IF
+     Var % Values = 0.0_dp
+  END DO  
+  
+  ! TODO: Try setting temperature to a given value
+  Var => VariableGet( Model % Mesh % Variables, "Temp Homologous", .TRUE.)
+  IF(.NOT. ASSOCIATED(Var)) THEN
+    WRITE(Message,'(A,A)') "Listed temperature variable but cant find: ","Temp Homologous"
+    CALL Fatal(SolverName, Message)
+  END IF
+  Var % Values = -10.0_dp
 
   !----------------------------------------------
   ! Deal with free surface variables for next time step
@@ -532,14 +524,6 @@ SUBROUTINE ReMesh(Model,Solver,dt,Transient )
     END DO
      
   END DO
-
-
-  !----------------------------------------------
-  ! Get rid of unneccessary meshes and variables
-  !----------------------------------------------
-  
-  !CALL ReleaseMesh(OldMesh)
-  !DEALLOCATE(OldMesh)
 
 CONTAINS
 
@@ -881,94 +865,20 @@ CONTAINS
     Model % Meshes => NewMesh
     Model % Mesh => NewMesh
     Model % Variables => NewMesh % Variables
+    Model % Nodes => NewMesh % Nodes
 
     !Free old mesh and associated variables
     CALL ReleaseMesh(OldMesh)
     DEALLOCATE(OldMesh)
-!    DEALLOCATE(UnfoundNodes)
+    DEALLOCATE(UnfoundNodes)
 
     OldMesh => Model % Meshes
 
   END SUBROUTINE SwitchMesh
-!
-!  !Taken from TwoMeshes
-!  !------------------------------------------------------------------------------
-!  SUBROUTINE SetDirichtletPoint( StiffMatrix, ForceVector,DOF, NDOFs, &
-!       Perm, NodeIndex, NodeValue) 
-!    !------------------------------------------------------------------------------
-!
-!    IMPLICIT NONE
-!
-!    TYPE(Matrix_t), POINTER :: StiffMatrix
-!    REAL(KIND=dp) :: ForceVector(:), NodeValue
-!    INTEGER :: DOF, NDOFs, Perm(:), NodeIndex
-!    !------------------------------------------------------------------------------
-!
-!    INTEGER :: PermIndex
-!    REAL(KIND=dp) :: s
-!
-!    !------------------------------------------------------------------------------
-!
-!    PermIndex = Perm(NodeIndex)
-!
-!    IF ( PermIndex > 0 ) THEN
-!       PermIndex = NDOFs * (PermIndex-1) + DOF
-!
-!       IF ( StiffMatrix % FORMAT == MATRIX_SBAND ) THEN        
-!          CALL SBand_SetDirichlet( StiffMatrix,ForceVector,PermIndex,NodeValue )        
-!       ELSE IF ( StiffMatrix % FORMAT == MATRIX_CRS .AND. &
-!            StiffMatrix % Symmetric ) THEN        
-!          CALL CRS_SetSymmDirichlet(StiffMatrix,ForceVector,PermIndex,NodeValue)        
-!       ELSE                          
-!          s = StiffMatrix % Values(StiffMatrix % Diag(PermIndex))
-!          ForceVector(PermIndex) = NodeValue * s
-!          CALL ZeroRow( StiffMatrix,PermIndex )
-!          CALL SetMatrixElement( StiffMatrix,PermIndex,PermIndex,1.0d0*s )        
-!       END IF
-!    END IF
-!
-!    !------------------------------------------------------------------------------
-!  END SUBROUTINE SetDirichtletPoint
-  !------------------------------------------------------------------------------
 
-  !Constructs the local matrix for the "d2U/dz2 = 0" Equation
-  !------------------------------------------------------------------------------
-  SUBROUTINE LocalMatrix(  STIFF, FORCE, Element, n )
-    !------------------------------------------------------------------------------
-    REAL(KIND=dp) :: STIFF(:,:), FORCE(:)
-    INTEGER :: n
-    TYPE(Element_t), POINTER :: Element
-    !------------------------------------------------------------------------------
-    REAL(KIND=dp) :: Basis(n),dBasisdx(n,3),DetJ
-    LOGICAL :: Stat
-    INTEGER :: t, p, q, dim
-    TYPE(GaussIntegrationPoints_t) :: IP
-
-    TYPE(Nodes_t) :: Nodes
-    SAVE Nodes
-    !------------------------------------------------------------------------------
-    CALL GetElementNodes( Nodes, Element)
-
-    FORCE = 0.0_dp
-    STIFF = 0.0_dp
-
-    dim = CoordinateSystemDimension()
-
-    !Numerical integration:
-    !----------------------
-    IP = GaussPoints( Element )
-    DO t=1,IP % n
-       stat = ElementInfo( Element, Nodes, IP % U(t), IP % V(t), &
-            IP % W(t),  detJ, Basis, dBasisdx )
-
-       DO p=1,n
-          DO q=1,n
-             STIFF(p,q) = STIFF(p,q) + IP % S(t) * detJ * dBasisdx(q,dim)*dBasisdx(p,dim)
-          END DO
-       END DO
-    END DO
-    !------------------------------------------------------------------------------
-  END SUBROUTINE LocalMatrix
+  !----------------------------------------------
+  ! InterpedMaskedBCReduced
+  !----------------------------------------------
 
   SUBROUTINE InterpMaskedBCReduced(Model, Solver, OldMesh, NewMesh, Variables, MaskName, &
        SeekNodes, globaleps, localeps)
@@ -1022,36 +932,20 @@ CONTAINS
     ALLOCATE(InterpDim(1))
     InterpDim(1) = 3
 
-    CALL ParallelActive(.TRUE.)
     CALL InterpolateVarToVarReduced(OldMesh, NewMesh, "mesh update 3", InterpDim, &
          UnfoundNodes, OldMaskLogical, NewMaskLogical, Variables=OldMesh % Variables, &
          GlobalEps=geps, LocalEps=leps)
 
-    IF(ANY(UnfoundNodes)) THEN
-      !NewMaskLogical changes purpose, now it masks supporting nodes
-      NewMaskLogical = (NewMaskPerm <= 0)
+    !OldMaskLogical changes purpose, now it masks supporting nodes
+    !OldMaskLogical = (OldMaskPerm <= 0)
 
-      DO i=1, SIZE(UnfoundNodes)
-          IF(UnfoundNodes(i)) THEN
-             !PRINT *,ParEnv % MyPE,'Didnt find point: ', i, &
-             !     ' x:', NewMesh % Nodes % x(i),&
-             !     ' y:', NewMesh % Nodes % y(i),&
-             !     ' z:', NewMesh % Nodes % z(i)
-             CALL InterpolateUnfoundPoint( i, NewMesh, "mesh update 3", & 
-                InterpDim, NodeMask=NewMaskLogical, &
-                Variables=NewMesh % Variables )
-          END IF
-       END DO
-
-       WRITE(Message, '(i0,a,a,a,i0,a,i0,a)') ParEnv % MyPE,&
-            ' Failed to find all points on face: ',MaskName, ', ',&
-            COUNT(UnfoundNodes),' of ',COUNT(.NOT. NewMaskLogical),' missing points.'
-       CALL Warn("InterpMaskedBCReduced", Message)
-    END IF
+    IF(Parallel) CALL MPI_BARRIER(MPI_COMM_WORLD, ierr)
+    CALL InterpolateUnfoundPointsNearest(UnfoundNodes, OldMesh, NewMesh, "mesh update 3", & 
+              InterpDim, Variables=OldMesh % Variables ) !NodeMask
 
     DEALLOCATE(OldMaskLogical, &
          NewMaskLogical, NewMaskPerm, &
-         OldMaskPerm, UnfoundNodes)
+         OldMaskPerm, UnfoundNodes, InterpDim)
 
   END SUBROUTINE InterpMaskedBCReduced
   

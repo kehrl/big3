@@ -363,7 +363,7 @@ CONTAINS
 
        unfound = n - nfound
        IF(unfound > 0) THEN
-          PRINT *, 'InterpVarToVar','Parallel: Found ',nfound,&
+          PRINT *, ParEnv % MyPE, 'InterpVarToVar','Parallel: Found ',nfound,&
                ' nodes but still cant find ',unfound,' nodes!'
        END IF
 
@@ -1139,11 +1139,12 @@ CONTAINS
   !Subroutine designed to interpolate single missing points from the edges of the mesh 
   ! (using values from the old mesh), which occur due to glacier advance
   SUBROUTINE InterpolateUnfoundPointsNearest(UnfoundNodes, OldMesh, NewMesh, HeightName, & 
-      HeightDimensions, Variables )
+      HeightDimensions, Variables, OldNodeMask)
 
     TYPE(Mesh_t), TARGET, INTENT(IN)  :: OldMesh
     TYPE(Mesh_t), TARGET, INTENT(INOUT)  :: NewMesh
     TYPE(Variable_t), POINTER, OPTIONAL :: Variables
+    LOGICAL, POINTER, OPTIONAL :: OldNodeMask(:)
     CHARACTER(LEN=*) :: HeightName
     INTEGER, POINTER :: HeightDimensions(:)
     LOGICAL, POINTER :: UnfoundNodes(:)
@@ -1157,8 +1158,9 @@ CONTAINS
     LOGICAL, ALLOCATABLE :: ValidNode(:), NoNearest(:), PartNoNearest(:)
     REAL(KIND=dp) :: Point(3), SuppPoint(3), dist, myBB(6), maxdist, partmindist
     INTEGER :: i, j, k, l, n, m, p, idx, proc, status(MPI_STATUS_SIZE), &
-        ierr, npart, nn, VarNo, varn
-    INTEGER, ALLOCATABLE :: perm(:), mininds(:), partmininds(:), partinterpedvar(:)
+        ierr, npart, nn, VarNo, varn, mpicount
+    INTEGER, ALLOCATABLE :: perm(:), mininds(:), partmininds(:)
+    CHARACTER(LEN=MAX_NAME_LEN) :: SolverName
     !------------------------------------------------------------------------------
     TYPE ProcRecv_t
        INTEGER :: n = 0
@@ -1173,6 +1175,8 @@ CONTAINS
     TYPE(ProcSend_t),  ALLOCATABLE :: ProcSend(:)
     !------------------------------------------------------------------------------
 
+    SolverName="InterpolateUnfoundPointsNearest"
+    
     Debug = .TRUE.
     Parallel = ParEnv % PEs > 1
 
@@ -1218,11 +1222,19 @@ CONTAINS
     ! Get valid nodes for this partition:                             
     ! ---------------------------------- 
     ALLOCATE(ValidNode(OldMesh % NumberOfNodes))
-    ValidNode = .FALSE.
+    ValidNode = .TRUE.
     
-    ! Knock down nodes with 0 perm
+    !Knock down by node mask if present
+    IF(PRESENT(OldNodeMask)) THEN
+      DO i=1,SIZE(OldNodeMask)
+        IF(OldNodeMask(i)) ValidNode(i) = .FALSE.
+      END DO
+    END IF
+
+    !Knock down nodes with 0 perm
     DO i=1,OldMesh % NumberOfNodes
-      IF(OldHeightVar % Perm(i) > 0) ValidNode(i) = .TRUE.
+      IF(OldHeightVar % Perm(i) > 0) CYCLE
+      ValidNode(i) = .FALSE.
     END DO
 
     ! Count variables                             
@@ -1585,7 +1597,7 @@ CONTAINS
 
         DO j=1,n
           CALL MPI_BSEND(partinterped(:,j),VarNo, MPI_DOUBLE_PRECISION, proc, &
-               1350+j, MPI_COMM_WORLD, ierr )
+               2200+j, MPI_COMM_WORLD, ierr )
         END DO
 
         DEALLOCATE(partinterped)        
@@ -1625,19 +1637,14 @@ CONTAINS
       DO j=1,n
         k = ProcSend(proc+1) % perm(j)
         IF ( mindists(k) > partmindists(j)) THEN
-          !IF (Debug) PRINT *,ParEnv % MyPE, 'Improving dist from   ',mindists(k),'to ',partmindists(j)
-          !IF (Debug) PRINT *,ParEnv % MyPE, 'Improving height from ',minheights(k),'to ',partminheights(j)
-          
+
           mindists(k) = partmindists(j)
           minheights(k) = partminheights(j)
           NoNearest = .FALSE.
             
           IF(PRESENT(Variables)) THEN
-            ALLOCATE( partinterpedvar(VarNo))  
-            CALL MPI_RECV( partinterpedvar, VarNo, MPI_DOUBLE_PRECISION, proc, &
-                  1350+j, MPI_COMM_WORLD, status, ierr )
-            interped(:,k) = partinterpedvar
-            DEALLOCATE( partinterpedvar)
+            CALL MPI_RECV( interped(:,k), VarNo, MPI_DOUBLE_PRECISION, proc, &
+                  2200+j, MPI_COMM_WORLD, status, ierr )
           END IF
         END IF
       END DO
@@ -1645,7 +1652,14 @@ CONTAINS
       DEALLOCATE( partmindists, partminheights, ProcSend(proc+1) % perm )
     END DO
 
-  IF ((ALLOCATED(NoNearest)) .AND. (Debug)) PRINT *,ParEnv % MyPE, 'Still cant find ',COUNT(NoNearest)  
+  IF (ALLOCATED(NoNearest)) THEN
+    IF (COUNT(NoNearest) == 0) THEN
+      PRINT *, ParEnv % MyPE, 'InterpolateUnfoundPointsNearest','Parallel: Found all remaining ',&
+          COUNT(UnfoundNodes),'nodes that were not found by InterpVartoVar'
+    ELSE
+      CALL Fatal(SolverName, "Still unable to find nodes ")
+    END IF
+  END IF
   
   ! Finally, put interped values in their places
   ! ----------------------------------   
@@ -1655,7 +1669,6 @@ CONTAINS
     IF (DEBUG) PRINT *,ParEnv % MyPE, 'Putting interpolated heights in their places'
     DO i=1,n
       j = perm(i)
-      PRINT *,ParEnv % MyPE,'new height for ',j,': ',minheights(i)
       NewHeightVar % Values(NewHeightVar % Perm(j)) = minheights(i)
     END DO
 
@@ -1694,6 +1707,9 @@ CONTAINS
       DEALLOCATE(interped)
       
     END IF
+    
+    DEALLOCATE( mindists, minheights, mininds, NoNearest)
+    
   END IF !n>0
 
   IF (DEBUG) PRINT *,ParEnv % MyPE,'DONE!!!! Running deallocations...'
@@ -1701,9 +1717,8 @@ CONTAINS
   ! Deallocations
   ! ---------------------------------- 
   DEALLOCATE(ValidNode)
-  IF ( ALLOCATED(mindists) ) DEALLOCATE( mindists, minheights, mininds, NoNearest)
-  IF ( ALLOCATED(perm) ) DEALLOCATE(perm, ProcSend)
   DEALLOCATE(ProcRecv)
+  IF (ALLOCATED(perm)) DEALLOCATE(perm, ProcSend)
 
   END SUBROUTINE InterpolateUnfoundPointsNearest
 
