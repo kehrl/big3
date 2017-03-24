@@ -438,7 +438,7 @@ Solver 14
 
   Procedure = File "ResultOutputSolve" "ResultOutputSolver"
 
-  Output File Name = File "before"
+  Output File Name = File "$name""
   Vtu Format = Logical True
 End
 
@@ -476,23 +476,12 @@ Solver 16
   Always Detect Structure = Logical True
 End
 
-Solver 17
-  Equation = "ResultOutput2"
-  !Exec Solver = String "After All"
-  Exec Solver = String "After Timestep"
-
-  Procedure = File "ResultOutputSolve" "ResultOutputSolver"
-
-  Output File Name = File "after"
-  Vtu Format = Logical True
-End
-
 !---------------------------------------------------
 !---------------- EQUATIONS ------------------------
 !---------------------------------------------------
 
 Equation 1
-  Active Solvers(11) = 1 3 5 6 9 11 12 13 14 15 16 17
+  Active Solvers(11) = 1 3 5 6 9 11 12 13 14 15 16
   Flow Solution Name = String "Flow Solution"
   Convection = String Computed
 End
