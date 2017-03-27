@@ -358,8 +358,12 @@ FUNCTION UWa( Model, nodenumber, dumy) RESULT(U)                   !
   us = UIni( Model, nodenumber, dumy )
   ub = UbIni( Model, nodenumber, dumy )
 
-  U = ub + (1.0_dp - ((zs - z) / (zs - zb))**4) * (us - ub)
-
+	IF (z > zs) THEN
+		U = us
+	ELSE
+  	U = ub + (1.0_dp - ((zs - z) / (zs - zb))**4) * (us - ub)
+  END IF
+  
 	RETURN 
 END
 
@@ -378,9 +382,9 @@ FUNCTION VWa( Model, nodenumber, dumy) RESULT(V)                   !
   REAL(kind=dp), EXTERNAL :: VIni, VbIni, zsIni, zbIni
 
   ! position current point
-  x=Model % Nodes % x (nodenumber)
-  y=Model % Nodes % y (nodenumber)
-  z=Model % Nodes % z (nodenumber)
+  x = Model % Nodes % x (nodenumber)
+  y = Model % Nodes % y (nodenumber)
+  z = Model % Nodes % z (nodenumber)
 
   zs = zsIni( Model, nodenumber, dumy )
   zb = zbIni( Model, nodenumber, dumy )
@@ -388,9 +392,13 @@ FUNCTION VWa( Model, nodenumber, dumy) RESULT(V)                   !
   vs = VIni( Model, nodenumber, dumy )
   vb = VbIni( Model, nodenumber, dumy )
 
-  V = vb + (1.0_dp - ((zs - z) / (zs - zb))**4) * (vs - vb)
-
-  Return 
+  IF (z > zs) THEN
+  	V = vs
+  ELSE
+  	V = vb + (1.0_dp - ((zs - z) / (zs - zb))**4) * (vs - vb)
+  END IF
+  
+  RETURN 
 END
 
 !------------------------------------------------------------------!
@@ -1064,7 +1072,7 @@ FUNCTION VModel( Model, nodenumber, dumy) RESULT(T) !
         T = (1 - alpha) * LinearInterp(dem(:,:,k), xx, yy, nx, ny, x, y)+ alpha * LinearInterp(dem(:,:,k+1), xx, yy, nx, ny, x, y)
       END IF
       
-      ! In case we have restarted the file, we DOn't want to later end up 
+      ! In case we have restarted the file, we don't want to later end up 
       ! with this timestep
       TimestepInit = 0
     
