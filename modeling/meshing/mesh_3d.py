@@ -155,7 +155,7 @@ fid.write('bottomsurface = {}\n'.format(bottomsurface))
 fid.write('bed = {}\n'.format(bedname))
 if bedname == 'smith':
   fid.write('bedmodel = {}\n'.format(bedmodel))
-  fid.write('bedsmoothing = {}'.format(bedsmoothing))
+  fid.write('bedsmoothing = {}\n'.format(bedsmoothing))
 fid.write('temperature = {}'.format(temperature))
   
 fid.close()
