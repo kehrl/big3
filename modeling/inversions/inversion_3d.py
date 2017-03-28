@@ -28,13 +28,11 @@ def get_arguments():
 
   # Get inputs to file
   parser = argparse.ArgumentParser()
-  parser.add_argument("-glacier",dest="glacier",required = True, 
+  parser.add_argument("-glacier",dest="glacier",required = True,\
         help = "Name of glacier (Kanger or Helheim)")
-  parser.add_argument("-mesh", dest="mesh", required = True,
+  parser.add_argument("-mesh", dest="mesh", required = True,\
         help = "Name of mesh directory") 
-  parser.add_argument("-front", dest="frontbc", required = True,
-        help = "Calving front boundary condition (velocity or pressure).") 
-  parser.add_argument("-n", dest="n", required = True,
+  parser.add_argument("-n", dest="n", required = True,\
         help = "Number of partitions.")
   parser.add_argument("-regpar", dest="regpar", required = False,
        default='1e10',help = "Regularization parameter.")
@@ -42,6 +40,12 @@ def get_arguments():
        default='adjoint',help = "adjoint or robin.")
   parser.add_argument("-extrude", dest="extrude", type=int,required = False,\
        default=10,help = "Number of extrusion levels.")
+  parser.add_argument("-front", dest="frontbc", required = True,\
+        help = "Calving front boundary condition (velocity or pressure).") 
+  parser.add_argument("-sidewall", dest="sidewallbc", required = False,\
+        default='velocity',help = "Sidewall boundary condition (velocity or friction).") 
+  parser.add_argument("-slipcoefficient", dest="slipcoefficient", required = False,
+        default='1.0E-1',help = "Sidewall boundary condition (default=1.0E-1).")   
   parser.add_argument("-restartsolverfile",dest="restartfile",required = False,\
        default="none",help = "Name of restart solver file.")
   parser.add_argument("-restartposition",dest="restartposition",required = False,\
@@ -71,6 +75,8 @@ def main():
   method = args.method
   extrude = str(args.extrude)
   frontbc = str(args.frontbc)
+  sidewallbc = str(args.sidewallbc)
+  slipcoefficient = args.slipcoefficient
   glacier = args.glacier
   restartfile = args.restartfile
   restartposition = args.restartposition
@@ -139,6 +145,35 @@ def main():
   VeloD 2 = Variable Coordinate 1, Coordinate 2
     Real procedure "USF_Init.so" "VWa" """
 
+  # Set boundary condition for sidewalls (either measured velocity or slip coefficient).
+  if sidewallbc == 'friction':
+    sidewallbc_text = """
+  Normal-Tangential Velocity = Logical True
+  Normal-Tangential Adjoint = Logical True
+  
+  Adjoint Force BC = Logical True
+  
+  Velocity 1 = Real 0.0e0
+  Adjoint 1 = Real 0.0e0
+  
+  Slip Coefficient 2 = Real """+slipcoefficient+"""
+  Slip Coefficient 3 = Real """+slipcoefficient
+  
+  elif sidewallbc == 'velocity':
+    sidewallbc_text = """
+  !! Dirichlet BC 
+  Velocity 1 = Variable Coordinate 1
+    Real procedure "USF_Init.so" "UWa"
+  Velocity 2 = Variable Coordinate 1
+    Real procedure "USF_Init.so" "VWa"
+  
+  ! Dirichlet BC => Dirichlet = 0 for Adjoint
+  Adjoint 1 = Real 0.0
+  Adjoint 2 = Real 0.0"""
+  
+  else:
+    sys.exit("Unknown sidewall BC of "+sidewallbc)
+
   if temperature == 'model':
     temperature_text="""
   Constant Temperature = Variable Coordinate 1, Coordinate 2
@@ -198,9 +233,10 @@ def main():
     lines=lines.replace('{Extrude}', '{0}'.format(extrude))
     lines=lines.replace('{Lambda}', '{0}'.format(regpar))
     lines=lines.replace('{FrontBC}', '{0}'.format(frontbc_text))
+    lines=lines.replace('{SidewallBC}', '{0}'.format(sidewallbc_text))
     lines=lines.replace('{ItMax}', '{0}'.format(int(itmax)))
     lines=lines.replace('{Temperature}', '{0}'.format(temperature_text))
-    fid2.write(lines)
+    fid2.write(lines + os.linesep)
     fid1.close()
     fid2.close()
     del fid1, fid2
