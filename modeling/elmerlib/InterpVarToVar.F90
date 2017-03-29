@@ -1177,6 +1177,8 @@ CONTAINS
 
     SolverName="InterpolateUnfoundPointsNearest"
     
+    CALL INFO(SolverName, "Starting to interpolate unfound nodes")
+    
     Debug = .TRUE.
     Parallel = ParEnv % PEs > 1
 
@@ -1270,6 +1272,7 @@ CONTAINS
     ! ---------------------------------- 
     n = COUNT(UnfoundNodes)
     IF (n > 0) THEN
+      PRINT *,ParEnv % MyPE, 'Interpolating ',n,'unfound nodes'
       ALLOCATE(mindists(n),minheights(n),mininds(n),NoNearest(n))
       mindists = maxdist
       minheights = 0
