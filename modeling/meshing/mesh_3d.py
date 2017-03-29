@@ -52,7 +52,7 @@ parser.add_argument("-timeseries",dest="timeseries",required=False, default='Fal
 parser.add_argument("-d2", dest="date2", required = False,
         help = "Date for end of timeseries.")
 parser.add_argument("-dt", dest="dt", required = False, default = 1/365.25,
-        help = "Timestep for timeseries.")
+        help = "Timestep for timeseries (in years).")
 
 
 #################
