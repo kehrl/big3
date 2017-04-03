@@ -73,11 +73,12 @@ SUBROUTINE ReMesh(Model,Solver,dt,Transient )
   ! Load footprint mesh
   !----------------------------------------------
 
-	TimestepVar => VariableGet( Model % Variables,'Timestep')
-	Timestep = TimestepVar % Values(1)
-	WRITE (NewMeshName, "(A4,I1)") "mesh", Timestep
+  TimestepVar => VariableGet( Model % Variables,'Timestep')
+  Timestep = TimestepVar % Values(1)
+  WRITE (NewMeshName, "(A4,I1)") "mesh", Timestep
   !NewMeshName = "mesh3"
   
+  IF ((Debug) .AND. (Boss)) PRINT *,'ReMesh: Loading footprint mesh'
   FootPrintMesh => LoadMesh2( Model, NewMeshName, NewMeshName, &
        .FALSE., Parenv % PEs, ParEnv % myPE) ! May need to adjust parameters to account for parallel mesh
   FootPrintMesh % Name = TRIM(NewMeshName //'_footprint')
@@ -90,6 +91,7 @@ SUBROUTINE ReMesh(Model,Solver,dt,Transient )
   ! Extrude footprint mesh to z = 0 to 1
   !----------------------------------------------
 
+  IF ((Debug) .AND. (Boss)) PRINT *,'ReMesh: Extruding footprint mesh'
   ! Extrude new mesh and map coordinates to new mesh
   ExtrudeLevels = GetInteger(Model % Simulation,'Extruded Mesh Levels',Found)
   ExtrudedMesh => NULL()
@@ -108,6 +110,8 @@ SUBROUTINE ReMesh(Model,Solver,dt,Transient )
   !-------------------------------------------
   ! Create nodal BC perms for old mesh to make lookup simpler
   !-------------------------------------------
+  IF ((Debug) .AND. (Boss)) PRINT *,'ReMesh: Making permutation matrices for top and bottom'
+  
   n = OldMesh % NumberOfNodes
   ALLOCATE( OldTopPerm(n), OldBotPerm(n) )
 
@@ -132,6 +136,8 @@ SUBROUTINE ReMesh(Model,Solver,dt,Transient )
   ! grounded locations from bedrock variable rather than zs bottom to help with
   ! stability on the next time step
   !----------------------------------------------
+
+  IF ((Debug) .AND. (Boss)) PRINT *,'Checking if we are solving the grounding line problem'
 
   GLVarName = ListGetString(Params, "Grounding Line Variable Name", Found)
   IF(.NOT. Found) THEN
@@ -166,6 +172,8 @@ SUBROUTINE ReMesh(Model,Solver,dt,Transient )
   !----------------------------------------------
   ! Get top and bottom coordinates from oldmesh for extrusion
   !----------------------------------------------
+
+  IF ((Debug) .AND. (Boss)) PRINT *,'ReMesh: Starting to set up old top and bottom variables for interpolation' 
 
   !Get pointer to top and bottom vars in old mesh 
   TopVarName = "Zs Top"
@@ -231,6 +239,8 @@ SUBROUTINE ReMesh(Model,Solver,dt,Transient )
     TopVarPerm(n - NodesPerLevel + i) = i
   END DO
   
+  IF ((Debug)) PRINT *,ParEnv % MyPE,'ReMesh: Adding bottom and top variables to ExtrudedMesh'
+
   ! Add surface variable to extruded mesh
   CALL VariableAdd(ExtrudedMesh % Variables, ExtrudedMesh, Solver, TopVarName, 1, &
          TopVarValues, TopVarPerm, .TRUE.)
@@ -256,6 +266,8 @@ SUBROUTINE ReMesh(Model,Solver,dt,Transient )
       ALLOCATE(NewGLVar % PrevValues(SIZE(NewGLVar % Values), SIZE(OldGLVar % PrevValues,2)))
     END IF
   END IF  
+
+  IF ((Debug)) PRINT *,ParEnv % MyPE,'ReMesh: Interpolating top surface to extruded mesh'
 
   ! Interpolate surface variable to mesh
   CALL InterpolateVarToVarReduced(OldMesh, ExtrudedMesh, TopVarName, InterpDim, UnfoundNodesTop,&
@@ -347,7 +359,7 @@ SUBROUTINE ReMesh(Model,Solver,dt,Transient )
       IF(ANY(BotVarPerm(Element % NodeIndexes) <= 0)) CYCLE
 
       BedHeight(Element % Nodeindexes(1:j)) = &
-              ListGetReal(Material,'Min Zs Bottom',j,Element % NodeIndexes, Found, UnfoundFatal=.TRUE.)
+              ListGetReal(Material,'Min Zs Bottom',j,Element % NodeIndexes, Found)
     END DO
 
     Model % Mesh => OldMesh
