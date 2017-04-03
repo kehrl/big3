@@ -137,7 +137,7 @@ SUBROUTINE ReMesh(Model,Solver,dt,Transient )
   ! stability on the next time step
   !----------------------------------------------
 
-  IF ((Debug) .AND. (Boss)) PRINT *,'Checking if we are solving the grounding line problem'
+  IF ((Debug) .AND. (Boss)) PRINT *,'ReMesh: Checking if we are solving the grounding line problem'
 
   GLVarName = ListGetString(Params, "Grounding Line Variable Name", Found)
   IF(.NOT. Found) THEN
@@ -272,15 +272,17 @@ SUBROUTINE ReMesh(Model,Solver,dt,Transient )
   ! Interpolate surface variable to mesh
   CALL InterpolateVarToVarReduced(OldMesh, ExtrudedMesh, TopVarName, InterpDim, UnfoundNodesTop,&
          GlobalEps=global_eps, LocalEps=local_eps) 
-   
-  ! Interpolate unfound nodes, which likely exist because the glacier has advanced       
-  IF(Parallel) CALL MPI_BARRIER(MPI_COMM_WORLD, ierr)
-  CALL InterpolateUnfoundPointsNearest(UnfoundNodesTop, OldMesh, ExtrudedMesh, TopVarName, InterpDim)
+
   IF (COUNT(UnfoundNodesTop) > 0) THEN
     WRITE(Message,'(a,i0,a,i0,a)') "Failed to find ",COUNT(UnfoundNodesTop),' of ',&
            SIZE(UnfoundNodesTop),' nodes on top surface for mesh extrusion.'
     CALL Warn(SolverName, Message)
   END IF
+     
+  ! Interpolate unfound nodes, which likely exist because the glacier has advanced       
+  IF(Parallel) CALL MPI_BARRIER(MPI_COMM_WORLD, ierr)
+  IF ((Debug)) PRINT *,ParEnv % MyPE,'ReMesh: Setting unfound nodes on top surface to nearest nodes'  
+  CALL InterpolateUnfoundPointsNearest(UnfoundNodesTop, OldMesh, ExtrudedMesh, TopVarName, InterpDim)
          
   ! Remove grounding line variable during interpolation
   IF(DoGL) THEN
@@ -301,6 +303,8 @@ SUBROUTINE ReMesh(Model,Solver,dt,Transient )
     NULLIFY(OldGLVar % Next)
   END IF
 
+  IF ((Debug)) PRINT *,ParEnv % MyPE,'ReMesh: Interpolating bottom surface to extruded mesh'
+
   ! Interpolate bottom variables to extrudedmesh
   CALL InterpolateVarToVarReduced(OldMesh, ExtrudedMesh, BotVarName, InterpDim, UnfoundNodesBot,&
          Variables=OldGLVar, GlobalEps=global_eps, LocalEps=local_eps)
@@ -316,15 +320,17 @@ SUBROUTINE ReMesh(Model,Solver,dt,Transient )
     END IF
   END IF
 
-  ! Interpolate unfound nodes, which likely exist because the glacier has advanced   
-  IF(Parallel) CALL MPI_BARRIER(MPI_COMM_WORLD, ierr)
-  CALL InterpolateUnfoundPointsNearest(UnfoundNodesBot, OldMesh, ExtrudedMesh, & 
-        BotVarName, InterpDim, Variables=OldGLVar )
   IF (COUNT(UnfoundNodesBot) > 0) THEN
     WRITE(Message,'(a,i0,a,i0,a)') "Failed to find ",COUNT(UnfoundNodesBot),' of ',&
            SIZE(UnfoundNodesBot),' nodes on bottom surface for mesh extrusion.'
     CALL Warn(SolverName, Message)
   END IF
+
+  ! Interpolate unfound nodes, which likely exist because the glacier has advanced   
+  IF(Parallel) CALL MPI_BARRIER(MPI_COMM_WORLD, ierr)
+  IF ((Debug)) PRINT *,ParEnv % MyPE,'ReMesh: Setting unfound nodes on top surface to nearest nodes'  
+  CALL InterpolateUnfoundPointsNearest(UnfoundNodesBot, OldMesh, ExtrudedMesh, & 
+        BotVarName, InterpDim, Variables=OldGLVar )
 
   ! Check that new surfaces were interpolated onto mesh
   NewTopVar => NULL(); NewBotVar => NULL()
