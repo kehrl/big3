@@ -190,7 +190,7 @@ call(["ElmerGrid","2","4","Elmer"])
 if timeseries == True:
   for i in range(0,len(times)):
     ind = np.where(xextents[:,i] != 0)[0]
-    file_2d_temp = DIRM+"mesh"+str(i+1)
+    file_2d_temp = ('{0}{1}{2:04d}').format(DIRM,"mesh",i+1)
     exterior_temp = np.column_stack([xextents[ind,i],yextents[ind,i],bounds[ind,i]])
     xnew,ynew,zbed_new,zsur_new,zbot_new = meshlib.xy_to_gmsh_3d(glacier,date1,exterior_temp,holes,refine,DIRM,\
 		  lc1,lc2,lc3,lc4,bedname=bedname,bedmodel=bedmodel,bedsmoothing=bedsmoothing,\
