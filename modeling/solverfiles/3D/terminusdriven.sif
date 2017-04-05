@@ -298,7 +298,7 @@ End
 
 Solver 8
   !Exec Solver = "Never"
-  !Exec Solver = "After TimeStep"
+  Exec Solver = "After TimeStep"
   Equation = "Free Surface Top"
   Procedure =  "FreeSurfaceSolver" "FreeSurfaceSolver"
   Variable = "Zs Top"
@@ -341,7 +341,7 @@ End
 
 Solver 9
   !Exec Solver = "Never"
-  !Exec Solver = "After TimeStep"
+  Exec Solver = "After TimeStep"
   Equation = "Free Surface Sea/Shelf"
   Procedure =  "MyFreeSurfaceSolver.so" "FreeSurfaceSolver"
   Variable = "Zs Bottom"
@@ -379,6 +379,7 @@ Solver 9
   
   Update Exported Variables = Logical True
   Nonlinear Update Exported Variables = Logical True
+  Calculate Loads = Logical True
 End
 
 Solver 10
@@ -614,6 +615,7 @@ Boundary Condition 3
 
   Mesh Update 1 = Real 0.0e0
   Mesh Update 2 = Real 0.0e0
+!  Mesh Update 3 = Real 0.0e0
 
   Zs Top = Equals Reference Zs Top
   Zs Bottom = Equals Reference Zs Bottom

@@ -22,20 +22,20 @@ SUBROUTINE ReMesh(Model,Solver,dt,Transient )
 
   TYPE(Mesh_t), POINTER :: OldMesh, NewMesh, FootPrintMesh, ExtrudedMesh
   TYPE(Variable_t), POINTER :: Var, RefVar, OldTopVar, OldBotVar, NewTopVar, NewBotVar, &
-      OldGLVar, NewGLVar, TimestepVar, WorkVar, StrainVar
+      OldGLVar, NewGLVar, TimestepVar, WorkVar, StrainVar, FlowVar
   TYPE(Nodes_t), POINTER :: OldNodes, NewNodes
   TYPE(ValueList_t), POINTER :: Params, Material
   TYPE(Element_t), POINTER :: Element, CurrentElement
   TYPE(Solver_t), POINTER :: PSolver
   INTEGER :: ExtrudeLevels, i, j, k, ierr, n, NodesPerLevel, dim, dummyint, active, &
       Timestep, FrontBC, idx, nn
-  INTEGER, POINTER :: OldTopVarPerm(:)=>NULL(), OldTopPerm(:)=>NULL(), &
-      OldBotPerm(:)=>NULL(), OldBotVarPerm(:)=>NULL(), TopVarPerm(:)=>NULL(), &
-      BotVarPerm(:)=>NULL(), WorkPerm(:), InterpDim(:)=>NULL(), TopPointer(:), &
-      BotPointer(:)
+  INTEGER, POINTER :: OldTopVarPerm(:), OldTopPerm(:)=>NULL(), &
+      OldBotPerm(:)=>NULL(), OldBotVarPerm(:), TopVarPerm(:), &
+      BotVarPerm(:), WorkPerm(:), InterpDim(:)=>NULL()
   REAL(KIND=dp), POINTER :: TopVarValues(:), BotVarValues(:), WorkReal(:)
   CHARACTER(LEN=MAX_NAME_LEN) :: Name, OldMeshName, NewMeshName, SolverName, VarName, &
-      TopMaskName, BotMaskName, BotVarName, TopVarName, GLVarName, FrontMaskName
+      TopMaskName, BotMaskName, BotVarName, TopVarName, GLVarName, FrontMaskName, &
+      FlowVarName
   REAL(KIND=dp), ALLOCATABLE :: BedHeight(:)
   LOGICAL :: Boss, Debug, Found, Parallel, FirstTime=.TRUE., DoGL, First, ThisBC, GotIt
   LOGICAL, POINTER :: UnfoundNodesBot(:)=>NULL(), UnfoundNodesTop(:)=>NULL(), &
@@ -73,11 +73,12 @@ SUBROUTINE ReMesh(Model,Solver,dt,Transient )
   ! Load footprint mesh
   !----------------------------------------------
 
-	TimestepVar => VariableGet( Model % Variables,'Timestep')
-	Timestep = TimestepVar % Values(1)
-	WRITE (NewMeshName, "(A4,I1)") "mesh", Timestep
+  TimestepVar => VariableGet( Model % Variables,'Timestep')
+  Timestep = TimestepVar % Values(1)
+  WRITE (NewMeshName, "(A4,I4.4)") "mesh", Timestep
   !NewMeshName = "mesh3"
   
+  IF ((Debug) .AND. (Boss)) PRINT *,'ReMesh: Loading footprint mesh'
   FootPrintMesh => LoadMesh2( Model, NewMeshName, NewMeshName, &
        .FALSE., Parenv % PEs, ParEnv % myPE) ! May need to adjust parameters to account for parallel mesh
   FootPrintMesh % Name = TRIM(NewMeshName //'_footprint')
@@ -90,6 +91,7 @@ SUBROUTINE ReMesh(Model,Solver,dt,Transient )
   ! Extrude footprint mesh to z = 0 to 1
   !----------------------------------------------
 
+  IF ((Debug) .AND. (Boss)) PRINT *,'ReMesh: Extruding footprint mesh'
   ! Extrude new mesh and map coordinates to new mesh
   ExtrudeLevels = GetInteger(Model % Simulation,'Extruded Mesh Levels',Found)
   ExtrudedMesh => NULL()
@@ -108,6 +110,8 @@ SUBROUTINE ReMesh(Model,Solver,dt,Transient )
   !-------------------------------------------
   ! Create nodal BC perms for old mesh to make lookup simpler
   !-------------------------------------------
+  IF ((Debug) .AND. (Boss)) PRINT *,'ReMesh: Making permutation matrices for top and bottom'
+  
   n = OldMesh % NumberOfNodes
   ALLOCATE( OldTopPerm(n), OldBotPerm(n) )
 
@@ -132,6 +136,8 @@ SUBROUTINE ReMesh(Model,Solver,dt,Transient )
   ! grounded locations from bedrock variable rather than zs bottom to help with
   ! stability on the next time step
   !----------------------------------------------
+
+  IF ((Debug) .AND. (Boss)) PRINT *,'ReMesh: Checking if we are solving the grounding line problem'
 
   GLVarName = ListGetString(Params, "Grounding Line Variable Name", Found)
   IF(.NOT. Found) THEN
@@ -166,6 +172,8 @@ SUBROUTINE ReMesh(Model,Solver,dt,Transient )
   !----------------------------------------------
   ! Get top and bottom coordinates from oldmesh for extrusion
   !----------------------------------------------
+
+  IF ((Debug) .AND. (Boss)) PRINT *,'ReMesh: Starting to set up old top and bottom variables for interpolation' 
 
   !Get pointer to top and bottom vars in old mesh 
   TopVarName = "Zs Top"
@@ -231,6 +239,8 @@ SUBROUTINE ReMesh(Model,Solver,dt,Transient )
     TopVarPerm(n - NodesPerLevel + i) = i
   END DO
   
+  IF ((Debug)) PRINT *,ParEnv % MyPE,'ReMesh: Adding bottom and top variables to ExtrudedMesh'
+
   ! Add surface variable to extruded mesh
   CALL VariableAdd(ExtrudedMesh % Variables, ExtrudedMesh, Solver, TopVarName, 1, &
          TopVarValues, TopVarPerm, .TRUE.)
@@ -257,18 +267,22 @@ SUBROUTINE ReMesh(Model,Solver,dt,Transient )
     END IF
   END IF  
 
+  IF ((Debug)) PRINT *,ParEnv % MyPE,'ReMesh: Interpolating top surface to ExtrudedMesh'
+
   ! Interpolate surface variable to mesh
   CALL InterpolateVarToVarReduced(OldMesh, ExtrudedMesh, TopVarName, InterpDim, UnfoundNodesTop,&
          GlobalEps=global_eps, LocalEps=local_eps) 
-   
-  ! Interpolate unfound nodes, which likely exist because the glacier has advanced       
-  IF(Parallel) CALL MPI_BARRIER(MPI_COMM_WORLD, ierr)
-  CALL InterpolateUnfoundPointsNearest(UnfoundNodesTop, OldMesh, ExtrudedMesh, TopVarName, InterpDim)
+
   IF (COUNT(UnfoundNodesTop) > 0) THEN
     WRITE(Message,'(a,i0,a,i0,a)') "Failed to find ",COUNT(UnfoundNodesTop),' of ',&
            SIZE(UnfoundNodesTop),' nodes on top surface for mesh extrusion.'
     CALL Warn(SolverName, Message)
   END IF
+     
+  ! Interpolate unfound nodes, which likely exist because the glacier has advanced       
+  IF(Parallel) CALL MPI_BARRIER(MPI_COMM_WORLD, ierr)
+  IF ((Debug)) PRINT *,ParEnv % MyPE,'ReMesh: Setting unfound nodes on top surface to nearest nodes'  
+  CALL InterpolateUnfoundPointsNearest(UnfoundNodesTop, OldMesh, ExtrudedMesh, TopVarName, InterpDim)
          
   ! Remove grounding line variable during interpolation
   IF(DoGL) THEN
@@ -289,6 +303,8 @@ SUBROUTINE ReMesh(Model,Solver,dt,Transient )
     NULLIFY(OldGLVar % Next)
   END IF
 
+  IF ((Debug)) PRINT *,ParEnv % MyPE,'ReMesh: Interpolating bottom surface to ExtrudedMesh'
+
   ! Interpolate bottom variables to extrudedmesh
   CALL InterpolateVarToVarReduced(OldMesh, ExtrudedMesh, BotVarName, InterpDim, UnfoundNodesBot,&
          Variables=OldGLVar, GlobalEps=global_eps, LocalEps=local_eps)
@@ -304,15 +320,17 @@ SUBROUTINE ReMesh(Model,Solver,dt,Transient )
     END IF
   END IF
 
-  ! Interpolate unfound nodes, which likely exist because the glacier has advanced   
-  IF(Parallel) CALL MPI_BARRIER(MPI_COMM_WORLD, ierr)
-  CALL InterpolateUnfoundPointsNearest(UnfoundNodesBot, OldMesh, ExtrudedMesh, & 
-        BotVarName, InterpDim, Variables=OldGLVar )
   IF (COUNT(UnfoundNodesBot) > 0) THEN
     WRITE(Message,'(a,i0,a,i0,a)') "Failed to find ",COUNT(UnfoundNodesBot),' of ',&
            SIZE(UnfoundNodesBot),' nodes on bottom surface for mesh extrusion.'
     CALL Warn(SolverName, Message)
   END IF
+
+  ! Interpolate unfound nodes, which likely exist because the glacier has advanced   
+  IF(Parallel) CALL MPI_BARRIER(MPI_COMM_WORLD, ierr)
+  IF ((Debug)) PRINT *,ParEnv % MyPE,'ReMesh: Setting unfound nodes on bottom surface to nearest nodes'  
+  CALL InterpolateUnfoundPointsNearest(UnfoundNodesBot, OldMesh, ExtrudedMesh, & 
+        BotVarName, InterpDim, Variables=OldGLVar )
 
   ! Check that new surfaces were interpolated onto mesh
   NewTopVar => NULL(); NewBotVar => NULL()
@@ -325,13 +343,15 @@ SUBROUTINE ReMesh(Model,Solver,dt,Transient )
 
 ! Grounded nodes should get coordinates from the bedrock function (i.e., Min Zs Bottom)
 ! TODO: generalize for different element types, if needed
+  IF (Debug) PRINT *,ParEnv % MyPE,'Remesh: Setting grounded ice to bed elevation'
+  
   IF(DoGL) THEN
   
     NewGLVar => VariableGet(ExtrudedMesh % Variables, GLVarName, .TRUE.)
     IF(.NOT. ASSOCIATED(NewGLVar)) CALL Fatal(SolverName,&
       "Trying to account for the grounding line, but can't find GL var on new mesh.")
 
-    PRINT *,'Getting bed heights'
+    IF (Debug) PRINT *,ParEnv % MyPE,'ReMesh:  Getting bed heights'
     ALLOCATE(BedHeight(ExtrudedMesh % NumberOfNodes))
     BedHeight = 0.0_dp
     Material => GetMaterial(ExtrudedMesh % Elements(1)) !TODO, this is not generalised
@@ -347,15 +367,14 @@ SUBROUTINE ReMesh(Model,Solver,dt,Transient )
       IF(ANY(BotVarPerm(Element % NodeIndexes) <= 0)) CYCLE
 
       BedHeight(Element % Nodeindexes(1:j)) = &
-              ListGetReal(Material,'Min Zs Bottom',j,Element % NodeIndexes, Found, UnfoundFatal=.TRUE.)
+              ListGetReal(Material,'Min Zs Bottom',j,Element % NodeIndexes, Found)
     END DO
 
     Model % Mesh => OldMesh
 
-    PRINT *, ParEnv % MyPE, ' Debug, max/min bedheight: ', MAXVAL(BedHeight), MINVAL(BedHeight)
+    IF (Debug) PRINT *, ParEnv % MyPE, 'ReMesh: max/min bedheight: ', MAXVAL(BedHeight), MINVAL(BedHeight)
     
-    ! Set grounded ice to same elevation as bedrock
-    PRINT *,'Setting bed heights'
+    ! Set grounded ice to same elevation as bedrock    
     DO i=1,ExtrudedMesh % NumberOfNodes
       IF(NewGLVar % Perm(i) <= 0) CYCLE
         
@@ -379,12 +398,13 @@ SUBROUTINE ReMesh(Model,Solver,dt,Transient )
     END DO
   END IF
   
-  PRINT *,ParEnv % MyPE, 'Successfully interpolated bed heights, maybe'
+  IF (Debug) PRINT *,ParEnv % MyPE, 'ReMesh: Successfully interpolated bed heights'
 
   !----------------------------------------------
   ! Figure out z value for bottom and surface nodes that fall outside the old mesh domain,
-  ! using strain rate of nearest node from old mesh
+  ! using strain rate of nearest node from old mesh (TODO)
   !----------------------------------------------
+  
   ! Get strain variable for calculating new height
   VarName = ListGetString( Params, 'Strain Rate Variable', Found)
   !IF( .NOT. Found) EXIT
@@ -398,7 +418,9 @@ SUBROUTINE ReMesh(Model,Solver,dt,Transient )
   !----------------------------------------------
   ! Map coordinates to extrudedmesh
   !----------------------------------------------
-
+  
+  IF (Debug) PRINT *,ParEnv % MyPE,'ReMesh: mapping coordinates to ExtrudedMesh'
+    
   DO i=1,ExtrudedMesh % NumberOfNodes
     IF(NewTopVar % Perm(i) > 0) THEN
       ExtrudedMesh % Nodes % z(i) = NewTopVar % Values(NewTopVar % Perm(i))
@@ -424,7 +446,8 @@ SUBROUTINE ReMesh(Model,Solver,dt,Transient )
     END IF
   END DO
 
-  PRINT *, ParEnv % MyPE, ' Debug, coordinate 3: ', MAXVAL(ExtrudedMesh % Nodes % z), MINVAL(ExtrudedMesh % Nodes % z)
+  If (Debug) PRINT *, ParEnv % MyPE, 'ReMesh: ExtrudedMesh coordinate 3: ', &
+        MAXVAL(ExtrudedMesh % Nodes % z), MINVAL(ExtrudedMesh % Nodes % z)
 
   !----------------------------------------------
   ! Deallocations 
@@ -439,6 +462,8 @@ SUBROUTINE ReMesh(Model,Solver,dt,Transient )
   ! Remove top, bottom variables from extrudedmesh so that we don't affect SwitchMesh
   !----------------------------------------------
 
+  IF ((Debug) .AND. (Boss)) PRINT *,'ReMesh: Removing variables from ExtrudedMesh'
+  
   CALL ReleaseVariableList(ExtrudedMesh % Variables)
   NULLIFY(ExtrudedMesh % Variables)
 
@@ -459,6 +484,20 @@ SUBROUTINE ReMesh(Model,Solver,dt,Transient )
   CALL MeshStabParams( Model % Mesh )
 
   FirstTime = .FALSE.
+
+  !----------------------------------------------
+  ! Set velocities to zero (TODO: find a better solution)
+  !----------------------------------------------
+  ! If we use the interpolated velocities (some of which will be zero)
+  ! on the next time step, the viscosities get out of whack, causing
+  ! the solution to fail to converge. So, instead, we set all the velocities to
+  ! zero to help with converge. Probably a better, more efficient way to do this.
+  ! Interpolate velocities on calving front using nearest neighbor, too?
+
+  FlowVarName = ListGetString(Params,'Flow Solver Name',Found)
+  IF(.NOT. Found) FlowVarName = "Flow Solution"
+  FlowVar => VariableGet(Model % Mesh % Variables, FlowVarName, .TRUE. )
+  FlowVar % Values = 0.0_dp
   
   !----------------------------------------------
   ! Reset mesh update variables to 0 for next time step
@@ -525,7 +564,7 @@ SUBROUTINE ReMesh(Model,Solver,dt,Transient )
   ! More Deallocations 
   !----------------------------------------------
 
-  !DEALLOCATE(BedHeight, TopVarPerm, BotVarPerm, OldBotPerm, OldTopPerm)
+  DEALLOCATE(BedHeight, OldBotPerm, OldTopPerm)
   DEALLOCATE(UnfoundNodesBot, UnfoundNodesTop)
 
 CONTAINS
@@ -782,7 +821,7 @@ CONTAINS
     
     !set partitions to active, so variable can be -global -nooutput
     CALL ParallelActive(.TRUE.) 
-!    !MPI_BSend buffer issue in this call to InterpolateMeshToMesh
+    !MPI_BSend buffer issue in this call to InterpolateMeshToMesh
     PRINT *, ParEnv % MyPE, 'SwitchMesh entering InterpolateMeshtoMesh2'
     CALL InterpolateMeshToMesh2( OldMesh, NewMesh, OldMesh % Variables, UnfoundNodes=UnfoundNodes)
     IF(ANY(UnfoundNodes)) THEN
@@ -948,10 +987,10 @@ CONTAINS
 
     DEALLOCATE(OldMaskLogical, &
          NewMaskLogical, NewMaskPerm, &
-         OldMaskPerm, UnfoundNodes, InterpDim)
+         OldMaskPerm, UnfoundNodes )
 
   END SUBROUTINE InterpMaskedBCReduced
-  
+    
 END SUBROUTINE ReMesh
 
 !------------------------------------------------------------------!
