@@ -52,7 +52,7 @@ SUBROUTINE InterpolateBeta(Model,Solver,dt,Transient )
 
     FirstTime=.False.
 
-    FileName = ListGetString( Params, 'Data File', Found, UnFoundFatal )
+    FileName = ListGetString( Params, 'Data File', Found )
 
     ! open file
     OPEN(10,file=FileName)
