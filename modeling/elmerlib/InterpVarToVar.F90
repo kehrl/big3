@@ -1175,11 +1175,11 @@ CONTAINS
     TYPE(ProcSend_t),  ALLOCATABLE :: ProcSend(:)
     !------------------------------------------------------------------------------
 
-    SolverName="InterpolateUnfoundPointsNearest"
+    SolverName='InterpolateUnfoundPointsNearest'
     
-    CALL INFO(SolverName, "Starting to interpolate unfound nodes")
+    CALL INFO(SolverName, 'Starting to interpolate unfound nodes', level = 3)
     
-    Debug = .TRUE.
+    Debug = .FALSE.
     Parallel = ParEnv % PEs > 1
 
     OldHeightVar => VariableGet( OldMesh % Variables, HeightName, &
@@ -1272,7 +1272,7 @@ CONTAINS
     ! ---------------------------------- 
     n = COUNT(UnfoundNodes)
     IF (n > 0) THEN
-      PRINT *,ParEnv % MyPE, 'Interpolating ',n,'unfound nodes'
+      IF (Debug) PRINT *,ParEnv % MyPE, 'Interpolating ',n,'unfound nodes'
       ALLOCATE(mindists(n),minheights(n),mininds(n),NoNearest(n))
       mindists = maxdist
       minheights = 0
@@ -1288,7 +1288,7 @@ CONTAINS
           Point(3) = NewMesh % Nodes % z(nn)
           Point(HeightDimensions) = 0.0_dp
           
-          PRINT *,'UnfoundNode',nn,Point(1),Point(2)
+          IF (Debug) PRINT *,'UnfoundNode',nn,Point(1),Point(2)
 
           !Cycle through boundary elements of old mesh, find closest node to unfound node in new mesh
           DO i=OldMesh % NumberOfBulkElements+1,OldMesh % NumberOfBulkElements &
@@ -1620,7 +1620,7 @@ CONTAINS
             1205, MPI_COMM_WORLD, status, ierr )
       
       proc = status(MPI_SOURCE)
-      PRINT *,ParEnv % MyPE,'Receiving ',n,'from ',proc
+      If (Debug) PRINT *,ParEnv % MyPE,'Receiving ',n,'from ',proc
       
       IF ( n<=0 ) THEN
          IF ( ALLOCATED(ProcSend) ) THEN
@@ -1657,8 +1657,8 @@ CONTAINS
 
   IF (ALLOCATED(NoNearest)) THEN
     IF (COUNT(NoNearest) == 0) THEN
-      PRINT *, ParEnv % MyPE, 'InterpolateUnfoundPointsNearest','Parallel: Found all remaining ',&
-          COUNT(UnfoundNodes),'nodes that were not found by InterpVartoVar'
+      CALL Info(SolverName,'Found all remaining nodes that were not found by InterpVartoVar',&
+      level = 3)
     ELSE
       CALL Fatal(SolverName, "Still unable to find nodes ")
     END IF
@@ -1669,7 +1669,7 @@ CONTAINS
   n = COUNT(UnfoundNodes)
   IF (n > 0) THEN
     ! Put interpolated heights in their place
-    IF (DEBUG) PRINT *,ParEnv % MyPE, 'Putting interpolated heights in their places'
+    IF (Debug) PRINT *,ParEnv % MyPE, 'Putting interpolated heights in their places'
     DO i=1,n
       j = perm(i)
       NewHeightVar % Values(NewHeightVar % Perm(j)) = minheights(i)
@@ -1677,7 +1677,7 @@ CONTAINS
 
     ! ...and put variable values in their place
     IF(PRESENT(Variables)) THEN
-      IF (DEBUG) PRINT *,ParEnv % MyPE, 'Putting interpolated variables in their places'
+      IF (Debug) PRINT *,ParEnv % MyPE, 'Putting interpolated variables in their places'
       varn = 1
       OldVar => Variables
       DO WHILE(ASSOCIATED(OldVar))
@@ -1715,7 +1715,7 @@ CONTAINS
     
   END IF !n>0
 
-  IF (DEBUG) PRINT *,ParEnv % MyPE,'DONE!!!! Running deallocations...'
+  IF (Debug) PRINT *,ParEnv % MyPE,'DONE!!!! Running deallocations...'
 
   ! Deallocations
   ! ---------------------------------- 

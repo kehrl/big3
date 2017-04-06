@@ -22,7 +22,7 @@ SUBROUTINE ReMesh(Model,Solver,dt,Transient )
 
   TYPE(Mesh_t), POINTER :: OldMesh, NewMesh, FootPrintMesh, ExtrudedMesh
   TYPE(Variable_t), POINTER :: Var, RefVar, OldTopVar, OldBotVar, NewTopVar, NewBotVar, &
-      OldGLVar, NewGLVar, TimestepVar, WorkVar, StrainVar, FlowVar
+      OldGLVar, NewGLVar, TimestepVar, WorkVar, StrainVar
   TYPE(Nodes_t), POINTER :: OldNodes, NewNodes
   TYPE(ValueList_t), POINTER :: Params, Material
   TYPE(Element_t), POINTER :: Element, CurrentElement
@@ -34,8 +34,7 @@ SUBROUTINE ReMesh(Model,Solver,dt,Transient )
       BotVarPerm(:), WorkPerm(:), InterpDim(:)=>NULL()
   REAL(KIND=dp), POINTER :: TopVarValues(:), BotVarValues(:), WorkReal(:)
   CHARACTER(LEN=MAX_NAME_LEN) :: Name, OldMeshName, NewMeshName, SolverName, VarName, &
-      TopMaskName, BotMaskName, BotVarName, TopVarName, GLVarName, FrontMaskName, &
-      FlowVarName
+      TopMaskName, BotMaskName, BotVarName, TopVarName, GLVarName, FrontMaskName
   REAL(KIND=dp), ALLOCATABLE :: BedHeight(:)
   LOGICAL :: Boss, Debug, Found, Parallel, FirstTime=.TRUE., DoGL, First, ThisBC, GotIt
   LOGICAL, POINTER :: UnfoundNodesBot(:)=>NULL(), UnfoundNodesTop(:)=>NULL(), &
@@ -74,7 +73,7 @@ SUBROUTINE ReMesh(Model,Solver,dt,Transient )
   !----------------------------------------------
 
   TimestepVar => VariableGet( Model % Variables,'Timestep')
-  Timestep = TimestepVar % Values(1)
+  Timestep = TimestepVar % Values(1) + 1
   WRITE (NewMeshName, "(A4,I4.4)") "mesh", Timestep
   !NewMeshName = "mesh3"
   
@@ -494,10 +493,21 @@ SUBROUTINE ReMesh(Model,Solver,dt,Transient )
   ! zero to help with converge. Probably a better, more efficient way to do this.
   ! Interpolate velocities on calving front using nearest neighbor, too?
 
-  FlowVarName = ListGetString(Params,'Flow Solver Name',Found)
-  IF(.NOT. Found) FlowVarName = "Flow Solution"
-  FlowVar => VariableGet(Model % Mesh % Variables, FlowVarName, .TRUE. )
-  FlowVar % Values = 0.0_dp
+  !FlowVarName = ListGetString(Params,'Flow Solver Name',Found)
+  !IF(.NOT. Found) FlowVarName = "Flow Solution"
+  !FlowVar => VariableGet(Model % Mesh % Variables, FlowVarName, .TRUE. )
+  !FlowVar % Values = 0.0_dp
+ 
+  ! Get strain variable for calculating new height
+  !TempVarName = ListGetString( Params, 'Temperature Variable', Found)
+  !!IF( .NOT. Found) EXIT
+
+  !TempVar => VariableGet( Model % Mesh % Variables, VarName, .TRUE. )
+  !IF(.NOT. ASSOCIATED(TempVar)) THEN
+  !  WRITE(Message,'(A,A)') "Listed temperature variable but cant find: ",TempVarName
+  !  CALL Fatal(SolverName, Message)
+  !END IF
+  !TempVar % Values = -10.0_dp
   
   !----------------------------------------------
   ! Reset mesh update variables to 0 for next time step
