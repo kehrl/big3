@@ -1,6 +1,7 @@
 check keywords warn
 
 $name = "terminusdriven"
+!$name = "noremesh"
 $yearinsec = 365.25*24*60*60
 $rhoi = 917.0/(1.0e6*yearinsec^2)   
 $rhow = 1025.0/(1.0e6*yearinsec^2) 
@@ -37,7 +38,7 @@ Simulation
   Timestep Sizes = {TimeStepSize}
   
   !Restart File = "$name$.result"
-  !Restart Position = 0
+  !Restart Position = 1
 
   Initialize Dirichlet Conditions = Logical False  
   Steady State Max Iterations = 20
@@ -231,7 +232,7 @@ End
 
 Solver 4
   Equation = "NormalVector"
-  Exec Solver = "Before TimeStep"
+  !Exec Solver = "Before TimeStep"
   Procedure = "ElmerIceSolvers" "ComputeNormalSolver"
   Variable = String "Normal Vector"
   Variable DOFs = 3
@@ -242,7 +243,7 @@ End
 
 Solver 5
   Equation = Fw
-  Exec Solver = "Before TimeStep"
+  !Exec Solver = "Before TimeStep"
   Procedure = "ElmerIceSolvers" "GetHydrostaticLoads"
   Variable = Fw[Fwater:3]
   Variable DOFs = 3
@@ -419,7 +420,7 @@ Solver 11
 End
 
 Solver 12
-  Exec Solver = "After TimeStep"
+  !Exec Solver = "After TimeStep"
   Equation = String "StressSolver"
   Procedure = "ElmerIceSolvers" "ComputeDevStress"          
   Variable = -nooutput "Sij"
@@ -439,7 +440,7 @@ Solver 12
 End 
 
 Solver 13
-  Exec Solver = "After TimeStep"
+  !Exec Solver = "After TimeStep"
   Equation = String "StrainSolver"
   Procedure =  File "ElmerIceSolvers" "ComputeStrainRate"
   Variable = -nooutput "Eij"

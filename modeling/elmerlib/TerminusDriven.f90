@@ -45,7 +45,7 @@ SUBROUTINE ReMesh(Model,Solver,dt,Transient )
   SAVE :: FirstTime, BotMaskName, TopMaskName
 
   
-  Debug = .TRUE.
+  Debug = .FALSE.
   
   SolverName = "ReMesh"
   dim = CoordinateSystemDimension()
@@ -73,7 +73,7 @@ SUBROUTINE ReMesh(Model,Solver,dt,Transient )
   !----------------------------------------------
 
   TimestepVar => VariableGet( Model % Variables,'Timestep')
-  Timestep = TimestepVar % Values(1) + 1
+  Timestep = TimestepVar % Values(1)
   WRITE (NewMeshName, "(A4,I4.4)") "mesh", Timestep
   !NewMeshName = "mesh3"
   

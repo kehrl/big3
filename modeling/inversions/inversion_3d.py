@@ -45,7 +45,7 @@ def get_arguments():
   parser.add_argument("-sidewall", dest="sidewallbc", required = False,\
         default='velocity',help = "Sidewall boundary condition (velocity or friction).") 
   parser.add_argument("-slipcoefficient", dest="slipcoefficient", required = False,
-        default='1.0E-1',help = "Sidewall boundary condition (default=1.0E-1).")   
+        default='1.0E-3',help = "Sidewall boundary condition (default=1.0E-3).")   
   parser.add_argument("-restartsolverfile",dest="restartfile",required = False,\
        default="none",help = "Name of restart solver file.")
   parser.add_argument("-restartposition",dest="restartposition",required = False,\
