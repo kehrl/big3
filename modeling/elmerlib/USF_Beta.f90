@@ -2,12 +2,9 @@ SUBROUTINE InterpolateBeta(Model,Solver,dt,Transient )
   !------------------------------------------------------------------------------
   USE CRSMatrix
   USE GeneralUtils
-  USE ElementDescription
-  USE MeshUtils  
-  USE InterpVarToVar
+  USE ElementDescription 
   USE MainUtils
   USE SolverUtils
-  USE Geometry
 
   IMPLICIT NONE
   !------------------------------------------------------------------------------
