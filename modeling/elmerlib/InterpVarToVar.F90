@@ -63,6 +63,7 @@ CONTAINS
     LOGICAL :: Found, Debug
     REAL(KIND=dp) :: myBB(6), epsBB
     LOGICAL, ALLOCATABLE :: FoundNodes(:), BetterFound(:)
+    LOGICAL, POINTER :: OldNodeMask2(:), NewNodeMask2(:)
 
     !------------------------------------------------------------------------------
     TYPE ProcRecv_t
@@ -91,10 +92,25 @@ CONTAINS
        ALLOCATE(UnfoundNodes(NewMesh % NumberOfNodes))
     END IF
 
+    ! These lines are necessary to get this code to work on Pleiades.
+    IF (PRESENT(OldNodeMask)) THEN
+        OldNodeMask2 => OldNodeMask
+    ELSE
+        ALLOCATE(OldNodeMask2(OldMesh % NumberOfNodes))
+        OldNodeMask2 = .FALSE.
+    END IF
+
+    IF (PRESENT(NewNodeMask)) THEN
+        NewNodeMask2 => NewNodeMask
+    ELSE
+        ALLOCATE(NewNodeMask2(NewMesh % NumberOfNodes))
+        NewNodeMask2 = .FALSE.
+    END IF
+
     IF ( ParEnv % PEs<=1 ) THEN
        CALL InterpolateVarToVarReducedQ( OldMesh, NewMesh, HeightName, HeightDimensions, &
-            FoundNodes=FoundNodes, OldNodeMask=OldNodeMask, NewNodeMask=NewNodeMask, &
-            OldElemMask=OldElemMask, Variables=Variables, GlobalEps=GlobalEps, &
+            FoundNodes=FoundNodes, OldNodeMask=OldNodeMask2, NewNodeMask=NewNodeMask, &
+            Variables=Variables, GlobalEps=GlobalEps, &
             LocalEps=LocalEps, NumericalEps=NumericalEps )
 
        IF(PRESENT(UnfoundNodes)) UnfoundNodes = .NOT. FoundNodes
@@ -102,8 +118,9 @@ CONTAINS
     END IF
 
     CALL InterpolateVarToVarReducedQ( OldMesh, NewMesh, HeightName, HeightDimensions, &
-         FoundNodes, PointLocalDistance, OldNodeMask, NewNodeMask, &
-         OldElemMask, Variables, GlobalEps, LocalEps, NumericalEps )
+         FoundNodes, LocalDistances=PointLocalDistance, NewNodeMask=NewNodeMask2, &
+         OldNodeMask=OldNodeMask2, Variables=Variables, GlobalEps=GlobalEps, LocalEps=LocalEps, &
+         NumericalEps=NumericalEps )
     CALL MPI_BARRIER(ParEnv % ActiveComm, ierr)
 
     IF(PRESENT(UnfoundNodes)) UnfoundNodes = .NOT. FoundNodes
@@ -352,8 +369,8 @@ CONTAINS
        SendLocalDistance = 0.0_dp
 
        CALL InterpolateVarToVarReducedQ( OldMesh, nMesh, HeightName, HeightDimensions, &
-            FoundNodes, SendLocalDistance, OldNodeMask, &
-            OldElemMask=OldElemMask, Variables=Variables, GlobalEps=GlobalEps, &
+            FoundNodes, SendLocalDistance, OldNodeMask2, &
+            Variables=Variables, GlobalEps=GlobalEps, &
             LocalEps=LocalEps, NumericalEps=NumericalEps )
 
        nfound = COUNT(FoundNodes)
@@ -1371,6 +1388,7 @@ CONTAINS
           DO nn=1,SIZE(UnfoundNodes)    
             IF (UnfoundNodes(nn)) THEN
               m = m+1  
+              IF (OldVar % Perm(mininds(m)) <= 0) CYCLE 
               IF (.NOT. NoNearest(m)) THEN
                 interped(varn,m) = OldVar % Values(OldVar % Perm(mininds(m)))
               ELSE
@@ -1586,8 +1604,10 @@ CONTAINS
             CYCLE
           END IF
           
-          DO m=1,n    
+          DO m=1,n
+            IF (OldVar % Perm(partmininds(m)) <= 0) CYCLE    
             IF (.NOT. PartNoNearest(m)) THEN
+              PRINT *,'partminind',partmininds(m),partmindists(m)
               partinterped(varn,m) = OldVar % Values(OldVar % Perm(partmininds(m)))
             ELSE
               partinterped(varn,m) = HUGE(interped(varn,m))   
@@ -1700,6 +1720,7 @@ CONTAINS
 
         DO i=1,n
           j = perm(i)
+          IF (NewVar % Perm(j) <= 0) CYCLE
           NewVar % Values(NewVar % Perm(j)) = interped(varn,i)
         END DO
         

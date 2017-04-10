@@ -40,7 +40,6 @@ SUBROUTINE ReMesh(Model,Solver,dt,Transient )
   LOGICAL, POINTER :: UnfoundNodesBot(:)=>NULL(), UnfoundNodesTop(:)=>NULL(), &
       OldMaskLogical(:), NewMaskLogical(:)
   REAL(kind=dp) :: global_eps, local_eps, top, bot, x, y, z, zb, groundtoler, minheight
-  Real(kind=dp) :: LinearInterp
   
   SAVE :: FirstTime, BotMaskName, TopMaskName
 
@@ -215,8 +214,6 @@ SUBROUTINE ReMesh(Model,Solver,dt,Transient )
   DO i=1,OldMesh % NumberOfNodes
     IF(OldTopVar % Perm(i) > 0) THEN
       OldTopVar % Values(OldTopVar % Perm(i)) = OldMesh % Nodes % z(i)
-    ELSE
-      OldTopVar % Values(OldTopVar % Perm(i)) = 0.0_dp
     END IF
     IF(OldBotVar % Perm(i) > 0) THEN
       OldBotVar % Values(OldBotVar % Perm(i)) = OldMesh % Nodes % z(i)
