@@ -223,7 +223,7 @@ FUNCTION SeaPressure ( Model, nodenumber, y) RESULT(pw)
       END IF
       
       body_id = ParentElement % BodyId
-      material_id = ListGetInteger(Model % Bodies(body_id) % Values, 'Material', GotIt, UnFoundFatal=UnFoundFatal)
+      material_id = ListGetInteger(Model % Bodies(body_id) % Values, 'Material', GotIt )
       ParentMaterial => Model % Materials(material_id) % Values
       IF ((.NOT. ASSOCIATED(ParentMaterial))) THEN
          WRITE(Message,'(A,I10,A,I10)')&
