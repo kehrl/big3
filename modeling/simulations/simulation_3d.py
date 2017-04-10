@@ -120,4 +120,4 @@ del fid1, fid2
 # Run Elmersolver #
 ###################
 
-returncode = elmerrunlib.run_elmer(DIRM+solverfile_out+'.sif',n=partitions,email=False)
+returncode = elmerrunlib.run_elmer(DIRM+solverfile_out+'.sif',n=partitions,email=True)
