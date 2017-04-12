@@ -383,11 +383,25 @@ def bufcount(filename):
   
 def pvtu_file(file,variables):
 
-  from paraview import numpy_support, simple  
-  
-  # Load vtu file
-  reader = simple.XMLPartitionedUnstructuredGridReader(FileName=file)
-  vtudata = simple.servermanager.Fetch(reader)
+  if not(os.path.isfile(file)):
+    sys.exit("File "+file+" does not exist.")  
+
+  try:
+    import vtk
+    from vtk.util import numpy_support
+    reader = vtk.vtkXMLPUnstructuredGridReader()
+    reader.SetFileName(file)
+    reader.Update()
+    vtudata = reader.GetOutput()
+  except:
+    try:
+      from paraview import numpy_support, simple  
+      # Load vtu file
+      reader = simple.XMLPartitionedUnstructuredGridReader(FileName=file)
+      vtudata = simple.servermanager.Fetch(reader)
+    except:
+      sys.exit("You do not have the necessary modules (vtk or paraview) to import vtu files.")
+
   
   # Get number of nodes
   n = vtudata.GetNumberOfPoints()
@@ -453,6 +467,43 @@ def pvtu_file(file,variables):
 
   return data
 
+def pvtu_timeseries_flowline(x,y,DIR,fileprefix,variables,layer='surface',debug=False):
+
+  from scipy.interpolate import griddata
+  import numpy as np
+
+  # First get number of timesteps
+  files = os.listdir(DIR)
+  totsteps = 0
+  for file in files:
+    if file.startswith(fileprefix) and file.endswith('.pvtu'):
+      timestep = int(file[len(fileprefix):-5])
+      numfilelen = len(file)-len('.pvtu')-len(fileprefix)
+      if timestep > totsteps:
+        totsteps = timestep
+
+  for i in range(0,totsteps):
+    # Get filename
+    pvtufile = '{0}{2:0{1}d}{3}'.format(fileprefix,numfilelen,i+1,'.pvtu')
+    if debug:
+      print "Loading file "+pvtufile
+    # Get data
+    data = pvtu_file(pvtufile,variables)
+    surf = values_in_layer(data,layer=layer)
+    # If first timestep, set up output variable name
+    if i==0:
+      varnames = list(data.dtype.names)
+      varnames.remove('Node Number')
+      types = []
+      for var in varnames:
+        types.append(np.float64)
+      dataflow = np.empty([len(x),totsteps], dtype=zip(varnames,types)) 
+    nonnan = np.intersect1d(np.where(~(np.isnan(surf['x'])))[0],np.where(~(np.isnan(surf['y'])))[0])
+    for var in varnames: 
+      dataflow[var][:,i] = griddata((surf['y'],surf['x']),surf[var],(y,x),method='linear')
+
+  return dataflow
+
 def grid_to_cross_section(data,xf,yf,df,variable,dz=20.,method='linear'):
 
   '''
@@ -511,49 +562,6 @@ def grid_to_cross_section(data,xf,yf,df,variable,dz=20.,method='linear'):
 
   
   return df,z,output
-
-
-# def cross_section_grid(cross_section,variable,dz=50.,dd=100.,method=method):
-# 
-#   import scipy.interpolate
-# 
-#   # Set up grid
-#   zmin = np.round(np.min(cross_section['z'])-100,decimals=-2)
-#   zmax = np.round(np.max(cross_section['z'])+100,decimals=-2)
-#   z = np.arange(zmin,zmax,dz)
-# 
-#   dmin = np.round(np.min(cross_section['dist'])-100,decimals=-2)
-#   dmax = np.round(np.max(cross_section['dist'])+100,decimals=-2)
-#   d = np.arange(dmin,dmax,dd)
-# 
-#   dgrid,zgrid = np.meshgrid(d,z)
-# 
-#   # Now interpolate points
-#   outflat = scipy.interpolate.griddata((cross_section['dist'],cross_section['z']),cross_section[variable],(dgrid.flatten(),zgrid.flatten()),method=method)
-#   output = np.reshape(outflat,(len(z),len(d)))
-#   
-#   # Get glacier geometry so we can mask out values outside of the glacier
-#   dgeo = []
-#   zsur = []
-#   zbed = []
-#   for val in np.unique(cross_section['dist']):
-#     points = cross_section[cross_section['dist'] == val]
-#     zsur.append(np.max(points['z']))
-#     zbed.append(np.min(points['z']))
-#     dgeo.append(val)
-#     
-#   zsur_int = np.column_stack([d,np.interp(d,dgeo,zsur)])
-#   zbed_int = np.column_stack([d,np.interp(d,dgeo,zbed)])
-# 
-#   exterior = Path(np.row_stack([zsur_int,np.flipud(zbed_int)]))
-#   pts = exterior.contains_points(np.column_stack((dgrid.flatten(),zgrid.flatten())))
-#   bool = ~(np.reshape(pts,(len(d),len(z))))
-#   mask = np.ones((len(d),len(z)),dtype="bool")
-#   mask[bool==0] = 0
-#   
-#   masked = np.ma.masked_array(output,mask)
-#   
-#   return masked
 
 def depth_averaged_variables(data):
   '''
