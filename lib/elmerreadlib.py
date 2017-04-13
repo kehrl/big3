@@ -467,7 +467,7 @@ def pvtu_file(file,variables):
 
   return data
 
-def pvtu_timeseries_flowline(x,y,DIR,fileprefix,variables,layer='surface',debug=False,n='all'):
+def pvtu_timeseries_flowline(x,y,DIR,fileprefix,variables,layer='surface',debug=False,t1=0,t2=np.Inf):
 
   from scipy.interpolate import griddata
   import numpy as np
@@ -487,10 +487,10 @@ def pvtu_timeseries_flowline(x,y,DIR,fileprefix,variables,layer='surface',debug=
   if totsteps == 0:
     sys.exit("Check that file "+DIR+fileprefix+" actually exists.")
   
-  if n == 'all':
-    n = totsteps
+  if t2 > totsteps:
+    t2 = totsteps
   
-  print "Loading "+str(n)+" out of "+str(totsteps)+" timesteps"
+  print "Loading "+str(t2-t1+1)+" out of "+str(totsteps)+" timesteps"
 
   if layer == 'surface':
     freesurfacevar = 'zs top'
@@ -499,9 +499,10 @@ def pvtu_timeseries_flowline(x,y,DIR,fileprefix,variables,layer='surface',debug=
   if freesurfacevar not in variables:
     variables.append(freesurfacevar)
 
-  for i in range(0,n):
+  for i in range(0,t2-t1+1):
+    t = i+t1
     # Get filename
-    pvtufile = '{0}{2:0{1}d}{3}'.format(fileprefix,numfilelen,i+1,'.pvtu')
+    pvtufile = '{0}{2:0{1}d}{3}'.format(fileprefix,numfilelen,t,'.pvtu')
     if debug:
       print "Loading file "+pvtufile
     # Get data
@@ -515,7 +516,7 @@ def pvtu_timeseries_flowline(x,y,DIR,fileprefix,variables,layer='surface',debug=
       types = []
       for var in varnames:
         types.append(np.float64)
-      dataflow = np.zeros([len(x),n], dtype=zip(varnames,types)) 
+      dataflow = np.zeros([len(x),t2-t1+1], dtype=zip(varnames,types)) 
 
     # Interpolate
     tree = cKDTree(np.column_stack([surf['x'],surf['y']]))
