@@ -4,7 +4,7 @@ import math
 from scipy.interpolate import griddata
 from matplotlib.path import Path
 from multiprocessing import Pool
-import os, shutil
+import os, shutil, sys
 
 def saveline(DIR,runname,variables):
   '''
@@ -467,13 +467,16 @@ def pvtu_file(file,variables):
 
   return data
 
-def pvtu_timeseries_flowline(x,y,DIR,fileprefix,variables,layer='surface',debug=False):
+def pvtu_timeseries_flowline(x,y,DIR,fileprefix,variables,layer='surface',debug=False,n='all'):
 
   from scipy.interpolate import griddata
   import numpy as np
+  from scipy.spatial import cKDTree, ConvexHull
+  import matplotlib.path
 
   # First get number of timesteps
   files = os.listdir(DIR)
+
   totsteps = 0
   for file in files:
     if file.startswith(fileprefix) and file.endswith('.pvtu'):
@@ -481,15 +484,30 @@ def pvtu_timeseries_flowline(x,y,DIR,fileprefix,variables,layer='surface',debug=
       numfilelen = len(file)-len('.pvtu')-len(fileprefix)
       if timestep > totsteps:
         totsteps = timestep
+  if totsteps == 0:
+    sys.exit("Check that file "+DIR+fileprefix+" actually exists.")
+  
+  if n == 'all':
+    n = totsteps
+  
+  print "Loading "+str(n)+" out of "+str(totsteps)+" timesteps"
 
-  for i in range(0,totsteps):
+  if layer == 'surface':
+    freesurfacevar = 'zs top'
+  elif layer == 'bed' and 'zs bottom' not in variables:
+    freesurfacevar = 'zs bottom'
+  if freesurfacevar not in variables:
+    variables.append(freesurfacevar)
+
+  for i in range(0,n):
     # Get filename
     pvtufile = '{0}{2:0{1}d}{3}'.format(fileprefix,numfilelen,i+1,'.pvtu')
     if debug:
       print "Loading file "+pvtufile
     # Get data
+
     data = pvtu_file(pvtufile,variables)
-    surf = values_in_layer(data,layer=layer)
+    surf = data[data[freesurfacevar] != 0]
     # If first timestep, set up output variable name
     if i==0:
       varnames = list(data.dtype.names)
@@ -497,10 +515,41 @@ def pvtu_timeseries_flowline(x,y,DIR,fileprefix,variables,layer='surface',debug=
       types = []
       for var in varnames:
         types.append(np.float64)
-      dataflow = np.empty([len(x),totsteps], dtype=zip(varnames,types)) 
-    nonnan = np.intersect1d(np.where(~(np.isnan(surf['x'])))[0],np.where(~(np.isnan(surf['y'])))[0])
-    for var in varnames: 
-      dataflow[var][:,i] = griddata((surf['y'],surf['x']),surf[var],(y,x),method='linear')
+      dataflow = np.zeros([len(x),n], dtype=zip(varnames,types)) 
+
+    # Interpolate
+    tree = cKDTree(np.column_stack([surf['x'],surf['y']]))
+    
+    for j in range(0,len(x)):
+      [dists,L] = tree.query( (x[j],y[j]), k=6)
+    
+      # Initialize weights to 0
+      weights = 0.0
+    
+      hull = ConvexHull(np.column_stack([surf['x'][L],surf['y'][L]]))
+      polygon = np.column_stack([hull.points[hull.vertices,0],hull.points[hull.vertices,1]])
+      
+      path = matplotlib.path.Path(polygon)
+      if path.contains_point([x[j],y[j]]):
+        #if (np.max(surf['x'][L]) > x[j]) and (np.min(surf['x'][L]) < x[j]) and \
+        #     (np.max(surf['y'][L]) > y[j]) and (np.min(surf['y'][L]) < y[j]):
+        for l in L:
+          xp = surf['x'][l]
+          yp = surf['y'][l]
+           
+          r = np.sqrt( (x[j] - xp)**2 + (y[j] - yp)**2 )
+          w = (1.0/r)
+          weights += w
+          
+          for var in varnames:
+            dataflow[var][j,i] += w * surf[var][l]
+        
+        for var in varnames:
+          dataflow[var][j,i] /=weights
+      
+      else:
+        for var in varnames:
+          dataflow[var][j,i] = float('nan')
 
   return dataflow
 
@@ -620,7 +669,7 @@ def values_in_layer(data,layer='surface'):
   
   # Do the actual sorting
   points = []
-  for x_val in np.unique(data['x']):
+  for x_val in np.unique(np.round(data['x'])):
     x_points = data[data['x'] == x_val]
     for y_val in np.unique(x_points['y']):
       y_points = x_points[x_points['y'] == y_val]
