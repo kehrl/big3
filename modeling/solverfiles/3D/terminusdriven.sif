@@ -136,7 +136,8 @@ End
 Body Force 2
   Zs Top Accumulation Flux 1 = Real 0.0e0
   Zs Top Accumulation Flux 2 = Real 0.0e0
-  Zs Top Accumulation Flux 3 = Real 0.0e0
+  Zs Top Accumulation Flux 3 = Variable Coordinate 1, Coordinate 2
+    Real Procedure "USF_Init.so" "Accumulation"
 End
 
 Body Force 3

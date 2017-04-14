@@ -332,7 +332,7 @@ def main():
   
   plt.figure(figsize=(6.5,3))
   plt.subplot(121)
-  plt.imshow(taubgrid*1e3,origin='lower',clim=[0,500])
+  plt.imshow(taubgrid*1e3,origin='lower',clim=[0,500],cmap='jet')
   plt.xticks([])
   plt.yticks([])
   cb = plt.colorbar(ticks=np.arange(0,600,100))
