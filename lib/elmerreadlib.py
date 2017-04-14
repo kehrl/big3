@@ -467,7 +467,7 @@ def pvtu_file(file,variables):
 
   return data
 
-def pvtu_timeseries_flowline(x,y,DIR,fileprefix,variables,layer='surface',debug=False,t1=0,t2=np.Inf):
+def pvtu_timeseries_flowline(x,y,DIR,fileprefix,variables,layer='surface',debug=False,t1=1,t2=np.Inf):
 
   from scipy.interpolate import griddata
   import numpy as np
@@ -662,7 +662,7 @@ def values_in_layer(data,layer='surface'):
     return None
   # Try to get things right with what variables we are returning
   varnames = list(data.dtype.names)
-  
+
   if layer.startswith('surf'):
     ind = -1
   elif layer == 'bed':
@@ -670,7 +670,7 @@ def values_in_layer(data,layer='surface'):
   
   # Do the actual sorting
   points = []
-  for x_val in np.unique(np.round(data['x'])):
+  for x_val in np.unique((data['x'])):
     x_points = data[data['x'] == x_val]
     for y_val in np.unique(x_points['y']):
       y_points = x_points[x_points['y'] == y_val]

@@ -603,8 +603,8 @@ Boundary Condition 2
   Flow Force BC = Logical True
 
   Velocity 1 = Real 0.0
-  Slip Coefficient 2 = Real 1.0E-1
-  Slip Coefficient 3 = Real 1.0E-1
+  Slip Coefficient 2 = Real 1.0E-3
+  Slip Coefficient 3 = Real 1.0E-3
   
   ! Good for inversions, bad for transient simulations
   ! Velocity 1 = Variable Coordinate 1
