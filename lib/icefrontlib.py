@@ -258,6 +258,7 @@ def quantify_uncertainty(x,y,dists,glacier,time1,time2):
   # Figure out what times we have multiple ice front positions for comparison
   unique,unique_count = np.unique(terminus_time,return_counts=True)
   dup_times = unique[unique_count > 1]
+  print dup_times
   
   N = len(dup_times)
   delta = np.zeros(N)

@@ -532,11 +532,11 @@ def dem_grid(glacier,xmin=-np.Inf,xmax=np.Inf,ymin=-np.Inf,ymax=np.Inf,
   
   # Set up output grid
   dx = dy = float(resolution)
-  nx = np.ceil((xmax-xmin)/dx)+1
+  nx = int(np.ceil((xmax-xmin)/dx)+1)
   x = np.linspace(xmin,(nx-1)*dx+xmin,nx)
-  ny = np.ceil((ymax-ymin)/dx)+1
+  ny = int(np.ceil((ymax-ymin)/dx)+1)
   y = np.linspace(ymin,(ny-1)*dy+ymin,ny)
-  xgrid,ygrid = np.meshgrid(x,y)
+  xgrid, ygrid = np.meshgrid(x,y)
   
   # Data directories  
   WVDIR = os.path.join(os.getenv("DATA_HOME"),'Elevation/Worldview/'+glacier+'/')
