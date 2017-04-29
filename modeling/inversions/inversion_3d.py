@@ -305,7 +305,7 @@ def main():
     elif name.startswith(method) and 'result' in name:
       os.rename(DIRM+"/mesh2d/"+name,DIRR_lambda+name)
 
-  bed = elmerreadlib.saveline_boundary(DIRM+"/mesh2d/",runname,bbed,['velocity','beta'])
+  bed = elmerreadlib.saveline_boundary(DIRM+"/mesh2d/",runname,bbed,['velocity','beta','groundedmask'])
   surf = elmerreadlib.saveline_boundary(DIRM+"/mesh2d/",runname,bsurf,['vsurfini','velocity'])
 
   # Move saveline results
@@ -326,14 +326,20 @@ def main():
   # Gridded linear beta square
   x,y,u = elmerreadlib.input_file(inputs+"udem.xy", dim=2)
   xx,yy = np.meshgrid(x,y)
-  beta_linear = scipy.interpolate.griddata((bed['x'],bed['y']),\
-    bed['beta']**2, (xx,yy), method='nearest')
-  beta_linear_lin = scipy.interpolate.griddata((bed['x'],bed['y']),\
-    bed['beta']**2, (xx,yy), method='linear')
-  beta_weertman = scipy.interpolate.griddata((bed['x'],bed['y']),\
-      (bed['beta']**2)*(bed['velocity']**(-2.0/3.0)), (xx,yy), method='nearest')
-  beta_weertman_lin = scipy.interpolate.griddata((bed['x'],bed['y']),\
-      (bed['beta']**2)*(bed['velocity']**(-2.0/3.0)), (xx,yy), method='linear')
+  ind = np.where(bed['groundedmask'] >= 0)[0]
+  beta_linear = scipy.interpolate.griddata((bed['x'][ind],bed['y'][ind]),\
+    bed['beta'][ind]**2, (xx,yy), method='nearest')
+  beta_linear_lin = scipy.interpolate.griddata((bed['x'][ind],bed['y'][ind]),\
+    bed['beta'][ind]**2, (xx,yy), method='linear')
+  beta_weertman = scipy.interpolate.griddata((bed['x'][ind],bed['y'][ind]),\
+      (bed['beta'][ind]**2)*(bed['velocity'][ind]**(-2.0/3.0)), (xx,yy), method='nearest')
+  beta_weertman_lin = scipy.interpolate.griddata((bed['x'][ind],bed['y'][ind]),\
+      (bed['beta'][ind]**2)*(bed['velocity'][ind]**(-2.0/3.0)), (xx,yy), method='linear')
+  if glacier == 'Helheim':
+    ind = np.where(~(np.isnan(beta_linear_lin)) & (xx > 305000))
+    beta_linear_lin[ind] = 1.0e-10
+    ind = np.where(~(np.isnan(beta_weertman_lin)) & (xx > 305000))
+    beta_weertman_lin[ind] = 1.0e-10  
   ind = np.where(~(np.isnan(beta_linear_lin)))
   beta_linear[ind] = beta_linear_lin[ind]
   ind = np.where(np.isnan(beta_weertman_lin))

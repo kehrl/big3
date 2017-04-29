@@ -98,7 +98,6 @@ Initial Condition 1
   Mesh Update 2 = Real 0.0e0
   Mesh Update 3 = Real 0.0e0
 
-  !Temp Homologous = Real -10.0e0  
 End
 
 ! Upper surface
@@ -112,9 +111,9 @@ End
 ! Ice shelf
 Initial Condition 3
   Zs Bottom = Variable Coordinate 1
-    REAL procedure "USF_Init.so" "ZbIni"
+    REAL procedure "USF_Init.so" "zbIni"
   Reference Zs Bottom = Variable Coordinate 1
-    REAL procedure "USF_Init.so" "ZbIni"
+    REAL procedure "USF_Init.so" "zbIni"
     
   !Bedrock = Variable Coordinate 1
   !  REAL procedure "USF_Init.so" "Bedrock"
@@ -421,7 +420,7 @@ Solver 11
 End
 
 Solver 12
-  !Exec Solver = "After TimeStep"
+  Exec Solver = "After TimeStep"
   Equation = String "StressSolver"
   Procedure = "ElmerIceSolvers" "ComputeDevStress"          
   Variable = -nooutput "Sij"
@@ -441,13 +440,13 @@ Solver 12
 End 
 
 Solver 13
-  !Exec Solver = "After TimeStep"
+  Exec Solver = "After TimeStep"
   Equation = String "StrainSolver"
   Procedure =  File "ElmerIceSolvers" "ComputeStrainRate"
   Variable = -nooutput "Eij"
   Variable DOFs = 1
   Solver Timing = Logical True
-  Exec Intervals = 10
+  !Exec Intervals = 10
 
   Exported Variable 1 = "StrainRate"
   Exported Variable 1 DOFs = 7
@@ -491,7 +490,7 @@ Solver 16
   Exec Solver = String "After Timestep"
   
   Save Geometry IDs = True
-  !Save Boundaries Only = Logical True
+  Save Boundaries Only = Logical True
   Output File Name = File "$name""
   Vtu Format = Logical True
   Single Precision = True
@@ -598,8 +597,6 @@ Boundary Condition 2
   Target Boundaries(1) = 2
 
   Normal-Tangential Velocity = Logical True
-  Normal-Tangential Flow Solution = Logical True  
-  Mass Consistent Normals = Logical True
   Flow Force BC = Logical True
 
   Velocity 1 = Real 0.0
@@ -619,8 +616,6 @@ End
 Boundary Condition 3
   Name = "Inflow"
   Target Boundaries(1) = 3
-
-  Flow Force BC = Logical True
 
   Velocity 1 = Variable Coordinate 1
     Real procedure "USF_Init.so" "UWa"
@@ -642,7 +637,6 @@ Boundary Condition 4
   Bottom Surface Mask = Logical True
 
   Normal-Tangential Velocity = Logical True
-  Normal-Tangential Flow Solution = Logical True
   Flow Force BC = Logical True
 
 ! Grounded ice

@@ -23,6 +23,7 @@ $yearinsec = 365.25*24*60*60
 $rhoi = 917.0/(1.0e6*yearinsec^2)  ! MPa - a - m
 $gravity = -9.81*yearinsec^2
 $minheight = 10.0
+$groundtoler = 1.0e-3
 
 Header
   Mesh DB "." "mesh2d"
@@ -97,6 +98,9 @@ Initial Condition 1
   Vsurfini 2 = Variable Coordinate 1
     Real procedure "USF_Init.so" "VIni"
 
+  Zs Bottom = Variable Coordinate 1
+    REAL procedure "USF_Init.so" "zbIni"
+
 End
 
 
@@ -135,6 +139,8 @@ Material 1
   
   Cauchy = Logical True
   
+  Min Zs Bottom = Variable Coordinate 1
+    REAL procedure "USF_Init.so" "Bedrock"
 End
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -149,8 +155,20 @@ Solver 1
   Minimum Height = Real $minheight
 End
 
+Solver 2 
+  Exec Solver = Before All
+  Equation = GroundedMaskIni
+  Procedure = "ElmerIceSolvers" "GroundedSolver"
+  Variable = GroundedMask
+  Variable DOFs = 1
+
+  Toler = Real $groundtoler
+  ! DEFAULT: Bedrock is read in the material parameter "Min Zs Bottom"
+  !Bedrock Variable = String "Bedrock"
+End
+
 !!!! Navier-Stokes Solution
-Solver 2
+Solver 3
   Equation = "Navier-Stokes"
   
   Stabilize = Logical True
@@ -200,11 +218,14 @@ Solver 2
   
   Exported Variable 6 = dS
   Exported variable 6 DOFS = 1
+  
+  Exported Variable 7 = Zs Bottom
+  Exported Variable 7 DOFS = 1
 End
 
 !!! Compute Cost function
 !!!!!!!!   Has to be run before the Adjoint Solver as adjoint forcing is computed here !!!!!
-Solver 3
+Solver 4
 
   Equation = "Cost"
 
@@ -223,7 +244,7 @@ Solver 3
 end
 
 !!!!  Adjoint Solution
-Solver 4
+Solver 5
  
   Equation = "Adjoint"
   Variable = Adjoint
@@ -246,7 +267,7 @@ End
 
 
 !!!!!  Compute Derivative of Cost function / Beta
-Solver 5
+Solver 6
   Equation = "DJDBeta"
 
 !!  Solver need to be associated => Define dumy variable
@@ -263,10 +284,12 @@ Solver 5
   Beta2Formulation = Logical True        ! SlipCoef define as Beta^2
 
   Lambda = Real $Lambda                   ! Regularization Coef
+  FreeSlipShelves = Logical True
+  Mask Name = String "GroundedMask"
 end
 
 !!!!! Optimization procedure 
-Solver 6
+Solver 7
   Equation = "Optimize_m1qn3"
 
 !!  Solver need to be associated => Define dumy variable
@@ -293,7 +316,7 @@ Solver 6
   M1QN3 ndz = Integer 20
 end
 
-Solver 7
+Solver 8
   Equation = String "StressSolver"
   Exec Solver = String "After all"
   Procedure =  File "ElmerIceSolvers" "ComputeDevStress"
@@ -319,7 +342,7 @@ Solver 7
   Linear System Residual Output = 1
 End
 
-Solver 8
+Solver 9
   Equation = "EigenStress"
   Exec Solver = String "After all"
   Variable = -nooutput dumy
@@ -342,12 +365,12 @@ Solver 8
   Exported Variable 4 DOFS = 3
 End
 
-Solver 9
+Solver 10
   Procedure = "SaveData" "SaveMaterials"
   Parameter 1 = String "Constant Temperature"
 End
 
-Solver 10
+Solver 11
   Equation = SaveLine
   Procedure = "SaveData" "SaveLine"
   Exec Solver = String "After all"
@@ -356,7 +379,7 @@ Solver 10
   !Parallel Reduce = Logical True
 End
 
-Solver 11
+Solver 12
   Equation = "ResultOutput"
   Exec Solver = "After All"
 
@@ -369,12 +392,12 @@ End
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 Equation 1
-  Active Solvers (9)= 1 2 3 4 7 8 9 10 11
+  Active Solvers (9)= 1 2 3 4 5 8 9 10 11 12
   NS Convect= False
 End
 
 Equation 2
- Active Solvers (2)=  5 6
+ Active Solvers (2)=  6 7
 End
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -419,8 +442,7 @@ Boundary Condition 4
   Body ID = Integer 2
   Target Boundaries = 4
   
-  Bottom Surface = Variable Coordinate 1
-    REAL procedure "USF_Init.so" "zbIni"
+  Bottom Surface = Equals Zs Bottom
 
   Normal-Tangential Velocity = Logical True  
   Normal-Tangential Adjoint = Logical True  
@@ -430,10 +452,12 @@ Boundary Condition 4
   Velocity 1 = Real 0.0e0
   Adjoint 1 = Real 0.0e0
 
+  FreeSlipShelves Beta Formulation = String "beta2"
+  FreeSlipShelves Mask Name = String "GroundedMask"
   Slip Coefficient 2 = Variable Beta
-     REAL MATC "tx*tx"
+     Real Procedure "USF_Sliding.so" "FreeSlipShelves"
   Slip Coefficient 3 = Variable Beta
-     REAL MATC "tx*tx"
+     Real Procedure "USF_Sliding.so" "FreeSlipShelves"
 
   Save Line = Logical True  
 End
