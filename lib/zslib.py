@@ -1066,6 +1066,7 @@ def dem_continuous(glacier,xmin,xmax,ymin,ymax,date,verticaldatum='geoid',blur=F
   OUTDIR = os.path.join(os.getenv("DATA_HOME"),"Elevation/MosaicDEMs/"+glacier+"/")
   WVDIR = os.path.join(os.getenv("DATA_HOME"),"Elevation/Worldview/"+glacier+"/")
   TDMDIR = os.path.join(os.getenv("DATA_HOME"),"Elevation/TDM/"+glacier+"/")
+  SPIRITDIR = os.path.join(os.getenv("DATA_HOME"),"Elevation/SPIRIT/"+glacier+"/")
   
   # Select dates for worldview images 
 
@@ -1100,11 +1101,15 @@ def dem_continuous(glacier,xmin,xmax,ymin,ymax,date,verticaldatum='geoid',blur=F
   files = ''
   dirs_wv = os.listdir(WVDIR)
   dirs_tdm = os.listdir(TDMDIR)
+  dirs_spirit = os.listdir(SPIRITDIR)
   for d in dates:
     for dir in dirs_tdm:
       if (d in dir) and (dir.endswith(fileend)):
         files = files+' '+TDMDIR+dir
     for dir in dirs_wv:
+      if (d in dir) and (dir.endswith(fileend)):
+        files = files+' '+WVDIR+dir
+    for dir in dirs_spirit:
       if (d in dir) and (dir.endswith(fileend)):
         files = files+' '+WVDIR+dir
 

@@ -22,7 +22,7 @@ $ function waterpressure(Z) {\
 $yearinsec = 365.25*24*60*60
 $rhoi = 917.0/(1.0e6*yearinsec^2)  ! MPa - a - m
 $gravity = -9.81*yearinsec^2
-
+$minheight = 10.0
 
 Header
   Mesh DB "." "mesh2d"
@@ -52,6 +52,8 @@ Simulation
   Initialize Dirichlet Conditions = Logical False
 
   Max Output Level = 3
+  
+  Set Dirichlet BCs By BC Numbering = Logical True
 End
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -143,6 +145,8 @@ Solver 1
   Mesh Update Variable = String "dS"
   Mesh Velocity First Zero = Logical True
   Active Coordinate = Integer 3
+  Correct Surface = Logical True
+  Minimum Height = Real $minheight
 End
 
 !!!! Navier-Stokes Solution

@@ -23,7 +23,7 @@ $ function waterpressure(Z) {\
 $yearinsec = 365.25*24*60*60
 $rhoi = 917.0/(1.0e6*yearinsec^2) ! MPa - a - m
 $gravity = -9.81*yearinsec^2
-
+$minheight = 10.0
 
 Header
   Mesh DB "." "mesh2d"
@@ -48,6 +48,8 @@ Simulation
   Initialize Dirichlet Conditions = Logical False
 
   Max Output Level = 3
+  
+  Set Dirichlet BCs By BC Numbering = Logical True
 End
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -139,6 +141,8 @@ Solver 1
   Mesh Update Variable = String "dS"
   Mesh Velocity First Zero = Logical True
   Active Coordinate = Integer 3
+  Correct Surface = Logical True
+  Minimum Height = Real $minheight
 End
 
 Solver 2
@@ -364,26 +368,7 @@ Boundary Condition 2
   Name = "Side Walls"
   Target Boundaries(1) = 2
  
-  !Normal-Tangential Velocity = Logical True
-  !Normal-Tangential VeloD = Logical True
-  
-  !Velocity 1 = Real 0.0e0
-  !Slip Coefficient 2 = Variable Beta
-  !   REAL MATC "tx*tx"
-  !Slip Coefficient 3 = Variable Beta
-  !   REAL MATC "tx*tx"
-  
-  ! Dirichlet BCs
-  Velocity 1 = Variable Coordinate 1
-    Real procedure "USF_Init.so" "UWa"
-  Velocity 2 = Variable Coordinate 1
-    Real procedure "USF_Init.so" "VWa"
-
-  ! Dirichlet BC => Same Dirichlet
-  VeloD 1 = Variable Coordinate 1
-    Real procedure "USF_Init.so" "UWa"
-  VeloD 2 = Variable Coordinate 1
-    Real procedure "USF_Init.so" "VWa"
+{SidewallBC}
 
   Save Line = Logical True
 End
