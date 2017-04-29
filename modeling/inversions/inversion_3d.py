@@ -146,8 +146,9 @@ def main():
     Real procedure "USF_Init.so" "VWa" """
 
   # Set boundary condition for sidewalls (either measured velocity or slip coefficient).
-  if sidewallbc == 'friction':
-    sidewallbc_text = """
+  if method == 'adjoint':
+    if sidewallbc == 'friction':
+      sidewallbc_text = """
   Normal-Tangential Velocity = Logical True
   Normal-Tangential Adjoint = Logical True
   
@@ -159,8 +160,8 @@ def main():
   Slip Coefficient 2 = Real """+slipcoefficient+"""
   Slip Coefficient 3 = Real """+slipcoefficient
   
-  elif sidewallbc == 'velocity':
-    sidewallbc_text = """
+    elif sidewallbc == 'velocity':
+      sidewallbc_text = """
   !! Dirichlet BC 
   Velocity 1 = Variable Coordinate 1
     Real procedure "USF_Init.so" "UWa"
@@ -170,10 +171,36 @@ def main():
   ! Dirichlet BC => Dirichlet = 0 for Adjoint
   Adjoint 1 = Real 0.0
   Adjoint 2 = Real 0.0"""
-  
-  else:
-    sys.exit("Unknown sidewall BC of "+sidewallbc)
+    else:
+      sys.exit("Unknown sidewall BC of "+sidewallbc)
+  if method == 'robin':
+    if sidewallbc == 'friction':
+      sidewallbc_text = """
+  Normal-Tangential Velocity = Logical True
+  Normal-Tangential VeloD = Logical True
 
+  Flow Force BC = Logical True
+
+  Velocity 1 = Real 0.0
+  VeloD 1 = Real 0.0e0
+  Slip Coefficient 2 = Real """+slipcoefficient+"""
+  Slip Coefficient 3 = Real """+slipcoefficient
+    elif sidewallbc == 'velocity':
+      sidewallbc_text = """
+  ! Dirichlet BCs
+  Velocity 1 = Variable Coordinate 1
+    Real procedure "USF_Init.so" "UWa"
+  Velocity 2 = Variable Coordinate 1
+    Real procedure "USF_Init.so" "VWa"
+
+  ! Dirichlet BC => Same Dirichlet
+  VeloD 1 = Variable Coordinate 1
+    Real procedure "USF_Init.so" "UWa"
+  VeloD 2 = Variable Coordinate 1
+    Real procedure "USF_Init.so" "VWa" """
+    else:
+      sys.exit("Unknown sidewall BC of "+sidewallbc)    
+      
   if temperature == 'model':
     temperature_text="""
   Constant Temperature = Variable Coordinate 1, Coordinate 2

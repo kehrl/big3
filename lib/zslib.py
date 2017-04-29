@@ -1182,9 +1182,9 @@ def variability(glacier,time1,time2,verticaldatum='geoid',resolution=32.,data='a
   # Load DEMs
   # Set up output grid
   dx = dy = float(resolution)
-  nx = np.ceil((xmax-xmin)/dx)+1
+  nx = int(np.ceil((xmax-xmin)/dx))+1
   x = np.linspace(xmin,(nx-1)*dx+xmin,nx)
-  ny = np.ceil((ymax-ymin)/dx)+1
+  ny = int(np.ceil((ymax-ymin)/dx))+1
   y = np.linspace(ymin,(ny-1)*dy+ymin,ny)
   xgrid,ygrid = np.meshgrid(x,y)
     

@@ -1,6 +1,6 @@
 # This module deals with the climate products.
 
-import os
+import os, sys
 import numpy as np
 import netCDF4, jdcal
 import coordlib, datelib
@@ -87,6 +87,8 @@ def racmo_grid(xmin,xmax,ymin,ymax,variable,epsg=3413,maskvalues='ice'):
     xind = np.where((xrac >= xmin) & (xrac <= xmax) & (mask == 0))
   elif maskvalues == 'both':
     xind = np.where((xrac >= xmin) & (xrac <= xmax))
+  else:
+    sys.exit("Unknown maskvalues")
   xrac_subset = xrac[xind]
   yrac_subset = yrac[xind]
   if variable != 'zs':
