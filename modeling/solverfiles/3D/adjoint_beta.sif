@@ -274,7 +274,7 @@ Solver 6
   Variable = -nooutput "DJDB"
   Variable DOFs = 1
 
-  procedure = "ElmerIceSolvers" "DJDBeta_Adjoint"
+  Procedure = "DJDBeta_Adjoint.so" "DJDBeta_Adjoint"
   
   Flow Solution Name = String "Flow Solution"
   Adjoint Solution Name = String "Adjoint"
