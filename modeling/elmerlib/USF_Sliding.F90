@@ -134,14 +134,14 @@ FUNCTION Sliding_Weertman (Model, nodenumber, x) RESULT(Bdrag)
   END IF
   
   ! Get the variables to compute ut
-  FlowVariable => VariableGet( Model % Variables, FlowSolverName,UnFoundFatal=UnFoundFatal)
+  FlowVariable => VariableGet( Model % Variables, FlowSolverName)
   FlowPerm    => FlowVariable % Perm
   FlowValues  => FlowVariable % Values
   
   ! NS, AIFlow cases   
   IF (.NOT.SSA) THEN 
      ! Get the variable to compute the normal
-     NormalVar =>  VariableGet(Model % Variables,'Normal Vector',UnFoundFatal=UnFoundFatal)
+     NormalVar =>  VariableGet(Model % Variables,'Normal Vector')
      NormalPerm => NormalVar % Perm
      NormalValues => NormalVar % Values
      
@@ -315,7 +315,7 @@ FUNCTION Friction_Coulomb (Model, nodenumber, y) RESULT(Bdrag)
      Pw = -auxReal(i)
   
      ! Get the variables to compute tau_b
-     StressVariable => VariableGet( Model % Variables, 'Stress',UnFoundFatal=UnFoundFatal)
+     StressVariable => VariableGet( Model % Variables, 'Stress')
      StressPerm    => StressVariable % Perm
      StressValues  => StressVariable % Values
      !
@@ -337,12 +337,12 @@ FUNCTION Friction_Coulomb (Model, nodenumber, y) RESULT(Bdrag)
   DEALLOCATE(auxReal)
   
   ! Get the flow variables to compute ut
-  FlowVariable => VariableGet( Model % Variables, 'Flow Solution',UnFoundFatal=UnFoundFatal)
+  FlowVariable => VariableGet( Model % Variables, 'Flow Solution')
   FlowPerm    => FlowVariable % Perm
   FlowValues  => FlowVariable % Values
   
   ! Get the normal variable to compute the normal
-  NormalVar =>  VariableGet(Model % Variables,'Normal Vector',UnFoundFatal=UnFoundFatal)
+  NormalVar =>  VariableGet(Model % Variables,'Normal Vector')
   NormalPerm => NormalVar % Perm
   NormalValues => NormalVar % Values
   
@@ -498,7 +498,7 @@ FUNCTION Sliding_Budd (Model, nodenumber, z) RESULT(Bdrag)
   END IF
   ! all the above was just so we can get the material properties of the parent element...
   body_id = ParentElement % BodyId
-  material_id = ListGetInteger(Model % Bodies(body_id) % Values, 'Material', GotIt,UnFoundFatal = UnFoundFatal)
+  material_id = ListGetInteger(Model % Bodies(body_id) % Values, 'Material', GotIt)
   ParentMaterial => Model % Materials(material_id) % Values
   IF (.NOT. ASSOCIATED(ParentMaterial)) THEN
      WRITE(Message,'(A,I10,A,I10)')&
@@ -556,12 +556,12 @@ FUNCTION Sliding_Budd (Model, nodenumber, z) RESULT(Bdrag)
      H_scaling = .FALSE.
   END IF
   
-  FlowVariable => VariableGet( Model % Variables, FlowSolverName,UnFoundFatal=UnFoundFatal)
+  FlowVariable => VariableGet( Model % Variables, FlowSolverName)
   FlowPerm    => FlowVariable % Perm
   FlowValues  => FlowVariable % Values
 
   IF (.NOT.SSA) THEN 
-     NormalVar =>  VariableGet(Model % Variables,'Normal Vector',UnFoundFatal=UnFoundFatal)
+     NormalVar =>  VariableGet(Model % Variables,'Normal Vector')
      NormalPerm => NormalVar % Perm
      NormalValues => NormalVar % Values
      
@@ -585,7 +585,7 @@ FUNCTION Sliding_Budd (Model, nodenumber, z) RESULT(Bdrag)
   ! the boundary condition section of the sif).
   IF (UseFloatation) THEN
 
-     Hvar => VariableGet( Model % Variables, "Depth",UnFoundFatal=UnFoundFatal)
+     Hvar => VariableGet( Model % Variables, "Depth")
      HPerm    => Hvar % Perm
      HValues  => Hvar % Values
      H = HValues(HPerm(nodenumber))
@@ -709,12 +709,12 @@ CONTAINS
     DEALLOCATE(auxReal)
     
     ! Get the variable to compute the normal
-    NormalVar =>  VariableGet(Model % Variables,'Normal Vector',UnFoundFatal=UnFoundFatal)
+    NormalVar =>  VariableGet(Model % Variables,'Normal Vector')
     NormalPerm => NormalVar % Perm
     NormalValues => NormalVar % Values
     
     ! Get the stress variable
-    StressVariable => VariableGet( Model % Variables, 'Stress',UnFoundFatal=UnFoundFatal)
+    StressVariable => VariableGet( Model % Variables, 'Stress')
     StressPerm    => StressVariable % Perm
     StressValues  => StressVariable % Values
     
@@ -819,7 +819,6 @@ FUNCTION FreeSlipShelves (Model, nodenumber, BetaIn) RESULT(BetaOut)
      END IF
      
      BetaForm = GetString( BC, 'FreeSlipShelves beta formulation', GotIt)
-     PRINT *,'BETA FORMULATION',BetaForm
      IF (.NOT.GotIt) THEN
         WRITE(Message,'(A)') 'Need >FreeSlipShelves beta formulation< (e.g. Power or Beta2)'
         CALL FATAL(FunctionName,Message)
@@ -830,7 +829,7 @@ FUNCTION FreeSlipShelves (Model, nodenumber, BetaIn) RESULT(BetaOut)
   END IF
   
   ! Obtain the value of the mask variable at the current node.
-  PointerToMask => VariableGet( Model % Variables, MaskName, UnFoundFatal=.TRUE.)
+  PointerToMask => VariableGet( Model % Variables, MaskName)
   MaskValues => PointerToMask % Values
   MaskPerm => PointerToMask % Perm
   mask = MaskValues(MaskPerm(nodenumber))
