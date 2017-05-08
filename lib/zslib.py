@@ -1370,6 +1370,7 @@ def variability(glacier,time1,time2,verticaldatum='geoid',resolution=32.,data='a
   # Remove insignificant trends from trend matrix
   ind = np.where(zstrend_p > 0.05)
   zstrend[ind] = float('nan')
+  zstrend_error[ind] = float('nan')
   
   # Get number of nonnan velocities for each pixel
   zscount = np.zeros([len(y),len(x)])
@@ -1378,5 +1379,5 @@ def variability(glacier,time1,time2,verticaldatum='geoid',resolution=32.,data='a
       nonnan = np.where(~(np.isnan(zs[j,i,:])))[0]
       zscount[j,i] = len(nonnan)   
   
-  return x,y,zs,zstrend,zsdetrend,zsrange,zscount,time
+  return x,y,zs,zstrend,zsdetrend,zsrange,zscount,zstrend_error,time
 

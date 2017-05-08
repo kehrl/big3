@@ -52,7 +52,7 @@ xb,yb,zb = bedlib.morlighem_grid(xmin,xmax,ymin,ymax,verticaldatum='geoid')
 xvel,yvel,velall,veltrend,veldetrend,velrange,velcount,veltime = vellib.variability(glacier,time1,time2)
 
 # Load elevation variability
-xzs,yzs,zsall,zstrend,zsdetrend,zsrange,zscount,zstime = zslib.variability(glacier,time1,time2)
+xzs,yzs,zsall,zstrend,zsdetrend,zsrange,zscount,zstrend_error,zstime = zslib.variability(glacier,time1,time2)
 
 # Find flotation conditions
 xwv,ywv,zwv,timewv = zslib.dem_grid(glacier,xmin,xmax,ymin,ymax,years='all',resolution=32,verticaldatum='geoid')
@@ -109,12 +109,12 @@ path = matplotlib.path.Path([[0.49*(xmax1-xmin1)+xmin,0.98*(ymax1-ymin1)+ymin1],
   			[0.49*(xmax1-xmin1)+xmin1,0.98*(ymax1-ymin1)+ymin1]])
 patch = matplotlib.patches.PathPatch(path,edgecolor='k',facecolor='w',lw=1,zorder=3)
 ax1.add_patch(patch)
-cbaxes = fig.add_axes([0.14, 0.85, 0.085, 0.03]) 
+cbaxes = fig.add_axes([0.14, 0.87, 0.085, 0.03]) 
 cb = plt.colorbar(p,cax=cbaxes,orientation='horizontal',ticks=[-1,0,1]) 
 cb.set_label('Bed elevation \n (km asl)',size=8,fontname='arial')
 cb.ax.tick_params(labelsize=8)
 for i in range(0,len(dists_eul)):
-  ax1.plot(xflow[ind_eul[i]],yflow[ind_eul[i]],'o',color=coloptions[i],markersize=5)
+  ax1.plot(xflow[ind_eul[i]],yflow[ind_eul[i]],'o',color=coloptions[i],markersize=5,mec='k',mew=0.5)
   if glacier == 'Kanger':
     if i in [1,2,3,4]:
       ax1.text(xflow[ind_eul[i]]-3.5e3,yflow[ind_eul[i]]+1e3,glacier[0]+'{0:02d}'.format(int(abs(dists_eul[i]))),fontsize=8,fontname='Arial')
@@ -152,14 +152,14 @@ path = matplotlib.path.Path([[0.49*(xmax1-xmin1)+xmin,0.98*(ymax1-ymin1)+ymin1],
   			[0.49*(xmax1-xmin1)+xmin1,0.98*(ymax1-ymin1)+ymin1]])
 patch = matplotlib.patches.PathPatch(path,edgecolor='k',facecolor='w',lw=1,zorder=3)
 ax2.add_patch(patch)
-cbaxes = fig.add_axes([0.39, 0.85, 0.085, 0.03]) 
+cbaxes = fig.add_axes([0.39, 0.87, 0.085, 0.03]) 
 cb = plt.colorbar(p,cax=cbaxes,orientation='horizontal',ticks=[0,1,2]) 
 cb.set_label(r"Velocity range"+"\n"+"(km yr$^{-1}$)",size=8,fontname='arial')
 cb.ax.tick_params(labelsize=8)
 minorticks = p.norm([0.5,1.5])
 cb.ax.xaxis.set_ticks(minorticks, minor=True)
 for i in range(0,len(dists_eul)):
-  ax2.plot(xflow[ind_eul[i]],yflow[ind_eul[i]],'o',color=coloptions[i],markersize=5)
+  ax2.plot(xflow[ind_eul[i]],yflow[ind_eul[i]],'o',color=coloptions[i],markersize=5,mec='k',mew=0.5)
 ax2.text(0.05*(xmax1-xmin1)+xmin1,ymin1+0.05*(ymax1-ymin1),'b',fontweight='bold',fontname='arial',fontsize=9)
 
 plt.subplot(gs[2])
@@ -184,14 +184,14 @@ path = matplotlib.path.Path([[0.49*(xmax1-xmin1)+xmin,0.98*(ymax1-ymin1)+ymin1],
   			[0.49*(xmax1-xmin1)+xmin1,0.98*(ymax1-ymin1)+ymin1]])
 patch = matplotlib.patches.PathPatch(path,edgecolor='k',facecolor='w',lw=1,zorder=3)
 ax3.add_patch(patch)
-cbaxes = fig.add_axes([0.635, 0.85, 0.085, 0.03]) 
+cbaxes = fig.add_axes([0.635, 0.87, 0.085, 0.03]) 
 cb = plt.colorbar(p,cax=cbaxes,orientation='horizontal',ticks=[0,20,40]) 
 cb.set_label(r'Elevation range'+'\n (m)',size=8,fontname='arial')
 cb.ax.tick_params(labelsize=8)
 minorticks = p.norm(np.arange(0,50,10))
 cb.ax.xaxis.set_ticks(minorticks, minor=True)
 for i in range(0,len(dists_eul)):
-  ax3.plot(xflow[ind_eul[i]],yflow[ind_eul[i]],'o',color=coloptions[i],markersize=5)
+  ax3.plot(xflow[ind_eul[i]],yflow[ind_eul[i]],'o',color=coloptions[i],markersize=5,mec='k',mew=0.5)
 ax3.text(0.05*(xmax1-xmin1)+xmin1,ymin1+0.05*(ymax1-ymin1),'c',fontweight='bold',fontname='arial',fontsize=9)
 
 plt.subplot(gs[3])
@@ -228,7 +228,7 @@ ax3.plot([xmin1+0.6*(xmax1-xmin1),xmin+0.6*(xmax1-xmin1)+5e3],[ymin1+0.75*(ymax1
 ax3.plot([xmin1+0.6*(xmax1-xmin1),xmin1+0.6*(xmax1-xmin1)],[ymin1+0.75*(ymax1-ymin1),ymin1+0.73*(ymax1-ymin1)],'k',linewidth=1.5,zorder=5)
 ax3.plot([xmin1+0.6*(xmax1-xmin1)+5e3,xmin1+0.6*(xmax1-xmin1)+5e3],[ymin1+0.75*(ymax1-ymin1),ymin1+0.73*(ymax1-ymin1)],'k',linewidth=1.5,zorder=5)
 for i in range(0,len(dists_eul)):
-  ax3.plot(xflow[ind_eul[i]],yflow[ind_eul[i]],'o',color=coloptions[i],markersize=5)
+  ax3.plot(xflow[ind_eul[i]],yflow[ind_eul[i]],'o',color=coloptions[i],markersize=5,mec='k',mew=0.5)
 ax3.text(xmin1+0.64*(xmax1-xmin1)+5e3,ymin1+0.72*(ymax1-ymin1),'5 km',fontsize=8,fontname='arial')
 ax3.text(0.05*(xmax1-xmin1)+xmin1,ymin1+0.05*(ymax1-ymin1),'d',fontweight='bold',fontname='arial',fontsize=9)
 
@@ -269,14 +269,14 @@ path = matplotlib.path.Path([[0.46*(xmax1-xmin1)+xmin,0.98*(ymax1-ymin1)+ymin1],
   			[0.46*(xmax1-xmin1)+xmin1,0.98*(ymax1-ymin1)+ymin1]])
 patch = matplotlib.patches.PathPatch(path,edgecolor='k',facecolor='w',lw=1,zorder=3)
 ax1.add_patch(patch)
-cbaxes = fig.add_axes([0.28, 0.85, 0.17, 0.03]) 
+cbaxes = fig.add_axes([0.28, 0.87, 0.17, 0.03]) 
 cb = plt.colorbar(p,cax=cbaxes,orientation='horizontal',ticks=[-500,-250,0],extend='both') 
 cb.set_label('Velocity trend \n (m yr$^{-2}$)',size=8,fontname='arial')
 cb.ax.tick_params(labelsize=8,length=5)
 for i in range(0,len(dists_eul)):
-  ax1.plot(xflow[ind_eul[i]],yflow[ind_eul[i]],'o',color=coloptions[i],markersize=5)
+  ax1.plot(xflow[ind_eul[i]],yflow[ind_eul[i]],'o',color=coloptions[i],markersize=5,mew=0.5,mec='k')
 for i in range(0,len(dists_eul)):
-  ax1.plot(xflow[ind_eul[i]],yflow[ind_eul[i]],'o',color=coloptions[i],markersize=5)
+  ax1.plot(xflow[ind_eul[i]],yflow[ind_eul[i]],'o',color=coloptions[i],markersize=5,mew=0.5,mec='k')
   if glacier == 'Kanger':
     if i in [1,2,3,4]:
       ax1.text(xflow[ind_eul[i]]-3.5e3,yflow[ind_eul[i]]+1e3,glacier[0]+'{0:02d}'.format(int(abs(dists_eul[i]))),fontsize=8,fontname='Arial')
@@ -314,7 +314,7 @@ path = matplotlib.path.Path([[0.48*(xmax1-xmin1)+xmin,0.98*(ymax1-ymin1)+ymin1],
   			[0.48*(xmax1-xmin1)+xmin,0.98*(ymax1-ymin1)+ymin1]])
 patch = matplotlib.patches.PathPatch(path,edgecolor='k',facecolor='w',lw=1,zorder=3)
 ax2.add_patch(patch)
-cbaxes = fig.add_axes([0.77, 0.85, 0.17, 0.03]) 
+cbaxes = fig.add_axes([0.77, 0.87, 0.17, 0.03]) 
 cb = plt.colorbar(p,cax=cbaxes,orientation='horizontal',ticks=[-10,-5,0],extend='both') 
 cb.set_label("Elevation trend \n (m yr$^{-1}$)",size=8,fontname='arial')
 cb.ax.tick_params(labelsize=9)
@@ -323,7 +323,7 @@ ax2.text(0.05*(xmax1-xmin1)+xmin1,0.05*(ymax1-ymin1)+ymin1,'b',weight='bold',fon
 cb.ax.tick_params(labelsize=8)
 cb.ax.tick_params(which='both',length=5)
 for i in range(0,len(dists_eul)):
-  ax2.plot(xflow[ind_eul[i]],yflow[ind_eul[i]],'o',color=coloptions[i],markersize=5)
+  ax2.plot(xflow[ind_eul[i]],yflow[ind_eul[i]],'o',color=coloptions[i],markersize=5,mew=0.5,mec='k')
 
 plt.tight_layout()
 plt.subplots_adjust(hspace=0.05,wspace=0.05,right=0.98,left=0.02,bottom=0.02,top=0.98)

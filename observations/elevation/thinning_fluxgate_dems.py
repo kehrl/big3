@@ -174,9 +174,9 @@ plt.plot([time1,time2],[0,0],'k')
 plt.plot(timerac_H,smbrac_H/900.*100,'0.4',lw=1.2,label='SMB')
 #plt.plot(timezsrac_H[1:],np.convolve(np.diff(zsrac_H)/np.diff(timezsrac_H),np.ones((11,))/11.,mode='same'),c='0.4',lw=1.2,label='SMB')
 #plt.plot(time_H,smb_H,c='0.5',lw=0.75,label='SMB')
-plt.errorbar(dem_time_H[:,0],dem_dH_H[:,0]/365.25*100,xerr=dem_time_H[:,1],yerr=dem_dH_H[:,1]/365.25*100,fmt='bo',markersize=3,capsize=1,lw=0.5,label='DEM')
+plt.errorbar(dem_time_H[:,0],dem_dH_H[:,0]/365.25*100,xerr=dem_time_H[:,1],yerr=dem_dH_H[:,1]/365.25*100,fmt='bo',mec='k',mew=0.5,markersize=3,capsize=1,lw=0.5,label='DEM')
 #plt.errorbar(time_H_2,dH_H_2,label='Helheim',fmt='r.',markersize=4,capsize=1,lw=0.5)
-plt.errorbar(time_H,(dH_H[:,0]+smb_H)/365.25*100,fmt='rs',markersize=3,capsize=1,lw=0.5,label='Flux-gate')
+plt.errorbar(time_H,(dH_H[:,0]+smb_H)/365.25*100,yerr=3.,fmt='rs',mec='k',mew=0.5,markersize=3,capsize=1,lw=0.5,label='Flux-gate')
 #time_H_2,dH_H_2,Q_H_2,hbar_H_2,ubar_H_2 = fluxlib.fluxgate_thinning('Helheim','fluxgate1','cresis',10.,timing='velocity')
 #plt.plot(timezsrac_K[1:],np.diff(zsrac_K)/np.diff(timezsrac_K),c='r',lw=0.5)
 plt.xticks(range(2008,2017),fontsize=8,fontname='Arial')
@@ -277,9 +277,9 @@ plt.subplot(gs[0:2])
 ax = plt.gca()
 plt.plot([time1,time2],[0,0],'k')
 plt.plot(timerac_K,smbrac_K/900.*100,'0.4',lw=1.2,label='SMB')
-plt.errorbar(dem_time_K[:,0],dem_dH_K[:,0]/365.25*100,xerr=dem_time_K[:,1],yerr=dem_dH_K[:,1]/365.25*100,fmt='bo',markersize=3,capsize=1,lw=0.5,label='DEM')
+plt.errorbar(dem_time_K[:,0],dem_dH_K[:,0]/365.25*100,xerr=dem_time_K[:,1],yerr=dem_dH_K[:,1]/365.25*100,fmt='bo',mec='k',mew=0.5,markersize=3,capsize=1,lw=0.5,label='DEM')
 #plt.errorbar(time_K_2,dH_K_2,label='Helheim',fmt='r.',markersize=4,capsize=1,lw=0.5)
-plt.errorbar(time_K,(dH_K[:,0]+smb_K)/365.25*100,fmt='rs',markersize=3,capsize=1,lw=0.5,label='Flux')
+plt.errorbar(time_K,(dH_K[:,0]+smb_K)/365.25*100,yerr=5.,fmt='rs',mec='k',mew=0.5,markersize=3,capsize=1,lw=0.5,label='Flux')
 #plt.errorbar(time_K_zs,dH_K_zs[:,0]+smb_K_zs,fmt='bo',markersize=2.5,capsize=1,lw=0.5,label='Flux')
 #time_K_2,dH_K_2,Q_K_2,hbar_K_2,ubar_K_2 = fluxlib.fluxgate_thinning('Helheim','fluxgate1','cresis',10.,timing='velocity')
 #plt.plot(timezsrac_K[1:],np.diff(zsrac_K)/np.diff(timezsrac_K),c='r',lw=0.5)
@@ -371,82 +371,71 @@ plt.close()
 # Plot terminus vs. thinning rate for individual glaciers #
 ###########################################################
 
-# plt.figure(figsize=(3,3))
-# matplotlib.rc('font',family='Arial')
-# plt.plot([0,0],[-150,150],'k')
-# plt.plot([-4,4],[0,0],'k')
-# plt.errorbar(-200,-200,fmt='ko',markersize=3,label='Flux')
-# plt.errorbar(-200,-200,fmt='k^',markersize=3,label='DEM')
-# years = range(2008,2016)
-# colors=['b','skyblue','g','limegreen','gold','orange','r','maroon']
-# n=0
-# for year in years:
-#   ind = np.where(np.floor(flux_time_H)==year)[0]
-#   interped = np.interp(flux_time_H[ind],terminus_time_H,terminus_val_H)
-#   #plt.errorbar(interped/1e3,flux_dH_H[ind,0],fmt='o',yerr=flux_dH_H[ind,1],markersize=3,c=colors[n])
-#   ind = np.where(np.floor(dem_time_H)==year)[0]
-#   for i in ind:
-#     time = np.arange(dem_time_H[i,0]-dem_time_H[i,1],dem_time_H[i,0]+dem_time_H[i,1],1/365.25)
-#     interped = np.interp(time,terminus_time_H,terminus_val_H)
-#     plt.errorbar(np.mean(interped)/1e3,dem_dH_H[i,0],fmt='^',yerr=dem_dH_H[i,1],markersize=3,c=colors[n])
-#   plt.plot(-200,-200,'s',markersize=3,color=colors[n],label=year)
-#   n=n+1
-# n=0
-# for year in years:
-#   ind = np.where(np.floor(flux_time_H)==year)[0]
-#   interped = np.interp(flux_time_H[ind],terminus_time_H,terminus_val_H)
-#   #plt.plot(interped/1e3,flux_dH_H[ind,0],'o',markersize=3,c=colors[n])
-#   ind = np.where(np.floor(dem_time_H)==year)[0]
-#   for i in ind:
-#     time = np.arange(dem_time_H[i,0]-dem_time_H[i,1],dem_time_H[i,0]+dem_time_H[i,1],1/365.25)
-#     interped = np.interp(time,terminus_time_H,terminus_val_H)
-#     plt.plot(np.mean(interped)/1e3,dem_dH_H[i,0],'^',markersize=3,c=colors[n])
-#   n=n+1
-# plt.errorbar(-200,-200,fmt='w.',label=' ')
-# plt.errorbar(-200,-200,fmt='w.',label=' ')
-# plt.xlabel('Terminus position (km)',fontsize=11)
-# plt.ylabel('dH/dt (m yr$^{-1}$)',fontsize=11)
-# plt.yticks(np.arange(-120,200,60),fontsize=11)
-# plt.xticks(np.arange(-4,5,1),fontsize=11)
-# plt.xlim([-2,2])
-# plt.ylim([-130,130])
-# plt.legend(loc=2,fontsize=11,numpoints=1,ncol=3,handlelength=0.2,handletextpad=0.5,labelspacing=0.2,columnspacing=0.8)
-# plt.tight_layout()
-# plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/Helheim_terminus_thinning.pdf"),FORMAT='PDF',dpi=600)
-# plt.close()
-# 
-# plt.figure(figsize=(3,3))
-# matplotlib.rc('font',family='Arial')
-# plt.plot([0,0],[-150,150],'k')
-# plt.plot([-4,4],[0,0],'k')
-# plt.errorbar(-200,-200,fmt='ko',markersize=3,label='Flux')
-# plt.errorbar(-200,-200,fmt='k^',markersize=3,label='DEM')
-# years = range(2008,2016)
-# colors=['b','skyblue','g','limegreen','gold','orange','r','maroon']
-# n=0
-# for year in years:
-#   ind = np.where(np.floor(flux_time_K)==year)[0]
-#   interped = np.interp(flux_time_K[ind],terminus_time_K,terminus_val_K)
-#   #plt.errorbar(interped/1e3,flux_dH_K[ind,0],fmt='o',yerr=flux_dH_K[ind,1],markersize=3,c=colors[n])
-#   ind = np.where(np.floor(dem_time_K)==year)[0]
-#   for i in ind:
-#     time = np.arange(dem_time_K[i,0]-dem_time_K[i,1],dem_time_K[i,0]+dem_time_K[i,1],1/365.25)
-#     interped = np.interp(time,terminus_time_K,terminus_val_K)
-#     plt.errorbar(np.mean(interped)/1e3,dem_dH_K[i,0],fmt='^',yerr=dem_dH_K[i,1],markersize=3,c=colors[n])
-#   plt.plot(-200,-200,'s',markersize=3,color=colors[n],label=year)
-#   n=n+1
-# plt.errorbar(-200,-200,fmt='w.',label=' ')
-# plt.errorbar(-200,-200,fmt='w.',label=' ')
-# plt.xlabel('Terminus position (km)',fontsize=11)
-# plt.ylabel('dH/dt (m yr$^{-1}$)',fontsize=11)
-# plt.yticks(np.arange(-80,200,40),fontsize=11)
-# plt.xticks(np.arange(-4,5,1),fontsize=11)
-# plt.xlim([-4,4])
-# plt.ylim([-80,80])
-# plt.legend(loc=2,fontsize=11,numpoints=1,ncol=3,handlelength=0.2,handletextpad=0.5,labelspacing=0.2,columnspacing=0.8)
-# plt.tight_layout()
-# plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/Kanger_terminus_thinning.pdf"),FORMAT='PDF',dpi=600)
-# plt.close()
+fig=plt.figure(figsize=(3,2.75))
+matplotlib.rc('font',family='Arial')
+plt.plot([0,0],[-50,30],'k',zorder=0)
+plt.plot([-4,4],[0,0],'k',zorder=0)
+#plt.errorbar(-200,-200,fmt='ko',markersize=3,label='Flux')
+#plt.errorbar(-200,-200,fmt='k^',markersize=3,label='DEM')
+
+ind = np.where((time_H > time1) & (time_H < time2))[0]
+interped = np.interp(time_H[ind],terminus_time_H,terminus_val_H)
+plt.errorbar(interped/1e3,dH_H[ind,0]/365.25*100,3.,fmt='k.',marker=None,mew=0,markersize=4,zorder=0)
+plt.scatter(interped/1e3,dH_H[ind,0]/365.25*100,c=(time_H[ind]-np.floor(time_H[ind]))*365,marker='s',s=15,vmin=0,vmax=365,cmap='viridis')
+#interped = np.interp(dem_time_H[:,0],terminus_time_H,terminus_val_H)
+#plt.plot(interped/1e3,dH_dem_H[:,0]/365.25*100,'ko',markerfacecolor='b',markersize=4)
+
+plt.xlabel('Terminus position (km)',fontsize=8)
+plt.ylabel(r'Dynamic $dh/dt$ (cm d$^{-1}$)',fontsize=8)
+plt.yticks(np.arange(-40,30,10),fontsize=8)
+plt.xticks(np.arange(-4,5,1),fontsize=8)
+plt.xlim([-4,4])
+plt.ylim([-42,15])
+#plt.legend(loc=2,fontsize=11,numpoints=1,ncol=3,handlelength=0.2,handletextpad=0.5,labelspacing=0.2,columnspacing=0.8)
+
+plt.text(-3.6,10,'a',fontsize=9,fontname='Arial',fontweight='bold')
+plt.text(0.9,-32,'Day of Year',fontsize=8)
+cbaxes = fig.add_axes([0.6, 0.24, 0.34, 0.03]) 
+cb = plt.colorbar(cax=cbaxes, ticks=[0,100,200,300], orientation='horizontal')
+cb.ax.tick_params(labelsize=8)
+
+plt.tight_layout()
+plt.subplots_adjust(hspace=0.0,wspace=0,top=0.98,right=0.97,left=0.17,bottom=0.15) 
+plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/Helheim_terminus_thinning.pdf"),FORMAT='PDF',dpi=600)
+plt.close()
+
+fig = plt.figure(figsize=(3,2.75))
+matplotlib.rc('font',family='Arial')
+plt.plot([0,0],[-50,30],'k',zorder=0)
+plt.plot([-4,4],[0,0],'k',zorder=0)
+#plt.errorbar(-200,-200,fmt='ko',markersize=3,label='Flux')
+#plt.errorbar(-200,-200,fmt='k^',markersize=3,label='DEM')
+
+ind = np.where((time_K > time1) & (time_K < time2))[0]
+interped = np.interp(time_K[ind],terminus_time_K,terminus_val_K)
+plt.errorbar(interped/1e3,dH_K[ind,0]/365.25*100,3.,fmt='k.',marker=None,mew=0,markersize=4,zorder=0)
+plt.scatter(interped/1e3,dH_K[ind,0]/365.25*100,c=(time_K[ind]-np.floor(time_K[ind]))*365,marker='s',s=15,vmin=0,vmax=365,cmap='viridis')
+#interped = np.interp(dem_time_K[:,0],terminus_time_K,terminus_val_K)
+#plt.plot(interped/1e3,dH_dem_K[:,0]/365.25*100,'ko',markerfacecolor='b',markersize=4)
+
+plt.text(-3.6,10,'b',fontsize=9,fontname='Arial',fontweight='bold')
+plt.xlabel('Terminus position (km)',fontsize=8)
+plt.ylabel(r'Dynamic $dh/dt$ (cm d$^{-1}$)',fontsize=8)
+plt.yticks(np.arange(-40,30,10),fontsize=8)
+plt.xticks(np.arange(-4,5,1),fontsize=8)
+plt.xlim([-4,4])
+plt.ylim([-42,15])
+
+plt.text(0.9,-32,'Day of Year',fontsize=8)
+cbaxes = fig.add_axes([0.6, 0.24, 0.34, 0.03]) 
+cb = plt.colorbar(cax=cbaxes, ticks=[0,100,200,300], orientation='horizontal')
+cb.ax.tick_params(labelsize=8)
+
+#plt.legend(loc=2,fontsize=11,numpoints=1,ncol=3,handlelength=0.2,handletextpad=0.5,labelspacing=0.2,columnspacing=0.8)
+plt.tight_layout()
+plt.subplots_adjust(hspace=0.0,wspace=0,top=0.98,right=0.97,left=0.17,bottom=0.15) 
+plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/Kanger_terminus_thinning.pdf"),FORMAT='PDF',dpi=600)
+plt.close()
 
 ##############################
 # Plot both glaciers at once #

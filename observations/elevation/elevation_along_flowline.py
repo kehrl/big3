@@ -30,6 +30,7 @@ xref,yref,zref = zslib.gimp_grid(np.min(x)-10.0e3,np.max(x)+10.0e3,np.min(y)-10.
 
 plot_overview = 1.
 plot_time = 1.
+plot_surfaceslopes = 1.
 
 ################
 # Get terminus #
@@ -87,7 +88,7 @@ if plot_overview:
   dcresis = np.array(dcresis)
   zcresis = np.array(zcresis)
 
-  fig = plt.figure(figsize=(4,2.4))
+  fig = plt.figure(figsize=(4,2.7))
   gs = matplotlib.gridspec.GridSpec(2,1)
   matplotlib.rc('font',family='Arial')
 
@@ -96,10 +97,10 @@ if plot_overview:
   plt.subplot(gs[0])
   ax = plt.gca()
   ind = np.where((terminus_time > 2008.) & (terminus_time < 2016.))
-  #plt.plot([np.min(terminus_val[ind])/1e3,np.min(terminus_val[ind])/1e3],[-1500,1500],'0.5')
-  #plt.plot([np.max(terminus_val[ind])/1e3,np.max(terminus_val[ind])/1e3],[-1500,1500],'0.5')
+  plt.plot([np.min(terminus_val[ind])/1e3,np.min(terminus_val[ind])/1e3],[-1500,1500],'0.5')
+  plt.plot([np.max(terminus_val[ind])/1e3,np.max(terminus_val[ind])/1e3],[-1500,1500],'0.5')
   ind = np.argmin(abs(dists--5e3))
-  plt.plot(dists/1e3,floatlib.height(zb),'k',linewidth=1.2,label='Flotation',dashes=[2,2,2,2])
+  plt.plot(dists[0:ind]/1e3,floatlib.height(zb[0:ind]),'k',linewidth=1.2,label='Flotation',dashes=[2,2,2,2])
   if glacier == 'Helheim':
     plt.plot(dists/1e3,atm_data['20010521'][:,2],'k',label='21 May 2001',lw=1.2)
   elif glacier == 'Kanger':
@@ -121,56 +122,60 @@ if plot_overview:
     plt.text(-20,500,'b',fontsize=9,fontweight='bold')
   elif glacier == 'Kanger':
     plt.ylim([0,800])
-    plt.text(-20,500,'e',fontsize=9,fontweight='bold')
+    plt.text(-20,500,'b',fontsize=9,fontweight='bold')
   plt.plot(dists/1e3,atm_data['20050518'][:,2],'b',lw=1.2)
   ax.xaxis.set_minor_locator(AutoMinorLocator(2))
   ax.yaxis.set_minor_locator(AutoMinorLocator(2))
   ax.tick_params('both', length=6, width=1.25, which='major')
   ax.tick_params('both', length=3, width=1, which='minor')
+  ax.tick_params(axis='x',which='both',direction='in')
+  ax.xaxis.set_ticks_position('both')
   plt.ylabel('Elevation (m asl)                                    ',fontsize=8)
   plt.legend(loc=1,fontsize=8,borderpad=0.2,numpoints=1,handlelength=0.6,labelspacing=0.1,handletextpad=0.3,markerscale=2)
 
   plt.subplot(gs[-1])
   ax = plt.gca()
   ind = np.where((terminus_time > 2008.) & (terminus_time < 2016.))[0]
-  #plt.plot([np.min(terminus_val[ind])/1e3,np.min(terminus_val[ind])/1e3],[-1500,1500],'0.5')
-  #plt.plot([np.max(terminus_val[ind])/1e3,np.max(terminus_val[ind])/1e3],[-1500,1500],'0.5')
+  plt.plot([np.min(terminus_val[ind])/1e3,np.min(terminus_val[ind])/1e3],[-1500,1500],'0.5')
+  plt.plot([np.max(terminus_val[ind])/1e3,np.max(terminus_val[ind])/1e3],[-1500,1500],'0.5')
   plt.plot(dcresis/1e3,zcresis,'.',c='0.7',markersize=2.5,label='Measured')
   plt.yticks(np.arange(-1250,-250,250),fontsize=8)
   if glacier == 'Helheim':
     plt.plot(dists/1e3,zb,color='k',linewidth=1.2,label='Smoothed')
     plt.ylim([-1150,-300])
-    #plt.text(np.min(terminus_val[ind])/1e3+0.2,-450,'2008-2016',fontsize=7,fontname='Arial')
+    plt.text(np.min(terminus_val[ind])/1e3+0.2,-450,'2008-2016',fontsize=7,fontname='Arial')
   elif glacier == 'Kanger':
     #plt.plot([0.7,np.max(terminus_val[ind])/1e3],[-425,-425],'0.5')
-    #plt.text(np.min(terminus_val[ind])/1e3+0.3,-450,'2008-2016',fontsize=7,fontname='Arial')
+    plt.text(np.min(terminus_val[ind])/1e3+0.3,-450,'2008-2016',fontsize=7,fontname='Arial')
     ind = np.argmin(abs(dists--5e3))
     #plt.plot(dists/1e3,zb,':',color='k',linewidth=1.5)
     plt.plot(dists[0:ind]/1e3,zb[0:ind],color='k',linewidth=1.5,label='Smoothed')
     plt.text(-1.5,-700,'??',fontsize=8,fontname='arial')
     plt.text(1.5,-500,'??',fontsize=8,fontname='arial')
     plt.ylim([-1300,-300])
-    #ax.arrow(-6,-800,0.7,-200,lw=1,fc='k',ec='k',head_width=0.5,head_length=50)
-    #ax.plot([-2.8,-1.5],[-1070,-970],lw=1.5,color='r')
-    #ax.text(-13,-650,'Rough grounding-line',fontname='Arial',fontsize=7)
-    #ax.text(-13,-750,'position from 2011-2016',fontname='Arial',fontsize=7)
-    #ax.text(-2.1,-860,'Potential',fontname='Arial',fontsize=7)
-    #ax.text(-2.1,-940,'overdeepening',fontname='Arial',fontsize=7)
-    #ellipse = Ellipse(xy=(-3.7,-1100),width=2,height=90,angle=0.0,edgecolor='r',fill=False,lw=1.5,ls=(0,(2,1)))
-    #ax.add_artist(ellipse)
+    ax.arrow(-6,-800,0.7,-200,lw=1,fc='k',ec='k',head_width=0.5,head_length=50)
+    ax.plot([-2.8,-1.5],[-1070,-970],lw=1.5,color='r')
+    ax.text(-13,-650,'Rough grounding-line',fontname='Arial',fontsize=7)
+    ax.text(-13,-750,'position from 2011-2016',fontname='Arial',fontsize=7)
+    ax.text(-2.1,-860,'Potential',fontname='Arial',fontsize=7)
+    ax.text(-2.1,-940,'overdeepening',fontname='Arial',fontsize=7)
+    ellipse = Ellipse(xy=(-3.7,-1100),width=2,height=90,angle=0.0,edgecolor='r',fill=False,lw=1.5,ls=(0,(2,1)))
+    ax.add_artist(ellipse)
   plt.xlabel('Distance along flowline (km)',fontsize=8)
   plt.xticks(np.arange(-30,10,5),fontsize=8)
   plt.xlim([-21,6])
-  plt.text(-20,-490,'c',fontsize=9,fontweight='bold')
+  plt.text(-20,-450,'c',fontsize=9,fontweight='bold')
   ax.xaxis.set_minor_locator(AutoMinorLocator(2))
   ax.yaxis.set_minor_locator(AutoMinorLocator(2))
   ax.tick_params('both', length=6, width=1.25, which='major')
   ax.tick_params('both', length=3, width=1, which='minor')
+  ax.tick_params(axis='x',which='both',direction='in')
+  ax.xaxis.set_ticks_position('both')
   plt.legend(loc=4,borderpad=0.2,fontsize=8,numpoints=1,handletextpad=0.3,handlelength=0.5,labelspacing=0.1,markerscale=2)
 
   # Save figure
   plt.tight_layout()
-  plt.subplots_adjust(wspace=0.04,hspace=0.04,top=0.98,right=0.98,left=0.125,bottom=0.15)
+  plt.subplots_adjust(wspace=0.04,hspace=0.04,top=0.98,right=0.98,left=0.125,bottom=0.125)
   plt.savefig(os.path.join(os.getenv("HOME"),'Bigtmp/'+glacier+'_zs_flowline.pdf'),FORMAT='PDF',dpi=600)
   plt.close()
 
@@ -256,4 +261,75 @@ if plot_time:
 
   # Save figure
   plt.savefig(os.path.join(os.getenv("HOME"),'Bigtmp/'+glacier+'_zs_years.pdf'),FORMAT='PDF')
+  plt.close()
+
+#######################
+# Plot surface slopes #
+#######################
+
+if plot_surfaceslopes and glacier == 'Kanger':
+  zs_dem,time_dem = zslib.dem_along_flowline(x,y,glacier,years='all',cutoff='terminus',verticaldatum='geoid',filt_len='none',data='TDM')
+  zs_filtered = np.zeros_like(zs_dem)
+  for i in range(0,len(time_dem)):
+    zs_filtered[i,:] = np.convolve(zs_dem[i,:],np.ones((50,))/50,mode='same')
+
+  fig = plt.figure(figsize=(4,2.7))
+  gs = matplotlib.gridspec.GridSpec(2,1)
+  coloptions=['r','b','g','limegreen','gold']
+ 
+  plt.subplot(gs[0])
+  ax = plt.gca()
+  #ind = np.where((terminus_time > 2008.) & (terminus_time < 2016.))
+  #plt.plot([np.min(terminus_val[ind])/1e3,np.min(terminus_val[ind])/1e3],[-1500,1500],'0.5')
+  #plt.plot([np.max(terminus_val[ind])/1e3,np.max(terminus_val[ind])/1e3],[-1500,1500],'0.5')
+  ind = np.argmin(abs(dists--5e3))
+  plt.plot(dists[0:ind]/1e3,floatlib.height(zb[0:ind]),'k',linewidth=1.2,label='Flotation',dashes=[2,2,2,2])
+  for i in range(1,len(time_dem)):
+    date = str(int(time_dem[i,1]))
+    filtered = np.convolve(zs_dem[i,:],np.ones((25,))/25,mode='valid')
+    ind = np.where(np.isnan(zs_filtered[i,:]))[0]
+    plt.plot(np.r_[dists[0:ind[0]]/1e3,dists[ind[0]]/1e3],np.r_[zs_filtered[i,0:ind[0]].T,0],linewidth=1.2,label=date)
+  #date = str(int(time_dem[ind2,1]))
+  #plt.plot(dists/1e3,zs_dem[ind2,:].T,color='b',linewidth=1.2,label=date[0:4]+'-'+date[4:6]+'-'+date[6:])
+  plt.xticks(np.arange(-30,10,2.5),fontsize=8)
+  ax.set_xticklabels([])
+  plt.yticks(np.arange(-1000,1000,100),fontsize=8)
+  plt.xlim([-10,2.5])
+  plt.ylim([0,350])
+  plt.text(-9.7,30,'a',fontsize=9,fontweight='bold')
+  ax.xaxis.set_minor_locator(AutoMinorLocator(2))
+  ax.yaxis.set_minor_locator(AutoMinorLocator(2))
+  ax.tick_params('both', length=6, width=1.25, which='major')
+  ax.tick_params('both', length=3, width=1, which='minor')
+  ax.tick_params(axis='x',which='both',direction='in')
+  ax.xaxis.set_ticks_position('both')
+  plt.ylabel('Elevation (m asl)',fontsize=8)
+  plt.legend(loc=1,fontsize=8,borderpad=0.2,ncol=3,numpoints=1,handlelength=0.6,labelspacing=0.1,handletextpad=0.3,markerscale=2)
+
+  plt.subplot(gs[-1])
+  ax = plt.gca()
+  #ind = np.where((terminus_time > 2008.) & (terminus_time < 2016.))[0]
+  #plt.plot([np.min(terminus_val[ind])/1e3,np.min(terminus_val[ind])/1e3],[-1500,1500],'0.5')
+  #plt.plot([np.max(terminus_val[ind])/1e3,np.max(terminus_val[ind])/1e3],[-1500,1500],'0.5')
+  for i in range(1,len(time_dem)):
+    plt.plot(dists[1:]/1e3,np.diff(zs_filtered[i,:])/np.diff(dists))
+  plt.yticks(np.arange(-0.1,0.1,0.05),fontsize=8)
+  plt.ylim([-0.1,0.04])
+  plt.ylabel('Surface slope',fontsize=8,fontname='Arial')
+  plt.xlabel('Distance along flowline (km)',fontsize=8)
+  plt.xticks(np.arange(-30,10,2.5),fontsize=8)
+  plt.xlim([-10,2.5])
+  plt.text(-9.7,-0.09,'b',fontsize=9,fontweight='bold')
+  ax.xaxis.set_minor_locator(AutoMinorLocator(2))
+  ax.yaxis.set_minor_locator(AutoMinorLocator(2))
+  ax.tick_params('both', length=6, width=1.25, which='major')
+  ax.tick_params('both', length=3, width=1, which='minor')
+  ax.tick_params(axis='x',which='both',direction='in')
+  ax.xaxis.set_ticks_position('both')
+  plt.legend(loc=4,borderpad=0.2,fontsize=8,numpoints=1,handletextpad=0.3,handlelength=0.5,labelspacing=0.1,markerscale=2)
+
+  # Save figure
+  plt.tight_layout()
+  plt.subplots_adjust(wspace=0.08,hspace=0.04,top=0.98,right=0.98,left=0.15,bottom=0.125)
+  plt.savefig(os.path.join(os.getenv("HOME"),'Bigtmp/'+glacier+'_surfaceslope_flowline.pdf'),FORMAT='PDF',dpi=600)
   plt.close()

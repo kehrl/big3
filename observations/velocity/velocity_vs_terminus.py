@@ -20,9 +20,9 @@ args = sys.argv
 glacier = args[1][:] # Options: Kanger, Helheim
 
 # Locations for velocities
-dists_eul = -1.0*np.array([2,5.0,10.0,15.0,20.0]) # kilometers
+dists_eul = -1.0*np.array([2.0,5.0,10.0,15.0,20.0]) # kilometers
 #dists_eul = -1.0*np.arange(4,14,2)
-dists_mel = np.array([-0.5])
+dists_mel = np.array([0.5])
 #dists_lag = np.array([1.0,5.0,10.0,20.0,30.0])
 
 # What bed to use for thinning gates through fluxgate method
@@ -299,8 +299,8 @@ if plot_images == 1:
 ###########################################
 
 if plot_overview == 1:
-  plt.figure(figsize=(7.45,6.5))
-  gs = matplotlib.gridspec.GridSpec(6,1)
+  plt.figure(figsize=(7.45,7.5))
+  gs = matplotlib.gridspec.GridSpec(8,1)
   matplotlib.rc('font',family='Arial')
 
   # Plot terminus
@@ -354,8 +354,12 @@ if plot_overview == 1:
   ax.xaxis.set_major_formatter(x_formatter)
   ax.xaxis.set_minor_locator(AutoMinorLocator(2))
   ax.yaxis.set_minor_locator(AutoMinorLocator(2))
+  ax.tick_params('both', length=6, width=1.25, which='major')
+  ax.tick_params('both', length=3, width=1, which='minor')
   plt.xticks(range(2000,2016),fontsize=8,fontname="Arial")
   ax.xaxis.tick_top()
+  ax.tick_params(axis='x',which='both',direction='in')
+  ax.xaxis.set_ticks_position('both')
   labels=[]
   for i in range(2000,2017):
     labels.append('Jan \n'+str(i))
@@ -365,8 +369,7 @@ if plot_overview == 1:
   ax.set_yticks(np.arange(-6,8,2))
   ax.set_yticklabels(np.arange(-6,8,2),fontsize=8,fontname="Arial")
   ax.set_ylabel('Terminus (km)',fontsize=8,fontname="Arial")
-  ax.tick_params('both', length=6, width=1.25, which='major')
-  ax.tick_params('both', length=3, width=1, which='minor')
+
   handles, labels = ax.get_legend_handles_labels()
   ind = [4,0,2,1,3]
   ax.legend(loc=2,fontsize=8,numpoints=1,handlelength=0.3,labelspacing=0.05,ncol=3,columnspacing=0.7,handletextpad=0.2,borderpad=0.25)
@@ -380,7 +383,7 @@ if plot_overview == 1:
     ax.set_ylim(np.floor((np.min(terminus_val))/1e3),np.ceil((np.max(terminus_val))/1e3))
 
   # Plot velocities
-  ax = plt.subplot(gs[1:-3, :]) 
+  ax = plt.subplot(gs[1:3, :]) 
   #plt.plot([2000,2014],[0,0],'k')
   #coloptions=['k','r','y','g','b']
   coloptions=['r','b','g','limegreen','gold']
@@ -421,6 +424,8 @@ if plot_overview == 1:
   matplotlib.rc('font',family="Arial",)
   ax.tick_params('both', length=6, width=1.25, which='major')
   ax.tick_params('both', length=3, width=1, which='minor')
+  ax.tick_params(axis='x',which='both',direction='in')
+  ax.xaxis.set_ticks_position('both')
   labels=[]
   plt.xticks(range(2000,2017),fontsize=8,fontname="Arial")
   ax.set_xticklabels([])
@@ -435,7 +440,7 @@ if plot_overview == 1:
   plt.xlim([time1,time2])
  
   # Plot surface elevations
-  plt.subplot(gs[-3:-1, :])
+  plt.subplot(gs[3:5, :])
   ax = plt.gca()
   # Set up points for legend
   plt.errorbar(0,0,capsize=1,yerr=0.5,fmt='o',color='k',markersize=3.5,label='WV')
@@ -483,6 +488,8 @@ if plot_overview == 1:
   plt.xlim([time1,time2])
   ax.tick_params('both', length=6, width=1.25, which='major')
   ax.tick_params('both', length=3, width=1, which='minor')
+  ax.tick_params(axis='x',which='both',direction='in')
+  ax.xaxis.set_ticks_position('both')
   if glacier == 'Helheim':
     plt.ylabel('  Height above flotation at H02 (m)',fontsize=8,fontname="Arial")
     plt.yticks(np.arange(-10,50,10),fontsize=8,fontname="Arial")
@@ -504,7 +511,8 @@ if plot_overview == 1:
   ax2.plot([0,0],[1,1],'k-',lw=1.5,label='SIF')
   ax2.plot(timerac,runrac,c='0.4',dashes=[2,1],lw=1.5,label='Runoff')
   if glacier == 'Helheim':
-    ax2.errorbar(time_wv,zpt_wv[:,1]-floatlib.height(zb[ind_eul[1]]),capsize=1,yerr=zpterror_wv,fmt='o',mew=0.5,mec='k',color=coloptions[1],markersize=3.5,label='WV')
+    ind = np.where(~(np.isnan(zpt_wv[:,1])))[0]
+    ax2.errorbar(time_wv[ind],zpt_wv[ind,1]-floatlib.height(zb[ind_eul[1]]),capsize=1,yerr=zpterror_wv[ind],fmt='o',mew=0.5,mec='k',color=coloptions[1],markersize=3.5,label='WV')
     ax2.errorbar(time_tdm,zpt_tdm[:,1]-floatlib.height(zb[ind_eul[1]]),capsize=1,yerr=zpterror_tdm,fmt='^',mew=0.5,mec='k',color=coloptions[1],markersize=3.5,label='TDM')
     ax2.plot(time_atm,zpt_atm[:,1]-floatlib.height(zb[ind_eul[1]]),'+',color=coloptions[1],markersize=5,label='ATM')
     ax2.set_ylabel('    Height above flotation at H05 (m)',fontsize=8,fontname='Arial')
@@ -518,6 +526,8 @@ if plot_overview == 1:
   ax2.tick_params('both', length=6, width=1.25, which='major')
   ax2.tick_params('both', length=3, width=1, which='minor')
   ax2.yaxis.set_minor_locator(AutoMinorLocator(2))
+  ax2.tick_params(axis='x',which='both',direction='in')
+  ax2.xaxis.set_ticks_position('both')
   if glacier == 'Helheim':
     ax2.set_yticks(np.arange(60,120,10))
     ax2.set_ylim([55,105])
@@ -526,6 +536,47 @@ if plot_overview == 1:
     ax2.set_yticks(np.arange(150,250,10))
     ax2.set_ylim([145,232])
     ax2.set_yticklabels(np.arange(150,250,10),fontsize=8,fontname='arial')
+
+
+  # Surface elevation change rates
+  if glacier == 'Helheim':
+    yerr = 3.
+  elif glacier == 'Kanger':
+    yerr = 5.
+  plt.subplot(gs[-3:-1, :])
+  ax = plt.gca()
+  if vbars == 'seasonal':
+    xTickPos = np.linspace(np.floor(time1)-0.25,np.ceil(time2)-0.25,(np.ceil(time2)-np.floor(time1))*2+1)
+    ax.bar(xTickPos, [max(plt.ylim())-min(plt.ylim())] * len(xTickPos), (xTickPos[1]-xTickPos[0]), bottom=min(plt.ylim()), color=['0.85','w'],linewidth=0)
+  elif vbars == 'runoff':
+    for i in range(0,len(year_runoff)):
+      path = matplotlib.path.Path([[day1_runoff[i],-50],[day1_runoff[i],240],[day2_runoff[i],240],[day2_runoff[i],-50]])
+      patch = matplotlib.patches.PathPatch(path,facecolor='0.85',edgecolor='none',lw=0)
+      ax.add_patch(patch)
+  ax.plot([time1,time2],[0,0],'k')
+  ax.plot(timerac,smbrac/900.*100,'0.4',lw=1.2,label='SMB')
+  ax.errorbar(dem_time[:,0],dem_dH[:,0]/365.25*100,xerr=dem_time[:,1],yerr=dem_dH[:,1]/365.25*100,fmt='bo',markersize=3,mec='k',mew=0.5,capsize=1,lw=0.5,label='DEM')
+  ind = np.where(~(np.isnan(flux_dH)))[0]
+  ax.errorbar(flux_time[ind],(flux_dH[ind,0]+smb_flux[ind])/365.25*100,yerr=yerr,xerr=5.5/365.25,fmt='rs',markersize=3,mec='k',mew=0.5,capsize=1,lw=0.5,label='Flux')
+  plt.xlim([time1,time2])
+  plt.ylabel(r'$dh/dt$ (cm d$^{-1}$)',fontname='Arial',fontsize=8)
+  x_formatter = matplotlib.ticker.ScalarFormatter(useOffset=False)
+  ax.xaxis.set_major_formatter(x_formatter)
+  ax.xaxis.set_minor_locator(AutoMinorLocator(2))
+  ax.yaxis.set_minor_locator(AutoMinorLocator(2))
+  ax.tick_params('both', length=6, width=1.25, which='major')
+  ax.tick_params('both', length=3, width=1, which='minor')
+  ax.tick_params(axis='x',which='both',direction='in')
+  ax.xaxis.set_ticks_position('both')  
+  ax.set_xticklabels([])
+  plt.legend(loc=2,numpoints=1,ncol=3,handletextpad=0.2,fontsize=8,columnspacing=0.05,markerscale=1,handlelength=1.2,borderpad=0.2)
+  plt.yticks(np.arange(-40,40,10),fontsize=8,fontname='Arial')
+  if glacier == 'Helheim':
+    plt.ylim([-45,30])
+    ax.text(2008.13,-40,'d',fontsize=10,fontname='arial',weight='bold')
+  elif glacier == 'Kanger':
+    plt.ylim([-38,30])
+    ax.text(2008.13,-35,'d',fontsize=10,fontname='arial',weight='bold')
 
   # Plot presence of rigid melange and/or climate variables
   plt.subplot(gs[-1, :])
@@ -540,6 +591,8 @@ if plot_overview == 1:
   matplotlib.rc('font',family="Arial",)
   ax.tick_params('both', length=6, width=1.25, which='major')
   ax.tick_params('both', length=3, width=1, which='minor')
+  ax.tick_params(axis='x',which='both',direction='in')
+  ax.xaxis.set_ticks_position('both')
   labels=[]
   plt.xticks(range(2000,2017),fontsize=8,fontname="Arial")
   ax.set_xticklabels([])
@@ -557,9 +610,15 @@ if plot_overview == 1:
   ax.set_xticklabels(labels,fontsize=8,fontname='Arial')
   plt.xlim([time1,time2])
   plt.plot(timesif,sif,'k-',lw=1.5,label='SIF')
+  ind = np.where((np.isnan(velmel_val[:,0])))[0]
+  plt.plot(velmel_time[ind,0],0.52*np.ones([len(ind),1]),'b.',label='Free')
+  ind = np.where(~(np.isnan(velmel_val[:,0])))[0]
+  plt.plot(velmel_time[ind,0],0.48*np.ones([len(ind),1]),'r.',label='Rigid')
   ax2 = ax.twinx()
   ax2.plot([0,0],[1,1],'k-',lw=1.5,label='SIF')
   ax2.plot(timerac,runrac,c='0.4',dashes=[2,1],lw=1.5,label='Runoff')
+  ax2.plot(0,0,'r.',label='Rigid')
+  ax2.plot(0,0,'b.',label='Free')
   ax2.set_xlim([time1,time2])
   ax2.set_ylim([0,50])
   ax2.set_yticks([0,25,50])
@@ -568,8 +627,10 @@ if plot_overview == 1:
   ax2.yaxis.set_minor_locator(AutoMinorLocator(2))
   ax2.tick_params('both', length=6, width=1.25, which='major')
   ax2.tick_params('both', length=3, width=1, which='minor')
+  ax2.tick_params(axis='x',which='both',direction='in')
+  ax2.xaxis.set_ticks_position('both')
   plt.legend(loc=3,borderpad=0.3,fontsize=8,numpoints=1,handlelength=0.7,labelspacing=0.05,ncol=4,columnspacing=0.7,handletextpad=0.5)
-  ax.text(2008.13,0.32,'d',fontsize=10,fontname='arial',weight='bold')
+  ax.text(2008.13,0.32,'e',fontsize=10,fontname='arial',weight='bold')
   ind = np.where((year_runoff > 2007.) & (year_runoff < 2016))[0]
   for i in ind:
     #ax2.plot([day1_runoff[i],day2_runoff[i]],[total_runoff[i]/meltlength_runoff[i],total_runoff[i]/meltlength_runoff[i]],'k',lw=1.5)
@@ -588,14 +649,15 @@ if plot_overview == 1:
       plt.plot([images_time[i][3],images_time[i][3]],ax.get_ylim(),'--',color='0.3')
 
   plt.tight_layout()
-  plt.subplots_adjust(hspace=0.03,wspace=0,top=0.94,right=0.92,left=0.07,bottom=0.06) 
+  plt.subplots_adjust(hspace=0.03,wspace=0.02,top=0.96,right=0.92,left=0.07,bottom=0.04) 
   plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+"_vel_time_"+str(int(time1))+"to"+str(int(time2))+".pdf"),FORMAT='PDF',dpi=600)
   plt.close()
 
   #########################################
   # Plot overview map for previous figure #
   #########################################
-  
+
+if plot_overview == 1:  
   # Image for plotting
   if glacier == "Helheim":
     imagetime = datelib.date_to_fracyear(2014,7,4)
@@ -1026,3 +1088,236 @@ if plot_bed == 1:
 
   plt.savefig(os.path.join(os.getenv("HOME"),'Bigtmp/'+glacier+'_bed_vel_map.pdf'),FORMAT='PDF')
   plt.close()
+
+##################################
+# Plot SIF, ice melange rigidity #
+##################################
+
+# Binning SIF and melange conditions by month
+
+if glacier == 'Helheim':
+  advance = 0
+
+  if advance:
+    ind = np.where(((velmel_time[:,0] > 2010.49589) & (velmel_time[:,0] < 2011.49589)) | \
+                   ((velmel_time[:,0] > 2013.49589) & (velmel_time[:,0] < 2014.49589)))[0]
+  else:
+    ind = np.where(((velmel_time[:,0] > 2008.49589) & (velmel_time[:,0] < 2009.49589)) | \
+                   ((velmel_time[:,0] > 2009.49589) & (velmel_time[:,0] < 2010.49589)) | \
+                   ((velmel_time[:,0] > 2011.49589) & (velmel_time[:,0] < 2012.49589)) | \
+                   ((velmel_time[:,0] > 2012.49589) & (velmel_time[:,0] < 2013.49589)))[0]
+  velsif = np.interp(velmel_time[ind,0],timesif,sif)
+  indrig = np.where(~(np.isnan(velmel_val[ind,:])))[0]
+  indnon = np.where((np.isnan(velmel_val[ind,:])))[0]
+
+  months = (velmel_time[ind,0]-np.floor(velmel_time[ind,0]))*12
+  nonrigbins = np.zeros(12)
+  rigbins = np.zeros(12)
+  for i in range(0,12):
+    ind = np.where(np.floor(months[indrig]) == i)[0]
+    rigbins[i] = len(ind)
+    ind = np.where(np.floor(months[indnon]) == i)[0]
+    nonrigbins[i] = len(ind)
+
+  years = range(2008,2016)
+  months_sif = np.arange(0,12,0.01)
+  interped = np.zeros([len(months_sif),len(years)])
+  for i in range(0,len(years)):
+    ind = np.where(np.floor(timesif) == years[i])
+    interped[:,i] = np.interp(months_sif,(timesif[ind]-np.floor(timesif[ind]))*12,sif[ind])
+  ind = np.where(months_sif < 7)[0]
+  months_sif[ind] = months_sif[ind]+12
+
+  fig = plt.figure(figsize=(3,3))
+  gs = matplotlib.gridspec.GridSpec(2,1)
+
+  plt.subplot(gs[0])
+  ax = plt.gca()
+  if advance:
+    ind = np.where((terminus_time > 2010.49589) & (terminus_time < 2011.49589))[0]
+    time_term = (terminus_time[ind]-np.min(np.floor(terminus_time[ind])))*12
+    plt.plot(time_term,terminus_val[ind]/1e3,'g.-',label='2010/11',lw=0.5)
+    ind = np.where((terminus_time > 2013.49589) & (terminus_time < 2014.49589))[0]
+    time_term = (terminus_time[ind]-np.min(np.floor(terminus_time[ind])))*12
+    plt.plot(time_term,terminus_val[ind]/1e3,'m.-',label='2013/14',lw=0.5)
+    plt.text(6.4,2,'b',fontsize=8,fontname='Arial',fontweight='bold')
+  else:
+    ind = np.where((terminus_time > 2008.49589) & (terminus_time < 2009.49589))[0]
+    time_term = (terminus_time[ind]-np.min(np.floor(terminus_time[ind])))*12
+    plt.plot(time_term,terminus_val[ind]/1e3,'k.-',label='2008/09',lw=0.5)
+    ind = np.where((terminus_time > 2009.49589) & (terminus_time < 2010.49589))[0]
+    time_term = (terminus_time[ind]-np.min(np.floor(terminus_time[ind])))*12
+    plt.plot(time_term,terminus_val[ind]/1e3,'r.-',label='2009/10',lw=0.5)
+    ind = np.where((terminus_time > 2011.49589) & (terminus_time < 2012.49589))[0]
+    time_term = (terminus_time[ind]-np.min(np.floor(terminus_time[ind])))*12
+    plt.plot(time_term,terminus_val[ind]/1e3,'b.-',label='2011/12',lw=0.5)
+    ind = np.where((terminus_time > 2012.49589) & (terminus_time < 2013.49589))[0]
+    time_term = (terminus_time[ind]-np.min(np.floor(terminus_time[ind])))*12
+    plt.plot(time_term,terminus_val[ind]/1e3,'c.-',label='2012/13',lw=0.5)
+    ind = np.where((terminus_time > 2014.49589) & (terminus_time < 2015.49589))[0]
+    time_term = (terminus_time[ind]-np.min(np.floor(terminus_time[ind])))*12
+    plt.plot(time_term,terminus_val[ind]/1e3,'y.-',label='2014/15',lw=0.5)
+    plt.text(6.4,2,'a',fontsize=8,fontname='Arial',fontweight='bold')
+  plt.xticks(8+np.arange(0.5,12.5,1))
+  plt.xlim([6,18])
+  plt.ylabel('Terminus (km)',fontsize=8,fontname='Arial')
+  plt.yticks(np.arange(-1,3,1),fontsize=8,fontname='Arial')
+  plt.ylim([-1.8,2.5])
+  ax.set_xticklabels([])
+  if advance:
+    plt.legend(loc=4,fontsize=8,numpoints=1,handlelength=0.3,labelspacing=0.05,ncol=3,columnspacing=0.7,handletextpad=0.2,borderpad=0.25)
+  else:
+    plt.legend(loc=0,fontsize=8,numpoints=1,handlelength=0.3,labelspacing=0.05,ncol=3,columnspacing=0.7,handletextpad=0.2,borderpad=0.25)
+
+  plt.subplot(gs[1])
+  ax = plt.gca()
+  months = np.arange(0,12)
+  ind = np.where(months < 6)[0]
+  months[ind] = months[ind]+12
+  plt.bar(months+0.5,rigbins/(rigbins+nonrigbins),width=1.00,color='r',label='Rigid')
+  plt.bar(months+0.5,nonrigbins/(rigbins+nonrigbins),width=1.00,bottom=rigbins/(rigbins+nonrigbins),color='b',label='Free')
+  for i in range(0,len(months)):
+    plt.text(months[i]+0.4,0.9,str(int(rigbins[i]+nonrigbins[i])),color='w',fontsize=8,fontname='Arial')
+  if advance:
+    ind = np.where(((timesif > 2010.49589) & (timesif < 2011.49589)))[0] #| \
+    timesif_months = (timesif[ind]-np.min(np.floor(timesif[ind])))*12
+    plt.plot(timesif_months,sif[ind],'w',lw=0.5)
+    ind = np.where(((timesif > 2013.49589) & (timesif < 2014.49589)))[0] #| \
+    timesif_months = (timesif[ind]-np.min(np.floor(timesif[ind])))*12
+    plt.plot(timesif_months,sif[ind],'w',lw=0.5)
+    plt.text(6.4,0.06,'d',fontsize=8,fontname='Arial',fontweight='bold',color='w')
+  else:
+    ind = np.where(((timesif > 2008.49589) & (timesif < 2009.49589)))[0] #| \
+    timesif_months = (timesif[ind]-np.min(np.floor(timesif[ind])))*12
+    plt.plot(timesif_months,sif[ind],'w',lw=0.5)    
+    ind = np.where(((timesif > 2009.49589) & (timesif < 2010.49589)))[0] #| \
+    timesif_months = (timesif[ind]-np.min(np.floor(timesif[ind])))*12
+    plt.plot(timesif_months,sif[ind],'w',lw=0.5)    
+    ind = np.where(((timesif > 2011.49589) & (timesif < 2012.49589)))[0] #| \
+    timesif_months = (timesif[ind]-np.min(np.floor(timesif[ind])))*12
+    plt.plot(timesif_months,sif[ind],'w',lw=0.5)    
+    ind = np.where(((timesif > 2012.49589) & (timesif < 2013.49589)))[0] #| \
+    timesif_months = (timesif[ind]-np.min(np.floor(timesif[ind])))*12
+    plt.plot(timesif_months,sif[ind],'w',lw=0.5) 
+    ind = np.where(((timesif > 2014.49589) & (timesif < 2015.49589)))[0] #| \
+    timesif_months = (timesif[ind]-np.min(np.floor(timesif[ind])))*12
+    plt.plot(timesif_months,sif[ind],'w',lw=0.5)         
+    plt.text(6.4,0.06,'c',fontsize=8,fontname='Arial',fontweight='bold',color='w')
+  plt.xticks(6+np.arange(0.5,12.5,1))
+  ax.set_xticklabels(['Jul','','Sept','','Nov','','Jan','','Mar','','May',''],fontsize=8,fontname='Arial')
+  plt.yticks([0,.25,0.5,0.75,1],fontsize=8,fontname='Arial')
+  plt.ylabel(r'SIF and M$\'e$lange',fontsize=8,fontname='Arial')
+  plt.ylim([0,1])
+  plt.xlim([6,18])
+  plt.legend(loc=4,fontsize=8,numpoints=1,handlelength=0.3,labelspacing=0.05,ncol=3,columnspacing=0.7,handletextpad=0.2,borderpad=0.25)
+  if advance:
+    years = [2010,2013]
+  else:
+    years = [2008,2009,2011,2012,2014]
+  #for year in years:
+  #  ind = np.where((timerac > year+0.49589) & (timerac < year+1+0.49589))[0]
+  #  timerac_months = (timerac[ind]-np.min(np.floor(timerac[ind])))*12
+  #  plt.plot(timerac_months,runrac[ind]/np.max(runrac),'k')
+
+  plt.tight_layout()
+  plt.subplots_adjust(hspace=0.05,wspace=0.05,top=0.98,right=0.97,left=0.18,bottom=0.1) 
+  if advance:
+    plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+"_melange_sif_advance.pdf"),FORMAT='PDF',dpi=600)
+  else:
+    plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+"_melange_sif_retreat.pdf"),FORMAT='PDF',dpi=600)
+  plt.close()
+  
+elif glacier == 'Kanger':
+
+  velsif = np.interp(velmel_time[:,0],timesif,sif)
+  indrig = np.where(~(np.isnan(velmel_val)))[0]
+  indnon = np.where((np.isnan(velmel_val)))[0]
+
+  months = (velmel_time[:,0]-np.floor(velmel_time[:,0]))*12
+  nonrigbins = np.zeros(12)
+  rigbins = np.zeros(12)
+  for i in range(0,12):
+    ind = np.where(np.floor(months[indrig]) == i)[0]
+    rigbins[i] = len(ind)
+    ind = np.where(np.floor(months[indnon]) == i)[0]
+    nonrigbins[i] = len(ind)
+
+  years = range(2008,2015)
+  months_sif = np.arange(0,12,0.01)
+  interped = np.zeros([len(months_sif),len(years)])
+  for i in range(0,len(years)):
+    ind = np.where(np.floor(timesif) == years[i])
+    interped[:,i] = np.interp(months_sif,(timesif[ind]-np.floor(timesif[ind]))*12,sif[ind])
+  ind = np.where(months_sif < 7)[0]
+  months_sif[ind] = months_sif[ind]+12
+
+  fig = plt.figure(figsize=(3,3))
+  gs = matplotlib.gridspec.GridSpec(2,1)
+  
+  plt.subplot(gs[0])
+  ax = plt.gca()
+  colors=['k','r','g','b','c','m','y']
+  for i in range(0,len(years)):
+    year = years[i]
+    ind = np.where((terminus_time > year+.49589) & (terminus_time < year+1+.49589))[0]
+    time_term = (terminus_time[ind]-np.min(np.floor(terminus_time[ind])))*12
+    plt.plot(time_term,terminus_val[ind]/1e3,'.-',color=colors[i],label=str(year)+'/'+'{0:02d}'.format(int(1+year-2000)),lw=0.5)
+  plt.xticks(6+np.arange(0.5,12.5,1))
+  plt.xlim([6,18])
+  plt.yticks([-3,0,3],fontsize=8,fontname='Arial')
+  plt.ylabel('Terminus (km)',fontsize=8,fontname='Arial')
+  ax.set_xticklabels([])
+  plt.legend(loc=0,fontsize=8,numpoints=1,handlelength=0.3,labelspacing=0.05,ncol=3,columnspacing=0.7,handletextpad=0.2,borderpad=0.25)
+  plt.text(6.4,-3.2,'a',fontsize=8,fontname='Arial',fontweight='bold',color='k') 
+  
+  plt.subplot(gs[1])
+  ax = plt.gca()
+  months = np.arange(0,12)
+  ind = np.where(months < 6)[0]
+  months[ind] = months[ind]+12
+  plt.bar(months+0.5,rigbins/(rigbins+nonrigbins),width=1.00,color='r',label='Rigid')
+  plt.bar(months+0.5,nonrigbins/(rigbins+nonrigbins),width=1.00,bottom=rigbins/(rigbins+nonrigbins),color='b',label='Free')
+  for year in years:
+    ind = np.where((timesif > year+0.49589) & (timesif < year+1+0.49589))[0]
+    months_sif = (timesif[ind]-np.min(np.floor(timesif[ind])))*12
+    plt.plot(months_sif,sif[ind],'w',lw=0.5)
+  for i in range(0,len(months)):
+    plt.text(months[i]+0.2,0.06,'{0:2d}'.format((int(rigbins[i]+nonrigbins[i]))),color='w',fontsize=8,fontname='Arial',bbox=dict(facecolor='r', edgecolor='none', pad=1.0))
+  plt.xticks(6+np.arange(0.5,12.5,1))
+  ax.set_xticklabels(['Jul','','Sept','','Nov','','Jan','','Mar','','May',''],fontsize=8,fontname='Arial')
+  plt.yticks([0,.25,0.5,0.75,1],fontsize=8,fontname='Arial')
+  plt.ylabel(r'SIF and M$\'e$lange',fontsize=8,fontname='Arial')
+  plt.ylim([0,1])
+  plt.xlim([6,18])
+  plt.legend(loc=0,fontsize=8,numpoints=1,handlelength=0.3,labelspacing=0.05,ncol=3,columnspacing=0.7,handletextpad=0.2,borderpad=0.25)
+  plt.text(6.4,0.7,'b',fontsize=8,fontname='Arial',fontweight='bold',color='w')  
+  
+  plt.tight_layout()
+  plt.subplots_adjust(hspace=0.05,wspace=0.05,top=0.98,right=0.97,left=0.18,bottom=0.1) 
+  plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+"_melange_sif_advance.pdf"),FORMAT='PDF',dpi=600)
+  plt.close()
+
+# How about retreat?
+
+# retreat = np.zeros(len(velmel_time))
+# for i in range(0,len(velmel_time[:,0])-2):
+#   # Figure out if glacier is advancing or retreating
+#   ind1 = np.argmin(abs(velmel_time[i,0]-velmel_time[i,1]/2-terminus_time))
+#   ind2 = np.argmin(abs(velmel_time[i,0]+velmel_time[i,1]/2-terminus_time))
+#   if terminus_val[ind2] < terminus_val[ind1]:
+#     retreat[i] = 1  
+# 
+# retreat_rigid = len(np.where(retreat[indrig] == 1)[0])
+# retreat_non = len(np.where(retreat[indnon] == 1)[0])
+# advance_rigid = len(np.where(retreat[indrig] == 0)[0])
+# advance_non = len(np.where(retreat[indnon] == 0)[0])
+# 
+# plt.bar(0.5,float(retreat_rigid)/(retreat_rigid+retreat_non),color='r')
+# plt.bar(0.5,float(retreat_non)/(retreat_rigid+retreat_non),bottom=float(retreat_rigid)/(retreat_rigid+retreat_non),color='b')
+# plt.bar(1.5,float(advance_rigid)/(advance_rigid+advance_non),color='r')
+# plt.bar(1.5,float(advance_non)/(advance_rigid+advance_non),bottom=float(advance_rigid)/(advance_rigid+advance_non),color='b')
+# 
+# plt.tight_layout()
+# plt.subplots_adjust(hspace=0.0,wspace=0,top=0.98,right=0.97,left=0.15,bottom=0.1) 
+# plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+"_melange_retreat.pdf"),FORMAT='PDF',dpi=600)
+# plt.close()
