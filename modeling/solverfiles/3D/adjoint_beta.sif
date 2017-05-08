@@ -53,6 +53,9 @@ Simulation
   Initialize Dirichlet Conditions = Logical False
 
   Max Output Level = 3
+
+  !Restart File = "$name$".result"
+  !Restart Position = 143 
   
   Set Dirichlet BCs By BC Numbering = Logical True
 End
@@ -274,7 +277,7 @@ Solver 6
   Variable = -nooutput "DJDB"
   Variable DOFs = 1
 
-  Procedure = "DJDBeta_Adjoint.so" "DJDBeta_Adjoint"
+  Procedure = "ElmerIceSolvers" "DJDBeta_Adjoint"
   
   Flow Solution Name = String "Flow Solution"
   Adjoint Solution Name = String "Adjoint"

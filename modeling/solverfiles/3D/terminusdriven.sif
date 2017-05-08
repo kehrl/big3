@@ -214,7 +214,7 @@ Solver 2
   Exec Solver = "Before TimeStep"
   Equation = "InterpolateBeta"
   Procedure = "USF_Beta.so" "InterpolateBeta"
-  Data File = File "inputs/beta_linear.xy"
+  Data File = String "inputs/beta_linear.xy"
   Variable = String "Beta"
 End
 
@@ -540,7 +540,7 @@ Solver 19
   Procedure = File "ResultOutputSolve" "ResultOutputSolver"
 
   Save Geometry IDs = True
-  Save Boundaries Only = Logical True
+!  Save Boundaries Only = Logical True
   Output File Name = File "$name"_after"
   Vtu Format = Logical True
   Single Precision = True
