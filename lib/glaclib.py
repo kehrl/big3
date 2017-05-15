@@ -224,13 +224,18 @@ def load_extent_timeseries(glacier,time1,time2,dt,nofront_shapefile='glacier_ext
   # Load all ice front positions for that time period
   termx,termy,termt = icefrontlib.load_all(time1-0.5,time2+0.5,glacier,type='icefront',datatypes=datatypes)
 
+  # In case we have multiple ice front picks for the same day, we want 
+  # use only one of those for continuity
+  [junk,ind] = np.unique(termt,return_index=True)
+  termt = np.array(termt)[ind]
+  termx = termx[:,ind]
+  termy = termy[:,ind]
+
   # Load a velocity profile to use as interpolation direction to figure out ice-front position
   # on timesteps that fall between picked ice fronts
-  #x = np.arange(np.nanmin(termx)-1.0e3,np.nanmax(termx)+1.0e3,100.)
-  #y = np.arange(np.nanmin(termy)-1.0e3,np.nanmax(termy)+1.0e3,100.)
   x,y,u = geotifflib.read(os.path.join(os.getenv("DATA_HOME"),"Velocity/TSX/"+glacier+"/TIF/all-2008-2016_vx.tif"))
   x,y,v = geotifflib.read(os.path.join(os.getenv("DATA_HOME"),"Velocity/TSX/"+glacier+"/TIF/all-2008-2016_vy.tif"))  
-  #u,v = vellib.inversion_3D(glacier,x,y,(time1+time2)/2)
+
   fu = scipy.interpolate.RegularGridInterpolator((y,x),u)
   fv = scipy.interpolate.RegularGridInterpolator((y,x),v)
 
