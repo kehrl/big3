@@ -25,13 +25,12 @@
        LOGICAL, ALLOCATABLE :: FoundNodes(:)
        LOGICAL, POINTER, OPTIONAL :: UnfoundNodes(:)
        TYPE(Mesh_t), POINTER :: nMesh
-       TYPE(Variable_t), POINTER :: Var, nVar
+       TYPE(VAriable_t), POINTER :: Var, nVar
        INTEGER :: i,j,k,l,nfound,maxrecv,n,ierr,nvars,npart,proc,status(MPI_STATUS_SIZE)
        REAL(KIND=dp) :: myBB(6), eps2, dn
        REAL(KIND=dp), POINTER :: store(:)
        REAL(KIND=dp), ALLOCATABLE, TARGET :: astore(:),vstore(:,:), BB(:,:), &
              nodes_x(:),nodes_y(:),nodes_z(:), xpart(:), ypart(:), zpart(:)
-       LOGICAL :: Debug
 
        TYPE ProcRecv_t
          INTEGER :: n = 0
@@ -60,8 +59,6 @@
        END INTERFACE
 !-------------------------------------------------------------------------------
 
-      Debug = .TRUE.
-
       ALLOCATE( FoundNodes(NewMesh % NumberOfNodes) ); FoundNodes=.FALSE.
 
       IF(PRESENT(UnfoundNodes)) THEN
@@ -80,11 +77,10 @@
       ! Interpolate within our own partition, flag the points
       ! we found:
       ! -----------------------------------------------------
-      IF (Debug) PRINT *,ParEnv % MyPE, 'Interpolating within this partition'
+
       CALL InterpolateMeshToMeshQ( OldMesh, NewMesh, OldVariables, &
          NewVariables, UseQuadrantTree, MaskName=MaskName, FoundNodes=FoundNodes )
 
-      IF (Debug) PRINT *,ParEnv % MyPE, 'Setting unfound nodes',COUNT(UnfoundNodes)
       IF(PRESENT(UnfoundNodes)) UnfoundNodes = .NOT. FoundNodes
 
       ! special case "all found":
@@ -93,8 +89,6 @@
       CALL SParActiveSUM(dn,2)
       IF ( dn==0 ) RETURN
 
-
-      IF (Debug) PRINT *,ParEnv % MyPE, 'Getting bounding box'
       ! Exchange partition bounding boxes:
       ! ----------------------------------
       myBB(1) = MINVAL(OldMesh % Nodes % x)
@@ -108,32 +102,29 @@
       myBB(1:3) = myBB(1:3) - eps2
       myBB(4:6) = myBB(4:6) + eps2
 
-      IF (Debug) PRINT *,ParEnv % MyPE, 'Sending out and receiving bounding boxes'
       ALLOCATE(BB(6,ParEnv % PEs))
       DO i=1,ParEnv % PEs
         IF ( Parenv % mype == i-1 .OR. .NOT. ParEnv % Active(i) ) CYCLE
         proc = i-1
         CALL MPI_BSEND( myBB, 6, MPI_DOUBLE_PRECISION, proc, &
-                 999, MPI_COMM_WORLD, ierr )
+                 999, ELMER_COMM_WORLD, ierr )
       END DO
       DO i=1,COUNT(ParEnv % Active)-1
         CALL MPI_RECV( myBB, 6, MPI_DOUBLE_PRECISION, MPI_ANY_SOURCE, &
-                 999, MPI_COMM_WORLD, status, ierr )
+                 999, ELMER_COMM_WORLD, status, ierr )
         proc = status(MPI_SOURCE)
         BB(:,proc+1) = myBB
       END DO
 
-      IF (Debug) PRINT *,ParEnv % MyPE, 'Checking buffer'
       CALL CheckBuffer((n*(3 * 2)) + 2) !3 x double precision coord, 2 x count
 
-      IF (Debug) PRINT *,ParEnv % MyPE, 'Extracting nodes that were not found in own partitions'
       IF ( n==0 ) THEN
         DEALLOCATE(FoundNodes, BB)
         DO i=1,ParEnv % PEs
           IF ( Parenv % mype == i-1 .OR. .NOT. ParEnv % Active(i) ) CYCLE
           proc = i-1
           CALL MPI_BSEND( n, 1, MPI_INTEGER, proc, &
-                1001, MPI_COMM_WORLD, ierr )
+                1001, ELMER_COMM_WORLD, ierr )
         END DO
       ELSE
         ! Extract nodes that we didn't find from our own partition...
@@ -187,31 +178,31 @@
           ! send count...
           ! -------------
           CALL MPI_BSEND( npart, 1, MPI_INTEGER, proc, &
-                  1001, MPI_COMM_WORLD, ierr )
+                  1001, ELMER_COMM_WORLD, ierr )
 
           IF ( npart==0 ) CYCLE
 
           ! ...and points
           ! -------------
           CALL MPI_BSEND( xpart, npart, MPI_DOUBLE_PRECISION, proc, &
-                  1002, MPI_COMM_WORLD, ierr )
+                  1002, ELMER_COMM_WORLD, ierr )
           CALL MPI_BSEND( ypart, npart, MPI_DOUBLE_PRECISION, proc, &
-                  1003, MPI_COMM_WORLD, ierr )
+                  1003, ELMER_COMM_WORLD, ierr )
           CALL MPI_BSEND( zpart, npart, MPI_DOUBLE_PRECISION, proc, &
-                  1004, MPI_COMM_WORLD, ierr )
+                  1004, ELMER_COMM_WORLD, ierr )
 
           DEALLOCATE(xpart,ypart,zpart)
         END DO
         DEALLOCATE(nodes_x,nodes_y,nodes_z,BB)
       END IF
        
-      IF (Debug) PRINT *,ParEnv % MyPE, 'Receive points from others'
+
       ! receive points from others:
       ! ----------------------------
-      ALLOCATE(ProcRecv(Parenv % PEs))
+      ALLOCATE(ProcRecv(Parenv % Pes))
       DO i=1,COUNT(ParEnv % Active)-1
         CALL MPI_RECV( n, 1, MPI_INTEGER, MPI_ANY_SOURCE, &
-              1001, MPI_COMM_WORLD, status, ierr )
+              1001, ELMER_COMM_WORLD, status, ierr )
 
         proc = status(MPI_SOURCE)
         ProcRecv(proc+1) % n = n
@@ -222,11 +213,11 @@
               ProcRecv(proc+1) % Nodes_y(n),ProcRecv(proc+1) % Nodes_z(n))
 
         CALL MPI_RECV( ProcRecv(proc+1) % nodes_x, n, MPI_DOUBLE_PRECISION, proc, &
-               1002, MPI_COMM_WORLD, status, ierr )
+               1002, ELMER_COMM_WORLD, status, ierr )
         CALL MPI_RECV( ProcRecv(proc+1) % nodes_y, n, MPI_DOUBLE_PRECISION, proc, &
-               1003, MPI_COMM_WORLD, status, ierr )
+               1003, ELMER_COMM_WORLD, status, ierr )
         CALL MPI_RECV( ProcRecv(proc+1) % nodes_z, n, MPI_DOUBLE_PRECISION, proc, &
-               1004, MPI_COMM_WORLD, status, ierr )
+               1004, ELMER_COMM_WORLD, status, ierr )
       END DO
 
       ! Count variables and received nodes, and check MPI buffer is 
@@ -246,8 +237,7 @@
       
       !For each node, we send a single integer perm and 
       !a real(dp) per variable. Also sending two counts
-      If (Debug) PRINT *,ParEnv % MyPE, 'Checking buffer again'
-      CALL CheckBuffer(maxrecv * ((3 * nvars) + 1) + 2) 
+      CALL CheckBuffer(SIZE(ProcRecv) * maxrecv * ((2 * nvars) + 1) + 2)
 
       ! Check the received points and extract values for the to-be-interpolated-
       ! variables, if we have the points within our domain: 
@@ -260,11 +250,10 @@
 
         IF ( n==0 ) THEN
           CALL MPI_BSEND( n, 1, MPI_INTEGER, proc, &
-                2001, MPI_COMM_WORLD, ierr )
+                2001, ELMER_COMM_WORLD, ierr )
           CYCLE
         END IF
       
-        If (Debug) PRINT *,ParEnv % MyPE,proc,'Constructing temporary mesh structure for nodes ', n
         ! Construct temporary mesh structure for the received points:
         ! -----------------------------------------------------------
         Nmesh => AllocateMesh()
@@ -298,7 +287,6 @@
 
         ! try interpolating values for the points:
         ! ----------------------------------------
-        If (Debug) PRINT *,ParEnv % MyPE, proc, 'Trying to interpolate values for points'
         ALLOCATE( FoundNodes(n) ); FoundNodes=.FALSE.
         CALL InterpolateMeshToMeshQ( OldMesh, nMesh, OldVariables, &
            nMesh % Variables, UseQuadrantTree, MaskName=MaskName, FoundNodes=FoundNodes )
@@ -306,11 +294,10 @@
         nfound = COUNT(FoundNodes)
 
         CALL MPI_BSEND( nfound, 1, MPI_INTEGER, proc, &
-                2001, MPI_COMM_WORLD, ierr )
+                2001, ELMER_COMM_WORLD, ierr )
 
         ! send interpolated values back to the owner:
         ! -------------------------------------------
-        If (Debug) PRINT *,ParEnv % MyPE, proc, 'Attempting to send ',nfound,'interpolated values back to owner'
         IF ( nfound>0 ) THEN
           ALLOCATE(vstore(nfound,nvars), vperm(nfound)); vstore=0
           k = 0
@@ -337,39 +324,36 @@
           END DO
 
           CALL MPI_BSEND( vperm, nfound, MPI_INTEGER, proc, &
-                2002, MPI_COMM_WORLD, status, ierr )
+                2002, ELMER_COMM_WORLD, status, ierr )
 
           DO j=1,nvars
             CALL MPI_BSEND( vstore(:,j), nfound,MPI_DOUBLE_PRECISION, proc, &
-                       2002+j, MPI_COMM_WORLD,ierr )
+                       2002+j, ELMER_COMM_WORLD,ierr )
           END DO
 
           DEALLOCATE(vstore, vperm)
         END IF
-        If (Debug) PRINT *,ParEnv % MyPE, proc, 'Sent ',nfound,'interpolated values back to owner'
+
         !Pointers to ProcRev, deallocated automatically below
         NULLIFY(Nmesh % Nodes % x,&
                 Nmesh % Nodes % y,&
                 Nmesh % Nodes % z)
 
         CALL ReleaseMesh(Nmesh)
-        DEALLOCATE(FoundNodes, Nmesh)
+        DEALLOCATE(foundnodes, Nmesh)
       END DO
-      IF (Debug) PRINT *,ParEnv % MyPE,'Completed sending interpolated values'
       DEALLOCATE(ProcRecv)
 
      ! Receive interpolated values:
      ! ----------------------------
-       DO i=1,COUNT(ParEnv % Active)-1
+      DO i=1,COUNT(ParEnv % Active)-1
 
         ! recv count:
         ! -----------
         CALL MPI_RECV( n, 1, MPI_INTEGER, MPI_ANY_SOURCE, &
-              2001, MPI_COMM_WORLD, status, ierr )
+              2001, ELMER_COMM_WORLD, status, ierr )
 
         proc = status(MPI_SOURCE)
-        IF (Debug) PRINT *,ParEnv % MyPE,proc,'Receiving ',n,'interpolated values'
-
         IF ( n<=0 ) THEN
           IF ( ALLOCATED(ProcSend) ) THEN
             IF ( ALLOCATED(ProcSend(proc+1) % Perm)) &
@@ -384,7 +368,7 @@
         ! points the partition found are):
         ! --------------------------------------------------
         CALL MPI_RECV( vperm, n, MPI_INTEGER, proc, &
-              2002, MPI_COMM_WORLD, status, ierr )
+              2002, ELMER_COMM_WORLD, status, ierr )
 
         !Mark nodes as found if requested
         IF(PRESENT(UnfoundNodes)) THEN
@@ -403,7 +387,7 @@
 
             nvars=nvars+1
             CALL MPI_RECV( astore, n, MPI_DOUBLE_PRECISION, proc, &
-                2002+nvars, MPI_COMM_WORLD, status, ierr )
+                2002+nvars, ELMER_COMM_WORLD, status, ierr )
 
             Nvar => VariableGet( NewMesh % Variables,Var % Name,ThisOnly=.TRUE.)
 
@@ -419,7 +403,7 @@
               DO l=1,SIZE(Var % PrevValues,2)
                 nvars=nvars+1
                 CALL MPI_RECV( astore, n, MPI_DOUBLE_PRECISION, proc, &
-                    2002+nvars, MPI_COMM_WORLD, status, ierr )
+                    2002+nvars, ELMER_COMM_WORLD, status, ierr )
 
                 IF ( ASSOCIATED(Nvar) ) THEN
                   DO j=1,n

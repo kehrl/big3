@@ -23,7 +23,7 @@
 ! stringent epsilon values, then call again, with more relaxed epsilon, and a mask
 ! specifying which nodes to look for (i.e. only those not found in the previous run)
 !------------------------------------------------------------------------------
-MODULE InterpVarToVar
+MODULE InterpVarToVar2
 
   USE DefUtils
   USE Types
@@ -133,7 +133,7 @@ CONTAINS
       END IF
 
       IF(PointLocalDistance(i) == 0.0_dp) CYCLE
-      PRINT *,ParEnv % MyPE,'Debug, point ',i,' found with local dist: ',PointLocalDistance(i)
+      IF (Debug) PRINT *,ParEnv % MyPE,'Debug, point ',i,' found with local dist: ',PointLocalDistance(i)
     END DO
 
     !Sum up unfound nodes, and those where point wasn't exactly in element
@@ -172,11 +172,11 @@ CONTAINS
        IF ( Parenv % mype == i-1 .OR. .NOT. ParEnv % Active(i) ) CYCLE
        proc = i-1
        CALL MPI_BSEND( myBB, 6, MPI_DOUBLE_PRECISION, proc, &
-            1099, MPI_COMM_WORLD, ierr )
+            1099, ELMER_COMM_WORLD, ierr )
     END DO
     DO i=1,COUNT(ParEnv % Active)-1
        CALL MPI_RECV( myBB, 6, MPI_DOUBLE_PRECISION, MPI_ANY_SOURCE, &
-            1099, MPI_COMM_WORLD, status, ierr )
+            1099, ELMER_COMM_WORLD, status, ierr )
        proc = status(MPI_SOURCE)
        BB(:,proc+1) = myBB
     END DO
@@ -187,7 +187,7 @@ CONTAINS
           IF ( Parenv % mype == i-1 .OR. .NOT. ParEnv % Active(i) ) CYCLE
           proc = i-1
           CALL MPI_BSEND( n, 1, MPI_INTEGER, proc, &
-               1101, MPI_COMM_WORLD, ierr )
+               1101, ELMER_COMM_WORLD, ierr )
        END DO
     ELSE
        ! Extract nodes that we didnt find from our own partition...   
@@ -244,16 +244,16 @@ CONTAINS
           ! send count...                                               
           ! -------------                                               
           CALL MPI_BSEND( npart, 1, MPI_INTEGER, proc, &
-               1101, MPI_COMM_WORLD, ierr )
+               1101, ELMER_COMM_WORLD, ierr )
           IF ( npart==0 ) CYCLE
           ! ...and points                                               
           ! -------------                                               
           CALL MPI_BSEND( xpart, npart, MPI_DOUBLE_PRECISION, proc, &
-               1102, MPI_COMM_WORLD, ierr )
+               1102, ELMER_COMM_WORLD, ierr )
           CALL MPI_BSEND( ypart, npart, MPI_DOUBLE_PRECISION, proc, &
-               1103, MPI_COMM_WORLD, ierr )
+               1103, ELMER_COMM_WORLD, ierr )
           CALL MPI_BSEND( zpart, npart, MPI_DOUBLE_PRECISION, proc, &
-               1104, MPI_COMM_WORLD, ierr )
+               1104, ELMER_COMM_WORLD, ierr )
 
           DEALLOCATE(xpart,ypart,zpart)
        END DO
@@ -265,7 +265,7 @@ CONTAINS
     ALLOCATE(ProcRecv(Parenv % Pes))
     DO i=1,COUNT(ParEnv % Active)-1
        CALL MPI_RECV( n, 1, MPI_INTEGER, MPI_ANY_SOURCE, &
-            1101, MPI_COMM_WORLD, status, ierr )
+            1101, ELMER_COMM_WORLD, status, ierr )
 
        proc = status(MPI_SOURCE)
        ProcRecv(proc+1) % n = n
@@ -276,11 +276,11 @@ CONTAINS
             ProcRecv(proc+1) % Nodes_y(n),ProcRecv(proc+1) % Nodes_z(n))
 
        CALL MPI_RECV( ProcRecv(proc+1) % nodes_x, n, MPI_DOUBLE_PRECISION, proc, &
-            1102, MPI_COMM_WORLD, status, ierr )
+            1102, ELMER_COMM_WORLD, status, ierr )
        CALL MPI_RECV( ProcRecv(proc+1) % nodes_y, n, MPI_DOUBLE_PRECISION, proc, &
-            1103, MPI_COMM_WORLD, status, ierr )
+            1103, ELMER_COMM_WORLD, status, ierr )
        CALL MPI_RECV( ProcRecv(proc+1) % nodes_z, n, MPI_DOUBLE_PRECISION, proc, &
-            1104, MPI_COMM_WORLD, status, ierr )
+            1104, ELMER_COMM_WORLD, status, ierr )
     END DO
 
     DO i=1,ParEnv % PEs
@@ -291,7 +291,7 @@ CONTAINS
 
        IF ( n==0 ) THEN
           CALL MPI_BSEND( n, 1, MPI_INTEGER, proc, &
-               2101, MPI_COMM_WORLD, ierr )
+               2101, ELMER_COMM_WORLD, ierr )
           CYCLE
        END IF
 
@@ -376,10 +376,10 @@ CONTAINS
        nfound = COUNT(FoundNodes)
 
        CALL MPI_BSEND( nfound, 1, MPI_INTEGER, proc, &
-            2101, MPI_COMM_WORLD, ierr )
+            2101, ELMER_COMM_WORLD, ierr )
 
        unfound = n - nfound
-       IF(unfound > 0) THEN
+       IF ( (unfound > 0) .AND. (Debug) ) THEN
           PRINT *, ParEnv % MyPE, 'InterpVarToVar','Parallel: Found ',nfound,&
                ' nodes but still cant find ',unfound,' nodes!'
        END IF
@@ -439,14 +439,14 @@ CONTAINS
           DEALLOCATE(WorkReal)
 
           CALL MPI_BSEND( SendLocalDistance, nfound,MPI_DOUBLE_PRECISION, proc, &
-               2100, MPI_COMM_WORLD,ierr )
+               2100, ELMER_COMM_WORLD,ierr )
 
           CALL MPI_BSEND( vperm, nfound, MPI_INTEGER, proc, &
-               2102, MPI_COMM_WORLD, status, ierr )
+               2102, ELMER_COMM_WORLD, status, ierr )
 
           DO j=1,nvars
             CALL MPI_BSEND( vstore(:,j), nfound,MPI_DOUBLE_PRECISION, proc, &
-                       2103+j, MPI_COMM_WORLD,ierr )
+                       2103+j, ELMER_COMM_WORLD,ierr )
           END DO
 
           DEALLOCATE(vstore, vperm)
@@ -469,7 +469,7 @@ CONTAINS
        ! recv count:                                                   
        ! -----------                                                   
        CALL MPI_RECV( n, 1, MPI_INTEGER, MPI_ANY_SOURCE, &
-            2101, MPI_COMM_WORLD, status, ierr )
+            2101, ELMER_COMM_WORLD, status, ierr )
 
        proc = status(MPI_SOURCE)
        IF ( n<=0 ) THEN
@@ -486,16 +486,16 @@ CONTAINS
        ! points the partition found are):                              
        ! --------------------------------------------------            
        CALL MPI_RECV( vperm, n, MPI_INTEGER, proc, &
-            2102, MPI_COMM_WORLD, status, ierr )
+            2102, ELMER_COMM_WORLD, status, ierr )
 
        CALL MPI_RECV( RecvLocalDistance, n, MPI_DOUBLE_PRECISION, proc, &
-            2100, MPI_COMM_WORLD, status, ierr )
+            2100, ELMER_COMM_WORLD, status, ierr )
 
        ! recv values and store:                                        
        ! ----------------------                                        
        !FIX HERE, INC MPI SEND ID
        CALL MPI_RECV( astore, n, MPI_DOUBLE_PRECISION, proc, &
-            2103+1, MPI_COMM_WORLD, status, ierr )
+            2103+1, ELMER_COMM_WORLD, status, ierr )
 
        Nvar => VariableGet( NewMesh % Variables,HeightName,ThisOnly=.TRUE.)
        IF(.NOT. ASSOCIATED(Nvar)) CALL Fatal("InterpVarToVar","Couldnt get variable from &
@@ -546,7 +546,7 @@ CONTAINS
              
              nvars = nvars + 1
              CALL MPI_RECV( astore, n, MPI_DOUBLE_PRECISION, proc, &
-                  2103+nvars, MPI_COMM_WORLD, status, ierr )
+                  2103+nvars, ELMER_COMM_WORLD, status, ierr )
 
              nVar => VariableGet( NewMesh % Variables,OldVar % Name,ThisOnly=.TRUE.)
 
@@ -564,7 +564,7 @@ CONTAINS
                 DO l=1,SIZE(OldVar % PrevValues,2)
                    nvars=nvars+1
                    CALL MPI_RECV( astore, n, MPI_DOUBLE_PRECISION, proc, &
-                        2103+nvars, MPI_COMM_WORLD, status, ierr )
+                        2103+nvars, ELMER_COMM_WORLD, status, ierr )
                    IF(ASSOCIATED(Nvar)) THEN
                       DO j=1,n
                          IF(.NOT. BetterFound(j)) CYCLE
@@ -1094,14 +1094,14 @@ CONTAINS
       DO i=1,NoNeighbours
         proc = NeighbourParts(i)
         CALL MPI_BSEND( interpedValue, VarCount, MPI_DOUBLE_PRECISION, proc, &
-             3000, MPI_COMM_WORLD,ierr )
+             3000, ELMER_COMM_WORLD,ierr )
         CALL MPI_BSEND( weightsum, 1, MPI_DOUBLE_PRECISION, proc, &
-             3001, MPI_COMM_WORLD,ierr )
+             3001, ELMER_COMM_WORLD,ierr )
 
         CALL MPI_RECV( PartInterpedValues( (i*VarCount)+1  : (i+1)*VarCount), &
-             VarCount, MPI_DOUBLE_PRECISION, proc, 3000, MPI_COMM_WORLD, status, ierr )
+             VarCount, MPI_DOUBLE_PRECISION, proc, 3000, ELMER_COMM_WORLD, status, ierr )
         CALL MPI_RECV( PartWeightSums(i+1), 1, MPI_DOUBLE_PRECISION, proc, &
-             3001, MPI_COMM_WORLD, status, ierr )
+             3001, ELMER_COMM_WORLD, status, ierr )
       END DO
 
       interpedValue = 0.0_dp
@@ -1193,9 +1193,7 @@ CONTAINS
     !------------------------------------------------------------------------------
 
     SolverName='InterpolateUnfoundPointsNearest'
-    
-    CALL INFO(SolverName, 'Starting to interpolate unfound nodes', level = 3)
-    
+        
     Debug = .FALSE.
     Parallel = ParEnv % PEs > 1
 
@@ -1205,7 +1203,7 @@ CONTAINS
          ThisOnly = .TRUE. )
 
     ! Initial minimum distance
-    maxdist = 1.0e3
+    maxdist = 0.5e3
 
     ! Get this partition's bounding box:                             
     ! ----------------------------------                              
@@ -1216,8 +1214,8 @@ CONTAINS
     myBB(5) = MAXVAL(OldMesh % Nodes % y)
     myBB(6) = MAXVAL(OldMesh % Nodes % z)
     !TODO: make this related to maxdist, but for some reason not working with large maxdist
-    myBB(1:3) = myBB(1:3) - 1.0e3
-    myBB(4:6) = myBB(4:6) + 1.0e3
+    myBB(1:3) = myBB(1:3) - 2.5e3
+    myBB(4:6) = myBB(4:6) + 2.5e3
 
     myBB(HeightDimensions) = 0.0_dp
     myBB(HeightDimensions + 3) = 0.0_dp
@@ -1229,11 +1227,11 @@ CONTAINS
        IF ( Parenv % MyPE == i-1 .OR. .NOT. ParEnv % Active(i) ) CYCLE
        proc = i-1
        CALL MPI_BSEND( myBB, 6, MPI_DOUBLE_PRECISION, proc, &
-            1399, MPI_COMM_WORLD, ierr )
+            1399, ELMER_COMM_WORLD, ierr )
     END DO
     DO i=1,COUNT(ParEnv % Active)-1
        CALL MPI_RECV( myBB, 6, MPI_DOUBLE_PRECISION, MPI_ANY_SOURCE, &
-            1399, MPI_COMM_WORLD, status, ierr )
+            1399, ELMER_COMM_WORLD, status, ierr )
        proc = status(MPI_SOURCE)
        BB(:,proc+1) = myBB
     END DO   
@@ -1259,7 +1257,6 @@ CONTAINS
     ! Count variables                             
     ! ---------------------------------- 
     IF(PRESENT(Variables)) THEN   
-      IF (Debug) PRINT *, ParEnv % MyPE, 'Variables present'
       OldVar => Variables
       VarNo = 1
       DO WHILE(ASSOCIATED(OldVar))
@@ -1282,7 +1279,7 @@ CONTAINS
         VarNo = VarNo+1
         OldVar => OldVar % Next 
       END DO
-      IF (Debug) PRINT *,ParEnv % MyPE, 'Counted ',VarNo,'variables'
+
     END IF
     
     ! Get closest points to unfound nodes for this partition:                             
@@ -1338,7 +1335,6 @@ CONTAINS
                 mindists(m) = dist
                 minheights(m) = OldHeightVar % Values(OldHeightVar % Perm(idx))
                 mininds(m) = idx
-                !minind = idx
                 NoNearest(m) = .FALSE. 
               END IF
             END DO
@@ -1414,10 +1410,9 @@ CONTAINS
         IF ( (Parenv % MyPE == i-1) .OR. (.NOT. ParEnv % Active(i)) ) CYCLE
         proc = i-1
         CALL MPI_BSEND( n, 1, MPI_INTEGER, proc, &
-            1201, MPI_COMM_WORLD, ierr )
+            1201, ELMER_COMM_WORLD, ierr )
       END DO
     ELSE
-      !IF (Debug) PRINT *,ParEnv % MyPE,'Getting unfound nodes ready to send'  
        
       ALLOCATE( perm(n), nodes_x(n), nodes_y(n),nodes_z(n) ); perm=0
       j = 0
@@ -1467,18 +1462,18 @@ CONTAINS
         END IF
         
         ! send count...                                               
-        IF (Debug) PRINT *,ParEnv % MyPE,'Sending count of ',npart,' out of ',n,'to partition',&
+        IF ((Debug) .AND. (npart > 0)) PRINT *,ParEnv % MyPE,'Sending count of ',npart,' out of ',n,'to partition',&
             proc                                             
         CALL MPI_BSEND( npart, 1, MPI_INTEGER, proc, &
-               1201, MPI_COMM_WORLD, ierr )
+               1201, ELMER_COMM_WORLD, ierr )
         IF ( npart==0 ) CYCLE
         ! ...and points                                                                                             
         CALL MPI_BSEND( xpart, npart, MPI_DOUBLE_PRECISION, proc, &
-               1202, MPI_COMM_WORLD, ierr )
+               1202, ELMER_COMM_WORLD, ierr )
         CALL MPI_BSEND( ypart, npart, MPI_DOUBLE_PRECISION, proc, &
-               1203, MPI_COMM_WORLD, ierr )
+               1203, ELMER_COMM_WORLD, ierr )
         CALL MPI_BSEND( zpart, npart, MPI_DOUBLE_PRECISION, proc, &
-               1204, MPI_COMM_WORLD, ierr )
+               1204, ELMER_COMM_WORLD, ierr )
         DEALLOCATE(xpart,ypart,zpart)
       
       END DO
@@ -1492,7 +1487,7 @@ CONTAINS
     ALLOCATE(ProcRecv(ParEnv % PEs))                                                                      
     DO i=1,COUNT(ParEnv % Active)-1
       CALL MPI_RECV( n, 1, MPI_INTEGER, MPI_ANY_SOURCE, &
-            1201, MPI_COMM_WORLD, status, ierr )
+            1201, ELMER_COMM_WORLD, status, ierr )
 
       proc = status(MPI_SOURCE)
       ProcRecv(proc+1) % n = n
@@ -1503,11 +1498,11 @@ CONTAINS
           ProcRecv(proc+1) % nodes_z(n))
 
       CALL MPI_RECV( ProcRecv(proc+1) % nodes_x, n, MPI_DOUBLE_PRECISION, proc, &
-            1202, MPI_COMM_WORLD, status, ierr )
+            1202, ELMER_COMM_WORLD, status, ierr )
       CALL MPI_RECV( ProcRecv(proc+1) % nodes_y, n, MPI_DOUBLE_PRECISION, proc, &
-            1203, MPI_COMM_WORLD, status, ierr )
+            1203, ELMER_COMM_WORLD, status, ierr )
       CALL MPI_RECV( ProcRecv(proc+1) % nodes_z, n, MPI_DOUBLE_PRECISION, proc, &
-            1204, MPI_COMM_WORLD, status, ierr )            
+            1204, ELMER_COMM_WORLD, status, ierr )            
     END DO
 
 
@@ -1520,7 +1515,7 @@ CONTAINS
       n = ProcRecv(i) % n 
       
       CALL MPI_BSEND( n, 1, MPI_INTEGER, proc, &
-            1205, MPI_COMM_WORLD, status, ierr )
+            1205, ELMER_COMM_WORLD, status, ierr )
      
       IF ( n<=0 ) CYCLE ! No points to interpolate and send
      
@@ -1576,9 +1571,9 @@ CONTAINS
       ! ... and send back interpolated values
       ! ----------------------------------   
       CALL MPI_BSEND( partmindists, n, MPI_DOUBLE_PRECISION, proc, &
-               1206, MPI_COMM_WORLD, ierr )
+               1206, ELMER_COMM_WORLD, ierr )
       CALL MPI_BSEND( partminheights, n, MPI_DOUBLE_PRECISION, proc, &
-               1207, MPI_COMM_WORLD, ierr )    
+               1207, ELMER_COMM_WORLD, ierr )    
 
       DEALLOCATE( ProcRecv(i) % nodes_x, ProcRecv(i) % nodes_y, ProcRecv(i) % nodes_z  )
       
@@ -1605,9 +1600,9 @@ CONTAINS
           END IF
           
           DO m=1,n
+            IF (partmininds(m) <= 0) CYCLE
             IF (OldVar % Perm(partmininds(m)) <= 0) CYCLE    
             IF (.NOT. PartNoNearest(m)) THEN
-              PRINT *,'partminind',partmininds(m),partmindists(m)
               partinterped(varn,m) = OldVar % Values(OldVar % Perm(partmininds(m)))
             ELSE
               partinterped(varn,m) = HUGE(interped(varn,m))   
@@ -1620,7 +1615,7 @@ CONTAINS
 
         DO j=1,n
           CALL MPI_BSEND(partinterped(:,j),VarNo, MPI_DOUBLE_PRECISION, proc, &
-               2200+j, MPI_COMM_WORLD, ierr )
+               2200+j, ELMER_COMM_WORLD, ierr )
         END DO
 
         DEALLOCATE(partinterped)        
@@ -1637,10 +1632,10 @@ CONTAINS
       ! recv count:                                                   
       ! -----------                                                   
       CALL MPI_RECV( n, 1, MPI_INTEGER, MPI_ANY_SOURCE, &
-            1205, MPI_COMM_WORLD, status, ierr )
+            1205, ELMER_COMM_WORLD, status, ierr )
       
       proc = status(MPI_SOURCE)
-      If (Debug) PRINT *,ParEnv % MyPE,'Receiving ',n,'from ',proc
+      If ((Debug) .AND. (n > 0)) PRINT *,ParEnv % MyPE,'Receiving ',n,'from ',proc
       
       IF ( n<=0 ) THEN
          IF ( ALLOCATED(ProcSend) ) THEN
@@ -1652,35 +1647,46 @@ CONTAINS
       
       ALLOCATE( partmindists(n), partminheights(n) )
 
+      If ((Debug) .AND. (n > 0)) PRINT *,ParEnv % MyPE,'Receiving partmindists from ',proc
+
       CALL MPI_RECV( partmindists, n, MPI_DOUBLE_PRECISION, proc, &
-               1206, MPI_COMM_WORLD, status, ierr )
+               1206, ELMER_COMM_WORLD, status, ierr )
+
+      If ((Debug) .AND. (n > 0)) PRINT *,ParEnv % MyPE,'Receiving partminheights from ',proc
+
       CALL MPI_RECV( partminheights, n, MPI_DOUBLE_PRECISION, proc, &
-               1207, MPI_COMM_WORLD, status, ierr )
-            
+               1207, ELMER_COMM_WORLD, status, ierr )
+
+      IF(PRESENT(Variables)) THEN
+        ALLOCATE(partinterped(VarNo,n))
+        DO j=1,n
+          CALL MPI_RECV( partinterped(:,j), VarNo, MPI_DOUBLE_PRECISION, proc, &
+                  2200+j, ELMER_COMM_WORLD, status, ierr )
+        END DO
+      END IF
+
       DO j=1,n
         k = ProcSend(proc+1) % perm(j)
         IF ( mindists(k) > partmindists(j)) THEN
 
           mindists(k) = partmindists(j)
           minheights(k) = partminheights(j)
-          NoNearest = .FALSE.
-            
-          IF(PRESENT(Variables)) THEN
-            CALL MPI_RECV( interped(:,k), VarNo, MPI_DOUBLE_PRECISION, proc, &
-                  2200+j, MPI_COMM_WORLD, status, ierr )
-          END IF
+          NoNearest(k) = .FALSE.
+          
+          interped(:,k) = partinterped(:,j)
         END IF
       END DO
       
       DEALLOCATE( partmindists, partminheights, ProcSend(proc+1) % perm )
+      IF(PRESENT(Variables)) DEALLOCATE(partinterped)
     END DO
 
-  IF (ALLOCATED(NoNearest)) THEN
-    IF (COUNT(NoNearest) == 0) THEN
-      CALL Info(SolverName,'Found all remaining nodes that were not found by InterpVartoVar',&
-      level = 3)
+  n = COUNT(UnfoundNodes)
+  IF (n > 0) THEN
+    IF (COUNT(NoNearest) > 0) THEN
+      CALL FATAL(SolverName, "Still unable to find nodes ")
     ELSE
-      CALL Fatal(SolverName, "Still unable to find nodes ")
+      PRINT *,'InterpolateUnfoundPointsNearest: Found all remaining ',n,'nodes on',HeightName
     END IF
   END IF
   
@@ -1747,4 +1753,4 @@ CONTAINS
   END SUBROUTINE InterpolateUnfoundPointsNearest
 
 
-END MODULE InterpVarToVar
+END MODULE InterpVarToVar2

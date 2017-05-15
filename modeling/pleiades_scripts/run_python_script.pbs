@@ -1,9 +1,13 @@
 #PBS -S /bin/bash
 #PBS -l select=1:ncpus=20:model=ivy
-#PBS -l walltime=16:00:00
+#PBS -l walltime=1:00:00
 #PBS -M kehrl@uw.edu
 #PBS -m ab
+#module load pkgsrc/2016Q2
 source /u/lkehrl/.profile
-source /u/dlilien/sw/elmer/.bashrc_pleiades
+source /u/dlilien/sw/elmer/.bashrc_pleiades_haswell
 #mpiexec ElmerSolver_mpi
-python /u/lkehrl/Code/big3/modeling/inversions/helheim_inversion_3d.py -n 20 -mesh DEM20120624_aniso4 -method robin -regpar 1e10 -extrude 20
+
+python /u/lkehrl/Code/big3/modeling/inversions/inversion_3d.py -glacier Helheim -mesh TESTHIGH -n 4 -extrude 5 -temperature -10.0 -front pressure -regpar 1e10 -method adjoint -itmax 40 -sidewall friction
+
+#python /u/lkehrl/Code/big3/modeling/simulations/simulation_3d.py -sif terminusdriven.sif -n 4 -mesh TESTHIGH  -extrude 10 -temperature -10.0 -nt 4 -dt 1/365.25 -glacier Helheim

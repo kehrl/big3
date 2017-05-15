@@ -44,10 +44,12 @@ Simulation
   Steady State Max Iterations = 20
   Steady State Min Iterations = 1
 
-  Max Output Level = 4
+  Max Output Level = 20
 
   Output File = "$name$.result"
   Output Coordinates = Logical True
+
+  Stabilization Use Longest Element Edge = Logical True
 
   Set Dirichlet BCs By BC Numbering = Logical True
 End
@@ -181,14 +183,12 @@ Material 1
   !! for computeDevStress
   Cauchy = Logical True
   
-  Min Zs Top = Variable Zs Bottom   
-    Real MATC "tx + "$minheight""                          
-  Max Zs Top = Real 1.0e6
+  Min Zs Top = Variable Coordinate 1
+    REAL procedure "USF_Init.so" "Bedrock"                        
 
   !! Bed condition
   Min Zs Bottom = Variable Coordinate 1
     REAL procedure "USF_Init.so" "Bedrock"
-  Max Zs Bottom = Real 1.0e6
   
   Mesh Elastic Modulus = 1.0
   Mesh Poisson Ratio = 0.3
@@ -232,7 +232,7 @@ End
 
 Solver 4
   Equation = "NormalVector"
-  !Exec Solver = "Before TimeStep"
+  Exec Solver = "Before TimeStep"
   Procedure = "ElmerIceSolvers" "ComputeNormalSolver"
   Variable = String "Normal Vector"
   Variable DOFs = 3
@@ -243,7 +243,7 @@ End
 
 Solver 5
   Equation = Fw
-  !Exec Solver = "Before TimeStep"
+  Exec Solver = "Before TimeStep"
   Procedure = "ElmerIceSolvers" "GetHydrostaticLoads"
   Variable = Fw[Fwater:3]
   Variable DOFs = 3
@@ -259,14 +259,21 @@ Solver 6
   Variable = Flow Solution[Velocity:3 Pressure:1]
   ! mandatory to save bulk stiffness matrix
 
+  !Linear System Solver = Direct
+  !Linear System Direct Method =  MUMPS
+  !mumps percentage increase working space = integer 60
+  !Linear System Convergence Tolerance = 1.0E-08
+  !Optimize Bandwidth = Logical True
+
   Linear System Solver = "Iterative"
   Linear System Iterative Method = "GCR"
   BiCGStabl Polynomial Degree = 4
   Linear System Max Iterations = 500
-  Linear System Convergence Tolerance = Real 1.0E-6
+  Linear System Convergence Tolerance = Real 1.0E-4
   Linear System Abort Not Converged = False
   Linear System Preconditioning = "ILU2"
   Linear System Residual Output = 1
+  Optimize Bandwidth = Logical True
 
   Nonlinear System Max Iterations = 50
   Nonlinear System Convergence Tolerance = 1.0E-5
@@ -276,9 +283,9 @@ Solver 6
   Nonlinear System Newton Max Iterations = Integer 15 !Give up newton
   Nonlinear System Reset Newton = Logical True
   
-  Nonlinear System Relaxation Factor = Real 0.95
+  Nonlinear System Relaxation Factor = Real 0.9
 
-  Steady State Convergence Tolerance = Real 1.0e-12
+  Steady State Convergence Tolerance = Real 1.0e-8
 
   Update Exported Variables = Logical True
   Nonlinear Update Exported Variables = Logical True
@@ -325,12 +332,10 @@ Solver 8
   Nonlinear System Min Iterations = 2 !needed for dirichlet min fs condition
   Nonlinear System Convergence Tolerance  = 1.0e-6
 
-  Steady State Convergence Tolerance = 1.0e-03
+  Steady State Convergence Tolerance = 1.0e-04
 
   Stabilization Method = Bubbles
   Apply Dirichlet = Logical True
- 
-  Maximum Displacement = Real 20.0
  
 ! Is there a maximum step-size for the displacement
 ! use/or not accumulation
@@ -352,7 +357,7 @@ Solver 9
   !Exec Solver = "Never"
   !Exec Solver = "After TimeStep"
   Equation = "Free Surface Sea/Shelf"
-  Procedure =  "MyFreeSurfaceSolver.so" "FreeSurfaceSolver"
+  Procedure =  "FreeSurfaceSolver" "FreeSurfaceSolver"
   Variable = "Zs Bottom"
   Variable DOFS =  1
 
@@ -370,7 +375,7 @@ Solver 9
   Nonlinear System Min Iterations = 2 !needed for dirichlet min fs condition
   Nonlinear System Convergence Tolerance  = 1.0e-6
 
-  Steady State Convergence Tolerance = 1.0e-03
+  Steady State Convergence Tolerance = 1.0e-04
 
   Stabilization Method = Bubbles
   Apply Dirichlet = Logical True
@@ -430,13 +435,18 @@ Solver 12
   
   Flow Solver Name = String "Flow Solution"
   Stress Variable Name = String "Stress"
-  Linear System Solver = "Iterative"
-  Linear System Iterative Method = "BiCGStab"
-  Linear System Max Iterations = 300
-  Linear System Convergence Tolerance = 1.0E-9
-  Linear System Abort Not Converged = False
-  Linear System Preconditioning = "ILU0"
-  Linear System Residual Output = 0
+  Linear System Solver = Direct
+  Linear System Direct Method =  mumps
+  mumps percentage increase working space = integer 60
+  Linear System Convergence Tolerance = 1.0E-06
+  !Linear System Solver = "Iterative"
+  !Linear System Iterative Method = "BiCGStab"
+  !Linear System Max Iterations = 300
+  !Linear System Convergence Tolerance = 1.0E-9
+  !Linear System Abort Not Converged = False
+  !Linear System Preconditioning = "ILU0"
+  !Linear System Residual Output = 0
+  Optimize Bandwidth = Logical True
 End 
 
 Solver 13
@@ -453,13 +463,18 @@ Solver 13
 
   Flow Solver Name = String "Flow Solution"
 
-  Linear System Solver = "Iterative"
-  Linear System Iterative Method = "BiCGStab"
-  Linear System Max Iterations = 300
-  Linear System Convergence Tolerance = 1.0E-09
-  Linear System Abort Not Converged = False
-  Linear System Preconditioning = "ILU0"
-  Linear System Residual Output = 0
+  Linear System Solver = Direct
+  Linear System Direct Method =  mumps
+  mumps percentage increase working space = integer 60
+  Linear System Convergence Tolerance = 1.0E-06
+  !Linear System Solver = "Iterative"
+  !Linear System Iterative Method = "BiCGStab"
+  !Linear System Max Iterations = 300
+  !Linear System Convergence Tolerance = 1.0E-09
+  !Linear System Abort Not Converged = False
+  !Linear System Preconditioning = "ILU0"
+  !Linear System Residual Output = 0
+  Optimize Bandwidth = Logical True
 End
 
 Solver 14
@@ -490,7 +505,7 @@ Solver 16
   Exec Solver = String "After Timestep"
   
   Save Geometry IDs = True
-  Save Boundaries Only = Logical True
+  !Save Boundaries Only = Logical True
   Output File Name = File "$name""
   Vtu Format = Logical True
   Single Precision = True
@@ -539,12 +554,28 @@ Solver 19
   Equation = "ResultOutput2"
   Procedure = File "ResultOutputSolve" "ResultOutputSolver"
 
-  Save Geometry IDs = True
-!  Save Boundaries Only = Logical True
+  !Save Geometry IDs = True
+  !Save Boundaries Only = Logical True
   Output File Name = File "$name"_after"
   Vtu Format = Logical True
   Single Precision = True
   Binary Output = True
+
+  Vector Field 1 = "Velocity"
+  Vector Field 2 = "Normal Vector"
+  Vector Field 3 = "Stress"
+  Vector Field 4 = "StrainRate"
+  Vector Field 5 = "Flow Solution Loads"
+
+  Scalar Field 1 = "beta"
+  Scalar Field 2 = "Distance"
+  Scalar Field 3 = "Pressure"
+  Scalar Field 4 = "GroundedMask"
+  Scalar Field 5 = "Fw"
+  Scalar Field 6 = "Zs Bottom"
+  Scalar Field 7 = "Reference Zs Bottom"
+  Scalar Field 8 = "Zs Top"
+  Scalar Field 9 = "Reference Zs Top"
 End
 
 
