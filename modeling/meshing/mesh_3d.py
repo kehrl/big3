@@ -188,18 +188,30 @@ call(["ElmerGrid","2","4","Elmer"])
 #####################################################
 
 if timeseries == True:
+  CURDIR = os.getcwd()
+  os.chdir(DIRM)
   for i in range(0,len(times)):
     ind = np.where(xextents[:,i] != 0)[0]
-    file_2d_temp = ('{0}{1}{2:04d}').format(DIRM,"mesh",i+1)
+    file_2d_temp = ('{0}{1:04d}').format("mesh",i+1)
     exterior_temp = np.column_stack([xextents[ind,i],yextents[ind,i],bounds[ind,i]])
     xnew,ynew,zbed_new,zsur_new,zbot_new = meshlib.xy_to_gmsh_3d(glacier,date1,exterior_temp,holes,refine,DIRM,\
 		  lc1,lc2,lc3,lc4,bedname=bedname,bedmodel=bedmodel,bedsmoothing=bedsmoothing,\
                 rho_i=rho_i,rho_sw=rho_sw,dx=dx,bottomsurface=bottomsurface,outputgeometry=False)
     call(["gmsh","-1","-2",file_2d+".geo", "-o",os.path.join(os.getenv("HOME"),\
-		file_2d_temp+".msh")])
+		DIRM+file_2d_temp+".msh")])
 
     # Create elmer mesh
-    call(["ElmerGrid","14","2",file_2d_temp+".msh","-autoclean","-metis",partitions,"1"])
+    call(["ElmerGrid","14","2",DIRM+file_2d_temp+".msh","-autoclean","-metis",partitions,"1"])
+    
+    os.system("rm mesh2d.geo")
+    
+    os.system("tar -czvf"+file_2d_temp+".tar.gz"+" "+file_2d_temp)
+    if i > 10:
+      os.system("rm -r "+file_2d_temp)
+os.system("tar -czf mesh_gmsh.tar.gz *.msh")
+os.system("rm *.msh")
+os.chdir(CURDIR)
+del CURDIR, file_2d_temp, exterior_temp, xnew, ynew, zbed_new, zsur_new,zbot_new
     
 
 ##########################################

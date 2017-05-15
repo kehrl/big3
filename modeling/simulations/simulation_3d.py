@@ -35,7 +35,6 @@ parser.add_argument("-nt",dest="nt",required  = False,type=str,\
 parser.add_argument("-dt",dest="dt",required  = False,type=str,\
        default='1/365.25',help = "Timestep size (1/365.25, i.e., 1 day).") 
 
-
 args, _ = parser.parse_known_args(sys.argv)
 
 RES = args.mesh
@@ -116,8 +115,72 @@ fid1.close()
 fid2.close()
 del fid1, fid2
 
+#####################################
+# Start zip/unzip process if wanted #
+#####################################
+
+if solverfile_in == 'terminusdriven':
+  os.chdir(DIRM)
+  
+  for i in range(0,10):
+    if not(os.path.isdir('mesh{0:04d}'.format(i))):
+      if os.path.isfile('mesh{0:04d}.tar.gz'.format(i)):
+        os.system('tar -xzf mesh{0:04d}.tar.gz'.format(i))
+
+  import logging
+  logging.basicConfig()
+  
+  from apscheduler.schedulers.background import BackgroundScheduler
+  sched = BackgroundScheduler()
+
+  def check_files():
+    import os
+    itmax = int(1)
+    files = os.listdir(DIRM+"mesh2d")
+    for file in files:
+      if (file.endswith('.pvtu')) and (int(file[-9:-5]) > itmax):
+        itmax = int(file[-9:-5])
+    print "itmax = "+str(itmax)
+      
+    # First check to make sure we have adequate mesh files
+    
+    for i in range(itmax,itmax+50):
+      if not(os.path.isdir('mesh{0:04d}'.format(i))):
+        if os.path.isfile('mesh{0:04d}.tar.gz'.format(i)):
+          os.system('tar -xzf mesh{0:04d}.tar.gz'.format(i))
+     
+    # Now remove old mesh files and zip vtu files
+    for i in range(1,itmax-1):
+      if os.path.isdir('mesh{0:04d}'.format(i)):
+        os.system('rm -r '+'mesh{0:04d}'.format(i))
+      if os.path.isfile('mesh2d/terminusdriven{0:04d}.pvtu'.format(i)):
+        os.chdir(DIRM+"mesh2d")
+        os.system('tar -czf '+'terminusdriven{0:04d}.pvtu.tar.gz '.format(i)+\
+                'terminusdriven*{0:04d}.'.format(i)+'*vtu')
+        os.system('rm '+'terminusdriven*{0:04d}.'.format(i)+'*vtu')
+        os.chdir(DIRM)
+      
+  job = sched.add_job(check_files,'interval',minutes=10)
+  sched.start()
+
 ###################
 # Run Elmersolver #
 ###################
 
 returncode = elmerrunlib.run_elmer(DIRM+solverfile_out+'.sif',n=partitions,email=True)
+
+if solverfile_in == 'terminusdriven':
+  job.remove()
+  print "Stopped unzipping/zipping mesh files and vtu."
+  
+  # Remove all remaining mesh and tar remaining vtu files
+  os.chdir(DIRM)
+  for i in range(1,itmax+1):
+    if os.path.isdir('mesh{0:04d}'.format(i)):
+      os.system('rm -r '+'mesh{0:04d}'.format(i))
+    if os.path.isfile('mesh2d/terminusdriven{0:04d}.pvtu'.format(i)):
+      os.chdir(DIRM+"mesh2d")
+      os.system('tar -czf '+'terminusdriven{0:04d}.pvtu.tar.gz '.format(i)+\
+                'terminusdriven*{0:04d}.'.format(i)+'*vtu')
+      os.system('rm '+'terminusdriven{0:04d}'.format(i)+'*vtu')
+      os.chdir(DIRM)
