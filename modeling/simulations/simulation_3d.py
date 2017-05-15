@@ -175,7 +175,7 @@ if solverfile_in == 'terminusdriven':
   
   # Remove all remaining mesh and tar remaining vtu files
   os.chdir(DIRM)
-  for i in range(1,nt+1):
+  for i in range(1,int(nt)+1):
     if os.path.isdir('mesh{0:04d}'.format(i)):
       os.system('rm -r '+'mesh{0:04d}'.format(i))
     if os.path.isfile('mesh2d/terminusdriven{0:04d}.pvtu'.format(i)):
