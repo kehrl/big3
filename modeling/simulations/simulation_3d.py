@@ -182,5 +182,5 @@ if solverfile_in == 'terminusdriven':
       os.chdir(DIRM+"mesh2d")
       os.system('tar -czf '+'terminusdriven{0:04d}.pvtu.tar.gz '.format(i)+\
                 'terminusdriven*{0:04d}.'.format(i)+'*vtu')
-      os.system('rm '+'terminusdriven{0:04d}'.format(i)+'*vtu')
+      os.system('rm '+'terminusdriven*{0:04d}.'.format(i)+'*vtu')
       os.chdir(DIRM)
