@@ -103,17 +103,29 @@ time1 = datelib.date_to_fracyear(int(date1[0:4]),int(date1[4:6]),int(date1[6:8])
 #################
 
 # Mesh exterior
-if meshshp.endswith('nofront') or meshshp.endswith('nofront.shp'):
+if meshshp.endswith('_nofront') or meshshp.endswith('_nofront.shp'):
   if timeseries == True:
     if len(date2) < 8:
       sys.exit("Need an end date (-d2) to calculate a timeseries of meshes.")
     time2 = datelib.date_to_fracyear(int(date2[0:4]),int(date2[4:6]),int(date2[6:8]))
-    times,xextents,yextents,bounds = glaclib.load_extent_timeseries(glacier,time1,time2,dt,nofront_shapefile=meshshp)
     print "Calculating timeseries of meshes from "+date1+" to "+date2
+    times,xextents,yextents,bounds = glaclib.load_extent_timeseries(glacier,time1,time2,dt,nofront_shapefile=meshshp)
     ind = np.where(xextents[:,0] != 0)[0]
     exterior = np.column_stack([xextents[ind,0],yextents[ind,0],bounds[ind,0]])
   else:
     exterior = glaclib.load_extent(glacier,time1,nofront_shapefile=meshshp)
+elif meshshp.endswith('_front') or meshshp.endswith('_front.shp'):
+  if timeseries == True:
+    if meshshp.endswith('.shp'):
+      meshshp_nofront = meshshp[0:-9]+'nofront.shp'
+    else:
+      meshshp_nofront = meshshp[0:-5]+'nofront.shp'
+    if len(date2) < 8:
+      sys.exit("Need an end date (-d2) to calculate a timeseries of meshes.")
+    time2 = datelib.date_to_fracyear(int(date2[0:4]),int(date2[4:6]),int(date2[6:8]))
+    print "Calculating timeseries of meshes from "+date1+" to "+date2
+    times,xextents,yextents,bounds = glaclib.load_extent_timeseries(glacier,time1,time2,dt,nofront_shapefile=meshshp_nofront)
+  exterior = meshlib.shp_to_xy(DIRX+meshshp)
 else:
   exterior = meshlib.shp_to_xy(DIRX+meshshp)
 np.savetxt(inputs+"mesh_extent.dat",exterior[:,0:2])
