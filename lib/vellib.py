@@ -909,6 +909,13 @@ def inversion_3D(glacier,x,y,time,dir_velocity_out='none',blur=False,dx='none'):
   ######################################################
   # Write out velocities to files for inversion solver #
   ######################################################
+
+  # Interpolate to input grid
+  xgrid,ygrid = np.meshgrid(x,y)
+  fu = scipy.interpolate.RegularGridInterpolator((yu,xu),vx_blur,method='linear')
+  vx = fu((ygrid,xgrid))
+  fv = scipy.interpolate.RegularGridInterpolator((yv,xv),vy_blur,method='linear')
+  vy = fv((ygrid,xgrid))
   
   if dir_velocity_out != 'none':
     #files = os.listdir(OUTDIR):
@@ -918,26 +925,19 @@ def inversion_3D(glacier,x,y,time,dir_velocity_out='none',blur=False,dx='none'):
     
     # File for velocity in x-dir
     fidu = open(dir_velocity_out+"/udem.xy","w")
-    fidu.write('{}\n{}\n'.format(len(xu),len(yu)))
+    fidu.write('{}\n{}\n'.format(len(x),len(y)))
   
     # File for velocity in y-dir
     fidv = open(dir_velocity_out+"/vdem.xy","w")
-    fidv.write('{}\n{}\n'.format(len(xv),len(yv)))
+    fidv.write('{}\n{}\n'.format(len(x),len(y)))
   
-    for i in range(0,len(xu)):
-      for j in range(0,len(yu)):
-        fidu.write('{} {} {}\n'.format(xu[i],yu[j],vx_blur[j,i]))
-        fidv.write('{} {} {}\n'.format(xv[i],yv[j],vy_blur[j,i]))
+    for i in range(0,len(x)):
+      for j in range(0,len(y)):
+        fidu.write('{} {} {}\n'.format(x[i],y[j],vx[j,i]))
+        fidv.write('{} {} {}\n'.format(x[i],y[j],vy[j,i]))
   
     fidv.close()
     fidu.close()
-
-  # Interpolate to input grid
-  xgrid,ygrid = np.meshgrid(x,y)
-  fu = scipy.interpolate.RegularGridInterpolator((yu,xu),vx_blur,method='linear')
-  vx = fu((ygrid,xgrid))
-  fv = scipy.interpolate.RegularGridInterpolator((yv,xv),vy_blur,method='linear')
-  vy = fv((ygrid,xgrid))
   
   return vx,vy
 

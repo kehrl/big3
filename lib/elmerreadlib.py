@@ -517,38 +517,23 @@ def pvtu_timeseries_flowline(x,y,DIR,fileprefix,variables,layer='surface',debug=
       for var in varnames:
         types.append(np.float64)
       dataflow = np.zeros([len(x),t2-t1+1], dtype=zip(varnames,types)) 
-
+      for var in varnames:
+        dataflow[var][:,i] = float('nan')
+    
     # Interpolate
     tree = cKDTree(np.column_stack([surf['x'],surf['y']]))
-    
+
+    for var in varnames:
+      dataflow[var][:,i] = griddata((surf['x'],surf['y']),surf[var],(x,y))
+
     for j in range(0,len(x)):
-      [dists,L] = tree.query( (x[j],y[j]), k=6)
-    
-      # Initialize weights to 0
-      weights = 0.0
+      [dists,L] = tree.query( (x[j],y[j]), k=7)
     
       hull = ConvexHull(np.column_stack([surf['x'][L],surf['y'][L]]))
       polygon = np.column_stack([hull.points[hull.vertices,0],hull.points[hull.vertices,1]])
-      
+
       path = matplotlib.path.Path(polygon)
-      if path.contains_point([x[j],y[j]]):
-        #if (np.max(surf['x'][L]) > x[j]) and (np.min(surf['x'][L]) < x[j]) and \
-        #     (np.max(surf['y'][L]) > y[j]) and (np.min(surf['y'][L]) < y[j]):
-        for l in L:
-          xp = surf['x'][l]
-          yp = surf['y'][l]
-           
-          r = np.sqrt( (x[j] - xp)**2 + (y[j] - yp)**2 )
-          w = (1.0/r)
-          weights += w
-          
-          for var in varnames:
-            dataflow[var][j,i] += w * surf[var][l]
-        
-        for var in varnames:
-          dataflow[var][j,i] /=weights
-      
-      else:
+      if not(path.contains_point([x[j],y[j]])): 
         for var in varnames:
           dataflow[var][j,i] = float('nan')
 
@@ -808,3 +793,4 @@ def input_file(file,dim=2):
   fid.close()
 
   return x,y,grid
+
