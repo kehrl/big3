@@ -10,6 +10,7 @@ from matplotlib.ticker import AutoMinorLocator
 import scipy.signal as signal
 import cubehelix
 from mpl_toolkits.basemap import Basemap
+from scipy import stats 
 
 ##########
 # Inputs #
@@ -308,6 +309,8 @@ if plot_overview == 1:
   ax = plt.gca()
   ind = np.where(calvingstyle[:,1] == 'Tabular')[0]
   ax.set_ylim([-6,6])
+  slope,intercept,r,p,std_error=stats.linregress(terminus_time,terminus_val)
+  plt.plot(terminus_time,(terminus_time*slope+intercept)/1e3,'k--',lw=0.75)
   if vbars == 'seasonal':
     xTickPos = np.linspace(np.floor(time1)-0.25,np.ceil(time2)-0.25,(np.ceil(time2)-np.floor(time1))*2+1)
     ax.bar(xTickPos,[max(plt.ylim())-min(plt.ylim())] * len(xTickPos), (xTickPos[1]-xTickPos[0]), bottom=min(plt.ylim()), color=['0.85','w'],linewidth=0)
@@ -438,6 +441,12 @@ if plot_overview == 1:
       patch = matplotlib.patches.PathPatch(path,facecolor='0.85',edgecolor='none',lw=0)
       ax.add_patch(patch)  
   plt.xlim([time1,time2])
+  if glacier == 'Kanger':
+    plt.text(2011.4,11,'Summer speedup',fontsize=8,fontname='Arial')
+    plt.arrow(2011.65,10.9,-.05,-.25,lw=1,fc='k',ec='k',head_width=0.07,head_length=0.15)
+    plt.text(2014,10.7,'Winter speedup',fontsize=8,fontname='Arial')
+    plt.arrow(2014.2,10.6,-.1,-.45,lw=1,fc='k',ec='k',head_width=0.07,head_length=0.15)
+
  
   # Plot surface elevations
   plt.subplot(gs[3:5, :])

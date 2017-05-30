@@ -142,8 +142,8 @@ dH_time_K,dH_flux_K,dH_dem_K = fluxlib.compare_thinning_rates(dem_time_K,dem_dH_
 plt.figure(figsize=(4,4))
 matplotlib.rc('font',family='Arial')
 plt.plot([-110,100],[-110,100],c='k',lw=1)
-plt.errorbar(dH_dem_K[:,0]/365.25*100,dH_flux_K[:,0]/365.25*100,yerr=dH_flux_K[:,1]/365.25*100,xerr=dH_dem_K[:,1]/365.25*100,fmt='o',color='0.7',markersize=3,zorder=3,label='Kangerdlugssuaq')
-plt.errorbar(dH_dem_H[:,0]/365.25*100,dH_flux_H[:,0]/365.25*100,yerr=dH_flux_H[:,1]/365.25*100,xerr=dH_dem_H[:,1]/365.25*100,fmt='ro',markersize=3,zorder=3,label='Helheim')
+plt.errorbar(dH_dem_K[:,0]/365.25*100,dH_flux_K[:,0]/365.25*100,yerr=5,xerr=dH_dem_K[:,1]/365.25*100,fmt='o',color='0.7',mec='k',markersize=4,zorder=3,label='Kangerlugssuaq',mew=0.5,elinewidth=0.5)
+plt.errorbar(dH_dem_H[:,0]/365.25*100,dH_flux_H[:,0]/365.25*100,yerr=3,xerr=dH_dem_H[:,1]/365.25*100,fmt='ro',markersize=3,mec='k',zorder=4,label='Helheim',mew=0.5,elinewidth=0.5)
 plt.xticks(np.arange(-30,30,10),fontsize=8)
 plt.yticks(np.arange(-30,30,10),fontsize=8)
 plt.ylim([-35,22])
@@ -371,6 +371,10 @@ plt.close()
 # Plot terminus vs. thinning rate for individual glaciers #
 ###########################################################
 
+#import seaborn
+
+#seaborn.set_style("white")
+
 fig=plt.figure(figsize=(3,2.75))
 matplotlib.rc('font',family='Arial')
 plt.plot([0,0],[-50,30],'k',zorder=0)
@@ -381,7 +385,8 @@ plt.plot([-4,4],[0,0],'k',zorder=0)
 ind = np.where((time_H > time1) & (time_H < time2))[0]
 interped = np.interp(time_H[ind],terminus_time_H,terminus_val_H)
 plt.errorbar(interped/1e3,dH_H[ind,0]/365.25*100,3.,fmt='k.',marker=None,mew=0,markersize=4,zorder=0)
-plt.scatter(interped/1e3,dH_H[ind,0]/365.25*100,c=(time_H[ind]-np.floor(time_H[ind]))*365,marker='s',s=15,vmin=0,vmax=365,cmap='viridis')
+#huslcmap = matplotlib.colors.ListedColormap(seaborn.color_palette("husl",365))
+plt.scatter(interped/1e3,dH_H[ind,0]/365.25*100,c=(time_H[ind]-np.floor(time_H[ind]))*365,marker='s',s=15,vmin=0,vmax=365,cmap='hsv')
 #interped = np.interp(dem_time_H[:,0],terminus_time_H,terminus_val_H)
 #plt.plot(interped/1e3,dH_dem_H[:,0]/365.25*100,'ko',markerfacecolor='b',markersize=4)
 
@@ -414,7 +419,7 @@ plt.plot([-4,4],[0,0],'k',zorder=0)
 ind = np.where((time_K > time1) & (time_K < time2))[0]
 interped = np.interp(time_K[ind],terminus_time_K,terminus_val_K)
 plt.errorbar(interped/1e3,dH_K[ind,0]/365.25*100,3.,fmt='k.',marker=None,mew=0,markersize=4,zorder=0)
-plt.scatter(interped/1e3,dH_K[ind,0]/365.25*100,c=(time_K[ind]-np.floor(time_K[ind]))*365,marker='s',s=15,vmin=0,vmax=365,cmap='viridis')
+plt.scatter(interped/1e3,dH_K[ind,0]/365.25*100,c=(time_K[ind]-np.floor(time_K[ind]))*365,marker='s',s=15,vmin=0,vmax=365,cmap='hsv')
 #interped = np.interp(dem_time_K[:,0],terminus_time_K,terminus_val_K)
 #plt.plot(interped/1e3,dH_dem_K[:,0]/365.25*100,'ko',markerfacecolor='b',markersize=4)
 

@@ -50,10 +50,10 @@ def cleanup(glacier,type='Icefronts'):
   return "success"
 
 def distance_along_flowline(x,y,dists,glacier,type='icefront',imagesource=False,
-		time1=-np.inf, time2=np.inf):
+		time1=-np.inf, time2=np.inf, datatypes='all'):
 
   '''
-  terminus_val,terminus_time=distance_along_flowline(x,y,dists,glacier,type='icefront')
+  terminus_val,terminus_time=distance_along_flowline(x,y,dists,glacier,type='icefront',datatypes='all')
   
   Find terminus position (or rift position) along a flowline.
   
@@ -71,6 +71,10 @@ def distance_along_flowline(x,y,dists,glacier,type='icefront',imagesource=False,
     DIRI=os.path.join(os.getenv("DATA_HOME"),"ShapeFiles/IceFronts/"+glacier+"/")
   elif type is 'rift':
     DIRI=os.path.join(os.getenv("DATA_HOME"),"ShapeFiles/Rifts/"+glacier+"/")
+
+  if datatypes == 'all':
+    datatypes = ['TSX','Landsat7','Landsat8','WV','ASTER']
+
 
   files = os.listdir(DIRI)
 
@@ -106,27 +110,29 @@ def distance_along_flowline(x,y,dists,glacier,type='icefront',imagesource=False,
         if x[flowind] > intersection[0]: #make sure that we have the smaller value
           flowind=flowind-1;
     
-        # Terminus position
-        terminus_val.append( dists[flowind]+((intersection[0]-x[flowind])**2+(intersection[1]-y[flowind])**2)**(0.5) )
-        
         # Time of that terminus position
-        if ("TSX" in file) or ("moon" in file):
+        if (("TSX" in file) or ("moon" in file)) and ('TSX' in datatypes):
+          terminus_val.append( dists[flowind]+((intersection[0]-x[flowind])**2+(intersection[1]-y[flowind])**2)**(0.5) )
           terminus_time.append(datelib.doy_to_fracyear(float(file[0:4]),float(file[5:8])))
           sensorname.append('TSX')
-        elif ("ASTER" in file):
+        elif ("ASTER" in file) and ('ASTER' in datatypes):
+          terminus_val.append( dists[flowind]+((intersection[0]-x[flowind])**2+(intersection[1]-y[flowind])**2)**(0.5) )
           terminus_time.append(datelib.date_to_fracyear(float(file[0:4]),float(file[5:7]),float(file[8:10])))
           sensorname.append('ASTER')
-        elif ("Landsat7" in file):
+        elif ("Landsat7" in file) and ('Landsat7' in datatypes):
+          terminus_val.append( dists[flowind]+((intersection[0]-x[flowind])**2+(intersection[1]-y[flowind])**2)**(0.5) )
           terminus_time.append(datelib.date_to_fracyear(float(file[0:4]),float(file[5:7]),float(file[8:10])))
           sensorname.append('Landsat7')
-        elif ("Landsat" in file):
+        elif ("Landsat" in file) and ('Landsat7' not in file) and ('Landsat8' in datatypes):
+          terminus_val.append( dists[flowind]+((intersection[0]-x[flowind])**2+(intersection[1]-y[flowind])**2)**(0.5) )
           terminus_time.append(datelib.date_to_fracyear(float(file[0:4]),float(file[5:7]),float(file[8:10])))
           sensorname.append('Landsat8')
-        elif ("WV" in file):
+        elif ("WV" in file) and ('WV' in datatypes):
+          terminus_val.append( dists[flowind]+((intersection[0]-x[flowind])**2+(intersection[1]-y[flowind])**2)**(0.5) )
           terminus_time.append(datelib.date_to_fracyear(float(file[0:4]),float(file[5:7]),float(file[8:10])))
           sensorname.append('WV')
-        else:
-          sys.exit("Don't know that date format for "+file)
+        #else:
+        #  sys.exit("Don't know that date format for "+file)
   terminus_time = np.array(terminus_time)
   terminus_val = np.array(terminus_val)
   terminus_source = np.array(sensorname)
