@@ -383,7 +383,10 @@ def bufcount(filename):
   
 def pvtu_file(file,variables):
 
-  if not(os.path.isfile(file)):
+  if os.path.isfile(file+'.tar.gz'):
+    tarfile = True
+    os.system('tar -xzf '+file)
+  elif not(os.path.isfile(file)):
     sys.exit("File "+file+" does not exist.")  
 
   try:
@@ -464,6 +467,10 @@ def pvtu_file(file,variables):
   ind = np.union1d(np.union1d(ind1,ind2),ind3)
   
   data = data[ind]
+
+  if tarfile:
+    i = int(file[-9:-5])
+    os.system('rm '+file+'*{0:04d}.'.format(i)+'*vtu')
 
   return data
 
