@@ -386,7 +386,9 @@ def pvtu_file(file,variables):
   if os.path.isfile(file+'.tar.gz'):
     tarfile = True
     os.system('tar -xzf '+file)
-  elif not(os.path.isfile(file)):
+  elif os.path.isfile(file):
+    tarfile = False
+  else:  
     sys.exit("File "+file+" does not exist.")  
 
   try:
