@@ -11,11 +11,15 @@ x,y,zb,dist = glaclib.load_flowline(glacier)
 dists_eul = np.array([-2,-5,-10,-15,-20,-30])*1e3
 
 # Get terminus position along flowline
-terminus_val,terminus_time = icefrontlib.distance_along_flowline(x,y,dist,'Helheim',datatypes=['WV','Landsat8','TSX'])
+terminus_val,terminus_time = icefrontlib.distance_along_flowline(x,y,dist,glacier,datatypes=['WV','Landsat8','TSX'])
+
+# Get data for comparison
+vel_val,vel_time,vel_term = vellib.velocity_along_flowline(x,y,dist,glacier)
+zs_val,zs_time = zslib.dem_along_flowline(x,y,glacier)
 
 # Load model results
 t1 = 1
-t2 = 305
+t2 = 333
 
 model = elmerreadlib.pvtu_timeseries_flowline(x,y,'.','terminusdriven',\
         ['velocity','groundedmask'],layer='surface',debug=True,t1=t1,t2=t2)
@@ -69,6 +73,6 @@ plt.ylabel('Elevation (m)',fontsize=8)
 
 plt.tight_layout()
 plt.subplots_adjust(hspace=0.03,wspace=0.02,top=0.96,right=0.95,left=0.12,bottom=0.07)
-plt.savefig('model_relaxation.pdf')
+plt.savefig('model_relaxation_front.pdf')
 plt.close()
 

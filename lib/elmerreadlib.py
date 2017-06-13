@@ -383,12 +383,13 @@ def bufcount(filename):
   
 def pvtu_file(file,variables):
 
-  if os.path.isfile(file+'.tar.gz'):
-    tarfile = True
-    os.system('tar -xzf '+file)
-  elif os.path.isfile(file):
+  if os.path.isfile(file):
+    pass
     tarfile = False
-  else:  
+  elif os.path.isfile(file+'.tar.gz'):
+    tarfile = True
+    os.system('tar -xzf '+file+'.tar.gz')
+  else:
     sys.exit("File "+file+" does not exist.")  
 
   try:
@@ -472,7 +473,7 @@ def pvtu_file(file,variables):
 
   if tarfile:
     i = int(file[-9:-5])
-    os.system('rm '+file+'*{0:04d}.'.format(i)+'*vtu')
+    os.system('rm '+file[0:-10]+'*{0:04d}.'.format(i)+'*vtu')
 
   return data
 
@@ -493,6 +494,11 @@ def pvtu_timeseries_flowline(x,y,DIR,fileprefix,variables,layer='surface',debug=
       numfilelen = len(file)-len('.pvtu')-len(fileprefix)
       if timestep > totsteps:
         totsteps = timestep
+    elif file.startswith(fileprefix) and file.endswith('.pvtu.tar.gz'):
+      timestep = int(file[-16:-12])
+      numfilelen = len(file)-len('.pvtu.tar.gz')-len(fileprefix)
+      if timestep > totsteps:
+        totsteps = timestep     
   if totsteps == 0:
     sys.exit("Check that file "+DIR+fileprefix+" actually exists.")
   
