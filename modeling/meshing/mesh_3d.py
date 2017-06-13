@@ -302,11 +302,11 @@ del xt2m,yt2m,timet2m,t2m,fidt2m, H, fidT
 print "Trying to pull temperatures from model...\n"
 
 # Set up lower resolution grid and interpolate variables to that grid
-#xT = np.arange(x[0],x[-1],100)
-#yT = np.arange(y[0],y[-1],100)
-xT = np.array(x)
-yT = np.array(y)
-xTgrid,yTgrid = np.meshgrid(x,y)
+xT = np.arange(x[0],x[-1],100)
+yT = np.arange(y[0],y[-1],100)
+#xT = np.array(x)
+#yT = np.array(y)
+xTgrid,yTgrid = np.meshgrid(xT,yT)
 f = RegularGridInterpolator((y,x),zsur)
 zsT = np.reshape(f((yTgrid.flatten(),xTgrid.flatten())),[len(yT),len(xT)])
 f = RegularGridInterpolator((y,x),zbed)
