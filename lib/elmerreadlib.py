@@ -383,7 +383,6 @@ def bufcount(filename):
   
 def pvtu_file(file,variables):
 
-
   if os.path.isfile(file):
     pass
     tarfile = False
