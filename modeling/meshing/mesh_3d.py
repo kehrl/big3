@@ -130,6 +130,11 @@ else:
   exterior = meshlib.shp_to_xy(DIRX+meshshp)
 np.savetxt(inputs+"mesh_extent.dat",exterior[:,0:2])
 
+if timeseries == True:
+  np.savetxt(inputs+"mesh_timeseries_x.dat",xextents)
+  np.savetxt(inputs+"mesh_timeseries_y.dat",yextents)
+  np.savetxt(inputs+"mesh_timeseries_times.dat",times)
+
 # Mesh holes
 holes = []
 if os.path.isfile(DIRX+"glacier_hole1.shp"):
