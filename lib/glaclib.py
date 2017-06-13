@@ -113,7 +113,7 @@ def load_flowline(glacier,shapefilename='center_flowline',filt_len=2.0e3,vertica
 def load_extent(glacier,time,nofront_shapefile='glacier_extent_nofront'):
   
   '''
-  xextent,yextent = date(glacier,time)
+  extent = load_extent(glacier,time)
   
   Find the glacier extent that is closest to "time".
   
@@ -224,7 +224,7 @@ def load_extent_timeseries(glacier,time1,time2,dt,nofront_shapefile='glacier_ext
   # Load all ice front positions for that time period
   termx,termy,termt = icefrontlib.load_all(time1-0.5,time2+0.5,glacier,type='icefront',datatypes=datatypes)
 
-  # In case we have multiple ice front picks for the same day, we want 
+  # In case we have multiple ice front picks for the same day, we want to
   # use only one of those for continuity
   [junk,ind] = np.unique(termt,return_index=True)
   termt = np.array(termt)[ind]
@@ -391,6 +391,27 @@ def load_extent_timeseries(glacier,time1,time2,dt,nofront_shapefile='glacier_ext
     
     icefront_x.append(xbot)
     icefront_y.append(ybot)
+    
+    # Try sorting icefront to get rid of potential tangles
+    icefront_x_old = np.asarray(icefront_x)
+    icefront_y_old = np.asarray(icefront_y)
+    icefront_x = np.zeros_like(icefront_x_old)
+    icefront_y = np.zeros_like(icefront_y_old)
+    icefront_x[0] = icefront_x_old[0]
+    icefront_y[0] = icefront_y_old[0]
+    ind = range(1,len(icefront_x_old))
+    for k in range(1,len(icefront_x_old)):
+      mindist = 10000.
+      for j in range(0,len(ind)):
+        dist = distlib.between_pts(icefront_x[k-1],icefront_y[k-1],icefront_x_old[ind[j]],icefront_y_old[ind[j]])
+        if dist < mindist:
+          mindist = dist
+          minind = ind[j]
+      icefront_x[k] = icefront_x_old[minind]
+      icefront_y[k] = icefront_y_old[minind]
+      ind.remove(minind)
+    
+    # Save icefront in timeseries 
     timeseries_x[0:len(icefront_x),i] = icefront_x
     timeseries_y[0:len(icefront_y),i] = icefront_y
     

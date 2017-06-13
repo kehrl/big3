@@ -214,6 +214,16 @@ if timeseries == True:
 
     # Create elmer mesh
     call(["ElmerGrid","14","2",DIRM+file_2d_temp+".msh","-autoclean","-metis",partitions,"1"])
+ 
+    # Check to make sure the mesh was created successfully
+    files = os.listdir(DIRM+file_2d_temp+'/partitioning.'+str(partitions))
+    success = False
+    for file in files:
+      if file.endswith('header'):
+        success = True
+    if success == False:
+      year,month,day = datelib.fracyear_to_date(time1+i*dt)
+      sys.exit('Unsuccessful generation of mesh for date '+str(year)+str(month)+int(np.round(day))+', timesetep '+str(i))
     
     os.system("rm mesh2d.geo")
     
