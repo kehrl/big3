@@ -214,11 +214,10 @@ if timeseries == True:
     xnew,ynew,zbed_new,zsur_new,zbot_new = meshlib.xy_to_gmsh_3d(glacier,date1,exterior_temp,holes,refine,DIRM,\
 		  lc1,lc2,lc3,lc4,bedname=bedname,bedmodel=bedmodel,bedsmoothing=bedsmoothing,\
                 rho_i=rho_i,rho_sw=rho_sw,dx=dx,bottomsurface=bottomsurface,outputgeometry=False)
-    call(["gmsh","-1","-2",file_2d+".geo", "-o",os.path.join(os.getenv("HOME"),\
-		DIRM+file_2d_temp+".msh")])
+    call(["gmsh","-1","-2",file_2d+".geo", "-o",file_2d_temp+".msh"])
 
     # Create elmer mesh
-    call(["ElmerGrid","14","2",DIRM+file_2d_temp+".msh","-autoclean","-metis",partitions,"1"])
+    call(["ElmerGrid","14","2",file_2d_temp+".msh","-autoclean","-metis",partitions,"1"])
  
     # Check to make sure the mesh was created successfully
     files = os.listdir(DIRM+file_2d_temp+'/partitioning.'+str(partitions))
