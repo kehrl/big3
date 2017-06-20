@@ -654,7 +654,7 @@ CONTAINS
     END INTERFACE
 
     SolverName = "SwitchMesh"
-    Debug = .TRUE.
+    Debug = .FALSE.
 
     Params => Solver % Values
     CALL Info( 'Remesher', ' ',Level=4 )
