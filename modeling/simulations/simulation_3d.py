@@ -34,6 +34,8 @@ parser.add_argument("-nt",dest="nt",required  = False,type=str,\
        default='10',help = "Number of timesteps (10).") 
 parser.add_argument("-dt",dest="dt",required  = False,type=str,\
        default='1/365.25',help = "Timestep size (1/365.25, i.e., 1 day).") 
+parser.add_argument("-slipcoefficient",dest="slipcoefficient",required  = False,type=str,\
+       default='1.0E-3',help = "Sidewall slip coefficient.")
 
 args, _ = parser.parse_known_args(sys.argv)
 
@@ -48,6 +50,7 @@ restartposition = args.restartposition
 temperature = args.temperature
 dt = args.dt
 nt = args.nt
+slipcoefficient = args.slipcoefficient
 
 # Directories
 DIRS=os.path.join(os.getenv("CODE_HOME"),"big3/modeling/solverfiles/3D/")
@@ -109,6 +112,7 @@ lines=lines.replace('{FrontBC}', '{0}'.format(frontbc_text))
 lines=lines.replace('{Temperature}', '{0}'.format(temperature_text))
 lines=lines.replace('{TimeStepSize}', '$({0})'.format(dt))
 lines=lines.replace('{TimeSteps}', '{0}'.format(nt))
+lines=lines.replace('{SlipCoefficient}', '{0}'.format(slipcoefficient))
 
 fid2.write(lines)
 fid1.close()
@@ -144,7 +148,7 @@ if solverfile_in == 'terminusdriven':
       
     # First check to make sure we have adequate mesh files
     
-    for i in range(itmax,itmax+50):
+    for i in range(itmax,itmax+10):
       if not(os.path.isdir('mesh{0:04d}'.format(i))):
         if os.path.isfile('mesh{0:04d}.tar.gz'.format(i)):
           os.system('tar -xzf mesh{0:04d}.tar.gz'.format(i))
@@ -160,7 +164,7 @@ if solverfile_in == 'terminusdriven':
         os.system('rm '+'terminusdriven*{0:04d}.'.format(i)+'*vtu')
         os.chdir(DIRM)
       
-  job = sched.add_job(check_files,'interval',minutes=10)
+  job = sched.add_job(check_files,'interval',minutes=5)
   sched.start()
 
 ###################

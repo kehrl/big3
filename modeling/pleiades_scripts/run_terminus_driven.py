@@ -5,35 +5,35 @@ import os
 glacier = 'Helheim'
 
 # Mesh characteristics and geometry
-meshshp = 'glacier_extent_inversion_nofront'
+meshshp = 'glacier_extent_terminus_front'
 extrude = 12
 bname = 'smith'
 bmodel = 'aniso'
-bsmooth = '4'
+bsmooth = '5'
 bottomsurface = 'iceshelf'
-temperature = -10.0
+temperature = -10.0 #'model'
 #lc = '500 1000 1000 2000'
-lc = '150 250 500 700'
+lc = '250 500 750 1000'
 
 # Info terminus driven model
-date1 = '20080613'
-date2 = '20090613'
+date1 = '20110615'#'20080613'
+date2 = '20120615'#'20160101'
 dt = '1/365.25'
 timeseries = 'True'
 
-runname = 'TD_'+date1+'_'+date2
+runname = 'TD_'+date1+'_'+date2+'_bsmooth'+bsmooth
 
 # Inversion options
 method = 'adjoint'
 regpar = '5e11'
-frontBC = 'pressure'
-slipcoefficient = '1.0E-3'
-sidewallBC = 'friction'
+frontBC = 'velocity'
+slipcoefficient = '1.0E-2'
+sidewallBC = 'friction' # or velocity or friction
 
 # Options for PBS submission
 queue = 'long'
 model = 'has'
-nparts = 24
+nparts = 72
 ncpus = 24
 runtime = '30:00:00'
 
@@ -93,14 +93,18 @@ fid.close()
 nt = 0
 files = os.listdir(dir)
 for file in files:
-  if file.startswith('mesh0') and not(file.endswith('.msh')):
+  if file.startswith('mesh0') and not(file.endswith('.msh')) and not(file.endswith('tar.gz')):
     if int(file[-4:]) > nt:
       nt = int(file[-4:])
+  elif file.startswith('mesh0') and file.endswith('tar.gz'):
+    if int(file[-11:-7]) > nt:
+      nt = int(file[-11:-7])
    
 command = "python /u/lkehrl/Code/big3/modeling/simulations/"+\
           "simulation_3d.py -glacier {0} -sif terminusdriven.sif".format(glacier)+\
           " -mesh {0} -extrude {1} -n {2}".format(runname,extrude,nparts)+\
-          " -dt {0} -nt {1} -temperature {2}".format(dt,nt,temperature) 
+          " -dt {0} -nt {1} -temperature {2}".format(dt,nt,temperature)+\
+          " -slipcoefficient {0}".format(slipcoefficient)
 
 job_name = glacier+"_"+runname+"_terminusdriven"
 walltime = runtime

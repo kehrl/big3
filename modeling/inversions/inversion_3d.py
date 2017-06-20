@@ -117,9 +117,9 @@ def main():
     elif (frontbc == 'dirichlet') or (frontbc == 'velocity'):
       frontbc_text = """
   Velocity 1 = Variable Coordinate 1
-    Real procedure "USF_Init.so" "UWa"
+    Real procedure "USF_Init.so" "UIni"
   Velocity 2 = Variable Coordinate 1
-    Real procedure "USF_Init.so" "VWa"
+    Real procedure "USF_Init.so" "VIni"
   ! Dirichlet BC => Dirichlet = 0 for Adjoint
   Adjoint 1 = Real 0.0
   Adjoint 2 = Real 0.0"""
@@ -135,15 +135,15 @@ def main():
       frontbc_text ="""
   ! Dirichlet BCs
   Velocity 1 = Variable Coordinate 1, Coordinate 2
-    Real procedure "USF_Init.so" "UWa"
+    Real procedure "USF_Init.so" "UIni"
   Velocity 2 = Variable Coordinate 1, Coordinate 2
-    Real procedure "USF_Init.so" "VWa"
+    Real procedure "USF_Init.so" "VIni"
         
   ! Dirichlet BC => Same Dirichlet
   VeloD 1 = Variable Coordinate 1, Coordinate 2
-    Real procedure "USF_Init.so" "UWa"
+    Real procedure "USF_Init.so" "UIni"
   VeloD 2 = Variable Coordinate 1, Coordinate 2
-    Real procedure "USF_Init.so" "VWa" """
+    Real procedure "USF_Init.so" "VIni" """
 
   # Set boundary condition for sidewalls (either measured velocity or slip coefficient).
   if method == 'adjoint':
@@ -159,7 +159,15 @@ def main():
   
   Slip Coefficient 2 = Real """+slipcoefficient+"""
   Slip Coefficient 3 = Real """+slipcoefficient
-  
+    elif sidewallbc == 'freeslip':
+      sidewallbc_text = """
+  Normal-Tangential Velocity = Logical True
+  Normal-Tangential Adjoint = Logical True
+
+  Adjoint Force BC = Logical True
+
+  Velocity 1 = Real 0.0e0
+  Adjoint 1 = Real 0.0e0"""
     elif sidewallbc == 'velocity':
       sidewallbc_text = """
   !! Dirichlet BC 
@@ -185,6 +193,15 @@ def main():
   VeloD 1 = Real 0.0e0
   Slip Coefficient 2 = Real """+slipcoefficient+"""
   Slip Coefficient 3 = Real """+slipcoefficient
+    elif sidewallbc == 'freeslip':
+      sidewallbc_text = """
+  Normal-Tangential Velocity = Logical True
+  Normal-Tangential VeloD = Logical True
+
+  Flow Force BC = Logical True
+
+  Velocity 1 = Real 0.0
+  VeloD 1 = Real 0.0e0"""
     elif sidewallbc == 'velocity':
       sidewallbc_text = """
   ! Dirichlet BCs
