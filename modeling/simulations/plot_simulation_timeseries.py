@@ -19,14 +19,13 @@ zs_val,zs_time = zslib.dem_along_flowline(x,y,glacier)
 
 # Load model results
 t1 = 1
-t2 = 333
+t2 = 297
 
 model = elmerreadlib.pvtu_timeseries_flowline(x,y,'.','terminusdriven',\
         ['velocity','groundedmask'],layer='surface',debug=True,t1=t1,t2=t2)
 
 # Get model time
-model_time = datelib.date_to_fracyear(2008,6,13)+(np.arange(t1,t2+1)/365.25)
-
+model_time = datelib.date_to_fracyear(2011,6,15)+((np.arange(t1,t2+1)-1)/365.25)
 
 vel_model = np.zeros([len(model_time),len(dists_eul)])
 zs_model = np.zeros([len(model_time),len(dists_eul)])
@@ -50,6 +49,7 @@ plt.xlim([model_time[0],model_time[-1]])
 plt.ylim([-2.5,2.5])
 plt.yticks(np.arange(-2,3,1),fontsize=8,fontname='Arial')
 plt.ylabel('Terminus \n (km)',fontsize=8)
+plt.xlim([model_time[0],model_time[0]+1])
 
 
 plt.subplot(gs[1:3, :])
@@ -62,6 +62,8 @@ plt.xlim([model_time[0],model_time[-1]])
 plt.legend(loc=0,borderpad=0.3,fontsize=8,numpoints=1,handlelength=0.2,handletextpad=0.5,labelspacing=0.1,ncol=2,columnspacing=0.8)
 plt.yticks(np.arange(-3,1,1),fontsize=8)
 plt.ylabel('Velocity \n (km/yr)',fontsize=8,fontname='Arial')
+plt.xlim([model_time[0],model_time[0]+1])
+
 
 plt.subplot(gs[3:, :])
 for i in range(0,len(dists_eul)):
@@ -70,6 +72,7 @@ plt.xticks(np.arange(2008,2016,.25),fontsize=8)
 plt.xlim([model_time[0],model_time[-1]])
 plt.yticks(np.arange(-100,25,25),fontsize=8,fontname='Arial')
 plt.ylabel('Elevation (m)',fontsize=8)
+plt.xlim([model_time[0],model_time[0]+1])
 
 plt.tight_layout()
 plt.subplots_adjust(hspace=0.03,wspace=0.02,top=0.96,right=0.95,left=0.12,bottom=0.07)

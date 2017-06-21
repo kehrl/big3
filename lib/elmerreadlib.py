@@ -388,6 +388,8 @@ def pvtu_file(file,variables):
     tarfile = False
   elif os.path.isfile(file+'.tar.gz'):
     tarfile = True
+    cwd = os.getcwd()
+    os.chdir(os.path.dirname(file))
     os.system('tar -xzf '+file+'.tar.gz')
   else:
     sys.exit("File "+file+" does not exist.")  
@@ -474,14 +476,103 @@ def pvtu_file(file,variables):
   if tarfile:
     i = int(file[-9:-5])
     os.system('rm '+file[0:-10]+'*{0:04d}.'.format(i)+'*vtu')
+    os.chdir(cwd)
 
   return data
 
-def pvtu_timeseries_flowline(x,y,DIR,fileprefix,variables,layer='surface',debug=False,t1=1,t2=np.Inf):
+def pvtu_timeseries_grid(x,y,DIR,fileprefix,variables,inputsdir,layer='surface',debug=False,t1=1,t2=np.Inf):
 
   from scipy.interpolate import griddata
   import numpy as np
-  from scipy.spatial import cKDTree, ConvexHull
+  import matplotlib.path
+
+  # First get number of timesteps
+  files = os.listdir(DIR)
+
+  xgrid,ygrid = np.meshgrid(x,y)
+
+  totsteps = 0
+  for file in files:
+    if file.startswith(fileprefix) and file.endswith('.pvtu'):
+      timestep = int(file[len(fileprefix):-5])
+      numfilelen = len(file)-len('.pvtu')-len(fileprefix)
+      if timestep > totsteps:
+        totsteps = timestep
+    elif file.startswith(fileprefix) and file.endswith('.pvtu.tar.gz'):
+      timestep = int(file[-16:-12])
+      numfilelen = len(file)-len('.pvtu.tar.gz')-len(fileprefix)
+      if timestep > totsteps:
+        totsteps = timestep     
+  if totsteps == 0:
+    sys.exit("Check that file "+DIR+fileprefix+" actually exists.")
+  
+  if t2 > totsteps:
+    t2 = totsteps
+  
+  print "Loading "+str(t2-t1+1)+" out of "+str(totsteps)+" timesteps"
+
+  if layer == 'surface':
+    freesurfacevar = 'zs top'
+  elif layer == 'bed' and 'zs bottom' not in variables:
+    freesurfacevar = 'zs bottom'
+  if freesurfacevar not in variables:
+    variables.append(freesurfacevar)
+
+  mesh_extent_x = np.loadtxt(inputsdir+'/mesh_timeseries_x.dat')
+  mesh_extent_y = np.loadtxt(inputsdir+'/mesh_timeseries_y.dat')
+  try: 
+    mesh_hole1 = np.loadtxt(inputsdir+'/mesh_hole1.dat')
+    mesh_hole2 = np.loadtxt(inputsdir+'/mesh_hole2.dat')
+    holes = True
+  except:
+    holes = False
+
+  for i in range(0,t2-t1+1):
+    t = i+t1
+    # Get filename
+    pvtufile = '{0}{2:0{1}d}{3}'.format(fileprefix,numfilelen,t,'.pvtu')
+    if debug:
+      print "Loading file "+pvtufile
+    # Get data
+
+    data = pvtu_file(DIR+pvtufile,variables)
+    surf = data[data[freesurfacevar] != 0]
+    # If first timestep, set up output variable name
+    if i==0:
+      varnames = list(data.dtype.names)
+      varnames.remove('Node Number')
+      types = []
+      for var in varnames:
+        types.append(np.float64)
+      datagrid = np.zeros([len(y),len(x),t2-t1+1], dtype=zip(varnames,types)) 
+      for var in [varnames]:
+        datagrid[var][:,:,i] = float('nan')
+
+    ind = np.where(mesh_extent_x[:,t-1] != 0)
+    path = matplotlib.path.Path(np.column_stack([mesh_extent_x[:,t-1],mesh_extent_y[:,t-1]]))
+    inmesh = path.contains_points(np.column_stack([xgrid.flatten(),ygrid.flatten()]))
+    inmesh = inmesh.reshape(len(y),len(x))
+    if holes:
+      path = matplotlib.path.Path(np.column_stack([mesh_hole1[:,0],mesh_hole1[:,1]]))
+      inhole1 = path.contains_points(np.column_stack([xgrid.flatten(),ygrid.flatten()]))
+      inhole1 = inhole1.reshape(len(y),len(x))
+      path = matplotlib.path.Path(np.column_stack([mesh_hole2[:,0],mesh_hole2[:,1]]))
+      inhole2 = path.contains_points(np.column_stack([xgrid.flatten(),ygrid.flatten()]))
+      inhole2 = inhole2.reshape(len(y),len(x))
+
+    for var in varnames:
+      datagrid[var][:,:,i] = griddata((surf['x'],surf['y']),surf[var],(xgrid,ygrid))
+      datagrid[var][~inmesh,i] = float('nan')
+      if holes:
+        datagrid[var][inhole1,i] = float('nan')
+        datagrid[var][inhole2,i] = float('nan')   
+
+  return datagrid
+
+def pvtu_timeseries_flowline(x,y,DIR,fileprefix,variables,inputsdir='none',layer='surface',debug=False,t1=1,t2=np.Inf):
+
+  from scipy.interpolate import griddata
+  import numpy as np
   import matplotlib.path
 
   # First get number of timesteps
@@ -514,6 +605,10 @@ def pvtu_timeseries_flowline(x,y,DIR,fileprefix,variables,layer='surface',debug=
   if freesurfacevar not in variables:
     variables.append(freesurfacevar)
 
+  if inputsdir != 'none':
+    mesh_extent_x = np.loadtxt(inputsdir+'/mesh_timeseries_x.dat')
+    mesh_extent_y = np.loadtxt(inputsdir+'/mesh_timeseries_y.dat')
+
   for i in range(0,t2-t1+1):
     t = i+t1
     # Get filename
@@ -522,7 +617,7 @@ def pvtu_timeseries_flowline(x,y,DIR,fileprefix,variables,layer='surface',debug=
       print "Loading file "+pvtufile
     # Get data
 
-    data = pvtu_file(pvtufile,variables)
+    data = pvtu_file(DIR+pvtufile,variables)
     surf = data[data[freesurfacevar] != 0]
     # If first timestep, set up output variable name
     if i==0:
@@ -534,25 +629,77 @@ def pvtu_timeseries_flowline(x,y,DIR,fileprefix,variables,layer='surface',debug=
       dataflow = np.zeros([len(x),t2-t1+1], dtype=zip(varnames,types)) 
       for var in varnames:
         dataflow[var][:,i] = float('nan')
-    
-    # Interpolate
-    tree = cKDTree(np.column_stack([surf['x'],surf['y']]))
+
+    ind = np.where(mesh_extent_x[:,t-1] != 0)
+    path = matplotlib.path.Path(np.column_stack([mesh_extent_x[:,t-1],mesh_extent_y[:,t-1]]))
+    inmesh = path.contains_points(np.column_stack([x,y]))
 
     for var in varnames:
-      dataflow[var][:,i] = griddata((surf['x'],surf['y']),surf[var],(x,y))
-
-    for j in range(0,len(x)):
-      [dists,L] = tree.query( (x[j],y[j]), k=7)
-    
-      hull = ConvexHull(np.column_stack([surf['x'][L],surf['y'][L]]))
-      polygon = np.column_stack([hull.points[hull.vertices,0],hull.points[hull.vertices,1]])
-
-      path = matplotlib.path.Path(polygon)
-      if not(path.contains_point([x[j],y[j]])): 
-        for var in varnames:
-          dataflow[var][j,i] = float('nan')
+      dataflow[var][inmesh,i] = griddata((surf['x'],surf['y']),surf[var],(x[inmesh],y[inmesh]))
 
   return dataflow
+
+def pvtu_timeseries_grounding_line(DIR,fileprefix,debug=False,t1=1,t2=np.Inf):
+
+  from scipy.interpolate import griddata
+  import numpy as np
+  import matplotlib.path
+
+  # First get number of timesteps
+  files = os.listdir(DIR)
+
+  totsteps = 0
+  for file in files:
+    if file.startswith(fileprefix) and file.endswith('.pvtu'):
+      timestep = int(file[len(fileprefix):-5])
+      numfilelen = len(file)-len('.pvtu')-len(fileprefix)
+      if timestep > totsteps:
+        totsteps = timestep
+    elif file.startswith(fileprefix) and file.endswith('.pvtu.tar.gz'):
+      timestep = int(file[-16:-12])
+      numfilelen = len(file)-len('.pvtu.tar.gz')-len(fileprefix)
+      if timestep > totsteps:
+        totsteps = timestep     
+  if totsteps == 0:
+    sys.exit("Check that file "+DIR+fileprefix+" actually exists.")
+  
+  if t2 > totsteps:
+    t2 = totsteps
+  
+  print "Loading "+str(t2-t1+1)+" out of "+str(totsteps)+" timesteps"
+
+
+  variables = ['zs bottom','groundedmask']
+  freesurfacevar = 'zs bottom'
+
+  for i in range(0,t2-t1+1):
+    t = i+t1
+    # Get filename
+    pvtufile = '{0}{2:0{1}d}{3}'.format(fileprefix,numfilelen,t,'.pvtu')
+    if debug:
+      print "Loading file "+pvtufile
+    # Get data
+
+    data = pvtu_file(DIR+pvtufile,variables)
+    surf = data[data[freesurfacevar] != 0]
+    # If first timestep, set up output variable name
+    if i==0:
+      varnames = ['x','y']
+      types = []
+      for var in varnames:
+        types.append(np.float64)
+      GLs = np.zeros([500,t2-t1+1], dtype=zip(varnames,types)) 
+      for var in varnames:
+        GLs[var][:,i] = float('nan')
+
+    ind = np.where(surf['groundedmask'] == 0)
+    print np.shape(surf['x'][ind].flatten())
+    GLs['x'][0:len(surf['x'][ind].flatten()),i] = surf['x'][ind].flatten()
+    GLs['y'][0:len(surf['y'][ind].flatten()),i] = surf['y'][ind].flatten()
+
+
+  return GLs
+
 
 def grid_to_cross_section(data,xf,yf,df,variable,dz=20.,method='linear'):
 
