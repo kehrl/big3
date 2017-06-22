@@ -485,6 +485,7 @@ def pvtu_timeseries_grid(x,y,DIR,fileprefix,variables,inputsdir,layer='surface',
   from scipy.interpolate import griddata
   import numpy as np
   import matplotlib.path
+  import gc
 
   # First get number of timesteps
   files = os.listdir(DIR)
@@ -570,6 +571,7 @@ def pvtu_timeseries_grid(x,y,DIR,fileprefix,variables,inputsdir,layer='surface',
         datagrid[var][inhole2,i] = float('nan')   
 
     del surf,pvtufile,inmesh,ind
+    gc.collect()
     
   return datagrid
 
