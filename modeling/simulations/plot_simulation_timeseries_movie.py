@@ -147,8 +147,8 @@ for i in range(1,len(model_time)):
   plt.subplot(gs[3:6,0])
   ax = plt.gca()
   if i > 0:
-    p = plt.imshow((model_grid['z'][:,:,i]-model_grid['z'][:,:,i-1]),extent=[np.min(xgrid),np.max(xgrid),\
-       np.min(ygrid),np.max(ygrid)],origin='lower',cmap='RdBu_r',clim=[-1,1])
+    p = plt.imshow((model_grid['z'][:,:,i]-model_grid['z'][:,:,i-1])*100,extent=[np.min(xgrid),np.max(xgrid),\
+       np.min(ygrid),np.max(ygrid)],origin='lower',cmap='RdBu_r',clim=[-60,60])
   plt.plot(np.r_[mesh_hole1[:,0],mesh_hole1[0,0]],np.r_[mesh_hole1[:,1],mesh_hole1[0,1]],'k',linewidth=0.75)
   plt.plot(np.r_[mesh_hole2[:,0],mesh_hole2[0,0]],np.r_[mesh_hole2[:,1],mesh_hole2[0,1]],'k',linewidth=0.75)
   ind = np.where(mesh_extent_x[:,i] != 0)[0]
@@ -160,15 +160,15 @@ for i in range(1,len(model_time)):
   plt.ylim([ygrid[0],ygrid[-1]])
   plt.xticks([])
   plt.yticks([])
-  cbaxes = fig.add_axes([0.325, 0.49, 0.09, 0.02]) 
-  cb = plt.colorbar(p,cax=cbaxes,orientation='horizontal',ticks=[-1,0,1]) 
+  cbaxes = fig.add_axes([0.32, 0.49, 0.09, 0.02]) 
+  cb = plt.colorbar(p,cax=cbaxes,orientation='horizontal',ticks=[-50,0,50]) 
   ax.text(xmin+0.77*(xmax-xmin),ymin+0.76*(ymax-ymin),'dh/dt',fontsize=8)
-  ax.text(xmin+0.75*(xmax-xmin),ymin+0.68*(ymax-ymin),'(m d$^{-1}$)',fontsize=8)
+  ax.text(xmin+0.74*(xmax-xmin),ymin+0.68*(ymax-ymin),'(cm d$^{-1}$)',fontsize=8)
   cb.ax.tick_params(labelsize=8)
   
   plt.subplot(gs[0:2,1])
   ax = plt.gca()
-  plt.plot(terminus_time,terminus_val/1e3,'ko--')
+  plt.plot(terminus_time,terminus_val/1e3,'k')
   plt.xticks(np.arange(2008,2016))
   ax.set_xticklabels([])
   plt.xlim([model_time[1],model_time[-1]])
@@ -197,7 +197,8 @@ fps=3
 ffmpeg_in_opt = "-r %i" % fps
 #ffmpeg_out_opt = "-r 5 -y -an -force_fps -s '%ix%i'" % newsize
 #-an disables audio
-ffmpeg_out_opt = "-y -an -c:v libx264 -pix_fmt yuv420p"
+#ffmpeg_out_opt = "-y -an -c:v libx264 -pix_fmt yuv420p"
+ffmpeg_out_opt = "-an -vcodec mpeg4 -f mp4"
 #scale='iw/4:-1'"
 
 os.chdir(DIRO)
