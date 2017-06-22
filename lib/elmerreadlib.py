@@ -478,7 +478,8 @@ def pvtu_file(file,variables):
     os.system('rm '+file[0:-10]+'*{0:04d}.'.format(i)+'*vtu')
     os.chdir(cwd)
   
-  del ind,var1,var2,var3,ind1,ind2,ind3,varnames,vtudata,data
+  del ind,var1,var2,var3,ind1,ind2,ind3,varnames,vtudata,data,x,y,z,var,types,opts
+  del reader,n
 
   return data_final
 
