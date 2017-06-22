@@ -617,6 +617,7 @@ def pvtu_timeseries_flowline(x,y,DIR,fileprefix,variables,inputsdir='none',layer
 
     data = pvtu_file(DIR+pvtufile,variables)
     surf = data[data[freesurfacevar] != 0]
+    del data
     # If first timestep, set up output variable name
     if i==0:
       varnames = list(data.dtype.names)
@@ -634,7 +635,9 @@ def pvtu_timeseries_flowline(x,y,DIR,fileprefix,variables,inputsdir='none',layer
 
     for var in varnames:
       dataflow[var][inmesh,i] = griddata((surf['x'],surf['y']),surf[var],(x[inmesh],y[inmesh]))
-
+    
+    del surf
+     
   return dataflow
 
 def pvtu_timeseries_grounding_line(DIR,fileprefix,debug=False,t1=1,t2=np.Inf):
