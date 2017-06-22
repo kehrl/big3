@@ -524,6 +524,14 @@ def pvtu_timeseries_grid(x,y,DIR,fileprefix,variables,inputsdir,layer='surface',
     mesh_hole1 = np.loadtxt(inputsdir+'/mesh_hole1.dat')
     mesh_hole2 = np.loadtxt(inputsdir+'/mesh_hole2.dat')
     holes = True
+
+    path = matplotlib.path.Path(np.column_stack([mesh_hole1[:,0],mesh_hole1[:,1]]))
+    inhole1 = path.contains_points(np.column_stack([xgrid.flatten(),ygrid.flatten()]))
+    inhole1 = inhole1.reshape(len(y),len(x))
+    path = matplotlib.path.Path(np.column_stack([mesh_hole2[:,0],mesh_hole2[:,1]]))
+    inhole2 = path.contains_points(np.column_stack([xgrid.flatten(),ygrid.flatten()]))
+    inhole2 = inhole2.reshape(len(y),len(x))
+    del path
   except:
     holes = False
 
@@ -533,31 +541,26 @@ def pvtu_timeseries_grid(x,y,DIR,fileprefix,variables,inputsdir,layer='surface',
     pvtufile = '{0}{2:0{1}d}{3}'.format(fileprefix,numfilelen,t,'.pvtu')
     if debug:
       print "Loading file "+pvtufile
+      
     # Get data
-
     data = pvtu_file(DIR+pvtufile,variables)
     surf = data[data[freesurfacevar] != 0]
     del data
     # If first timestep, set up output variable name
     if i==0:
-      varnames = list(data.dtype.names)
+      varnames = list(surf.dtype.names)
       varnames.remove('Node Number')
       types = []
       for var in varnames:
         types.append(np.float64)
       datagrid = np.zeros([len(y),len(x),t2-t1+1], dtype=zip(varnames,types)) 
+      del types
 
     ind = np.where(mesh_extent_x[:,t-1] != 0)
     path = matplotlib.path.Path(np.column_stack([mesh_extent_x[:,t-1],mesh_extent_y[:,t-1]]))
     inmesh = path.contains_points(np.column_stack([xgrid.flatten(),ygrid.flatten()]))
     inmesh = inmesh.reshape(len(y),len(x))
-    if holes:
-      path = matplotlib.path.Path(np.column_stack([mesh_hole1[:,0],mesh_hole1[:,1]]))
-      inhole1 = path.contains_points(np.column_stack([xgrid.flatten(),ygrid.flatten()]))
-      inhole1 = inhole1.reshape(len(y),len(x))
-      path = matplotlib.path.Path(np.column_stack([mesh_hole2[:,0],mesh_hole2[:,1]]))
-      inhole2 = path.contains_points(np.column_stack([xgrid.flatten(),ygrid.flatten()]))
-      inhole2 = inhole2.reshape(len(y),len(x))
+    del path
 
     for var in varnames:
       datagrid[var][:,:,i] = griddata((surf['x'],surf['y']),surf[var],(xgrid,ygrid))
@@ -566,8 +569,8 @@ def pvtu_timeseries_grid(x,y,DIR,fileprefix,variables,inputsdir,layer='surface',
         datagrid[var][inhole1,i] = float('nan')
         datagrid[var][inhole2,i] = float('nan')   
 
-    del surf
-
+    del surf,pvtufile,inmesh,ind
+    
   return datagrid
 
 def pvtu_timeseries_flowline(x,y,DIR,fileprefix,variables,inputsdir='none',layer='surface',debug=False,t1=1,t2=np.Inf):
