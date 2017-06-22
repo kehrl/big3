@@ -425,11 +425,13 @@ def pvtu_file(file,variables,reader='none',returnreader=False):
       for opt in opts:
         varnames.append(opt)
         types.append(np.float64)
+      del opt, opts
     elif var == 'vsurfini':
       opts = ['vsurfini 1','vsurfini 2','vsurfini']
       for opt in opts:
         varnames.append(opt)
         types.append(np.float64)
+      del opt, opts
     else:
       types.append(np.float64)
       varnames.append(var)
@@ -481,7 +483,7 @@ def pvtu_file(file,variables,reader='none',returnreader=False):
     os.chdir(cwd)
   
   vtudata.ReleaseData()
-  del ind,var1,var2,var3,ind1,ind2,ind3,varnames,vtudata,data,x,y,z,var,types,opts,variables
+  del ind,var1,var2,var3,ind1,ind2,ind3,varnames,vtudata,data,x,y,z,var,types,variables
   del n
 
   if returnreader:
