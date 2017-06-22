@@ -42,7 +42,7 @@ ygrid = np.arange(-2583000,-2552000,dx)
 dists_eul = np.array([-2,-5,-10,-15,-20,-30])*1e3
 
 # Get terminus position along flowline
-print "Loading terminus positions"
+print "Loading terminus positions..."
 terminus_val,terminus_time = icefrontlib.distance_along_flowline(xflow,yflow,dist,glacier,datatypes=['WV','Landsat8','TSX'])
 
 # Get data for comparison
@@ -50,6 +50,7 @@ terminus_val,terminus_time = icefrontlib.distance_along_flowline(xflow,yflow,dis
 #zs_val,zs_time = zslib.dem_along_flowline(xflow,yflow,glacier)
 
 # Find total number of timesteps, if not specified
+print "Loading model (flowline, grid, and grounding lines).."
 if t2 == 'none':
   model_flow = elmerreadlib.pvtu_timeseries_flowline(xflow,yflow,DIRM+'mesh2d/',runname,\
         ['velocity'],inputsdir=DIRM+'inputs/',layer='surface',debug=True)
@@ -60,22 +61,25 @@ else:
   model_flow = elmerreadlib.pvtu_timeseries_flowline(xflow,yflow,DIRM+'mesh2d/',runname,\
         ['velocity'],DIRM+'inputs/',layer='surface',debug=True,t2=int(t2))
   model_grid = elmerreadlib.pvtu_timeseries_grid(xgrid,ygrid,DIRM+'mesh2d/',runname,\
-        ['velocity'],DIRM+'inputs/',layer='surface',debug=True,t2=int(2))
-  model_gl = elmerreadlib.pvtu_timeseries_grounding_line(DIRM+'mesh2d/',runname,debug=True,t2=int(2))
+        ['velocity'],DIRM+'inputs/',layer='surface',debug=True,t2=int(t2))
+  model_gl = elmerreadlib.pvtu_timeseries_grounding_line(DIRM+'mesh2d/',runname,debug=True,t2=int(t2))
 
 # Get mesh extent files
+print "Getting mesh info..."
 mesh_extent_x = np.loadtxt(DIRM+'inputs/mesh_timeseries_x.dat')
 mesh_extent_y = np.loadtxt(DIRM+'inputs/mesh_timeseries_y.dat')
 mesh_hole1 = np.loadtxt(DIRM+'inputs/mesh_hole1.dat')
 mesh_hole2 = np.loadtxt(DIRM+'inputs/mesh_hole2.dat')
 
 # Get model time
+print "Getting model time..."
 fid = open(DIRM+'mesh_info.txt','r')
 lines = fid.readlines()
 date1 = lines[1][7:-1]
 fid.close()
 model_time = datelib.date_to_fracyear(int(date1[0:4]),int(date1[4:6]),int(date1[6:8]))+((np.arange(0,np.shape(model_flow)[1])-1)/365.25)
     
+print "Getting model results at sample points..."    
 vel_model = np.zeros([len(model_time),len(dists_eul)])
 zs_model = np.zeros([len(model_time),len(dists_eul)])
 for i in range(0,len(dists_eul)):
@@ -84,7 +88,7 @@ for i in range(0,len(dists_eul)):
     vel_model[j,i] = model_flow['velocity'][ind,j]
     zs_model[j,i] = model_flow['z'][ind,j]    
 
-
+print "Making plots..."
 cx = cubehelix.cmap(start=1.0,rot=-1.1,reverse=True,minLight=0.05,sat=2)
 colors = ['r','b','g','limegreen','gold','k']
 
