@@ -691,7 +691,6 @@ def pvtu_timeseries_grounding_line(DIR,fileprefix,debug=False,t1=1,t2=np.Inf):
         GLs[var][:,i] = float('nan')
 
     ind = np.where(surf['groundedmask'] == 0)
-    print np.shape(surf['x'][ind].flatten())
     GLs['x'][0:len(surf['x'][ind].flatten()),i] = surf['x'][ind].flatten()
     GLs['y'][0:len(surf['y'][ind].flatten()),i] = surf['y'][ind].flatten()
 

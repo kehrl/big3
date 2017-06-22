@@ -1,7 +1,7 @@
 import elmerreadlib, glaclib, vellib, zslib, datelib, icefrontlib, matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
-import argparse, os, cubehelix, matplotlib
+import argparse, os, matplotlib, sys, cubehelix
 
 
 ##########
@@ -19,6 +19,8 @@ parser.add_argument("-runname",dest="runname",required = False,
         help = "runname in mesh2d directory (default = 'terminusdriven'.")
 parser.add_argument("-t2",dest="t2",required = False, default='none',
         help = "runname in mesh2d directory (default = 'terminusdriven'.")
+
+args, _ = parser.parse_known_args(sys.argv)
 
 glacier = args.glacier
 meshname = args.mesh
@@ -42,8 +44,8 @@ dists_eul = np.array([-2,-5,-10,-15,-20,-30])*1e3
 terminus_val,terminus_time = icefrontlib.distance_along_flowline(xflow,yflow,dist,glacier,datatypes=['WV','Landsat8','TSX'])
 
 # Get data for comparison
-vel_val,vel_time,vel_term = vellib.velocity_along_flowline(xflow,yflow,dist,glacier)
-zs_val,zs_time = zslib.dem_along_flowline(xflow,yflow,glacier)
+#vel_val,vel_time,vel_term = vellib.velocity_along_flowline(xflow,yflow,dist,glacier)
+#zs_val,zs_time = zslib.dem_along_flowline(xflow,yflow,glacier)
 
 # Find total number of timesteps, if not specified
 if t2 == 'none':
@@ -135,7 +137,7 @@ for i in range(1,len(model_time)):
   plt.plot(mesh_extent_x[ind,i],mesh_extent_y[ind,i],'k',linewidth=0.75)
   for j in range(0,len(dists_eul)):
     ind = np.argmin(abs(dists_eul[j]-dist))
-    plt.plot(x[ind],y[ind],'o',color=colors[j],mec='k',mew=0.5)
+    plt.plot(xflow[ind],yflow[ind],'o',color=colors[j],mec='k',mew=0.5)
   plt.xlim([xgrid[0],xgrid[-1]])
   plt.ylim([ygrid[0],ygrid[-1]])
   plt.xticks([])
