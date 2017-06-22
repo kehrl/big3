@@ -1,4 +1,4 @@
-import elmerreadlib, glaclib, vellib, zslib, datelib, icefrontlib, matplotlib
+import elmerreadlib, glaclib, vellib, zslib, datelib, icefrontlib
 import matplotlib.pyplot as plt
 import numpy as np
 import argparse, os, matplotlib, sys, cubehelix
@@ -179,10 +179,10 @@ for i in range(1,len(model_time)):
   plt.subplot(gs[2:4,1])
   ax = plt.gca()
   for j in range(0,len(dists_eul)):
-    plt.plot(model_time[0:i+1],vel_model[0:i+1,j]/365.25,color=colors[j],label='H{0:02d}'.format(int(-1*dists_eul[j]/1e3)))
     #ind = np.where(vel_time < model_time[i+1])
     ind = np.argmin(abs(dists_eul[j]-dist))
-    plt.plot(vel_time,vel_val[ind,:]/365.25,'o',color=colors[j],mec='k',mew=0.5)
+    plt.plot(vel_time,vel_val[ind,:]/365.25,'o',color=colors[j],mec='k',mew=0.5,markersize=2)
+    plt.plot(model_time[0:i+1],vel_model[0:i+1,j]/365.25,color=colors[j],label='H{0:02d}'.format(int(-1*dists_eul[j]/1e3)))
   plt.xticks(np.arange(2008,2016,.5))
   plt.xlim([model_time[1],model_time[-1]])
   plt.yticks(np.arange(5,30,5))
@@ -199,8 +199,8 @@ for i in range(1,len(model_time)):
     #plt.plot(vel_time,vel_val[:,j]/365.25,'o',color=colors[j],mec='k',mew=0.5)
   plt.xticks(np.arange(2008,2016,.5))
   plt.xlim([model_time[1],model_time[-1]])
-  plt.yticks(np.arange(-20,20,10))
-  plt.ylim([-20,20])
+  plt.yticks(np.arange(-50,50,25))
+  plt.ylim([-50,20])
   plt.ylabel('Elevation (m)',fontsize=10,fontname='Arial')
   x_formatter = matplotlib.ticker.ScalarFormatter(useOffset=False)
   ax.xaxis.set_major_formatter(x_formatter)
