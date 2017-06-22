@@ -48,14 +48,14 @@ xgrid = np.arange(278000,313000,dx)
 ygrid = np.arange(-2583000,-2552000,dx)
 
 # Points for sampling
-dists_eul = np.array([-2,-5,-10,-15,-20,-30])*1e3
+dists_eul = np.array([-2,-5,-10,-15,-20])*1e3
 
 # Get terminus position along flowline
 print "Loading terminus positions..."
 terminus_val,terminus_time = icefrontlib.distance_along_flowline(xflow,yflow,dist,glacier,datatypes=['WV','Landsat8','TSX'])
 
 # Get data for comparison
-#vel_val,vel_time,vel_term = vellib.velocity_along_flowline(xflow,yflow,dist,glacier)
+vel_val,vel_time,vel_term = vellib.velocity_along_flowline(xflow,yflow,dist,glacier)
 #zs_val,zs_time = zslib.dem_along_flowline(xflow,yflow,glacier)
 
 # Find total number of timesteps, if not specified
@@ -97,7 +97,7 @@ for i in range(0,len(dists_eul)):
   indy = np.argmin(abs(yflow[ind]-ygrid))
   for j in range(0,len(model_time)):
     vel_model[j,i] = model_grid['velocity'][indy,indx,j]
-    zs_model[j,i] = model_grid['z'][indy,indx,j]    
+    zs_model[j,i] = model_grid['z'][indy,indx,j] 
 
 print "Making plots..."
 cx = cubehelix.cmap(start=1.0,rot=-1.1,reverse=True,minLight=0.05,sat=2)
@@ -147,8 +147,9 @@ for i in range(1,len(model_time)):
   plt.subplot(gs[3:6,0])
   ax = plt.gca()
   if i > 0:
-    p = plt.imshow((model_grid['z'][:,:,i]-model_grid['z'][:,:,i-1])*100,extent=[np.min(xgrid),np.max(xgrid),\
-       np.min(ygrid),np.max(ygrid)],origin='lower',cmap='RdBu_r',clim=[-60,60])
+    diff = (model_grid['z'][:,:,i]-model_grid['z'][:,:,i-1])
+    p = plt.imshow(diff*100,extent=[np.min(xgrid),np.max(xgrid),\
+       np.min(ygrid),np.max(ygrid)],origin='lower',cmap='RdBu_r',clim=[-15,15])
   plt.plot(np.r_[mesh_hole1[:,0],mesh_hole1[0,0]],np.r_[mesh_hole1[:,1],mesh_hole1[0,1]],'k',linewidth=0.75)
   plt.plot(np.r_[mesh_hole2[:,0],mesh_hole2[0,0]],np.r_[mesh_hole2[:,1],mesh_hole2[0,1]],'k',linewidth=0.75)
   ind = np.where(mesh_extent_x[:,i] != 0)[0]
@@ -161,7 +162,7 @@ for i in range(1,len(model_time)):
   plt.xticks([])
   plt.yticks([])
   cbaxes = fig.add_axes([0.325, 0.49, 0.09, 0.02]) 
-  cb = plt.colorbar(p,cax=cbaxes,orientation='horizontal',ticks=[-50,0,50]) 
+  cb = plt.colorbar(p,cax=cbaxes,orientation='horizontal',ticks=[-10,0,10]) 
   ax.text(xmin+0.77*(xmax-xmin),ymin+0.76*(ymax-ymin),'dh/dt',fontsize=8)
   ax.text(xmin+0.74*(xmax-xmin),ymin+0.68*(ymax-ymin),'(cm d$^{-1}$)',fontsize=8)
   cb.ax.tick_params(labelsize=8)
@@ -169,21 +170,38 @@ for i in range(1,len(model_time)):
   plt.subplot(gs[0:2,1])
   ax = plt.gca()
   plt.plot(terminus_time,terminus_val/1e3,'k')
-  plt.xticks(np.arange(2008,2016))
+  plt.xticks(np.arange(2008,2016,.5))
   ax.set_xticklabels([])
   plt.xlim([model_time[1],model_time[-1]])
   plt.ylim([-3,3])
   plt.ylabel('Terminus (km)',fontsize=10,fontname='Arial')
   
-  plt.subplot(gs[2:,1])
+  plt.subplot(gs[2:4,1])
   ax = plt.gca()
   for j in range(0,len(dists_eul)):
     plt.plot(model_time[0:i+1],vel_model[0:i+1,j]/365.25,color=colors[j],label='H{0:02d}'.format(int(-1*dists_eul[j]/1e3)))
-  #plt.xticks(np.arange(2008,2016,.5))
+    #ind = np.where(vel_time < model_time[i+1])
+    ind = np.argmin(abs(dists_eul[j]-dist))
+    plt.plot(vel_time,vel_val[ind,:]/365.25,'o',color=colors[j],mec='k',mew=0.5)
+  plt.xticks(np.arange(2008,2016,.5))
   plt.xlim([model_time[1],model_time[-1]])
   plt.yticks(np.arange(5,30,5))
-  plt.ylim([5,24])
+  plt.ylim([10,24])
   plt.ylabel('Velocity (km/yr)',fontsize=10,fontname='Arial')
+  x_formatter = matplotlib.ticker.ScalarFormatter(useOffset=False)
+  ax.xaxis.set_major_formatter(x_formatter)
+  
+  plt.subplot(gs[4:,1])
+  ax = plt.gca()
+  for j in range(0,2):
+    plt.plot(model_time[0:i+1],zs_model[0:i+1,j]-zs_model[0,j],color=colors[j],label='H{0:02d}'.format(int(-1*dists_eul[j]/1e3)))
+    #ind = np.where(vel_time < model_time[i+1])
+    #plt.plot(vel_time,vel_val[:,j]/365.25,'o',color=colors[j],mec='k',mew=0.5)
+  plt.xticks(np.arange(2008,2016,.5))
+  plt.xlim([model_time[1],model_time[-1]])
+  plt.yticks(np.arange(-20,20,10))
+  plt.ylim([-20,20])
+  plt.ylabel('Elevation (m)',fontsize=10,fontname='Arial')
   x_formatter = matplotlib.ticker.ScalarFormatter(useOffset=False)
   ax.xaxis.set_major_formatter(x_formatter)
 
@@ -193,7 +211,7 @@ for i in range(1,len(model_time)):
   plt.savefig(DIRO+'/{0:04g}'.format(i)+'.png',format='PNG',dpi=400)
   plt.close()
   
-fps=3
+fps=15
 ffmpeg_in_opt = "-r %i" % fps
 #ffmpeg_out_opt = "-r 5 -y -an -force_fps -s '%ix%i'" % newsize
 #-an disables audio
