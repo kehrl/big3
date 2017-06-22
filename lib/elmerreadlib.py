@@ -471,14 +471,14 @@ def pvtu_file(file,variables):
   
   ind = np.union1d(np.union1d(ind1,ind2),ind3)
   
-  data = data[ind]
+  data_final = data[ind]
 
   if tarfile:
     i = int(file[-9:-5])
     os.system('rm '+file[0:-10]+'*{0:04d}.'.format(i)+'*vtu')
     os.chdir(cwd)
   
-  del ind,var1,var2,var3,ind1,ind2,ind3,varnames,vtudata
+  del ind,var1,var2,var3,ind1,ind2,ind3,varnames,vtudata,data
 
   return data
 
