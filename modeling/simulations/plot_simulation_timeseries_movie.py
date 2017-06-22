@@ -30,6 +30,7 @@ t2 = args.t2
 DIRM=os.path.join(os.getenv("MODEL_HOME"),glacier+"/3D/"+meshname+"/")
 
 # Load flowline
+print "Loading flowline..."
 xflow,yflow,zb,dist = glaclib.load_flowline(glacier)
 
 # Create grid
@@ -41,6 +42,7 @@ ygrid = np.arange(-2583000,-2552000,dx)
 dists_eul = np.array([-2,-5,-10,-15,-20,-30])*1e3
 
 # Get terminus position along flowline
+print "Loading terminus positions"
 terminus_val,terminus_time = icefrontlib.distance_along_flowline(xflow,yflow,dist,glacier,datatypes=['WV','Landsat8','TSX'])
 
 # Get data for comparison
@@ -56,9 +58,10 @@ if t2 == 'none':
   model_gl = elmerreadlib.pvtu_timeseries_grounding_line(DIRM+'mesh2d/',runname,debug=True)
 else: 
   model_flow = elmerreadlib.pvtu_timeseries_flowline(xflow,yflow,DIRM+'mesh2d/',runname,\
-        ['velocity'],layer='surface',debug=True,t2=int(t2))
+        ['velocity'],DIRM+'inputs/',layer='surface',debug=True,t2=int(t2))
   model_grid = elmerreadlib.pvtu_timeseries_grid(xgrid,ygrid,DIRM+'mesh2d/',runname,\
         ['velocity'],DIRM+'inputs/',layer='surface',debug=True,t2=int(2))
+  model_gl = elmerreadlib.pvtu_timeseries_grounding_line(DIRM+'mesh2d/',runname,debug=True,t2=int(2))
 
 # Get mesh extent files
 mesh_extent_x = np.loadtxt(DIRM+'inputs/mesh_timeseries_x.dat')

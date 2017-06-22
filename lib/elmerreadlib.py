@@ -603,9 +603,9 @@ def pvtu_timeseries_flowline(x,y,DIR,fileprefix,variables,inputsdir='none',layer
   if freesurfacevar not in variables:
     variables.append(freesurfacevar)
 
-  if inputsdir != 'none':
-    mesh_extent_x = np.loadtxt(inputsdir+'/mesh_timeseries_x.dat')
-    mesh_extent_y = np.loadtxt(inputsdir+'/mesh_timeseries_y.dat')
+
+  mesh_extent_x = np.loadtxt(inputsdir+'/mesh_timeseries_x.dat')
+  mesh_extent_y = np.loadtxt(inputsdir+'/mesh_timeseries_y.dat')
 
   for i in range(0,t2-t1+1):
     t = i+t1
