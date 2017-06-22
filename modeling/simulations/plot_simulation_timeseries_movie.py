@@ -103,7 +103,7 @@ for i in range(1,len(model_time)):
      np.min(ygrid),np.max(ygrid)],origin='lower',cmap=cx,clim=[0,22])
   plt.contour(model_grid['velocity'][:,:,i]/365.25,extent=[np.min(xgrid),np.max(xgrid),\
      np.min(ygrid),np.max(ygrid)],origin='lower',levels=np.arange(0,25,5),cmap=cx,linewidths=1)
-  plt.plot(model_gl['x'][:,i],model_gl['y'][:,i],'wo',markersize=0.25)
+  plt.plot(model_gl['x'][:,i],model_gl['y'][:,i],'w.',markersize=1)
   plt.plot(np.r_[mesh_hole1[:,0],mesh_hole1[0,0]],np.r_[mesh_hole1[:,1],mesh_hole1[0,1]],'k',linewidth=0.75,zorder=2)
   plt.plot(np.r_[mesh_hole2[:,0],mesh_hole2[0,0]],np.r_[mesh_hole2[:,1],mesh_hole2[0,1]],'k',linewidth=0.75,zorder=2)
   ind = np.where(mesh_extent_x[:,i] != 0)[0]
@@ -170,8 +170,8 @@ for i in range(1,len(model_time)):
     plt.plot(model_time[0:i+1],vel_model[0:i+1,j]/365.25,color=colors[j],label='H{0:02d}'.format(int(-1*dists_eul[j]/1e3)))
   #plt.xticks(np.arange(2008,2016,.5))
   plt.xlim([model_time[1],model_time[-1]])
-  plt.ylim([5,25])
   plt.yticks(np.arange(5,30,5))
+  plt.ylim([5,24])
   plt.ylabel('Velocity (km/yr)',fontsize=10,fontname='Arial')
   x_formatter = matplotlib.ticker.ScalarFormatter(useOffset=False)
   ax.xaxis.set_major_formatter(x_formatter)
