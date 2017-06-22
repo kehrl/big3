@@ -381,7 +381,7 @@ def bufcount(filename):
 
     return lines
   
-def pvtu_file(file,variables):
+def pvtu_file(file,variables,reader='none',returnreader=False):
 
   if os.path.isfile(file):
     pass
@@ -397,13 +397,15 @@ def pvtu_file(file,variables):
   try:
     from paraview import numpy_support, simple
     # Load vtu file
-    reader = simple.XMLPartitionedUnstructuredGridReader(FileName=file)
+    if reader == 'none':
+      reader = simple.XMLPartitionedUnstructuredGridReader(FileName=file)
     vtudata = simple.servermanager.Fetch(reader) 
   except:
     try:
       import vtk
       from vtk.util import numpy_support
-      reader = vtk.vtkXMLPUnstructuredGridReader()
+      if reader == 'none':
+        reader = vtk.vtkXMLPUnstructuredGridReader()
       reader.SetFileName(file)
       reader.Update()
       vtudata = reader.GetOutput()
@@ -478,10 +480,13 @@ def pvtu_file(file,variables):
     os.system('rm '+file[0:-10]+'*{0:04d}.'.format(i)+'*vtu')
     os.chdir(cwd)
   
-  del ind,var1,var2,var3,ind1,ind2,ind3,varnames,vtudata,data,x,y,z,var,types,opts
-  del reader,n
+  del ind,var1,var2,var3,ind1,ind2,ind3,varnames,vtudata,data,x,y,z,var,types,opts,variables
+  del n
 
-  return data_final
+  if returnreader:
+    return data_final,reader
+  else:
+    return data_final
 
 def pvtu_timeseries_grid(x,y,DIR,fileprefix,variables,inputsdir,layer='surface',debug=False,t1=1,t2=np.Inf):
 
@@ -547,7 +552,9 @@ def pvtu_timeseries_grid(x,y,DIR,fileprefix,variables,inputsdir,layer='surface',
       print "Loading file "+pvtufile
       
     # Get data
-    data = pvtu_file(DIR+pvtufile,variables)
+    if i==0:
+      reader='none'
+    data,reader = pvtu_file(DIR+pvtufile,variables,reader=reader,returnreader=True)
     surf = data[data[freesurfacevar] != 0]
     del data
     # If first timestep, set up output variable name
