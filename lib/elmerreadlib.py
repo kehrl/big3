@@ -480,7 +480,7 @@ def pvtu_file(file,variables):
   
   del ind,var1,var2,var3,ind1,ind2,ind3,varnames,vtudata,data
 
-  return data
+  return data_final
 
 def pvtu_timeseries_grid(x,y,DIR,fileprefix,variables,inputsdir,layer='surface',debug=False,t1=1,t2=np.Inf):
 
