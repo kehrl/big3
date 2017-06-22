@@ -31,8 +31,12 @@ t2 = args.t2
 DIRM=os.path.join(os.getenv("MODEL_HOME"),glacier+"/3D/"+meshname+"/")
 DIRO=os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+"_"+meshname+"_movie")
 
+if not(os.path.isdir(DIRM)):
+  sys.exit("Mesh directory "+meshname+" does not exist for "+glacier+".")
+
 if not(os.path.isdir(DIRO)):
   os.makedirs(DIRO)
+
 
 # Load flowline
 print "Loading flowline..."
