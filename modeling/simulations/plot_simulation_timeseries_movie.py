@@ -160,7 +160,7 @@ for i in range(1,len(model_time)):
   plt.ylim([ygrid[0],ygrid[-1]])
   plt.xticks([])
   plt.yticks([])
-  cbaxes = fig.add_axes([0.32, 0.49, 0.09, 0.02]) 
+  cbaxes = fig.add_axes([0.325, 0.49, 0.09, 0.02]) 
   cb = plt.colorbar(p,cax=cbaxes,orientation='horizontal',ticks=[-50,0,50]) 
   ax.text(xmin+0.77*(xmax-xmin),ymin+0.76*(ymax-ymin),'dh/dt',fontsize=8)
   ax.text(xmin+0.74*(xmax-xmin),ymin+0.68*(ymax-ymin),'(cm d$^{-1}$)',fontsize=8)
