@@ -29,6 +29,10 @@ runname = args.runname
 t2 = args.t2
 
 DIRM=os.path.join(os.getenv("MODEL_HOME"),glacier+"/3D/"+meshname+"/")
+DIRO=os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+"_"+meshname+"_movie")
+
+if not(os.path.isdir(DIRO)):
+  os.makedirs(DIRO)
 
 # Load flowline
 print "Loading flowline..."
@@ -51,16 +55,16 @@ terminus_val,terminus_time = icefrontlib.distance_along_flowline(xflow,yflow,dis
 #zs_val,zs_time = zslib.dem_along_flowline(xflow,yflow,glacier)
 
 # Find total number of timesteps, if not specified
-print "Loading model (flowline, grid, and grounding lines).."
+print "Loading model (grid and grounding lines).."
 if t2 == 'none':
-  model_flow = elmerreadlib.pvtu_timeseries_flowline(xflow,yflow,DIRM+'mesh2d/',runname,\
-        ['velocity'],inputsdir=DIRM+'inputs/',layer='surface',debug=True)
+#  model_flow = elmerreadlib.pvtu_timeseries_flowline(xflow,yflow,DIRM+'mesh2d/',runname,\
+#        ['velocity'],inputsdir=DIRM+'inputs/',layer='surface',debug=True)
   model_grid = elmerreadlib.pvtu_timeseries_grid(xgrid,ygrid,DIRM+'mesh2d/',runname,\
         ['velocity'],DIRM+'inputs/',layer='surface',debug=True)
   model_gl = elmerreadlib.pvtu_timeseries_grounding_line(DIRM+'mesh2d/',runname,debug=True)
 else: 
-  model_flow = elmerreadlib.pvtu_timeseries_flowline(xflow,yflow,DIRM+'mesh2d/',runname,\
-        ['velocity'],DIRM+'inputs/',layer='surface',debug=True,t2=int(t2))
+#  model_flow = elmerreadlib.pvtu_timeseries_flowline(xflow,yflow,DIRM+'mesh2d/',runname,\
+#        ['velocity'],DIRM+'inputs/',layer='surface',debug=True,t2=int(t2))
   model_grid = elmerreadlib.pvtu_timeseries_grid(xgrid,ygrid,DIRM+'mesh2d/',runname,\
         ['velocity'],DIRM+'inputs/',layer='surface',debug=True,t2=int(t2))
   model_gl = elmerreadlib.pvtu_timeseries_grounding_line(DIRM+'mesh2d/',runname,debug=True,t2=int(t2))
@@ -78,16 +82,18 @@ fid = open(DIRM+'mesh_info.txt','r')
 lines = fid.readlines()
 date1 = lines[1][7:-1]
 fid.close()
-model_time = datelib.date_to_fracyear(int(date1[0:4]),int(date1[4:6]),int(date1[6:8]))+((np.arange(0,np.shape(model_flow)[1])-1)/365.25)
+model_time = datelib.date_to_fracyear(int(date1[0:4]),int(date1[4:6]),int(date1[6:8]))+((np.arange(0,np.shape(model_grid)[2])-1)/365.25)
     
 print "Getting model results at sample points..."    
 vel_model = np.zeros([len(model_time),len(dists_eul)])
 zs_model = np.zeros([len(model_time),len(dists_eul)])
 for i in range(0,len(dists_eul)):
   ind = np.argmin(abs(dists_eul[i]-dist))
+  indx = np.argmin(abs(xflow[ind]-xgrid))
+  indy = np.argmin(abs(yflow[ind]-ygrid))
   for j in range(0,len(model_time)):
-    vel_model[j,i] = model_flow['velocity'][ind,j]
-    zs_model[j,i] = model_flow['z'][ind,j]    
+    vel_model[j,i] = model_grid['velocity'][indy,indx,j]
+    zs_model[j,i] = model_grid['z'][indy,indx,j]    
 
 print "Making plots..."
 cx = cubehelix.cmap(start=1.0,rot=-1.1,reverse=True,minLight=0.05,sat=2)
@@ -104,7 +110,7 @@ for i in range(1,len(model_time)):
      np.min(ygrid),np.max(ygrid)],origin='lower',cmap=cx,clim=[0,22])
   plt.contour(model_grid['velocity'][:,:,i]/365.25,extent=[np.min(xgrid),np.max(xgrid),\
      np.min(ygrid),np.max(ygrid)],origin='lower',levels=np.arange(0,25,5),cmap=cx,linewidths=1)
-  plt.plot(model_gl['x'][:,i],model_gl['y'][:,i],'w.',markersize=1)
+  plt.plot(model_gl['x'][:,i],model_gl['y'][:,i],'w.',markersize=0.5)
   plt.plot(np.r_[mesh_hole1[:,0],mesh_hole1[0,0]],np.r_[mesh_hole1[:,1],mesh_hole1[0,1]],'k',linewidth=0.75,zorder=2)
   plt.plot(np.r_[mesh_hole2[:,0],mesh_hole2[0,0]],np.r_[mesh_hole2[:,1],mesh_hole2[0,1]],'k',linewidth=0.75,zorder=2)
   ind = np.where(mesh_extent_x[:,i] != 0)[0]
@@ -145,7 +151,7 @@ for i in range(1,len(model_time)):
   plt.plot(mesh_extent_x[ind,i],mesh_extent_y[ind,i],'k',linewidth=0.75)
   for j in range(0,len(dists_eul)):
     ind = np.argmin(abs(dists_eul[j]-dist))
-    plt.plot(xflow[ind],yflow[ind],'o',color=colors[j],mec='k',mew=0.5)
+    plt.plot(xflow[ind],yflow[ind],'o',color=colors[j],mec='k',mew=0.5,markersize=4)
   plt.xlim([xgrid[0],xgrid[-1]])
   plt.ylim([ygrid[0],ygrid[-1]])
   plt.xticks([])
@@ -180,7 +186,7 @@ for i in range(1,len(model_time)):
   plt.tight_layout()
   plt.subplots_adjust(hspace=0.1,wspace=0.25,top=0.98,right=0.98,left=0.02,bottom=0.08) 
   
-  plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/model_movie/"+'{0:04g}'.format(i)+'.png'),format='PNG',dpi=400)
+  plt.savefig(DIRO+'/{0:04g}'.format(i)+'.png',format='PNG',dpi=400)
   plt.close()
   
 fps=3
@@ -190,7 +196,7 @@ ffmpeg_in_opt = "-r %i" % fps
 ffmpeg_out_opt = "-y -an -c:v libx264 -pix_fmt yuv420p"
 #scale='iw/4:-1'"
 
-os.chdir(os.path.join(os.getenv("HOME"),"Bigtmp/model_movie/"))
+os.chdir(DIRO)
 outmov = glacier+'_'+meshname+'.mp4'
 #cmd = 'ffmpeg {0} -i %04d.jpg {1} {2}'.format(ffmpeg_in_opt, ffmpeg_out_opt, outmov)
 #cmd = 'ffmpeg {0} -pattern_type glob -i *_clip.png {1} {2}'.format(ffmpeg_in_opt, ffmpeg_out_opt, outmov)
