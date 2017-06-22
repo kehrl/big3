@@ -395,18 +395,18 @@ def pvtu_file(file,variables):
     sys.exit("File "+file+" does not exist.")  
 
   try:
-    import vtk
-    from vtk.util import numpy_support
-    reader = vtk.vtkXMLPUnstructuredGridReader()
-    reader.SetFileName(file)
-    reader.Update()
-    vtudata = reader.GetOutput()
+    from paraview import numpy_support, simple
+    # Load vtu file
+    reader = simple.XMLPartitionedUnstructuredGridReader(FileName=file)
+    vtudata = simple.servermanager.Fetch(reader) 
   except:
     try:
-      from paraview import numpy_support, simple  
-      # Load vtu file
-      reader = simple.XMLPartitionedUnstructuredGridReader(FileName=file)
-      vtudata = simple.servermanager.Fetch(reader)
+      import vtk
+      from vtk.util import numpy_support
+      reader = vtk.vtkXMLPUnstructuredGridReader()
+      reader.SetFileName(file)
+      reader.Update()
+      vtudata = reader.GetOutput()
     except:
       sys.exit("You do not have the necessary modules (vtk or paraview) to import vtu files.")
 
@@ -545,8 +545,6 @@ def pvtu_timeseries_grid(x,y,DIR,fileprefix,variables,inputsdir,layer='surface',
       for var in varnames:
         types.append(np.float64)
       datagrid = np.zeros([len(y),len(x),t2-t1+1], dtype=zip(varnames,types)) 
-      for var in [varnames]:
-        datagrid[var][:,:,i] = float('nan')
 
     ind = np.where(mesh_extent_x[:,t-1] != 0)
     path = matplotlib.path.Path(np.column_stack([mesh_extent_x[:,t-1],mesh_extent_y[:,t-1]]))
