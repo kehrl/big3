@@ -537,6 +537,7 @@ def pvtu_timeseries_grid(x,y,DIR,fileprefix,variables,inputsdir,layer='surface',
 
     data = pvtu_file(DIR+pvtufile,variables)
     surf = data[data[freesurfacevar] != 0]
+    del data
     # If first timestep, set up output variable name
     if i==0:
       varnames = list(data.dtype.names)
@@ -564,6 +565,8 @@ def pvtu_timeseries_grid(x,y,DIR,fileprefix,variables,inputsdir,layer='surface',
       if holes:
         datagrid[var][inhole1,i] = float('nan')
         datagrid[var][inhole2,i] = float('nan')   
+
+    del surf
 
   return datagrid
 
