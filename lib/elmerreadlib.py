@@ -397,7 +397,6 @@ def pvtu_file(file,variables,reader='none',returnreader=False):
   try:
     from paraview import numpy_support, simple
     # Load vtu file
-    print reader
     if reader == 'none':
       reader = simple.XMLPartitionedUnstructuredGridReader(FileName=file)
     vtudata = simple.servermanager.Fetch(reader) 
@@ -634,7 +633,9 @@ def pvtu_timeseries_flowline(x,y,DIR,fileprefix,variables,inputsdir='none',layer
       print "Loading file "+pvtufile
     # Get data
 
-    data = pvtu_file(DIR+pvtufile,variables)
+    if i==0:
+      reader = 'none'
+    data,reader = pvtu_file(DIR+pvtufile,variables,reader=reader,returnreader=True)
     surf = data[data[freesurfacevar] != 0]
     del data
     # If first timestep, set up output variable name
@@ -700,7 +701,9 @@ def pvtu_timeseries_grounding_line(DIR,fileprefix,debug=False,t1=1,t2=np.Inf):
       print "Loading file "+pvtufile
     # Get data
 
-    data = pvtu_file(DIR+pvtufile,variables)
+    if i==0:
+      reader = 'none'
+    data,reader = pvtu_file(DIR+pvtufile,variables,reader=reader,returnreader=True)
     surf = data[data[freesurfacevar] != 0]
     # If first timestep, set up output variable name
     if i==0:
@@ -716,7 +719,7 @@ def pvtu_timeseries_grounding_line(DIR,fileprefix,debug=False,t1=1,t2=np.Inf):
     GLs['x'][0:len(surf['x'][ind].flatten()),i] = surf['x'][ind].flatten()
     GLs['y'][0:len(surf['y'][ind].flatten()),i] = surf['y'][ind].flatten()
 
-
+    del ind,data,surf 
   return GLs
 
 
