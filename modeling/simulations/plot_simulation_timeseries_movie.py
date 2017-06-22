@@ -2,6 +2,7 @@ import elmerreadlib, glaclib, vellib, zslib, datelib, icefrontlib, matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import argparse, os, matplotlib, sys, cubehelix
+import subprocess
 
 
 ##########
@@ -181,3 +182,23 @@ for i in range(1,len(model_time)):
   
   plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/model_movie/"+'{0:04g}'.format(i)+'.png'),format='PNG',dpi=400)
   plt.close()
+  
+fps=3
+ffmpeg_in_opt = "-r %i" % fps
+#ffmpeg_out_opt = "-r 5 -y -an -force_fps -s '%ix%i'" % newsize
+#-an disables audio
+ffmpeg_out_opt = "-y -an -c:v libx264 -pix_fmt yuv420p"
+#scale='iw/4:-1'"
+
+os.chdir(os.path.join(os.getenv("HOME"),"Bigtmp/model_movie/"))
+outmov = glacier+'_'+meshname+'.mp4'
+#cmd = 'ffmpeg {0} -i %04d.jpg {1} {2}'.format(ffmpeg_in_opt, ffmpeg_out_opt, outmov)
+#cmd = 'ffmpeg {0} -pattern_type glob -i *_clip.png {1} {2}'.format(ffmpeg_in_opt, ffmpeg_out_opt, outmov)
+cmd = 'ffmpeg {0} -i %04d.png {1} {2}'.format(ffmpeg_in_opt, ffmpeg_out_opt, outmov)
+
+print cmd
+subprocess.call(cmd, shell=True)
+
+#cmd = 'rm *.png'
+#print cmd
+#subprocess.call(cmd, shell=True)
