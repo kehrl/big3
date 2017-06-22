@@ -397,6 +397,7 @@ def pvtu_file(file,variables,reader='none',returnreader=False):
   try:
     from paraview import numpy_support, simple
     # Load vtu file
+    print reader
     if reader == 'none':
       reader = simple.XMLPartitionedUnstructuredGridReader(FileName=file)
     vtudata = simple.servermanager.Fetch(reader) 
