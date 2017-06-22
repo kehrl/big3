@@ -399,6 +399,7 @@ def pvtu_file(file,variables,reader='none',returnreader=False):
     # Load vtu file
     if reader == 'none':
       reader = simple.XMLPartitionedUnstructuredGridReader(FileName=file)
+    reader.FileName = file
     vtudata = simple.servermanager.Fetch(reader) 
   except:
     try:
