@@ -480,6 +480,7 @@ def pvtu_file(file,variables,reader='none',returnreader=False):
     os.system('rm '+file[0:-10]+'*{0:04d}.'.format(i)+'*vtu')
     os.chdir(cwd)
   
+  vtudata.ReleaseData()
   del ind,var1,var2,var3,ind1,ind2,ind3,varnames,vtudata,data,x,y,z,var,types,opts,variables
   del n
 
