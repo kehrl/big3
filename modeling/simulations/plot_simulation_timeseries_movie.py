@@ -1,8 +1,11 @@
 import elmerreadlib, glaclib, vellib, zslib, datelib, icefrontlib
+import matplotlib
+#matplotlib.use('agg')
 import matplotlib.pyplot as plt
 import numpy as np
-import argparse, os, matplotlib, sys, cubehelix
+import argparse, os, sys, cubehelix
 import subprocess
+from pandas import rolling_median
 
 
 ##########
@@ -43,7 +46,7 @@ print "Loading flowline..."
 xflow,yflow,zb,dist = glaclib.load_flowline(glacier)
 
 # Create grid
-dx=100
+dx=200
 xgrid = np.arange(278000,313000,dx)
 ygrid = np.arange(-2583000,-2552000,dx)
 
@@ -97,7 +100,43 @@ for i in range(0,len(dists_eul)):
   indy = np.argmin(abs(yflow[ind]-ygrid))
   for j in range(0,len(model_time)):
     vel_model[j,i] = model_grid['velocity'][indy,indx,j]
-    zs_model[j,i] = model_grid['z'][indy,indx,j] 
+    zs_model[j,i] = model_grid['z'][indy,indx,j]
+  
+print "Calculating dhdt over an 11-day window and average 11-day velocities"
+
+model_grid_zs = np.reshape(model_grid['zs top'],[len(xgrid)*len(ygrid),len(model_time)])
+model_grid_dhdt = np.zeros_like(model_grid_zs)
+model_grid_dhdt[:,:] = float('nan')
+vel_model_11day = np.zeros_like(vel_model)
+vel_model_11day[:,:] = float('nan')
+
+threshold = 1
+for i in range(0,len(xgrid)*len(ygrid)):
+  med = rolling_median(model_grid_zs[i,:],window=11,center=True) 
+  diff = abs(med-model_grid_zs[i,:])
+  ind = diff > threshold
+  model_grid_zs[i,ind] = float('nan')
+
+for k in range(1,len(model_time)):
+  print k
+  ind = np.arange(k-5,k+5)
+  if ind[0] < 0:
+    ind = ind[ind > 0]
+  elif ind[-1] >= len(model_time):
+    ind = ind[ind < len(model_time)]
+  p = np.polyfit(model_time[ind],model_grid_zs[:,ind].T,1)/365.25
+  model_grid_dhdt[:,k] = p[0]
+  nans = np.where(np.isnan(p[0]))[0]
+  if (len(nans) > 0):
+    for j in nans:
+      nonnan = np.where(~(np.isnan(model_grid_zs[j,ind])))[0]
+      if len(nonnan) > 2:
+        p = np.polyfit(model_time[ind[nonnan]],model_grid_zs[j,ind[nonnan]].T,1)/365.25
+        model_grid_dhdt[j,k] = p[0]   
+  
+  vel_model_11day[k,:] = np.mean(vel_model[ind,:])
+  
+dhdt = np.reshape(model_grid_dhdt,[len(ygrid),len(xgrid),len(model_time)])
 
 print "Making plots..."
 cx = cubehelix.cmap(start=1.0,rot=-1.1,reverse=True,minLight=0.05,sat=2)
@@ -147,9 +186,8 @@ for i in range(1,len(model_time)):
   plt.subplot(gs[3:6,0])
   ax = plt.gca()
   if i > 0:
-    diff = (model_grid['z'][:,:,i]-model_grid['z'][:,:,i-1])
-    p = plt.imshow(diff*100,extent=[np.min(xgrid),np.max(xgrid),\
-       np.min(ygrid),np.max(ygrid)],origin='lower',cmap='RdBu_r',clim=[-15,15])
+    p = plt.imshow(dhdt[:,:,i]*100,extent=[np.min(xgrid),np.max(xgrid),\
+       np.min(ygrid),np.max(ygrid)],origin='lower',cmap='RdBu',clim=[-15,15])
   plt.plot(np.r_[mesh_hole1[:,0],mesh_hole1[0,0]],np.r_[mesh_hole1[:,1],mesh_hole1[0,1]],'k',linewidth=0.75)
   plt.plot(np.r_[mesh_hole2[:,0],mesh_hole2[0,0]],np.r_[mesh_hole2[:,1],mesh_hole2[0,1]],'k',linewidth=0.75)
   ind = np.where(mesh_extent_x[:,i] != 0)[0]
@@ -169,7 +207,7 @@ for i in range(1,len(model_time)):
   
   plt.subplot(gs[0:2,1])
   ax = plt.gca()
-  plt.plot(terminus_time,terminus_val/1e3,'k')
+  plt.plot(terminus_time,terminus_val/1e3,'ko',markersize=2)
   plt.xticks(np.arange(2008,2016,.5))
   ax.set_xticklabels([])
   plt.xlim([model_time[1],model_time[-1]])
@@ -182,7 +220,7 @@ for i in range(1,len(model_time)):
     #ind = np.where(vel_time < model_time[i+1])
     ind = np.argmin(abs(dists_eul[j]-dist))
     plt.plot(vel_time,vel_val[ind,:]/365.25,'o',color=colors[j],mec='k',mew=0.5,markersize=2)
-    plt.plot(model_time[0:i+1],vel_model[0:i+1,j]/365.25,color=colors[j],label='H{0:02d}'.format(int(-1*dists_eul[j]/1e3)))
+    plt.plot(model_time[0:i+1],vel_model_11day[0:i+1,j]/365.25,color=colors[j],label='H{0:02d}'.format(int(-1*dists_eul[j]/1e3)))
   plt.xticks(np.arange(2008,2016,.5))
   plt.xlim([model_time[1],model_time[-1]])
   plt.yticks(np.arange(5,30,5))
@@ -190,6 +228,7 @@ for i in range(1,len(model_time)):
   plt.ylabel('Velocity (km/yr)',fontsize=10,fontname='Arial')
   x_formatter = matplotlib.ticker.ScalarFormatter(useOffset=False)
   ax.xaxis.set_major_formatter(x_formatter)
+  ax.set_xticklabels([])
   
   plt.subplot(gs[4:,1])
   ax = plt.gca()
@@ -210,6 +249,7 @@ for i in range(1,len(model_time)):
   
   plt.savefig(DIRO+'/{0:04g}'.format(i)+'.png',format='PNG',dpi=400)
   plt.close()
+
   
 fps=15
 ffmpeg_in_opt = "-r %i" % fps
