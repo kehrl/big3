@@ -565,6 +565,7 @@ def pvtu_timeseries_grid(x,y,DIR,fileprefix,variables,inputsdir,layer='surface',
     if i==0:
       varnames = list(surf.dtype.names)
       varnames.remove('Node Number')
+      varnames.append('dh')
       types = []
       for var in varnames:
         types.append(np.float64)
@@ -578,7 +579,16 @@ def pvtu_timeseries_grid(x,y,DIR,fileprefix,variables,inputsdir,layer='surface',
     del path
 
     for var in varnames:
-      datagrid[var][:,:,i] = griddata((surf['x'],surf['y']),surf[var],(xgrid,ygrid))
+      if var == 'dh':
+        if i > 0:
+          z_old = griddata((surf_last['x'],surf_last['y']),surf_last['z'],(surf['x'],surf['y']))
+          dh = surf['z']-z_old
+          datagrid[var][:,:,i] = griddata((surf['x'],surf['y']),dh,(xgrid,ygrid))
+          del surf_last
+        surf_last = np.array(surf)
+      else:
+        datagrid[var][:,:,i] = griddata((surf['x'],surf['y']),surf[var],(xgrid,ygrid))
+      
       datagrid[var][~inmesh,i] = float('nan')
       if holes:
         datagrid[var][inhole1,i] = float('nan')
