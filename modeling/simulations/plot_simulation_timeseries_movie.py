@@ -118,7 +118,6 @@ for i in range(0,len(xgrid)*len(ygrid)):
   model_grid_zs[i,ind] = float('nan')
 
 for k in range(1,len(model_time)):
-  print k
   ind = np.arange(k-5,k+5)
   if ind[0] < 0:
     ind = ind[ind > 0]
@@ -130,11 +129,11 @@ for k in range(1,len(model_time)):
   if (len(nans) > 0):
     for j in nans:
       nonnan = np.where(~(np.isnan(model_grid_zs[j,ind])))[0]
-      if len(nonnan) > 2:
+      if len(nonnan) > 5:
         p = np.polyfit(model_time[ind[nonnan]],model_grid_zs[j,ind[nonnan]].T,1)/365.25
         model_grid_dhdt[j,k] = p[0]   
   
-  vel_model_11day[k,:] = np.mean(vel_model[ind,:])
+  vel_model_11day[k,:] = np.mean(vel_model[ind,:],axis=0)
   
 dhdt = np.reshape(model_grid_dhdt,[len(ygrid),len(xgrid),len(model_time)])
 
@@ -207,7 +206,7 @@ for i in range(1,len(model_time)):
   
   plt.subplot(gs[0:2,1])
   ax = plt.gca()
-  plt.plot(terminus_time,terminus_val/1e3,'ko',markersize=2)
+  plt.plot(terminus_time,terminus_val/1e3,'ko-',markersize=2)
   plt.xticks(np.arange(2008,2016,.5))
   ax.set_xticklabels([])
   plt.xlim([model_time[1],model_time[-1]])
@@ -220,7 +219,7 @@ for i in range(1,len(model_time)):
     #ind = np.where(vel_time < model_time[i+1])
     ind = np.argmin(abs(dists_eul[j]-dist))
     plt.plot(vel_time,vel_val[ind,:]/365.25,'o',color=colors[j],mec='k',mew=0.5,markersize=2)
-    plt.plot(model_time[0:i+1],vel_model_11day[0:i+1,j]/365.25,color=colors[j],label='H{0:02d}'.format(int(-1*dists_eul[j]/1e3)))
+    plt.plot(model_time[0:i+1],vel_model[0:i+1,j]/365.25,color=colors[j],label='H{0:02d}'.format(int(-1*dists_eul[j]/1e3)))
   plt.xticks(np.arange(2008,2016,.5))
   plt.xlim([model_time[1],model_time[-1]])
   plt.yticks(np.arange(5,30,5))
