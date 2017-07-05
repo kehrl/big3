@@ -187,6 +187,7 @@ for i in range(1,len(model_time)):
   if i > 0:
     p = plt.imshow(dhdt[:,:,i]*100,extent=[np.min(xgrid),np.max(xgrid),\
        np.min(ygrid),np.max(ygrid)],origin='lower',cmap='RdBu',clim=[-15,15])
+  plt.plot(model_gl['x'][:,i],model_gl['y'][:,i],'w.',markersize=0.5)
   plt.plot(np.r_[mesh_hole1[:,0],mesh_hole1[0,0]],np.r_[mesh_hole1[:,1],mesh_hole1[0,1]],'k',linewidth=0.75)
   plt.plot(np.r_[mesh_hole2[:,0],mesh_hole2[0,0]],np.r_[mesh_hole2[:,1],mesh_hole2[0,1]],'k',linewidth=0.75)
   ind = np.where(mesh_extent_x[:,i] != 0)[0]
