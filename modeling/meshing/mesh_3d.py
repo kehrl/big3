@@ -227,7 +227,7 @@ if timeseries == True:
         success = True
     if success == False:
       year,month,day = datelib.fracyear_to_date(time1+i*dt)
-      sys.exit('Unsuccessful generation of mesh for date '+str(year)+str(month)+int(np.round(day))+', timesetep '+str(i))
+      sys.exit('Unsuccessful generation of mesh for date '+str(year)+str(month)+str(int(np.round(day)))+', timesetep '+str(i))
     
     os.system("rm mesh2d.geo")
     
