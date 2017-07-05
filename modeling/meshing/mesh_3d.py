@@ -281,7 +281,8 @@ fidsmb.write('{}\n{}\n'.format(len(xt2m),len(yt2m)))
 for i in range(0,len(xt2m)):
   for j in range(0,len(yt2m)):
     fidt2m.write('{0} {1} {2}\n'.format(xt2m[i],yt2m[j],t2m[j,i]))
-    fidsmb.write('{0} {1} {2}\n'.format(xt2m[i],yt2m[j],smb[j,i]))
+    # Divide by rho_i to get to height value for model input
+    fidsmb.write('{0} {1} {2}\n'.format(xt2m[i],yt2m[j],smb[j,i]/rho_i))
 fidt2m.close()
 fidsmb.close()
  
