@@ -1673,7 +1673,7 @@ CONTAINS
           minheights(k) = partminheights(j)
           NoNearest(k) = .FALSE.
           
-          interped(:,k) = partinterped(:,j)
+          IF(PRESENT(Variables)) interped(:,k) = partinterped(:,j)
         END IF
       END DO
       
