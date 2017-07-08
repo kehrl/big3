@@ -125,7 +125,7 @@ def racmo_grid(xmin,xmax,ymin,ymax,variable,epsg=3413,maskvalues='ice'):
   
   return xrac_subset,yrac_subset,var_subset,time
 
-def racmo_interpolate_to_cartesiangrid(x,y,variable,epsg=3413,maskvalues='ice',timing='mean'):
+def racmo_interpolate_to_cartesiangrid(x,y,variable,epsg=3413,maskvalues='ice',timing='mean',time1=-np.Inf,time2=np.Inf):
 
 
   ''' 
@@ -164,10 +164,12 @@ def racmo_interpolate_to_cartesiangrid(x,y,variable,epsg=3413,maskvalues='ice',t
   lon = np.array(rec1.variables['lon'][:])
   var1 = np.array(rec1.variables[variable][:])
   daysfrom1950_1 = np.array(rec1.variables['time'][:])
+  # Load extra data if not variable zs
   if variable != 'zs':
     var2 = np.array(rec2.variables[variable][:])
     daysfrom1950_2 = np.array(rec2.variables['time'][:])
     var3 = np.array(rec3.variables[variable][:])
+    # Fix var3 units, which are different from var2 and var1
     if variable != 't2m':
       var3 = np.array(var3)/(60*60*24.0)
     days2015 = np.array(rec3.variables['time'][:])
@@ -209,45 +211,59 @@ def racmo_interpolate_to_cartesiangrid(x,y,variable,epsg=3413,maskvalues='ice',t
   elif maskvalues == 'both':
     ind = np.where((mask == 1) | (mask == 0))
   
-  # Make a KD-tree so we can do range searches fast
   xracflat = xrac[ind]
   yracflat = yrac[ind]
-  tree = cKDTree(np.column_stack([xracflat,yracflat]))
   
   # Make a gridded data set from the model output
   if timing == 'mean':
+    # Make a KD-tree so we can do range searches fast
+
+    tree = cKDTree(np.column_stack([xracflat,yracflat]))
+    
     vargrid = np.zeros([len(y),len(x)])
     varflat = np.mean(var,axis=0)[ind]
-    time = np.mean(time)
+    timesub = np.mean(time)
     
-  # For each point in the grid,
-  for i in range(ny):
-    for j in range(nx):
-      L = tree.query_ball_point( (x[j], y[i]), 10.e3 )
+    # For each point in the grid,
+    for i in range(ny):
+      for j in range(nx):
+        L = tree.query_ball_point( (x[j], y[i]), 10.e3 )
       
-      # Initialize the weights to 0
-      weights = 0.0
+        # Initialize the weights to 0
+        weights = 0.0
       
-      # For all the nearby model points,
-      for l in L:
-        xp = xracflat[l]
-        yp = yracflat[l]
+        # For all the nearby model points,
+        for l in L:
+          xp = xracflat[l]
+          yp = yracflat[l]
         
-        # find the distance to the current point and the
-        # appropriate weight
-        r = np.sqrt( (x[j] - xp)**2 + (y[i] - yp)**2 )
-        w = (10.e3/(r))**3
-        weights += w
+          # find the distance to the current point and the
+          # appropriate weight
+          r = np.sqrt( (x[j] - xp)**2 + (y[i] - yp)**2 )
+          w = (10.e3/(r))**3
+          weights += w
         
-        vargrid[i, j] += w * varflat[l]
+          vargrid[i, j] += w * varflat[l]
         
-      vargrid[i,j] /= weights
+        vargrid[i,j] /= weights
+  else:
+    xgrid,ygrid = np.meshgrid(x,y)
+    
+    ind2 = np.where((time >= time1) & (time <= time2))[0]
+    timesub = time[ind2]
+    vargrid = np.zeros([len(x),len(y),len(timesub)])
+    varsub = var[ind2,:,:]
+    
+    for k in range(0,len(timesub)):
+      varflat = varsub[k,:,:][ind]
+      vargrid[:,:,k] = scipy.interpolate.griddata((xracflat,yracflat),varflat, \
+          (xgrid.flatten(),ygrid.flatten())).reshape(len(x),len(y))
 
   if variable == 'smb' or variable == 'precip' or variable == 'runoff':
     # If variable is smb, convert kg m-2 s-1 to kg m-2 d-1
     vargrid=vargrid*(60*60*24.0)
   
-  return time,vargrid
+  return timesub,vargrid
 
   
 def racmo_at_pts(xpt,ypt,variable,filt_len='none',epsg=3413,method='nearest',maskvalues='ice'):

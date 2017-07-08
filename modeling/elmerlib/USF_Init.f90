@@ -787,6 +787,67 @@ FUNCTION Accumulation( Model, nodenumber, dumy) RESULT(a) !
     Return
 END
 
+FUNCTION TimeVaryingAccumulation( Model, nodenumber, dumy) RESULT(a) !
+!------------------------------------------------------------------!
+		USE types
+		USE DefUtils
+  	IMPLICIT NONE
+		TYPE(Model_t) :: Model
+  	REAL(kind=dp) :: dumy,a
+  	TYPE(Variable_t), POINTER :: TimestepVar
+  	INTEGER :: nodenumber, Timestep, TimestepLast=0
+  	REAL(kind=dp) :: LinearInterp
+  	CHARACTER(LEN=MAX_NAME_LEN) :: FileName
+  	
+  	REAL(kind=dp),ALLOCATABLE :: xx(:), yy(:), smbgrid(:,:)
+    REAL(kind=dp) :: x,y
+    
+    INTEGER :: nx, ny, i, j
+		
+    LOGICAL :: FirstTime=.TRUE.
+
+    SAVE xx,yy,smbgrid,nx,ny
+    SAVE FirstTime, TimestepLast
+
+    TimestepVar => VariableGet( Model % Variables,'Timestep')
+    Timestep = TimestepVar % Values(1)
+
+    IF ((FirstTime) .OR. (TimeStep /= TimeStepLast)) THEN
+			
+			!IF (.NOT. FirstTime) THEN
+			DEALLOCATE(xx,yy,smbgrid)
+			!END IF
+    	FirstTime=.False.
+
+      WRITE (FileName, "(A10,I4.4,A3)") "inputs/smb", Timestep,".xy"
+      print *,FileName
+
+      ! open file
+      OPEN(10,file=FileName)
+      READ(10,*) nx
+      READ(10,*) ny
+      ALLOCATE(xx(nx),yy(ny))
+      ALLOCATE(smbgrid(nx,ny))
+      DO i=1,nx
+        DO j=1,ny
+        	READ(10,*) xx(i),yy(j),smbgrid(i,j)
+        END DO
+			END DO
+			CLOSE(10)
+    
+      TimestepLast = Timestep
+    
+    END IF
+
+    ! position current point
+  	x = Model % Mesh % Nodes % x (nodenumber)
+  	y = Model % Mesh % Nodes % y (nodenumber)
+
+    a = LinearInterp(smbgrid, xx, yy, nx, ny, x, y)
+		
+    Return
+END
+
 !------------------------------------------------------------------!
 FUNCTION IceDivideTemperature( Model, nodenumber, dumy) RESULT(T) !
 !------------------------------------------------------------------!

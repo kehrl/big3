@@ -137,8 +137,7 @@ End
 Body Force 2
   Zs Top Accumulation Flux 1 = Real 0.0e0
   Zs Top Accumulation Flux 2 = Real 0.0e0
-  Zs Top Accumulation Flux 3 = Variable Coordinate 1, Coordinate 2
-    Real Procedure "USF_Init.so" "Accumulation"
+  Zs Top Accumulation Flux 3 = Equals Bdot
 End
 
 Body Force 3
@@ -184,7 +183,7 @@ Material 1
   Cauchy = Logical True
   
   Min Zs Top = Variable Coordinate 1
-    REAL procedure "USF_Init.so" "Bedrock"                        
+    REAL procedure "USF_Init.so" "Bedrock"                         
 
   !! Bed condition
   Min Zs Bottom = Variable Coordinate 1
@@ -218,7 +217,14 @@ Solver 2
   Variable = String "Beta"
 End
 
-Solver 3
+Solver 3 
+  Exec Solver = "Before TimeStep"
+  Equation = "InterpolateAccumulation"
+  Procedure = "USF_Accumulation.so" "InterpolateAccumulation"
+  Variable = String "Bdot"
+End
+
+Solver 4
   Exec Solver = Before All
   Equation = GroundedMaskIni
   Procedure = "ElmerIceSolvers" "GroundedSolver"
@@ -230,7 +236,7 @@ Solver 3
   !Bedrock Variable = String "Bedrock"
 End
 
-Solver 4
+Solver 5
   Equation = "NormalVector"
   Exec Solver = "Before TimeStep"
   Procedure = "ElmerIceSolvers" "ComputeNormalSolver"
@@ -241,7 +247,7 @@ Solver 4
   Optimize Bandwidth = Logical False
 End
 
-Solver 5
+Solver 6
   Equation = Fw
   Exec Solver = "Before TimeStep"
   Procedure = "ElmerIceSolvers" "GetHydrostaticLoads"
@@ -249,7 +255,7 @@ Solver 5
   Variable DOFs = 3
 End
 
-Solver 6
+Solver 7
   !Exec Solver = "Never"
   Equation = "Navier-Stokes"
   Stabilize = Logical True
@@ -292,11 +298,9 @@ Solver 6
 
   Calculate Loads = Logical True
   Exported Variable 1 = Flow Solution Loads[Fx:1 Fy:1 Fz:1 CEQ Residual:1]
-  !Exported Variable 2 DOFs = 1
-  !Exported Variable 2 = "Temp Homologous"
 End
 
-Solver 7
+Solver 8
   Equation = Distance
   Exec Solver = "Before Timestep"
   Procedure = "DistanceSolve" "DistanceSolver1"
@@ -310,7 +314,7 @@ Solver 7
   Steady State Convergence Tolerance = 1.0e-4
 End
 
-Solver 8
+Solver 9
   !Exec Solver = "Never"
   !Exec Solver = "After TimeStep"
   Equation = "Free Surface Top"
@@ -353,7 +357,7 @@ Solver 8
   Calculate Loads = Logical True
 End
 
-Solver 9
+Solver 10
   !Exec Solver = "Never"
   !Exec Solver = "After TimeStep"
   Equation = "Free Surface Sea/Shelf"
@@ -396,7 +400,7 @@ Solver 9
   Calculate Loads = Logical True
 End
 
-Solver 10
+Solver 11
   !Exec Solver = "Never"
   Exec Solver = "After Timestep"
   Procedure =  File "MeshSolve" "MeshSolver"
@@ -414,7 +418,7 @@ Solver 10
 End
 
 !! Compute the Mask 
-Solver 11
+Solver 12
   !Exec Solver = "After TimeStep"
   Equation = GroundedMask
   Procedure = "ElmerIceSolvers" "GroundedSolver"
@@ -424,7 +428,7 @@ Solver 11
   Toler = Real $groundtoler
 End
 
-Solver 12
+Solver 13
   Exec Solver = "After TimeStep"
   Equation = String "StressSolver"
   Procedure = "ElmerIceSolvers" "ComputeDevStress"          
@@ -449,7 +453,7 @@ Solver 12
   Optimize Bandwidth = Logical True
 End 
 
-Solver 13
+Solver 14
   Exec Solver = "After TimeStep"
   Equation = String "StrainSolver"
   Procedure =  File "ElmerIceSolvers" "ComputeStrainRate"
@@ -477,7 +481,7 @@ Solver 13
   Optimize Bandwidth = Logical True
 End
 
-Solver 14
+Solver 15
   Exec Solver = String "Never"
   Equation = "Save Mesh"
   Procedure = "SaveMesh" "SaveMesh"
@@ -488,7 +492,7 @@ Solver 14
   !Save All Timesteps = Logical True
 End
 
-Solver 15
+Solver 16
   Exec Solver = "Never"
   Equation = "Save BC Params"
   Procedure = "SaveData" "SaveBoundaryValues"
@@ -498,7 +502,7 @@ Solver 15
   Parameter 4 = String "Slip Coefficient 3"
 End
 
-Solver 16
+Solver 17
   Equation = "ResultOutput1"
   Procedure = File "ResultOutputSolve" "ResultOutputSolver"
   !Exec Solver = String "After All"
@@ -512,7 +516,7 @@ Solver 16
   Binary Output = True
 End
 
-Solver 17
+Solver 18
   !Exec Solver = "Never"
   Exec Solver = String "After Timestep"
   Equation = String "ReMesh"
@@ -538,7 +542,7 @@ Solver 17
   Minimum Height = Real $minheight
 End
 
-Solver 18
+Solver 19
   Equation = "Remesh Map Coordinate"
   Procedure = "StructuredMeshMapper" "StructuredMeshMapper"
   Exec Solver = "Never"
@@ -548,7 +552,7 @@ Solver 18
   Always Detect Structure = Logical True
 End
 
-Solver 19
+Solver 20
   Exec Solver = "Never"
   !Exec Solver = String "After Timestep"
   Equation = "ResultOutput2"
@@ -585,19 +589,19 @@ End
 !---------------------------------------------------
 
 Equation 1
-  Active Solvers(14) = 1 2 4 6 7 10 12 13 14 15 16 17 18 19
+  Active Solvers(14) = 1 2 3 5 7 8 11 13 14 15 16 17 18 19 20
   Flow Solution Name = String "Flow Solution"
   Convection = String Computed
 End
 
 Equation 2
-  Active Solvers(1) = 8
+  Active Solvers(1) = 9
   Flow Solution Name = String "Flow Solution"
   Convection = String Computed
 End
 
 Equation 3
-  Active Solvers(4) = 3 5 9 11
+  Active Solvers(4) = 4 6 10 12
   Flow Solution Name = String "Flow Solution"
   Convection = String Computed
 End
