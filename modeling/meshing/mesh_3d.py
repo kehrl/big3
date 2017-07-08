@@ -11,6 +11,7 @@ from subprocess import call
 from scipy.interpolate import RegularGridInterpolator
 import numpy as np
 import argparse
+import netCDF4
 
 
 
@@ -260,12 +261,51 @@ if ssa:
   
 # Set low resolution mesh (no reason to overkill mesh size for climate variables given 
 # spatial resolution of RACMO2.3).
-xt2m = np.arange(x[0],x[-1],1e3)
-yt2m = np.arange(y[0],y[-1],1e3)
+xt2m = np.arange(x[0],x[-1],0.5e3)
+yt2m = np.arange(y[0],y[-1],0.5e3)
   
 # Get average 2-m temperatures and surface mass balance
-timet2m,t2m = climlib.racmo_interpolate_to_cartesiangrid(xt2m,yt2m,'t2m',epsg=3413,maskvalues='both',timing='mean')
-timesmb,smb = climlib.racmo_interpolate_to_cartesiangrid(xt2m,yt2m,'smb',epsg=3413,maskvalues='both',timing='mean')
+timet2m,t2m = climlib.racmo_interpolate_to_cartesiangrid(xt2m,yt2m,'t2m',epsg=3413,\
+	maskvalues='both',timing='mean')
+timesmb,smb = climlib.racmo_interpolate_to_cartesiangrid(xt2m,yt2m,'smb',epsg=3413,\
+	maskvalues='ice',timing='mean')
+if timeseries == True:
+  #timesmb2,smb2 = climlib.racmo_interpolate_to_cartesiangrid(xt2m,yt2m,'smb',epsg=3413,\
+  #	maskvalues='both',timing='all',time1=time1,time2=time2)
+  xt2m_grid,yt2m_grid = np.meshgrid(xt2m,yt2m)
+  xrac,yrac,smb2_flat,timesmb2 = climlib.racmo_at_pts(xt2m_grid.flatten(),yt2m_grid.flatten(),\
+  	'smb',method='linear',filt_len=30.,maskvalues='ice')
+  smb2_grid = np.reshape(smb2_flat,[len(timesmb2),len(yt2m),len(xt2m)])
+  
+  smb2 = np.zeros([len(yt2m),len(xt2m),len(times)])
+  for i in range(0,len(xt2m)):
+    for j in range(0,len(yt2m)):
+      smb2[j,i,:] = np.interp(times,timesmb2,smb2_grid[:,j,i])
+  
+  for k in range(0,len(times)):
+    filesmb = ('{0}{1:04d}.xy').format("smb",k+1)
+    fidsmb = open(inputs+filesmb,"w")
+    fidsmb.write('{}\n{}\n'.format(len(xt2m),len(yt2m)))
+    for i in range(0,len(xt2m)):
+      for j in range(0,len(yt2m)):
+        # Divide by rho_i to convert from kg/m2/d to m/d and multiply by 365.25 to conver to m/yr
+        fidsmb.write('{0} {1} {2}\n'.format(xt2m[i],yt2m[j],smb2[j,i,k]/rho_i*365.25))
+    fidsmb.close()
+  del fidsmb,filesmb
+  
+  #smb2 = smb2/rho_i
+  #netfile = inputs+"smb.nc"
+  #rec = netCDF4.Dataset(netfile,"w",format='NETCDF4_CLASSIC')
+  #rec.createDimension('x',len(xt2m))
+  #xnet = rec.createVariable('x',np.float64,('x',)); xnet[:] = xt2m
+  #rec.createDimension('y',len(yt2m))
+  #ynet = rec.createVariable('y',np.float64,('y',)); ynet[:] = yt2m
+  #rec.createDimension('time',len(timesmb2))
+  #timenet = rec.createVariable('time',np.float64,('time',)); timenet[:] = timesmb2
+  #smbnet = rec.createVariable('smb',np.float64,('y','x','time'))
+  #rec.close()
+	
+	
 #ggrid = bedlib.geothermalflux_grid(xt2m,yt2m,model='davies',method='nearest')
 
 # Set maximum temperature to -1 deg C
@@ -281,8 +321,8 @@ fidsmb.write('{}\n{}\n'.format(len(xt2m),len(yt2m)))
 for i in range(0,len(xt2m)):
   for j in range(0,len(yt2m)):
     fidt2m.write('{0} {1} {2}\n'.format(xt2m[i],yt2m[j],t2m[j,i]))
-    # Divide by rho_i to get to height value for model input
-    fidsmb.write('{0} {1} {2}\n'.format(xt2m[i],yt2m[j],smb[j,i]/rho_i))
+    # Divide by rho_i to convert from kg/m2/d to m/d and multiply by 365.25 to conver to m/yr
+    fidsmb.write('{0} {1} {2}\n'.format(xt2m[i],yt2m[j],smb[j,i]/rho_i*365.25))
 fidt2m.close()
 fidsmb.close()
  
@@ -295,7 +335,7 @@ H = np.reshape(Hflat,[len(yt2m),len(xt2m)])
 del Hflat,f,xgrid,ygrid
   
 # Get 3D grid of temperatures  
-T = flowparameterlib.steadystate_vprofile(H,t2m,smb,levels=12)
+T = flowparameterlib.steadystate_vprofile(H,t2m,smb/rho_i*365.25,levels=12)
  
 fidT = open(inputs+"tsteady_icedivide.xyz", "w")
 fidT.write("{0}\n{1}\n{2}\n".format(len(xt2m), len(yt2m), len(T[0,0,:])))
