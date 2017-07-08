@@ -358,12 +358,12 @@ def main():
     ind_ave = np.where((xx > 302000) & (xx < 306000) & (yy < -2576000) & (yy > -2578000))
     ind = np.where((xx > 306000) & (yy < -2572000) & (yy > -2583000))
     beta_linear_lin[ind] = np.mean(beta_linear_lin[ind_ave])
-    ind = np.where(~(np.isnan(beta_weertman_lin)) & (xx > 306000))
+    ind = np.where((xx > 306000) & (yy < -2572000) & (yy > -2583000))
     beta_weertman_lin[ind] = np.mean(beta_weertman_lin[ind_ave])
   ind = np.where(~(np.isnan(beta_linear_lin)))
   beta_linear[ind] = beta_linear_lin[ind]
-  ind = np.where(np.isnan(beta_weertman_lin))
-  beta_weertman[ind] = -2.0e9
+  ind = np.where(~(np.isnan(beta_weertman_lin)))
+  beta_weertman[ind] = beta_weertman_lin[ind]
   del beta_linear_lin, beta_weertman_lin
   
   fidl = open(inputs+"beta_linear.xy",'w')
@@ -377,7 +377,6 @@ def main():
   fidl.close()
   fidw.close()
   del beta_linear, beta_weertman, u, x, y, fidl, fidw, xx, yy
-
 
   xgrid,ygrid,taubgrid = elmerreadlib.grid3d(bed,'taub',holes,extent)
   xgrid,ygrid,vmodgrid = elmerreadlib.grid3d(surf,'velocity',holes,extent)
