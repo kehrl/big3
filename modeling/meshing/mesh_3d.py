@@ -232,7 +232,7 @@ if timeseries == True:
     
     os.system("rm mesh2d.geo")
     
-    os.system("tar -czvf"+file_2d_temp+".tar.gz"+" "+file_2d_temp)
+    os.system("tar -czf"+file_2d_temp+".tar.gz"+" "+file_2d_temp)
     if i > 10:
       os.system("rm -r "+file_2d_temp)
 os.system("tar -czf mesh_gmsh.tar.gz *.msh")
@@ -291,6 +291,12 @@ if timeseries == True:
         # Divide by rho_i to convert from kg/m2/d to m/d and multiply by 365.25 to conver to m/yr
         fidsmb.write('{0} {1} {2}\n'.format(xt2m[i],yt2m[j],smb2[j,i,k]/rho_i*365.25))
     fidsmb.close()
+    if k == 0:
+      os.system('tar -cf '+inputs+'smb.tar -C '+inputs+' '+filesmb)
+    else:
+      os.system('tar -rf '+inputs+'smb.tar -C '+inputs+' '+filesmb)
+    os.system('rm '+inputs+filesmb)
+
   del fidsmb,filesmb
   
   #smb2 = smb2/rho_i
