@@ -56,7 +56,7 @@ slipcoefficient = args.slipcoefficient
 DIRS=os.path.join(os.getenv("CODE_HOME"),"big3/modeling/solverfiles/3D/")
 DIRM=os.path.join(os.getenv("MODEL_HOME"),glacier+"/3D/"+RES+"/")
 DIRR=os.path.join(DIRM+"mesh2d/simulation/")
-inputs=os.path.join(DIRM+"/inputs/")
+inputs=os.path.join(DIRM+"inputs/")
 
 # Check that solver file exists and remove the '.sif' at the end, if it's present
 if solverfile_in.endswith('.sif'):
@@ -137,6 +137,8 @@ if (solverfile_in == 'terminusdriven' or solverfile_in == 'checkmeshes'):
     if not(os.path.isdir('mesh{0:04d}'.format(i))):
       if os.path.isfile('mesh{0:04d}.tar.gz'.format(i)):
         os.system('tar -xzf mesh{0:04d}.tar.gz'.format(i))
+    if not(os.path.isfile(inputs+'smb{0:04d}.xy'.format(i))):
+      os.system('tar -xf '+inputs+'smb.tar -C '+inputs+' smb{0:04d}.xy'.format(i))
 
   import logging
   logging.basicConfig()
@@ -151,24 +153,28 @@ if (solverfile_in == 'terminusdriven' or solverfile_in == 'checkmeshes'):
     for file in files:
       if (file.endswith('.pvtu')) and (int(file[-9:-5]) > itmax):
         itmax = int(file[-9:-5])
-    print "itmax = "+str(itmax)
+    # print "itmax = "+str(itmax)
       
-    # First check to make sure we have adequate mesh files
+    # First check to make sure we have adequate mesh and smb files
     
     for i in range(itmax,itmax+25):
       if not(os.path.isdir('mesh{0:04d}'.format(i))):
         if os.path.isfile('mesh{0:04d}.tar.gz'.format(i)):
           os.system('tar -xzf mesh{0:04d}.tar.gz'.format(i))
+      if not(os.path.isfile(inputs+'smb{0:04d}.xy'.format(i))):
+        os.system('tar -xf '+inputs+'smb.tar -C '+inputs+' smb{0:04d}.xy'.format(i))
      
     # Now remove old mesh files and zip vtu files
     for i in range(1,itmax-1):
       if os.path.isdir('mesh{0:04d}'.format(i)):
         os.system('rm -r '+'mesh{0:04d}'.format(i))
-      if os.path.isfile('mesh2d/terminusdriven{0:04d}.pvtu'.format(i)) and not(os.path.isfile('mesh2d/terminusdriven{0:04d}.pvtu.tar.gz'.format(i))):
+      if os.path.isfile(inputs+'smb{0:04d}.xy'.format(i)):
+        os.system('rm '+inputs+'smb{0:04d}.xy'.format(i))
+      if os.path.isfile('mesh2d/terminusdriven{0:04d}.pvtu'.format(i)) and not(os.path.isfile('mesh2d/terminusdriven{0:04d}.pvtu.tar.gz'.format(i))):  
         os.chdir(DIRM+"mesh2d")
-        os.system('tar -czf '+'terminusdriven{0:04d}.pvtu.tar.gz '.format(i)+\
+        os.system('tar -czf terminusdriven{0:04d}.pvtu.tar.gz '.format(i)+\
                 'terminusdriven*{0:04d}.'.format(i)+'*vtu')
-        os.system('rm '+'terminusdriven*{0:04d}.'.format(i)+'*vtu')
+        os.system('rm terminusdriven*{0:04d}.'.format(i)+'*vtu')
         os.chdir(DIRM)
       
   job = sched.add_job(check_files,'interval',minutes=5)
