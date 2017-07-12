@@ -427,6 +427,11 @@ def pvtu_file(file,variables,reader='none',returnreader=False):
         varnames.append(opt)
         types.append(np.float64)
       del opt, opts
+    elif var.endswith('update'):
+      opts = [var+' 1',var+' 2',var+' 3']
+      for opt in opts:
+        varnames.append(opt)
+        types.append(np.float64)
     elif var == 'vsurfini':
       opts = ['vsurfini 1','vsurfini 2','vsurfini']
       for opt in opts:
@@ -464,6 +469,11 @@ def pvtu_file(file,variables,reader='none',returnreader=False):
       data['vsurfini 1'][:] = numpy_support.vtk_to_numpy(vtudata.GetPointData().GetArray('vsurfini 1'))
       data['vsurfini 2'][:] = numpy_support.vtk_to_numpy(vtudata.GetPointData().GetArray('vsurfini 2'))
       data['vsurfini'][:] = np.sqrt(data['vsurfini 1']**2+data['vsurfini 2']**2)
+    elif var.endswith('update'):
+      update = numpy_support.vtk_to_numpy(vtudata.GetPointData().GetArray(var))
+      data[var+' 1'] = update[:,0]
+      data[var+' 2'] = update[:,1]
+      data[var+' 3'] = update[:,2]
     else:
       data[var][:] = numpy_support.vtk_to_numpy(vtudata.GetPointData().GetArray(var))
   if 'taub' in varnames:

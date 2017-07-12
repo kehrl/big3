@@ -123,7 +123,7 @@ del fid1, fid2
 # Start zip/unzip process if wanted #
 #####################################
 
-if solverfile_in == 'terminusdriven':
+if solverfile_in.startswith('terminusdriven'):
   os.chdir(DIRM)
   
   for i in range(1,11):
@@ -179,7 +179,7 @@ if solverfile_in == 'terminusdriven':
 
 returncode = elmerrunlib.run_elmer(DIRM+solverfile_out+'.sif',n=partitions,email=True)
 
-if solverfile_in == 'terminusdriven':
+if solverfile_in.startswith('terminusdriven'):
   job.remove()
   print "Stopped unzipping/zipping mesh files and vtu."
   

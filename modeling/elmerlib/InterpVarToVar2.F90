@@ -1194,7 +1194,7 @@ CONTAINS
 
     SolverName='InterpolateUnfoundPointsNearest'
         
-    Debug = .FALSE.
+    Debug = .TRUE.
     Parallel = ParEnv % PEs > 1
 
     OldHeightVar => VariableGet( OldMesh % Variables, HeightName, &

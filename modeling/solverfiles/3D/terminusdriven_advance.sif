@@ -16,7 +16,9 @@ End
 Constants
   Water Density = Real $rhow  
   Buoyancy Use Basal Melt = Logical True
-  Bottom Surface Name = String "Zs Bottom"        
+  Bottom Surface Name = String "Zs Bottom"   
+  
+  Front Orientation(3) = Real 1.0 0.0 0.0     
 End
 
 !---------------------------------------------------
@@ -36,15 +38,12 @@ Simulation
   Timestep Intervals = {TimeSteps}
   Output Intervals = 1        
   Timestep Sizes = {TimeStepSize}
-  
-  !Restart File = "$name$.result"
-  !Restart Position = 1
 
   Initialize Dirichlet Conditions = Logical False  
   Steady State Max Iterations = 50
   Steady State Min Iterations = 1
 
-  Max Output Level = 4
+  Max Output Level = 50
 
   Output File = "$name$.result"
   Output Coordinates = Logical True
@@ -76,13 +75,22 @@ Body 2
   Initial Condition = 2
 End
 
-!! Upper surface
+!! Bottom surface
 Body 3
   Name = "free surface sea/ice-shelf"
   Equation = 3
   Body Force = 3
   Material = 1
   Initial Condition = 3
+End
+
+!! Calving front
+Body 4
+  Name = "calving front"
+  Equation = 4
+  Body Force = 4
+  Material = 1
+  Initial Condition = 4
 End
 
 !---------------------------------------------------
@@ -117,6 +125,9 @@ Initial Condition 3
   !  REAL procedure "USF_Init.so" "Bedrock"
 End
 
+! Calving front
+Initial Condition 4
+End
 
 !---------------------------------------------------
 !---------------- BODY FORCES ----------------------
@@ -136,9 +147,15 @@ Body Force 2
   Zs Top Accumulation Flux 3 = Equals Bdot
 End
 
+! Bottom surface forces
 Body Force 3
   Zs Bottom Accumulation = Real 0.0e0
 End
+
+! Calving front forces
+Body Force 4
+End
+
 
 !---------------------------------------------------
 !---------------- MATERIALS ------------------------
@@ -221,6 +238,17 @@ Solver 3
 End
 
 Solver 4
+  Equation = "NormalVector"
+  Exec Solver = "Before TimeStep"
+  Procedure = "ElmerIceSolvers" "ComputeNormalSolver"
+  Variable = String "Normal Vector"
+  Variable DOFs = 3
+
+  ComputeAll = Logical False
+  Optimize Bandwidth = Logical False
+End
+
+Solver 5
   Exec Solver = Before All
   Equation = GroundedMaskIni
   Procedure = "ElmerIceSolvers" "GroundedSolver"
@@ -232,17 +260,6 @@ Solver 4
   !Bedrock Variable = String "Bedrock"
 End
 
-Solver 5
-  Equation = "NormalVector"
-  Exec Solver = "Before TimeStep"
-  Procedure = "ElmerIceSolvers" "ComputeNormalSolver"
-  Variable = String "Normal Vector"
-  Variable DOFs = 3
-
-  ComputeAll = Logical False
-  Optimize Bandwidth = Logical False
-End
-
 Solver 6
   Equation = Fw
   Exec Solver = "Before TimeStep"
@@ -252,6 +269,20 @@ Solver 6
 End
 
 Solver 7
+  Equation = Distance
+  Exec Solver = "Before Timestep"
+  Procedure = "DistanceSolve" "DistanceSolver1"
+  Variable = "Distance"
+  Solver Timing = Logical True
+
+  Nonlinear System Max Iterations = 200
+  Nonlinear System Convergence Tolerance = 1.0e-5
+
+  Linear System Solver = Iterative
+  Steady State Convergence Tolerance = 1.0e-4
+End
+
+Solver 8
   !Exec Solver = "Never"
   Equation = "Navier-Stokes"
   Stabilize = Logical True
@@ -296,23 +327,59 @@ Solver 7
   Exported Variable 1 = Flow Solution Loads[Fx:1 Fy:1 Fz:1 CEQ Residual:1]
 End
 
-Solver 8
-  Equation = Distance
-  Exec Solver = "Before Timestep"
-  Procedure = "DistanceSolve" "DistanceSolver1"
-  Variable = "Distance"
-  Solver Timing = Logical True
-
-  Nonlinear System Max Iterations = 200
-  Nonlinear System Convergence Tolerance = 1.0e-5
-
-  Linear System Solver = Iterative
-  Steady State Convergence Tolerance = 1.0e-4
+Solver 9
+  Equation = "ResultOutput1"
+  Procedure = File "ResultOutputSolve" "ResultOutputSolver"
+  !Exec Solver = String "After All"
+  Exec Solver = String "After Timestep"
+  
+  Save Geometry IDs = True
+  !Save Boundaries Only = Logical True
+  Output File Name = File "$name""
+  Vtu Format = Logical True
+  Single Precision = True
+  Binary Output = True
 End
 
-Solver 9
+Solver 10
+  Exec Solver = "After TimeStep"
+  Equation = "Front Advance"
+  Procedure =  File "TerminusDriven_Advance.so" "FrontAdvance3D"
+  Variable = -dofs 3 "FrontAdvance"
+
+  Normal Vector Variable Name = String "Normal Vector"
+  Flow Solution Variable Name = String "Flow Solution"
+  Melt Variable Name = String "MeltRate"
+
+  !regions exceeding this gradient will be modified/checked
+  Front Gradient Threshold = Real 5.0
+  Front Projectability Epsilon = Real 1.0
+  Column Max Longitudinal Range = Real 350.0
+  Maximum Node Displacement = Real 1.0E4
+
+  Exported Variable 1 = "Tangled"
+End
+
+Solver 11
+  Exec Solver = "After TimeStep"
+  Equation = "Longitudinal Mesh Update"
+  Procedure =  File "MeshSolve" "MeshSolver"
+
+  Variable = Longitudinal Mesh Update
+  Variable DOFs = 3
+  Linear System Solver = Iterative
+  Linear System Iterative Method = BiCGStab
+  Linear System Max Iterations  = 500
+  Linear System Preconditioning = ILU1
+  Linear System Convergence Tolerance = 1.0e-12
+  Linear System Abort Not Converged = False
+  Nonlinear System Max Iterations = 1
+  Nonlinear System Convergence Tolerance = 1.0e-06
+End
+
+Solver 12
   !Exec Solver = "Never"
-  !Exec Solver = "After TimeStep"
+  Exec Solver = "After TimeStep"
   Equation = "Free Surface Top"
   Procedure =  "FreeSurfaceSolver" "FreeSurfaceSolver"
   Variable = "Zs Top"
@@ -351,11 +418,13 @@ Solver 9
   Update Exported Variables = Logical True
   Nonlinear Update Exported Variables = Logical True
   Calculate Loads = Logical True
+  
+  ALE Formulation = Logical True
 End
 
-Solver 10
+Solver 13
   !Exec Solver = "Never"
-  !Exec Solver = "After TimeStep"
+  Exec Solver = "After TimeStep"
   Equation = "Free Surface Sea/Shelf"
   Procedure =  "FreeSurfaceSolver" "FreeSurfaceSolver"
   Variable = "Zs Bottom"
@@ -394,16 +463,17 @@ Solver 10
   Update Exported Variables = Logical True
   Nonlinear Update Exported Variables = Logical True
   Calculate Loads = Logical True
+  
+  ALE Formulation = Logical True
 End
 
-Solver 11
-  !Exec Solver = "Never"
-  Exec Solver = "After Timestep"
-  Procedure =  File "MeshSolve" "MeshSolver"
+Solver 14
   Equation = "Vertical Mesh Update"
+  Exec Solver = "After Timestep"
+  Procedure =  File "MeshSolve1" "MeshSolver"
+
   Variable = Vertical Mesh Update
   Variable DOFs = 3
-  
   Linear System Solver = Iterative
   Linear System Iterative Method = BiCGStab
   Linear System Max Iterations  = 500
@@ -412,11 +482,10 @@ Solver 11
 
   Nonlinear System Max Iterations = 1
   Nonlinear System Convergence Tolerance = 1.0e-06
-  
 End
 
 !! Compute the Mask 
-Solver 12
+Solver 15
   !Exec Solver = "After TimeStep"
   Equation = GroundedMask
   Procedure = "ElmerIceSolvers" "GroundedSolver"
@@ -426,21 +495,22 @@ Solver 12
   Toler = Real $groundtoler
 End
 
-Solver 13
-  Exec Solver = "After TimeStep"
-  Equation = String "StressSolver"
-  Procedure = "ElmerIceSolvers" "ComputeDevStress"          
-  Variable = -nooutput "Sij"
-  Variable DOFs = 1
-  Exported Variable 1 = Stress[Sxx:1 Syy:1 Szz:1 Sxy:1 Syz:1 Sxz:1]
-  Exported Variable 1 DOFs = 6
+Solver 16
+  Exec Solver = "Never"
+!  !Exec Solver = "After TimeStep"
+!  Equation = String "StressSolver"
+!  Procedure = "ElmerIceSolvers" "ComputeDevStress"          
+!  Variable = -nooutput "Sij"
+!  Variable DOFs = 1
+!  Exported Variable 1 = Stress[Sxx:1 Syy:1 Szz:1 Sxy:1 Syz:1 Sxz:1]
+!  Exported Variable 1 DOFs = 6
   
-  Flow Solver Name = String "Flow Solution"
-  Stress Variable Name = String "Stress"
-  Linear System Solver = Direct
-  Linear System Direct Method =  mumps
-  mumps percentage increase working space = integer 60
-  Linear System Convergence Tolerance = 1.0E-06
+!  Flow Solver Name = String "Flow Solution"
+!  Stress Variable Name = String "Stress"
+!  Linear System Solver = Direct
+!  Linear System Direct Method =  mumps
+!  mumps percentage increase working space = integer 60
+!  Linear System Convergence Tolerance = 1.0E-06
   !Linear System Solver = "Iterative"
   !Linear System Iterative Method = "BiCGStab"
   !Linear System Max Iterations = 300
@@ -448,27 +518,27 @@ Solver 13
   !Linear System Abort Not Converged = False
   !Linear System Preconditioning = "ILU0"
   !Linear System Residual Output = 0
-  Optimize Bandwidth = Logical True
+!  Optimize Bandwidth = Logical True
 End 
 
-Solver 14
-  Exec Solver = "After TimeStep"
-  Equation = String "StrainSolver"
-  Procedure =  File "ElmerIceSolvers" "ComputeStrainRate"
-  Variable = -nooutput "Eij"
-  Variable DOFs = 1
-  Solver Timing = Logical True
-  !Exec Intervals = 10
+Solver 17
+  Exec Solver = "Never"
+!  !Exec Solver = "After TimeStep"
+!  Equation = String "StrainSolver"
+!  Procedure =  File "ElmerIceSolvers" "ComputeStrainRate"
+!  Variable = -nooutput "Eij"
+!  Variable DOFs = 1
+!  Solver Timing = Logical True
 
-  Exported Variable 1 = "StrainRate"
-  Exported Variable 1 DOFs = 7
+!  Exported Variable 1 = "StrainRate"
+!  Exported Variable 1 DOFs = 7
 
-  Flow Solver Name = String "Flow Solution"
+!  Flow Solver Name = String "Flow Solution"
 
-  Linear System Solver = Direct
-  Linear System Direct Method =  mumps
-  mumps percentage increase working space = integer 60
-  Linear System Convergence Tolerance = 1.0E-06
+!  Linear System Solver = Direct
+!  Linear System Direct Method =  mumps
+!  mumps percentage increase working space = integer 60
+!  Linear System Convergence Tolerance = 1.0E-06
   !Linear System Solver = "Iterative"
   !Linear System Iterative Method = "BiCGStab"
   !Linear System Max Iterations = 300
@@ -476,10 +546,10 @@ Solver 14
   !Linear System Abort Not Converged = False
   !Linear System Preconditioning = "ILU0"
   !Linear System Residual Output = 0
-  Optimize Bandwidth = Logical True
+!  Optimize Bandwidth = Logical True
 End
 
-Solver 15
+Solver 18
   Exec Solver = String "Never"
   Equation = "Save Mesh"
   Procedure = "SaveMesh" "SaveMesh"
@@ -490,7 +560,7 @@ Solver 15
   !Save All Timesteps = Logical True
 End
 
-Solver 16
+Solver 19
   Exec Solver = "Never"
   Equation = "Save BC Params"
   Procedure = "SaveData" "SaveBoundaryValues"
@@ -500,21 +570,7 @@ Solver 16
   Parameter 4 = String "Slip Coefficient 3"
 End
 
-Solver 17
-  Equation = "ResultOutput1"
-  Procedure = File "ResultOutputSolve" "ResultOutputSolver"
-  !Exec Solver = String "After All"
-  Exec Solver = String "After Timestep"
-  
-  Save Geometry IDs = True
-  !Save Boundaries Only = Logical True
-  Output File Name = File "$name""
-  Vtu Format = Logical True
-  Single Precision = True
-  Binary Output = True
-End
-
-Solver 18
+Solver 20
   !Exec Solver = "Never"
   Exec Solver = String "After Timestep"
   Equation = String "ReMesh"
@@ -530,14 +586,13 @@ Solver 18
   FreeSurface Variable 1 = String "Zs Top"
   FreeSurface Variable 2 = String "Zs Bottom"
   Mesh Update Variable 1 = String "Vertical Mesh Update"
+  Mesh Update Variable 2 = String "Longitudinal Mesh Update"
   Mesh Velocity Variable = String "Mesh Velocity"
-  Temperature Variable = String "Temp Homologous"
-  Strain Rate Variable = String "StrainRate"
   Grounded Toler = Real $groundtoler
   Minimum Height = Real $minheight
 End
 
-Solver 19
+Solver 21
   Equation = "Remesh Map Coordinate"
   Procedure = "StructuredMeshMapper" "StructuredMeshMapper"
   Exec Solver = "Never"
@@ -547,34 +602,34 @@ Solver 19
   Always Detect Structure = Logical True
 End
 
-Solver 20
-  Exec Solver = "Never"
-  !Exec Solver = String "After Timestep"
+Solver 22
+  !Exec Solver = "Never"
+  Exec Solver = String "After Timestep"
   Equation = "ResultOutput2"
-  Procedure = File "ResultOutputSolve" "ResultOutputSolver"
+  Procedure = File "ResultOutputSolve1" "ResultOutputSolver"
 
   !Save Geometry IDs = True
   !Save Boundaries Only = Logical True
-  Output File Name = File "$name"_after"
+  Output File Name = File "after"
   Vtu Format = Logical True
   Single Precision = True
   Binary Output = True
 
-  Vector Field 1 = "Velocity"
-  Vector Field 2 = "Normal Vector"
-  Vector Field 3 = "Stress"
-  Vector Field 4 = "StrainRate"
-  Vector Field 5 = "Flow Solution Loads"
+!  Vector Field 1 = "Velocity"
+!  Vector Field 2 = "Normal Vector"
+!  Vector Field 3 = "Stress"
+!  Vector Field 4 = "StrainRate"
+!  Vector Field 5 = "Flow Solution Loads"
 
-  Scalar Field 1 = "beta"
-  Scalar Field 2 = "Distance"
-  Scalar Field 3 = "Pressure"
-  Scalar Field 4 = "GroundedMask"
-  Scalar Field 5 = "Fw"
-  Scalar Field 6 = "Zs Bottom"
-  Scalar Field 7 = "Reference Zs Bottom"
-  Scalar Field 8 = "Zs Top"
-  Scalar Field 9 = "Reference Zs Top"
+!  Scalar Field 1 = "beta"
+!  Scalar Field 2 = "Distance"
+!  Scalar Field 3 = "Pressure"
+!  Scalar Field 4 = "GroundedMask"
+!  Scalar Field 5 = "Fw"
+!  Scalar Field 6 = "Zs Bottom"
+!  Scalar Field 7 = "Reference Zs Bottom"
+!  Scalar Field 8 = "Zs Top"
+!  Scalar Field 9 = "Reference Zs Top"
 End
 
 
@@ -584,19 +639,25 @@ End
 !---------------------------------------------------
 
 Equation 1
-  Active Solvers(14) = 1 2 3 5 7 8 11 13 14 15 16 17 18 19 20
+  Active Solvers(15) = 1 2 3 4 7 8 9 14 16 17 18 19 20 21 22
   Flow Solution Name = String "Flow Solution"
   Convection = String Computed
 End
 
 Equation 2
-  Active Solvers(1) = 9
+  Active Solvers(1) = 12
   Flow Solution Name = String "Flow Solution"
   Convection = String Computed
 End
 
 Equation 3
-  Active Solvers(4) = 4 6 10 12
+  Active Solvers(4) = 5 6 13 15
+  Flow Solution Name = String "Flow Solution"
+  Convection = String Computed
+End
+
+Equation 4
+  Active Solvers(2) = 10 11
   Flow Solution Name = String "Flow Solution"
   Convection = String Computed
 End
@@ -606,25 +667,30 @@ End
 !---------------------------------------------------
 
 Boundary Condition 1
-  Name = "front"
-  Target Boundaries(1) = 1
-  Calving Mask = Logical True
-  
-  Flow Force BC = Logical True
-  External Pressure = Variable Coordinate 3
-     Real Procedure "USF_Buoyancy.so" "SeaPressure"
+  Name = "Calving Front"
+  Target Boundaries = 1
+  Body Id = 4
+  Calving Front Mask = Logical True
 
+  Flow Force BC = Logical True
+  External Pressure = Variable Coordinate 1
+     Real Procedure "ElmerIceUSF" "SeaPressure"
   Compute Sea Pressure = Logical True
-   
-  Vertical Mesh Update 1 = Real 0.0e0
-  Vertical Mesh Update 2 = Real 0.0e0 
   
   Distance = Real 0.0
+  ComputeNormal = Logical True
+  
+  Longitudinal Mesh Update 1 = Equals FrontAdvance 1
+  Longitudinal Mesh Update 2 = Equals FrontAdvance 2
+  Longitudinal Mesh Update 3 = Equals FrontAdvance 3  
+  
+  Vertical Mesh Update 1 = Real 0.0
+  Vertical Mesh Update 2 = Real 0.0
 End
 
 Boundary Condition 2
   Name = "Side Walls"
-  Target Boundaries(1) = 2
+  Target Boundaries = 2
 
   Normal-Tangential Velocity = Logical True
   Flow Force BC = Logical True
@@ -633,36 +699,38 @@ Boundary Condition 2
   Slip Coefficient 2 = Real {SlipCoefficient}
   Slip Coefficient 3 = Real {SlipCoefficient}
   
-  ! Good for inversions, bad for transient simulations
-  ! Velocity 1 = Variable Coordinate 1
-  !   Real procedure "USF_Init.so" "UWa"
-  ! Velocity 2 = Variable Coordinate 1
-  !   Real procedure "USF_Init.so" "VWa"
+  Longitudinal Mesh Update 1 = Real 0.0
+  Longitudinal Mesh Update 2 = Real 0.0
+  Longitudinal Mesh Update 3 = Real 0.0
 
-  Vertical Mesh Update 1 = Real 0.0e0
-  Vertical Mesh Update 2 = Real 0.0e0
+  Vertical Mesh Update 1 = Real 0.0
+  Vertical Mesh Update 2 = Real 0.0
 End
 
 Boundary Condition 3
   Name = "Inflow"
-  Target Boundaries(1) = 3
+  Target Boundaries = 3
+  Body ID = 4
 
   Velocity 1 = Variable Coordinate 1
     Real procedure "USF_Init.so" "UIni"
   Velocity 2 = Variable Coordinate 1
     Real procedure "USF_Init.so" "VIni"
 
-  Vertical Mesh Update 1 = Real 0.0e0
-  Vertical Mesh Update 2 = Real 0.0e0
-!  Vertical Mesh Update 3 = Real 0.0e0
-
   Zs Top = Equals Reference Zs Top
   Zs Bottom = Equals Reference Zs Bottom
+  
+  Longitudinal Mesh Update 1 = Real 0.0
+  Longitudinal Mesh Update 2 = Real 0.0
+  Longitudinal Mesh Update 3 = Real 0.0
+
+  Vertical Mesh Update 1 = Real 0.0
+  Vertical Mesh Update 2 = Real 0.0
 End
 
 Boundary Condition 4
   Name = "Bed"
-  Target Boundaries(1) = 4
+  Target Boundaries = 4
   Body Id = 3
   Bottom Surface Mask = Logical True
 
@@ -714,27 +782,29 @@ Boundary Condition 4
 
   Bottom Surface = Equals Reference Zs Bottom
 
-  Vertical Mesh Update 1 = Real 0.0e0
-  Vertical Mesh Update 2 = Real 0.0e0
+  Vertical Mesh Update 1 = Real 0.0
+  Vertical Mesh Update 2 = Real 0.0
   Vertical Mesh Update 3 = Variable Zs Bottom, Reference Zs Bottom
     Real MATC "tx(0)-tx(1)"
 
+  Longitudinal Mesh Update 3 = Real 0.0
 End
 
 ! Upper Surface
 Boundary Condition 5
   Name = "Surface"
-  Target Boundaries(1) = 5
+  Target Boundaries = 5
   Body Id = 2
   Top Surface Mask = Logical True
 
   Top Surface = Equals Reference Zs Top
 
-  Vertical Mesh Update 1 = Real 0.0e0
-  Vertical Mesh Update 2 = Real 0.0e0
+  Vertical Mesh Update 1 = Real 0.0
+  Vertical Mesh Update 2 = Real 0.0
   Vertical Mesh Update 3 = Variable Zs Top, Reference Zs Top
     Real MATC "tx(0)-tx(1)"
 
   Flow Force BC = Logical True
-
+  
+  Longitudinal Mesh Update 3 = Real 0.0
 End 

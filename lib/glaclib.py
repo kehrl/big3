@@ -243,6 +243,12 @@ def load_extent_timeseries(glacier,time1,time2,dt,nofront_shapefile='glacier_ext
   time = np.arange(time1,time2+dt,dt)
   timeseries_x = np.zeros([len(termx[:,0]),len(time)])
   timeseries_y = np.zeros([len(termx[:,0]),len(time)])
+  timeseries_advance = np.zeros([len(termx[:,0]),len(time)])
+  timeseries_dist = np.zeros([len(termx[:,0]),len(time)])  
+  timeseries_x[:,:] = float('nan')
+  timeseries_y[:,:] = float('nan')
+  timeseries_advance[:,:] = float('nan')
+  timeseries_dist[:,:] = float('nan')
   xextents = np.zeros([len(termx[:,0])+len(xextent),len(time)])
   yextents = np.zeros([len(termx[:,0])+len(xextent),len(time)])
   bounds = np.zeros([len(termx[:,0])+len(xextent),len(time)])
@@ -323,7 +329,7 @@ def load_extent_timeseries(glacier,time1,time2,dt,nofront_shapefile='glacier_ext
     else:
       print "not advancing or retreating on top"
     xtop = np.interp(dtop,dtops,xtops)
-    ytop = np.interp(dtop,dtops,ytops) 
+    ytop = np.interp(dtop,dtops,ytops)
       
     if bot1[0] < bot2[0]: # advancing on this side
       ind_bot = np.where((xextent > bot1[0]) & (xextent < bot2[0]) & (abs(bot1[1]-yextent) < 500.))[0]
@@ -352,8 +358,19 @@ def load_extent_timeseries(glacier,time1,time2,dt,nofront_shapefile='glacier_ext
     ind_term1 = np.where((termy1 > bot1[1]) & (termy1 < top1[1]))[0]
     icefront_x = []
     icefront_y = []
+    advance = []
     icefront_x.append(xtop)
     icefront_y.append(ytop)
+    if i > 0:
+      nonnan = np.where(~(np.isnan(xextents[:,i-1])))[0]
+      extentpath = Path(np.column_stack([xextents[nonnan,i-1],yextents[nonnan,i-1]]))
+      if extentpath.contains_point([xtop,ytop]) or (xtop < xtop_old):
+        sign = -1
+      else:
+        sign = 1
+      advance.append(sign*distlib.between_pts(xtop,ytop,xtop_old,ytop_old))
+    else:
+      advance.append(0)
     for j in ind_term1:
       # Get velocities to create a line, to interpolate between ice fronts
       uj = fu((termy1[j],termx1[j]))
@@ -381,24 +398,59 @@ def load_extent_timeseries(glacier,time1,time2,dt,nofront_shapefile='glacier_ext
           add = True
         except:
           pass
-      if add == True:
-        dflow = distlib.between_pts(termx1[j],termy1[j],term2_flowline[0],term2_flowline[1])
-        dmid = frac*dflow
-        xmid = np.interp(dmid,[0,dflow],[termx1[j],term2_flowline[0]])
-        ymid = np.interp(dmid,[0,dflow],[termy1[j],term2_flowline[1]])
+      dflow = distlib.between_pts(termx1[j],termy1[j],term2_flowline[0],term2_flowline[1])
+      dmid = frac*dflow
+      xmid = np.interp(dmid,[0,dflow],[termx1[j],term2_flowline[0]])
+      ymid = np.interp(dmid,[0,dflow],[termy1[j],term2_flowline[1]])
+      if (add == True) and (ymid > ybot) and (ymid < ytop):  
         icefront_x.append(xmid)
         icefront_y.append(ymid)
+        if i > 0:
+          nonnan = np.where(~(np.isnan(timeseries_x[:,i-1])))[0]
+          front_lasttime = LineString(np.column_stack([timeseries_x[nonnan,i-1],timeseries_y[nonnan,i-1]]))
+          intersect = flowline.intersection(front_lasttime)
+          try:
+            diff = distlib.between_pts(xmid,ymid,intersect.x,intersect.y)
+          except:
+            try:
+              diff = 1000.0
+              for pt in intersect:
+                newdiff = distlib.between_pts(xmid,ymid,pt.x,pt.y)
+                if newdiff < diff:
+                  diff = newdiff
+              if diff == 1000.0:
+                diff = 0
+            except:
+              diff = 0
+          if extentpath.contains_point([xmid,ymid]):
+              sign = -1
+          else:
+            sign = 1
+          advance.append(sign*diff)
+        else:
+          advance.append(0)
     
     icefront_x.append(xbot)
     icefront_y.append(ybot)
+    if i > 0:
+      if extentpath.contains_point([xbot,ybot]) or (xbot < xbot_old):
+        sign = -1
+      else:
+        sign = 1
+      advance.append(sign*distlib.between_pts(xbot,ybot,xbot_old,ybot_old))
+    else:
+      advance.append(0)
     
     # Try sorting icefront to get rid of potential tangles
     icefront_x_old = np.asarray(icefront_x)
     icefront_y_old = np.asarray(icefront_y)
+    advance_old = np.asarray(advance)
     icefront_x = np.zeros_like(icefront_x_old)
     icefront_y = np.zeros_like(icefront_y_old)
+    advance = np.zeros_like(advance_old)
     icefront_x[0] = icefront_x_old[0]
     icefront_y[0] = icefront_y_old[0]
+    advance[0] = advance_old[0]
     ind = range(1,len(icefront_x_old))
     for k in range(1,len(icefront_x_old)):
       mindist = 10000.
@@ -409,11 +461,14 @@ def load_extent_timeseries(glacier,time1,time2,dt,nofront_shapefile='glacier_ext
           minind = ind[j]
       icefront_x[k] = icefront_x_old[minind]
       icefront_y[k] = icefront_y_old[minind]
+      advance[k] = advance_old[minind]
       ind.remove(minind)
     
     # Save icefront in timeseries 
     timeseries_x[0:len(icefront_x),i] = icefront_x
     timeseries_y[0:len(icefront_y),i] = icefront_y
+    timeseries_dist[0:len(icefront_x),i] = distlib.transect(icefront_x,icefront_y)
+    timeseries_advance[0:len(icefront_x),i] = advance
     
     # Now create mesh extent and BC numbers using the interpolated ice front
     boundterminus = np.ones(len(icefront_x))*2.0
@@ -426,9 +481,15 @@ def load_extent_timeseries(glacier,time1,time2,dt,nofront_shapefile='glacier_ext
     
     xextents[0:len(extent_x),i] = extent_x
     yextents[0:len(extent_x),i] = extent_y
-    bounds[0:len(extent_x),i] = bound    
+    bounds[0:len(extent_x),i] = bound
     
-  return  time, xextents, yextents, bounds
+    xtop_old = float(xtop)
+    ytop_old = float(ytop)
+    xbot_old = float(xbot)
+    ybot_old = float(ybot)
+      
+    
+  return  time, xextents, yextents, bounds, timeseries_x, timeseries_y, timeseries_advance
 
 def load_satimages(glacier,xmin,xmax,ymin,ymax,time1=-np.inf,time2=np.inf,data='all'):
 

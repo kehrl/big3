@@ -86,6 +86,8 @@ SUBROUTINE InterpolateAccumulation(Model,Solver,dt,Transient )
     y = Model % Mesh % Nodes % y(i)
     VariableValues(Permutation(i)) = LinearInterp(smbgrid,xx,yy,nx,ny,x,y)
   END DO
+  
+  CALL INFO(SolverName, 'End',level=3)
 
 !------------------------------------------------------------------------------
 END SUBROUTINE InterpolateAccumulation 
