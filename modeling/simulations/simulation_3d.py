@@ -123,10 +123,11 @@ del fid1, fid2
 # Start zip/unzip process if wanted #
 #####################################
 
-if solverfile_in.startswith('terminusdriven'):
+
+if solverfile_in.startswith('terminusdriven') or solverfile_in == 'checkmeshes':
   os.chdir(DIRM)
   
-  for i in range(1,11):
+  for i in range(0,25):
     if not(os.path.isdir('mesh{0:04d}'.format(i))):
       if os.path.isfile('mesh{0:04d}.tar.gz'.format(i)):
         os.system('tar -xzf mesh{0:04d}.tar.gz'.format(i))
@@ -150,7 +151,7 @@ if solverfile_in.startswith('terminusdriven'):
       
     # First check to make sure we have adequate mesh and smb files
     
-    for i in range(itmax,itmax+10):
+    for i in range(itmax,itmax+25):
       if not(os.path.isdir('mesh{0:04d}'.format(i))):
         if os.path.isfile('mesh{0:04d}.tar.gz'.format(i)):
           os.system('tar -xzf mesh{0:04d}.tar.gz'.format(i))
@@ -160,10 +161,10 @@ if solverfile_in.startswith('terminusdriven'):
     # Now remove old mesh files and zip vtu files
     for i in range(1,itmax-1):
       if os.path.isdir('mesh{0:04d}'.format(i)):
-        os.system('rm -r mesh{0:04d}'.format(i))
+        os.system('rm -r '+'mesh{0:04d}'.format(i))
       if os.path.isfile(inputs+'smb{0:04d}.xy'.format(i)):
         os.system('rm '+inputs+'smb{0:04d}.xy'.format(i))
-      if os.path.isfile('mesh2d/terminusdriven{0:04d}.pvtu'.format(i)):
+      if os.path.isfile('mesh2d/terminusdriven{0:04d}.pvtu'.format(i)) and not(os.path.isfile('mesh2d/terminusdriven{0:04d}.pvtu.tar.gz'.format(i))):  
         os.chdir(DIRM+"mesh2d")
         os.system('tar -czf terminusdriven{0:04d}.pvtu.tar.gz '.format(i)+\
                 'terminusdriven*{0:04d}.'.format(i)+'*vtu')
@@ -179,7 +180,8 @@ if solverfile_in.startswith('terminusdriven'):
 
 returncode = elmerrunlib.run_elmer(DIRM+solverfile_out+'.sif',n=partitions,email=True)
 
-if solverfile_in.startswith('terminusdriven'):
+if solverfile_in.startswith('terminusdriven') or (solverfile_in == 'checkmeshes'):
+
   job.remove()
   print "Stopped unzipping/zipping mesh files and vtu."
   
