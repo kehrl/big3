@@ -1686,7 +1686,7 @@ CONTAINS
     IF (COUNT(NoNearest) > 0) THEN
       CALL FATAL(SolverName, "Still unable to find nodes ")
     ELSE
-      PRINT *,'InterpolateUnfoundPointsNearest: Found all remaining ',n,'nodes on',HeightName
+      PRINT *,'InterpolateUnfoundPointsNearest: Found all remaining ',n,'nodes on ',HeightName
       m = 0
       DO nn=1,SIZE(UnfoundNodes)    
         IF (UnfoundNodes(nn)) THEN  
