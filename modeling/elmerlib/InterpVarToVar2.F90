@@ -1194,7 +1194,7 @@ CONTAINS
 
     SolverName='InterpolateUnfoundPointsNearest'
         
-    Debug = .TRUE.
+    Debug = .FALSE.
     Parallel = ParEnv % PEs > 1
 
     OldHeightVar => VariableGet( OldMesh % Variables, HeightName, &
@@ -1687,6 +1687,13 @@ CONTAINS
       CALL FATAL(SolverName, "Still unable to find nodes ")
     ELSE
       PRINT *,'InterpolateUnfoundPointsNearest: Found all remaining ',n,'nodes on',HeightName
+      m = 0
+      DO nn=1,SIZE(UnfoundNodes)    
+        IF (UnfoundNodes(nn)) THEN  
+          m = m+1     
+          PRINT *, 'UnfoundNode', NewMesh % Nodes % x(nn), NewMesh % Nodes % y(nn), mindists(m)
+        END IF
+      END DO
     END IF
   END IF
   
