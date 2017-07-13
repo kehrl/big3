@@ -126,7 +126,7 @@ elif meshshp.endswith('_front') or meshshp.endswith('_front.shp'):
       sys.exit("Need an end date (-d2) to calculate a timeseries of meshes.")
     time2 = datelib.date_to_fracyear(int(date2[0:4]),int(date2[4:6]),int(date2[6:8]))
     print "Calculating timeseries of meshes from "+date1+" to "+date2
-    times,xextents,yextents,bounds = glaclib.load_extent_timeseries(glacier,time1,time2,dt,nofront_shapefile=meshshp_nofront)
+    times,xextents,yextents,bounds,icefronts_x,icefronts_y,icefronts_advance = glaclib.load_extent_timeseries(glacier,time1,time2,dt,nofront_shapefile=meshshp_nofront)
   exterior = meshlib.shp_to_xy(DIRX+meshshp)
 else:
   exterior = meshlib.shp_to_xy(DIRX+meshshp)
