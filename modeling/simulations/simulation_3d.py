@@ -127,7 +127,7 @@ del fid1, fid2
 if solverfile_in.startswith('terminusdriven') or solverfile_in == 'checkmeshes':
   os.chdir(DIRM)
   
-  for i in range(0,25):
+  for i in range(1,25):
     if not(os.path.isdir('mesh{0:04d}'.format(i))):
       if os.path.isfile('mesh{0:04d}.tar.gz'.format(i)):
         os.system('tar -xzf mesh{0:04d}.tar.gz'.format(i))
