@@ -8,7 +8,7 @@ import scipy.signal as signal
 import scipy
 from scipy.spatial import cKDTree
 
-def racmo_grid(xmin,xmax,ymin,ymax,variable,epsg=3413,maskvalues='ice'):
+def racmo_grid(xmin,xmax,ymin,ymax,variable,epsg=3413,maskvalues='ice',time1=-np.inf,time2=np.inf,resolution=11,fillin=True):
 
   ''' 
   Pull all values for RACMO smb, t2m, zs, or runoff values for the region defined 
@@ -27,101 +27,160 @@ def racmo_grid(xmin,xmax,ymin,ymax,variable,epsg=3413,maskvalues='ice'):
   var_subset: value of chosen variable at these points
   time : time
   '''
+  if (resolution == 1):
+    dir = os.path.join(os.getenv("DATA_HOME"),"Climate/RACMO/Downscaled_2000_2016/")
+    vardir = dir+variable+'/'
+    mask = netCDF4.Dataset(dir+'Icemask_Topo_Iceclasses_lon_lat_average_1km.nc')
+    files = os.listdir(vardir)
+    for file in files:
+      if file.startswith(variable):
+        print file
+        rec = netCDF4.Dataset(vardir+file)
+        day1 = rec['time'].units[10:21]
+        year,day1 = datelib.date_to_doy(int(day1[0:5]),int(day1[6:8]),int(day1[9:11]))
+        days = np.array(rec['time'][:],dtype=np.float64)
+        rectime = np.zeros_like(days)
+        for i in range(0,len(days)):
+          rectime[i] = datelib.doy_to_fracyear(year,day1+days[i])
+        indt = np.where((rectime >= time1) & (rectime <= time2))[0]
+        if len(indt) > 0:
+          try:
+            indx
+          except:
+            xrec = np.array(rec['x'][:],dtype=np.float64)
+            yrec = np.array(rec['y'][:],dtype=np.float64)
+            indx = np.where((xrec >= xmin) & (xrec <= xmax))[0]
+            indy = np.where((yrec >= ymin) & (yrec <= ymax))[0]
+            xrac_subset = xrec[indx]
+            yrac_subset = yrec[indy]
+            mask_sub = mask['Icemask'][indy,indx]
 
-  # RACMO data
-  if variable != 'zs':
-    files = [(os.path.join(os.getenv("DATA_HOME"),"Climate/RACMO/2015_09_Laura_Kehrl/RACMO2.3_GRN11_"+variable+"_daily_2001_2010.nc")), \
+          if variable == 'smb':
+            varrec = rec['SMB_rec'][indt,indy,indx]
+          else: 
+            varrec = rec[variable][indt,indy,indx]
+            
+          try:
+            var_subset
+          except:
+            var_subset = varrec
+            time = rectime[indt]
+          else:
+            var_subset = np.row_stack([var_subset,varrec])
+            time = np.r_[time,rectime[indt]] 
+    if maskvalues == 'ice':
+      ind = np.where(mask_sub <= 0)
+      var_subset[:,ind[0],ind[1]] = np.float('nan')
+      if fillin == True:
+        ind_ice = np.where(mask_sub > 0)
+        xrac_grid,yrac_grid = np.meshgrid(xrac_subset,yrac_subset)
+        for j in range(0,len(time)):
+          var_subset[j,ind[0],ind[1]] = scipy.interpolate.griddata((yrac_grid[ind_ice],xrac_grid[ind_ice]),\
+            	var_subset[j,ind_ice[0],ind_ice[1]],(yrac_subset[ind[0]],xrac_subset[ind[1]]),method='nearest')
+    
+    if variable == 'smb':
+      # Convert mmWE per day
+      var_subset = var_subset/1000.0  
+    
+    # Sort by time
+    ind = np.argsort(time)
+    time = time[ind]
+    var_subset = var_subset[ind,:,:]
+        
+  elif (resolution == 11):
+    # RACMO data
+    if variable != 'zs':
+      files = [(os.path.join(os.getenv("DATA_HOME"),"Climate/RACMO/2015_09_Laura_Kehrl/RACMO2.3_GRN11_"+variable+"_daily_2001_2010.nc")), \
            (os.path.join(os.getenv("DATA_HOME"),"Climate/RACMO/2015_09_Laura_Kehrl/RACMO2.3_GRN11_"+variable+"_daily_2011_2014.nc")), \
            (os.path.join(os.getenv("DATA_HOME"),"Climate/RACMO/2015_09_Laura_Kehrl/RACMO2.3_GRN11_"+variable+"_daily_2015.nc"))]
-  else:
-    files = [(os.path.join(os.getenv("DATA_HOME"),"Climate/RACMO/ZS_ZGRN_V5_1960-2014_detrended_2day.nc"))]
+    else:
+      files = [(os.path.join(os.getenv("DATA_HOME"),"Climate/RACMO/ZS_ZGRN_V5_1960-2014_detrended_2day.nc"))]
 
-  rec1 = netCDF4.Dataset(files[0])
-  if variable != 'zs':
-    rec2 = netCDF4.Dataset(files[1])
-    rec3 = netCDF4.Dataset(files[2])
-  mask = netCDF4.Dataset(os.path.join(os.getenv("DATA_HOME"),"Climate/RACMO/2015_09_Laura_Kehrl/RACMO23_masks_ZGRN11.nc")).variables['icemask'][:]
+    rec1 = netCDF4.Dataset(files[0])
+    if variable != 'zs':
+      rec2 = netCDF4.Dataset(files[1])
+      rec3 = netCDF4.Dataset(files[2])
+    mask = netCDF4.Dataset(os.path.join(os.getenv("DATA_HOME"),"Climate/RACMO/2015_09_Laura_Kehrl/RACMO23_masks_ZGRN11.nc")).variables['icemask'][:]
 
-  # Load RACMO data
-  lat = np.array(rec1.variables['lat'][:])
-  lon = np.array(rec1.variables['lon'][:])
-  var1 = np.array(rec1.variables[variable][:])
-  daysfrom1950_1 = np.array(rec1.variables['time'][:])
-  if variable != 'zs':
-    var2 = np.array(rec2.variables[variable][:])
-    daysfrom1950_2 = np.array(rec2.variables['time'][:])
-    var3 = np.array(rec3.variables[variable][:])
-    if variable != 't2m':
-      var3 = np.array(var3)/(60*60*24.0)
-    days2015 = np.array(rec3.variables['time'][:])
+    # Load RACMO data
+    lat = np.array(rec1.variables['lat'][:])
+    lon = np.array(rec1.variables['lon'][:])
+    var1 = np.array(rec1.variables[variable][:])
+    daysfrom1950_1 = np.array(rec1.variables['time'][:])
+    if variable != 'zs':
+      var2 = np.array(rec2.variables[variable][:])
+      daysfrom1950_2 = np.array(rec2.variables['time'][:])
+      var3 = np.array(rec3.variables[variable][:])
+      if variable != 't2m':
+        var3 = np.array(var3)/(60*60*24.0)
+      days2015 = np.array(rec3.variables['time'][:])
 
-  # Convert date to fractional year
-  startday1950 = jdcal.gcal2jd(1950,1,1)
-  Nt1 = len(daysfrom1950_1)
-  if variable != 'zs':
-    Nt2 = len(daysfrom1950_2)
-    Nt3 = len(days2015)
-    time = np.zeros(Nt1+Nt2+Nt3)
-    for i in range(0,Nt1):
-      year,month,day,fracday = jdcal.jd2gcal(startday1950[0],startday1950[1]+daysfrom1950_1[i])
-      time[i] = datelib.date_to_fracyear(year,month,day) 
-    for i in range(0,Nt2):
-      year,month,day,fracday = jdcal.jd2gcal(startday1950[0],startday1950[1]+daysfrom1950_2[i])
-      time[i+Nt1] = datelib.date_to_fracyear(year,month,day)
-    for i in range(0,Nt3):
-      time[i+Nt1+Nt2] = datelib.doy_to_fracyear(2015,1+days2015[i])
-  else:
-    time = daysfrom1950_1 
-    time = time[0:-71]
-    var1 = var1[0:-71,:,:]
+    # Convert date to fractional year
+    startday1950 = jdcal.gcal2jd(1950,1,1)
+    Nt1 = len(daysfrom1950_1)
+    if variable != 'zs':
+      Nt2 = len(daysfrom1950_2)
+      Nt3 = len(days2015)
+      time = np.zeros(Nt1+Nt2+Nt3)
+      for i in range(0,Nt1):
+        year,month,day,fracday = jdcal.jd2gcal(startday1950[0],startday1950[1]+daysfrom1950_1[i])
+        time[i] = datelib.date_to_fracyear(year,month,day) 
+      for i in range(0,Nt2):
+        year,month,day,fracday = jdcal.jd2gcal(startday1950[0],startday1950[1]+daysfrom1950_2[i])
+        time[i+Nt1] = datelib.date_to_fracyear(year,month,day)
+      for i in range(0,Nt3):
+        time[i+Nt1+Nt2] = datelib.doy_to_fracyear(2015,1+days2015[i])
+    else:
+      time = daysfrom1950_1 
+      time = time[0:-71]
+      var1 = var1[0:-71,:,:]
     
-  
-  # Convert lat,lon to epsg 3413
-  xrac,yrac = coordlib.convert(lon,lat,4326,epsg)
+    # Convert lat,lon to epsg 3413
+    xrac,yrac = coordlib.convert(lon,lat,4326,epsg)
 
-  # Find x,y indices that fall within the desired grid and check to make sure that the chosen
-  # indices fall on the ice mask (mask == 1) 
-  if maskvalues == 'ice':
-    xind = np.where((xrac >= xmin) & (xrac <= xmax) & (mask == 1))
-  elif maskvalues == 'notice':
-    xind = np.where((xrac >= xmin) & (xrac <= xmax) & (mask == 0))
-  elif maskvalues == 'both':
-    xind = np.where((xrac >= xmin) & (xrac <= xmax))
-  else:
-    sys.exit("Unknown maskvalues")
-  xrac_subset = xrac[xind]
-  yrac_subset = yrac[xind]
-  if variable != 'zs':
-    var1_subset = var1[:,:,xind[0],xind[1]]  
-    var2_subset = var2[:,:,xind[0],xind[1]]
-    var3_subset = var3[:,xind[0],xind[1]]
-  else:
-    var1_subset = var1[:,xind[0],xind[1]] 
-  mask_subset = mask[xind[0],xind[1]]
+    # Find x,y indices that fall within the desired grid and check to make sure that the chosen
+    # indices fall on the ice mask (mask == 1) 
+    if maskvalues == 'ice':
+      xind = np.where((xrac >= xmin) & (xrac <= xmax) & (mask == 1))
+    elif maskvalues == 'notice':
+      xind = np.where((xrac >= xmin) & (xrac <= xmax) & (mask == 0))
+    elif maskvalues == 'both':
+      xind = np.where((xrac >= xmin) & (xrac <= xmax))
+    else:
+      sys.exit("Unknown maskvalues")
+    xrac_subset = xrac[xind]
+    yrac_subset = yrac[xind]
+    if variable != 'zs':
+      var1_subset = var1[:,:,xind[0],xind[1]]  
+      var2_subset = var2[:,:,xind[0],xind[1]]
+      var3_subset = var3[:,xind[0],xind[1]]
+    else:
+      var1_subset = var1[:,xind[0],xind[1]] 
+    mask_subset = mask[xind[0],xind[1]]
   
-  if maskvalues == 'ice':
-    yind = np.where((yrac_subset >= ymin) & (yrac_subset <= ymax) & (mask_subset == 1))
-  elif maskvalues == 'notice':
-    yind = np.where((yrac_subset >= ymin) & (yrac_subset <= ymax) & (mask_subset == 0))
-  elif maskvalues == 'both':
-    yind = np.where((yrac_subset >= ymin) & (yrac_subset <= ymax))
-  xrac_subset = xrac_subset[yind]
-  yrac_subset = yrac_subset[yind]
-  if variable != 'zs':  
-    var1_subset = var1_subset[:,:,yind]
-    var2_subset = var2_subset[:,:,yind]
-    var3_subset = var3_subset[:,yind]
-    var_subset = np.row_stack([var1_subset[:,0,0,:],var2_subset[:,0,0,:],var3_subset[:,0,:]])
-  else:
-    var1_subset = var1_subset[:,yind]
-    var_subset = var1_subset[:,0,:]
+    if maskvalues == 'ice':
+      yind = np.where((yrac_subset >= ymin) & (yrac_subset <= ymax) & (mask_subset == 1))
+    elif maskvalues == 'notice':
+      yind = np.where((yrac_subset >= ymin) & (yrac_subset <= ymax) & (mask_subset == 0))
+    elif maskvalues == 'both':
+      yind = np.where((yrac_subset >= ymin) & (yrac_subset <= ymax))
+    xrac_subset = xrac_subset[yind]
+    yrac_subset = yrac_subset[yind]
+    if variable != 'zs':  
+      var1_subset = var1_subset[:,:,yind]
+      var2_subset = var2_subset[:,:,yind]
+      var3_subset = var3_subset[:,yind]
+      var_subset = np.row_stack([var1_subset[:,0,0,:],var2_subset[:,0,0,:],var3_subset[:,0,:]])
+    else:
+      var1_subset = var1_subset[:,yind]
+      var_subset = var1_subset[:,0,:]
   
-  if variable == 't2m':
-    # Convert Kelvin to Celsius
-    var_subset=var_subset
-  elif variable == 'smb' or variable == 'precip' or variable == 'runoff':
-    # If variable is smb, convert kg m-2 s-1 to kg m-2 d-1
-    var_subset=var_subset*(60*60*24.0)
+    if variable == 't2m':
+      # Convert Kelvin to Celsius
+      var_subset=var_subset
+    elif variable == 'smb' or variable == 'precip' or variable == 'runoff':
+      # If variable is smb, convert kg m-2 s-1 to kg m-2 d-1
+      var_subset=var_subset*(60*60*24.0)
   
   return xrac_subset,yrac_subset,var_subset,time
 
