@@ -1691,7 +1691,8 @@ CONTAINS
       DO nn=1,SIZE(UnfoundNodes)    
         IF (UnfoundNodes(nn)) THEN  
           m = m+1     
-          PRINT *, 'UnfoundNode', NewMesh % Nodes % x(nn), NewMesh % Nodes % y(nn), mindists(m)
+          PRINT *, 'UnfoundNode', NewMesh % Nodes % x(nn), NewMesh % Nodes % y(nn), nn 
+          PRINT *, 'UnfoundDist', mindists(m), nn
         END IF
       END DO
     END IF

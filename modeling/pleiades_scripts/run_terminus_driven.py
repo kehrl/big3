@@ -6,26 +6,26 @@ glacier = 'Helheim'
 
 # Mesh characteristics and geometry
 meshshp = 'glacier_extent_terminus_front'
-extrude = 12
+extrude = 11
 bname = 'smith'
 bmodel = 'aniso'
 bsmooth = '5'
 bottomsurface = 'iceshelf'
 temperature = -10.0 #'model'
 #lc = '500 1000 1000 2000'
-lc = '250 500 750 1000'
+lc = '200 450 700 1000'
 
 # Info terminus driven model
-date1 = '20110615'#'20080613'
-date2 = '20120615'#'20160101'
+date1 = '20110615'#'20110615'
+date2 = '20120615'#'20160615'#'20120615'
 dt = '1/365.25'
 timeseries = 'True'
 
-runname = 'TD_'+date1+'_'+date2+'_bsmooth'+bsmooth
+runname = 'TD_'+date1+'_'+date2+'_bsmooth'+bsmooth+'_advance_half'
 
 # Inversion options
 method = 'adjoint'
-regpar = '5e11'
+regpar = '3e11'
 frontBC = 'velocity'
 slipcoefficient = '1.0E-2'
 sidewallBC = 'friction' # or velocity or friction
@@ -33,9 +33,9 @@ sidewallBC = 'friction' # or velocity or friction
 # Options for PBS submission
 queue = 'long'
 model = 'has'
-nparts = 72
+nparts = 96
 ncpus = 24
-runtime = '30:00:00'
+runtime = '120:00:00'
 
 # Mesh directory
 dir = "/nobackupp8/lkehrl/Models/"+glacier+"/3D/"+runname+"/"
@@ -75,7 +75,7 @@ job_string = """
 #PBS -o %s
 #PBS -e %s
 source /u/lkehrl/.profile
-source /u/dlilien/sw/elmer/.bashrc_pleiades_haswell
+source /u/lkehrl/.bashrc_pleiades_haswell_sles12
 cd %s
 %s""" % (job_name, walltime, processors, dir+"PBS_inversion.out",dir+"PBS_inversion.err",dir,command)
 
@@ -93,10 +93,10 @@ fid.close()
 nt = 0
 files = os.listdir(dir)
 for file in files:
-  if file.startswith('mesh0') and not(file.endswith('.msh')) and not(file.endswith('tar.gz')):
+  if file.startswith('mesh') and not(file.endswith('.msh')) and not(file.endswith('.geo')) and not(file.endswith('tar.gz')) and not(file.endswith('mesh2d')) and not(file.endswith('.txt')):
     if int(file[-4:]) > nt:
       nt = int(file[-4:])
-  elif file.startswith('mesh0') and file.endswith('tar.gz'):
+  elif file.startswith('mesh') and file.endswith('tar.gz') and not(file.startswith('mesh_')):
     if int(file[-11:-7]) > nt:
       nt = int(file[-11:-7])
    
@@ -120,7 +120,7 @@ job_string = """
 #PBS -o %s
 #PBS -e %s
 source /u/lkehrl/.profile
-source /u/dlilien/sw/elmer/.bashrc_pleiades_haswell
+source /u/lkehrl/.bashrc_pleiades_haswell_sles12
 cd %s
 %s""" % (job_name, walltime, processors, dir+"PBS_terminusdriven.out",dir+"PBS_terminusdriven.err",dir,command)
 

@@ -43,7 +43,7 @@ Simulation
   Steady State Max Iterations = 50
   Steady State Min Iterations = 1
 
-  Max Output Level = 50
+  Max Output Level = 4
 
   Output File = "$name$.result"
   Output Coordinates = Logical True
@@ -496,21 +496,21 @@ Solver 15
 End
 
 Solver 16
-  Exec Solver = "Never"
-!  !Exec Solver = "After TimeStep"
-!  Equation = String "StressSolver"
-!  Procedure = "ElmerIceSolvers" "ComputeDevStress"          
-!  Variable = -nooutput "Sij"
-!  Variable DOFs = 1
-!  Exported Variable 1 = Stress[Sxx:1 Syy:1 Szz:1 Sxy:1 Syz:1 Sxz:1]
-!  Exported Variable 1 DOFs = 6
+  !Exec Solver = "Never"
+  Exec Solver = "After TimeStep"
+  Equation = String "StressSolver"
+  Procedure = "ElmerIceSolvers" "ComputeDevStress"          
+  Variable = -nooutput "Sij"
+  Variable DOFs = 1
+  Exported Variable 1 = Stress[Sxx:1 Syy:1 Szz:1 Sxy:1 Syz:1 Sxz:1]
+  Exported Variable 1 DOFs = 6
   
-!  Flow Solver Name = String "Flow Solution"
-!  Stress Variable Name = String "Stress"
-!  Linear System Solver = Direct
-!  Linear System Direct Method =  mumps
-!  mumps percentage increase working space = integer 60
-!  Linear System Convergence Tolerance = 1.0E-06
+  Flow Solver Name = String "Flow Solution"
+  Stress Variable Name = String "Stress"
+  Linear System Solver = Direct
+  Linear System Direct Method =  mumps
+  mumps percentage increase working space = integer 60
+  Linear System Convergence Tolerance = 1.0E-06
   !Linear System Solver = "Iterative"
   !Linear System Iterative Method = "BiCGStab"
   !Linear System Max Iterations = 300
@@ -518,27 +518,27 @@ Solver 16
   !Linear System Abort Not Converged = False
   !Linear System Preconditioning = "ILU0"
   !Linear System Residual Output = 0
-!  Optimize Bandwidth = Logical True
+  Optimize Bandwidth = Logical True
 End 
 
 Solver 17
-  Exec Solver = "Never"
-!  !Exec Solver = "After TimeStep"
-!  Equation = String "StrainSolver"
-!  Procedure =  File "ElmerIceSolvers" "ComputeStrainRate"
-!  Variable = -nooutput "Eij"
-!  Variable DOFs = 1
-!  Solver Timing = Logical True
+  !Exec Solver = "Never"
+  Exec Solver = "After TimeStep"
+  Equation = String "StrainSolver"
+  Procedure =  File "ElmerIceSolvers" "ComputeStrainRate"
+  Variable = -nooutput "Eij"
+  Variable DOFs = 1
+  Solver Timing = Logical True
 
-!  Exported Variable 1 = "StrainRate"
-!  Exported Variable 1 DOFs = 7
+  Exported Variable 1 = "StrainRate"
+  Exported Variable 1 DOFs = 7
 
-!  Flow Solver Name = String "Flow Solution"
+  Flow Solver Name = String "Flow Solution"
 
-!  Linear System Solver = Direct
-!  Linear System Direct Method =  mumps
-!  mumps percentage increase working space = integer 60
-!  Linear System Convergence Tolerance = 1.0E-06
+  Linear System Solver = Direct
+  Linear System Direct Method =  mumps
+  mumps percentage increase working space = integer 60
+  Linear System Convergence Tolerance = 1.0E-06
   !Linear System Solver = "Iterative"
   !Linear System Iterative Method = "BiCGStab"
   !Linear System Max Iterations = 300
@@ -546,7 +546,7 @@ Solver 17
   !Linear System Abort Not Converged = False
   !Linear System Preconditioning = "ILU0"
   !Linear System Residual Output = 0
-!  Optimize Bandwidth = Logical True
+  Optimize Bandwidth = Logical True
 End
 
 Solver 18
@@ -603,10 +603,10 @@ Solver 21
 End
 
 Solver 22
-  !Exec Solver = "Never"
-  Exec Solver = String "After Timestep"
+  Exec Solver = "Never"
+  !Exec Solver = String "After Timestep"
   Equation = "ResultOutput2"
-  Procedure = File "ResultOutputSolve1" "ResultOutputSolver"
+  Procedure = File "ResultOutputSolve1.so" "ResultOutputSolver"
 
   !Save Geometry IDs = True
   !Save Boundaries Only = Logical True
@@ -614,24 +614,7 @@ Solver 22
   Vtu Format = Logical True
   Single Precision = True
   Binary Output = True
-
-!  Vector Field 1 = "Velocity"
-!  Vector Field 2 = "Normal Vector"
-!  Vector Field 3 = "Stress"
-!  Vector Field 4 = "StrainRate"
-!  Vector Field 5 = "Flow Solution Loads"
-
-!  Scalar Field 1 = "beta"
-!  Scalar Field 2 = "Distance"
-!  Scalar Field 3 = "Pressure"
-!  Scalar Field 4 = "GroundedMask"
-!  Scalar Field 5 = "Fw"
-!  Scalar Field 6 = "Zs Bottom"
-!  Scalar Field 7 = "Reference Zs Bottom"
-!  Scalar Field 8 = "Zs Top"
-!  Scalar Field 9 = "Reference Zs Top"
 End
-
 
 
 !---------------------------------------------------
