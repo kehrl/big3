@@ -36,6 +36,8 @@ parser.add_argument("-dt",dest="dt",required  = False,type=str,\
        default='1/365.25',help = "Timestep size (1/365.25, i.e., 1 day).") 
 parser.add_argument("-slipcoefficient",dest="slipcoefficient",required  = False,type=str,\
        default='1.0E-3',help = "Sidewall slip coefficient.")
+parser.add_argument("-slidinglaw",dest="slidinglaw",required  = False,type=str,\
+       default='linear',help = "Sliding law (linear or weertman).")       
 
 args, _ = parser.parse_known_args(sys.argv)
 
@@ -51,6 +53,7 @@ temperature = args.temperature
 dt = args.dt
 nt = args.nt
 slipcoefficient = args.slipcoefficient
+slidinglaw = args.slidinglaw
 
 # Directories
 DIRS=os.path.join(os.getenv("CODE_HOME"),"big3/modeling/solverfiles/3D/")
@@ -92,6 +95,15 @@ else:
   except:
     sys.exit("Unknown temperature of "+temperature)
 
+if slidinglaw == 'linear':
+  beta_data_file = 'inputs/beta_linear.xy'
+  sliding_exponent='1.0/1.0'
+elif slidinglaw == 'weertman':
+  beta_data_file = 'inputs/beta_weertman.xy'
+  sliding_exponent='1.0/3.0'
+else:
+  sys.exit("Unknown sliding law of "+slidinglaw)
+
 ###################################
 # Change mesh file in solver file #
 ###################################
@@ -113,6 +125,8 @@ lines=lines.replace('{Temperature}', '{0}'.format(temperature_text))
 lines=lines.replace('{TimeStepSize}', '$({0})'.format(dt))
 lines=lines.replace('{TimeSteps}', '{0}'.format(nt))
 lines=lines.replace('{SlipCoefficient}', '{0}'.format(slipcoefficient))
+lines=lines.replace('{BetaDataFile}', '{0}'.format(beta_data_file))
+lines=lines.replace('{SlidingExponent}', '{0}'.format(sliding_exponent))
 
 fid2.write(lines)
 fid1.close()

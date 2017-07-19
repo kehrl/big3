@@ -34,7 +34,6 @@ def racmo_grid(xmin,xmax,ymin,ymax,variable,epsg=3413,maskvalues='ice',time1=-np
     files = os.listdir(vardir)
     for file in files:
       if file.startswith(variable):
-        print file
         rec = netCDF4.Dataset(vardir+file)
         day1 = rec['time'].units[10:21]
         year,day1 = datelib.date_to_doy(int(day1[0:5]),int(day1[6:8]),int(day1[9:11]))
@@ -44,6 +43,7 @@ def racmo_grid(xmin,xmax,ymin,ymax,variable,epsg=3413,maskvalues='ice',time1=-np
           rectime[i] = datelib.doy_to_fracyear(year,day1+days[i])
         indt = np.where((rectime >= time1) & (rectime <= time2))[0]
         if len(indt) > 0:
+          print file
           try:
             indx
           except:

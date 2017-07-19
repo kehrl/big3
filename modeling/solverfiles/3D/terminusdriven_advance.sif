@@ -226,7 +226,7 @@ Solver 2
   Exec Solver = "Before TimeStep"
   Equation = "InterpolateBeta"
   Procedure = "USF_Beta.so" "InterpolateBeta"
-  Data File = String "inputs/beta_linear.xy"
+  Data File = String "{BetaDataFile}"
   Variable = String "Beta"
 End
 
@@ -736,7 +736,7 @@ Boundary Condition 4
   Sliding Law = String "Weertman" 
   Weertman Friction Coefficient = Equals Beta !Variable Coordinate 1
      !REAL Procedure "Sliding_Beta.so" "Linear"                
-  Weertman Exponent = Real $(1.0/1.0)
+  Weertman Exponent = Real $({SlidingExponent})
   Weertman Linear Velocity = Real 0.00001
   ! Options are 'Last Grounded' (default), 'First Floating' or 'Discontinuous' 
   ! Grounding Line Definition = String "Last Grounded"
