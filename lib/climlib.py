@@ -28,7 +28,16 @@ def racmo_grid(xmin,xmax,ymin,ymax,variable,epsg=3413,maskvalues='ice',time1=-np
   time : time
   '''
   if (resolution == 1):
-    dir = os.path.join(os.getenv("DATA_HOME"),"Climate/RACMO/Downscaled_2000_2016/")
+    if not('DATA2_HOME' in os.environ):
+      sys.exit('No access to Data2 on this machine for downscaled RACMO. \n'+\
+         'Try using resolution=11, but remember we only have it for 2001-2016.')     
+    
+    dir = os.path.join(os.getenv("DATA2_HOME"),"Climate/RACMODownscaled/Downscaled_2000_2016/")
+    
+    if not(os.path.isdir(dir)):
+      sys.exit('No access to downscaled RACMO data on this machine. \n'+\
+         'Try using resolution=11, but remember we only have it for 2001-2016.') 
+    
     vardir = dir+variable+'/'
     mask = netCDF4.Dataset(dir+'Icemask_Topo_Iceclasses_lon_lat_average_1km.nc')
     files = os.listdir(vardir)
