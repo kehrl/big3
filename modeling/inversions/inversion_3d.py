@@ -349,9 +349,9 @@ def main():
   beta_linear_lin = scipy.interpolate.griddata((bed['x'][ind],bed['y'][ind]),\
     bed['beta'][ind]**2, (xx,yy), method='linear')
   beta_weertman = scipy.interpolate.griddata((bed['x'][ind],bed['y'][ind]),\
-      (bed['beta'][ind]**2)*(bed['velocity'][ind]**(2.0/3.0)), (xx,yy), method='nearest')
+      (bed['beta'][ind]**2)*(bed['velocity'][ind]**(-2.0/3.0)), (xx,yy), method='nearest')
   beta_weertman_lin = scipy.interpolate.griddata((bed['x'][ind],bed['y'][ind]),\
-      (bed['beta'][ind]**2)*(bed['velocity'][ind]**(2.0/3.0)), (xx,yy), method='linear')
+      (bed['beta'][ind]**2)*(bed['velocity'][ind]**(-2.0/3.0)), (xx,yy), method='linear')
   if glacier == 'Helheim':
     # To get rid of edge effects near terminus, we take an average beta from farther upstream
     # and use that near the terminus
