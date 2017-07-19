@@ -686,7 +686,7 @@ Boundary Condition 4
   Weertman Friction Coefficient = Equals Beta !Variable Coordinate 1
      !REAL Procedure "Sliding_Beta.so" "Linear"                
   Weertman Exponent = Real $({SlidingExponent})
-  Weertman Linear Velocity = Real 0.00001
+  Weertman Linear Velocity = Real 1.0
   ! Options are 'Last Grounded' (default), 'First Floating' or 'Discontinuous' 
   ! Grounding Line Definition = String "Last Grounded"
   Grounding Line Definition = String "Discontinuous"
