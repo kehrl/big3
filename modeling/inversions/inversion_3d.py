@@ -349,9 +349,9 @@ def main():
   beta_linear_lin = scipy.interpolate.griddata((bed['x'][ind],bed['y'][ind]),\
     bed['beta'][ind]**2, (xx,yy), method='linear')
   beta_weertman = scipy.interpolate.griddata((bed['x'][ind],bed['y'][ind]),\
-      (bed['beta'][ind]**2)*(bed['velocity'][ind]**(-2.0/3.0)), (xx,yy), method='nearest')
+      (bed['beta'][ind]**2)/(bed['velocity'][ind]**(-2.0/3.0)), (xx,yy), method='nearest')
   beta_weertman_lin = scipy.interpolate.griddata((bed['x'][ind],bed['y'][ind]),\
-      (bed['beta'][ind]**2)*(bed['velocity'][ind]**(-2.0/3.0)), (xx,yy), method='linear')
+      (bed['beta'][ind]**2)/(bed['velocity'][ind]**(-2.0/3.0)), (xx,yy), method='linear')
   if glacier == 'Helheim':
     # To get rid of edge effects near terminus, we take an average beta from farther upstream
     # and use that near the terminus
@@ -371,8 +371,8 @@ def main():
   fidw.write('{}\n{}\n'.format(len(x),len(y)))
   for i in range(0,len(x)):
     for j in range(0,len(y)):
-      fidl.write('{0} {1} {2}\n'.format(x[i],y[j],beta_linear[j,i]))
-      fidw.write('{0} {1} {2}\n'.format(x[i],y[j],beta_weertman[j,i]))
+      fidl.write('{0} {1} {2:.6f}\n'.format(x[i],y[j],beta_linear[j,i]))
+      fidw.write('{0} {1} {2:.6f}\n'.format(x[i],y[j],beta_weertman[j,i]))
   fidl.close()
   fidw.close()
   del beta_linear, beta_weertman, u, x, y, fidl, fidw, xx, yy
