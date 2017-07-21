@@ -328,6 +328,60 @@ Solver 8
 End
 
 Solver 9
+  !Exec Solver = "Never"
+  Exec Solver = "After TimeStep"
+  Equation = String "StressSolver"
+  Procedure = "ElmerIceSolvers" "ComputeDevStress"          
+  Variable = -nooutput "Sij"
+  Variable DOFs = 1
+  Exported Variable 1 = Stress[Sxx:1 Syy:1 Szz:1 Sxy:1 Syz:1 Sxz:1]
+  Exported Variable 1 DOFs = 6
+  
+  Flow Solver Name = String "Flow Solution"
+  Stress Variable Name = String "Stress"
+  Linear System Solver = Direct
+  Linear System Direct Method =  mumps
+  mumps percentage increase working space = integer 60
+  Linear System Convergence Tolerance = 1.0E-06
+  !Linear System Solver = "Iterative"
+  !Linear System Iterative Method = "BiCGStab"
+  !Linear System Max Iterations = 300
+  !Linear System Convergence Tolerance = 1.0E-9
+  !Linear System Abort Not Converged = False
+  !Linear System Preconditioning = "ILU0"
+  !Linear System Residual Output = 0
+  Optimize Bandwidth = Logical True
+End 
+
+Solver 10
+  !Exec Solver = "Never"
+  Exec Solver = "After TimeStep"
+  Equation = String "StrainSolver"
+  Procedure =  File "ElmerIceSolvers" "ComputeStrainRate"
+  Variable = -nooutput "Eij"
+  Variable DOFs = 1
+  Solver Timing = Logical True
+
+  Exported Variable 1 = "StrainRate"
+  Exported Variable 1 DOFs = 7
+
+  Flow Solver Name = String "Flow Solution"
+
+  Linear System Solver = Direct
+  Linear System Direct Method =  mumps
+  mumps percentage increase working space = integer 60
+  Linear System Convergence Tolerance = 1.0E-06
+  !Linear System Solver = "Iterative"
+  !Linear System Iterative Method = "BiCGStab"
+  !Linear System Max Iterations = 300
+  !Linear System Convergence Tolerance = 1.0E-09
+  !Linear System Abort Not Converged = False
+  !Linear System Preconditioning = "ILU0"
+  !Linear System Residual Output = 0
+  Optimize Bandwidth = Logical True
+End
+
+Solver 11
   Equation = "ResultOutput1"
   Procedure = File "ResultOutputSolve" "ResultOutputSolver"
   !Exec Solver = String "After All"
@@ -341,7 +395,7 @@ Solver 9
   Binary Output = True
 End
 
-Solver 10
+Solver 12
   Exec Solver = "After TimeStep"
   Equation = "Front Advance"
   Procedure =  File "TerminusDriven_Advance.so" "FrontAdvance3D"
@@ -360,7 +414,7 @@ Solver 10
   Exported Variable 1 = "Tangled"
 End
 
-Solver 11
+Solver 13
   Exec Solver = "After TimeStep"
   Equation = "Longitudinal Mesh Update"
   Procedure =  File "MeshSolve" "MeshSolver"
@@ -377,7 +431,7 @@ Solver 11
   Nonlinear System Convergence Tolerance = 1.0e-06
 End
 
-Solver 12
+Solver 14
   !Exec Solver = "Never"
   Exec Solver = "After TimeStep"
   Equation = "Free Surface Top"
@@ -422,7 +476,7 @@ Solver 12
   ALE Formulation = Logical True
 End
 
-Solver 13
+Solver 15
   !Exec Solver = "Never"
   Exec Solver = "After TimeStep"
   Equation = "Free Surface Sea/Shelf"
@@ -467,7 +521,7 @@ Solver 13
   ALE Formulation = Logical True
 End
 
-Solver 14
+Solver 16
   Equation = "Vertical Mesh Update"
   Exec Solver = "After Timestep"
   Procedure =  File "MeshSolve1" "MeshSolver"
@@ -485,7 +539,7 @@ Solver 14
 End
 
 !! Compute the Mask 
-Solver 15
+Solver 17
   !Exec Solver = "After TimeStep"
   Equation = GroundedMask
   Procedure = "ElmerIceSolvers" "GroundedSolver"
@@ -493,60 +547,6 @@ Solver 15
   Variable DOFs = 1
 
   Toler = Real $groundtoler
-End
-
-Solver 16
-  !Exec Solver = "Never"
-  Exec Solver = "After TimeStep"
-  Equation = String "StressSolver"
-  Procedure = "ElmerIceSolvers" "ComputeDevStress"          
-  Variable = -nooutput "Sij"
-  Variable DOFs = 1
-  Exported Variable 1 = Stress[Sxx:1 Syy:1 Szz:1 Sxy:1 Syz:1 Sxz:1]
-  Exported Variable 1 DOFs = 6
-  
-  Flow Solver Name = String "Flow Solution"
-  Stress Variable Name = String "Stress"
-  Linear System Solver = Direct
-  Linear System Direct Method =  mumps
-  mumps percentage increase working space = integer 60
-  Linear System Convergence Tolerance = 1.0E-06
-  !Linear System Solver = "Iterative"
-  !Linear System Iterative Method = "BiCGStab"
-  !Linear System Max Iterations = 300
-  !Linear System Convergence Tolerance = 1.0E-9
-  !Linear System Abort Not Converged = False
-  !Linear System Preconditioning = "ILU0"
-  !Linear System Residual Output = 0
-  Optimize Bandwidth = Logical True
-End 
-
-Solver 17
-  !Exec Solver = "Never"
-  Exec Solver = "After TimeStep"
-  Equation = String "StrainSolver"
-  Procedure =  File "ElmerIceSolvers" "ComputeStrainRate"
-  Variable = -nooutput "Eij"
-  Variable DOFs = 1
-  Solver Timing = Logical True
-
-  Exported Variable 1 = "StrainRate"
-  Exported Variable 1 DOFs = 7
-
-  Flow Solver Name = String "Flow Solution"
-
-  Linear System Solver = Direct
-  Linear System Direct Method =  mumps
-  mumps percentage increase working space = integer 60
-  Linear System Convergence Tolerance = 1.0E-06
-  !Linear System Solver = "Iterative"
-  !Linear System Iterative Method = "BiCGStab"
-  !Linear System Max Iterations = 300
-  !Linear System Convergence Tolerance = 1.0E-09
-  !Linear System Abort Not Converged = False
-  !Linear System Preconditioning = "ILU0"
-  !Linear System Residual Output = 0
-  Optimize Bandwidth = Logical True
 End
 
 Solver 18
@@ -622,26 +622,30 @@ End
 !---------------- EQUATIONS ------------------------
 !---------------------------------------------------
 
+! Body
 Equation 1
-  Active Solvers(15) = 1 2 3 4 7 8 9 14 16 17 18 19 20 21 22
+  Active Solvers(16) = 1 2 3 4 7 8 9 10 11 13 16 18 19 20 21 22
   Flow Solution Name = String "Flow Solution"
   Convection = String Computed
 End
 
+! Surface
 Equation 2
-  Active Solvers(1) = 12
+  Active Solvers(1) = 14
   Flow Solution Name = String "Flow Solution"
   Convection = String Computed
 End
 
+! Bed
 Equation 3
-  Active Solvers(4) = 5 6 13 15
+  Active Solvers(4) = 5 6 15 17
   Flow Solution Name = String "Flow Solution"
   Convection = String Computed
 End
 
+! Front
 Equation 4
-  Active Solvers(2) = 10 11
+  Active Solvers(1) = 12
   Flow Solution Name = String "Flow Solution"
   Convection = String Computed
 End
