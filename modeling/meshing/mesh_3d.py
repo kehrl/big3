@@ -261,15 +261,26 @@ if ssa:
 ################################################################
   
 # Get average 2-m temperatures and surface mass balance
-xrac,yrac,t2m,timet2m = climlib.racmo_grid(x[0],x[-1],y[0],y[-1],'t2m',\
-  	epsg=3413,resolution=1,maskvalues='ice')
-xrac,yrac,smb,timesmb = climlib.racmo_grid(x[0],x[-1],y[0],y[-1],'smb',\
-  	epsg=3413,resolution=1,maskvalues='ice')
+
+racmo_res = 11
+if racmo_res == 1:
+  xrac,yrac,t2m,timet2m = climlib.racmo_grid(x[0],x[-1],y[0],y[-1],'t2m',\
+  	epsg=3413,resolution=racmores,maskvalues='ice')
+  xrac,yrac,smb,timesmb = climlib.racmo_grid(x[0],x[-1],y[0],y[-1],'smb',\
+  	epsg=3413,resolution=racmores,maskvalues='ice')
+elif racmo_res == 11:
+  xrac = np.arange(np.ceil(x[0]),x[-1],1e3)
+  yrac = np.arange(np.ceil(y[0]),y[-1],1e3)
+  timet2m,t2m = climlib.racmo_interpolate_to_cartesiangrid(xrac,yrac,'t2m',\
+     maskvalues='ice',timing='none',time1=times[0],time2=times[-1])
+  timesmb,smb = climlib.racmo_interpolate_to_cartesiangrid(xrac,yrac,'smb',\
+     maskvalues='ice',timing='none',time1=times[0],time2=times[-1])
+
+# Get averages
 smb_ave = np.mean(smb,axis=0)
 t2m_ave = np.mean(t2m,axis=0)
 
 if timeseries == True:
-
   smb2 = np.zeros([len(yrac),len(xrac),len(times)])
   for i in range(0,len(xrac)):
     for j in range(0,len(yrac)):
