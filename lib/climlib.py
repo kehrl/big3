@@ -202,7 +202,7 @@ def racmo_interpolate_to_cartesiangrid(x,y,variable,epsg=3413,maskvalues='ice',t
   Pull all values for RACMO smb, t2m, zs, or runoff values for the region defined 
   by arrays x,y.
   
-  xrac,yrac,var,time = racmo_grid(xmin,xmax,ymin,ymax,
+  var,time = racmo_grid(xmin,xmax,ymin,ymax,
   		variable,epsg=3413,mask='ice')
   
   Inputs:
@@ -321,13 +321,13 @@ def racmo_interpolate_to_cartesiangrid(x,y,variable,epsg=3413,maskvalues='ice',t
     
     ind2 = np.where((time >= time1) & (time <= time2))[0]
     timesub = time[ind2]
-    vargrid = np.zeros([len(x),len(y),len(timesub)])
+    vargrid = np.zeros([len(timesub),len(y),len(x)])
     varsub = var[ind2,:,:]
     
     for k in range(0,len(timesub)):
       varflat = varsub[k,:,:][ind]
-      vargrid[:,:,k] = scipy.interpolate.griddata((xracflat,yracflat),varflat, \
-          (xgrid.flatten(),ygrid.flatten())).reshape(len(x),len(y))
+      vargrid[k,:,:] = scipy.interpolate.griddata((yracflat,xracflat),varflat, \
+          (ygrid.flatten(),xgrid.flatten())).reshape(len(y),len(x))
 
   if variable == 'smb' or variable == 'precip' or variable == 'runoff':
     # If variable is smb, convert kg m-2 s-1 to kg m-2 d-1
