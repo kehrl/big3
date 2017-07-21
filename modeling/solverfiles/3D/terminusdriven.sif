@@ -1,7 +1,6 @@
 check keywords warn
 
 $name = "terminusdriven"
-!$name = "noremesh"
 $yearinsec = 365.25*24*60*60
 $rhoi = 917.0/(1.0e6*yearinsec^2)   
 $rhow = 1025.0/(1.0e6*yearinsec^2) 
@@ -218,6 +217,7 @@ Solver 3
   Equation = "InterpolateAccumulation"
   Procedure = "USF_Accumulation.so" "InterpolateAccumulation"
   Variable = String "Bdot"
+  Restart Timestep = Integer {nrestart}
 End
 
 Solver 4
@@ -535,6 +535,7 @@ Solver 18
   Strain Rate Variable = String "StrainRate"
   Grounded Toler = Real $groundtoler
   Minimum Height = Real $minheight
+  Restart Timestep = Integer {nrestart}
 End
 
 Solver 19

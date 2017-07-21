@@ -37,7 +37,7 @@ parser.add_argument("-dt",dest="dt",required  = False,type=str,\
 parser.add_argument("-slipcoefficient",dest="slipcoefficient",required  = False,type=str,\
        default='1.0E-3',help = "Sidewall slip coefficient.")
 parser.add_argument("-slidinglaw",dest="slidinglaw",required  = False,type=str,\
-       default='linear',help = "Sliding law (linear or weertman).")       
+       default='linear',help = "Sliding law (linear or weertman).")     
 
 args, _ = parser.parse_known_args(sys.argv)
 
@@ -103,6 +103,13 @@ elif slidinglaw == 'weertman':
   sliding_exponent='1.0/3.0'
 else:
   sys.exit("Unknown sliding law of "+slidinglaw)
+  
+if restartposition > 0:
+  print "To restart the model you will also need to:\n"+\
+    "(1) move the results file to the desired mesh directory\n"+\
+    "(2) set Exec Solver = Never in StructuredMeshMapper, and \n"+\
+    "(3) set Restart Position = 1 and Restart File in the Simulation section\n"+\
+    "Remember that we can only restart from the last timestep of a run because previous results files are overwritten"
 
 ###################################
 # Change mesh file in solver file #
@@ -111,7 +118,6 @@ else:
 # Get current date
 now = datetime.datetime.now()
 date = '{0}{1:02.0f}{2:02.0f}'.format((now.year),(now.month),(now.day))
-restartposition = 0
  
 os.chdir(DIRM)
 fid1 = open(DIRS+solverfile_in+'.sif', 'r')
@@ -127,6 +133,7 @@ lines=lines.replace('{TimeSteps}', '{0}'.format(nt))
 lines=lines.replace('{SlipCoefficient}', '{0}'.format(slipcoefficient))
 lines=lines.replace('{BetaDataFile}', '{0}'.format(beta_data_file))
 lines=lines.replace('{SlidingExponent}', '{0}'.format(sliding_exponent))
+lines=lines.replace('{nrestart}','{0}'.format(restartposition))
 
 fid2.write(lines)
 fid1.close()
@@ -141,7 +148,7 @@ del fid1, fid2
 if solverfile_in.startswith('terminusdriven') or solverfile_in == 'checkmeshes':
   os.chdir(DIRM)
   
-  for i in range(1,25):
+  for i in range(max(1,restartposition),25+restartposition):
     if not(os.path.isdir('mesh{0:04d}'.format(i))):
       if os.path.isfile('mesh{0:04d}.tar.gz'.format(i)):
         os.system('tar -xzf mesh{0:04d}.tar.gz'.format(i))
@@ -173,7 +180,7 @@ if solverfile_in.startswith('terminusdriven') or solverfile_in == 'checkmeshes':
         os.system('tar -xf '+inputs+'smb.tar -C '+inputs+' smb{0:04d}.xy'.format(i))
      
     # Now remove old mesh files and zip vtu files
-    for i in range(1,itmax-1):
+    for i in range(max(1,restartposition),itmax-1):
       if os.path.isdir('mesh{0:04d}'.format(i)):
         os.system('rm -r '+'mesh{0:04d}'.format(i))
       if os.path.isfile(inputs+'smb{0:04d}.xy'.format(i)):
@@ -201,7 +208,7 @@ if solverfile_in.startswith('terminusdriven') or (solverfile_in == 'checkmeshes'
   
   # Remove all remaining mesh and tar remaining vtu files
   os.chdir(DIRM)
-  for i in range(1,int(nt)+25):
+  for i in range(max(1,restartposition),int(nt)+25):
     if os.path.isdir('mesh{0:04d}'.format(i)):
       os.system('rm -r '+'mesh{0:04d}'.format(i))
     if os.path.isfile('mesh2d/terminusdriven{0:04d}.pvtu'.format(i)):

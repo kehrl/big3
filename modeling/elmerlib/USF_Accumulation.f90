@@ -25,7 +25,7 @@ SUBROUTINE InterpolateAccumulation(Model,Solver,dt,Transient )
   
   LOGICAL :: FirstTime=.TRUE., UnfoundFatal=.TRUE.,Found
 
-  INTEGER :: i, j, nx, ny, dummyint, TimeStep, TimeStepLast
+  INTEGER :: i, j, nx, ny, dummyint, TimeStep, TimeStepLast, restartposition
   INTEGER, POINTER :: Permutation(:), TopPerm(:)=>NULL()
 
   REAL(KIND=dp) :: x,y
@@ -34,18 +34,27 @@ SUBROUTINE InterpolateAccumulation(Model,Solver,dt,Transient )
   REAL(kind=dp) :: LinearInterp
   
   SAVE smbgrid, xx, yy, nx, ny
-  SAVE FirstTime,TimeStepLast
+  SAVE FirstTime, TimeStepLast, restartposition
   
   Params => GetSolverParams()  
+  
+  ! Find out if this run is a restart of a previous run, and if so add that to the timestep
+  ! to get the right accumulation rate
+  IF (FirstTime) THEN
+      restartposition = ListGetInteger(Params,'Restart Timestep',Found)
+      IF (.NOT. Found) THEN
+        CALL FATAL(SolverName, 'No restart position given.')
+      END IF
+  
+      TopMaskName = "Top Surface Mask"
+  END IF
   
   PointerToVariable => Solver % Variable
   Permutation  => PointerToVariable % Perm
   VariableValues => PointerToVariable % Values
 
   TimestepVar => VariableGet( Model % Variables,'Timestep')
-  Timestep = TimestepVar % Values(1)
-
-  TopMaskName = "Top Surface Mask"
+  Timestep = TimestepVar % Values(1) + restartposition
 
   IF ((FirstTime) .OR. (TimeStep /= TimeStepLast)) THEN
 			

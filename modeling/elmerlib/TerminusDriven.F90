@@ -29,7 +29,7 @@ SUBROUTINE ReMesh(Model,Solver,dt,Transient )
   TYPE(Element_t), POINTER :: Element, CurrentElement
   TYPE(Solver_t), POINTER :: PSolver
   INTEGER :: ExtrudeLevels, i, j, k, ierr, n, NodesPerLevel, dim, dummyint, active, &
-      Timestep, idx, nn, nxbed, nybed
+      Timestep, idx, nn, nxbed, nybed, restartposition
   INTEGER, POINTER :: OldTopVarPerm(:), OldTopPerm(:)=>NULL(), &
       OldBotPerm(:)=>NULL(), OldBotVarPerm(:), TopVarPerm(:), &
       BotVarPerm(:), WorkPerm(:), InterpDim(:)=>NULL()
@@ -43,7 +43,7 @@ SUBROUTINE ReMesh(Model,Solver,dt,Transient )
   REAL(kind=dp) :: global_eps, local_eps, top, bot, x, y, z, zb, groundtoler, minheight
   REAL(kind=dp) :: LinearInterp 
  
-  SAVE :: FirstTime, BotMaskName, TopMaskName
+  SAVE :: FirstTime, BotMaskName, TopMaskName, restartposition
   SAVE :: dembed, xxbed, yybed, nxbed, nybed
 
   Debug = .FALSE.
@@ -58,6 +58,12 @@ SUBROUTINE ReMesh(Model,Solver,dt,Transient )
   IF (FirstTime) THEN
     TopMaskName = "Top Surface Mask"
     BotMaskName = "Bottom Surface Mask"
+    
+    restartposition = ListGetInteger(Params,'Restart Timestep',GotIt)
+    IF (.NOT. GotIt) THEN
+      CALL FATAL(SolverName, 'No Restart Timestep given.')
+    END IF
+    
   END IF !FirstTime
 
   global_eps = 1.0E-2_dp
@@ -74,7 +80,8 @@ SUBROUTINE ReMesh(Model,Solver,dt,Transient )
 
   TimestepVar => VariableGet( Model % Variables,'Timestep')
   Timestep = TimestepVar % Values(1)
-  WRITE (NewMeshName, "(A4,I4.4)") "mesh", Timestep
+  
+  WRITE (NewMeshName, "(A4,I4.4)") "mesh", Timestep + restartposition
   
   IF ((Debug) .AND. (Boss)) PRINT *,'ReMesh: Loading footprint mesh'
   FootPrintMesh => LoadMesh2( Model, NewMeshName, NewMeshName, &
@@ -804,16 +811,6 @@ CONTAINS
          "Top Surface Mask",globaleps=globaleps,localeps=localeps)
     CALL InterpMaskedBCReduced(Model, Solver, OldMesh, NewMesh, OldMesh % Variables, &
          "Bottom Surface Mask",globaleps=globaleps,localeps=localeps)
-
-!    FlowVarName = ListGetString(Params,'Flow Solver Name',Found)
-!    IF(.NOT. Found) FlowVarName = "Flow Solution"
-!    FlowVar => VariableGet(NewMesh % Variables, FlowVarName, .TRUE. )
-!    FlowVar % Values = 0.0_dp
-!    NULLIFY(FlowVar)
-!    FlowLoadsVar => VariableGet(NewMesh % Variables, &
-!             'Flow Solution Loads', .TRUE. )
-!    FlowLoadsVar % Values = 0.0_dp
-!    NULLIFY(FlowLoadsVar)
     
     !-----------------------------------------------
     ! Point solvers at the correct mesh and variable
