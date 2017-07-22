@@ -46,7 +46,7 @@
    TYPE(Mesh_t), POINTER :: Mesh
    TYPE(Nodes_t), TARGET :: FrontNodes, ColumnNodes
    TYPE(ValueList_t), POINTER :: Params
-   TYPE(Variable_t), POINTER :: Var, VeloVar, NormalVar, TangledVar
+   TYPE(Variable_t), POINTER :: Var, VeloVar, NormalVar, TangledVar, BasalVelVar1, BasalVelVar2
    INTEGER :: i, j, k, m, n, DOFs, TotalNodes, NodesPerLevel, ExtrudedLevels,&
         FaceNodeCount, DummyInt, col, hits, ierr, FrontLineCount, county,&
         ShiftIdx, ShiftToIdx, NoTangledGroups, PivotIdx, CornerIdx, &
@@ -68,7 +68,8 @@
    LOGICAL, ALLOCATABLE :: DangerZone(:), WorkLogical(:), UpdatedColumn(:), &
         Tangled(:), DontMove(:)
    CHARACTER(LEN=MAX_NAME_LEN) :: SolverName, VeloVarName, &
-        NormalVarName, FrontMaskName, TopMaskName, TangledVarName
+        NormalVarName, FrontMaskName, TopMaskName, TangledVarName, BasalVelName1, &
+        BasalVelName2
 
    SAVE :: FirstTime
 
@@ -98,6 +99,19 @@
      VeloVarName = "Flow Solution"
    END IF
    VeloVar => VariableGet(Mesh % Variables, VeloVarName, .TRUE., UnfoundFatal=.TRUE.)
+   
+   !Get basal horizontal velocities so that the mesh remains extruded. Basically we are making
+   ! the assumption that any overhang will break off and the front will remain vertical.
+   BasalVelName1 = ListGetString(Params,'Basal Velocity 1',Found)
+   IF(.NOT. Found) THEN
+     CALL FATAL(SolverName, "Basal Velocity 1 variable name was not found.")
+   END IF
+   BasalVelVar1 => VariableGet(Mesh % Variables,BasalVelName1, .TRUE., UnfoundFatal=.TRUE.)
+   BasalVelName2 = ListGetString(Params,'Basal Velocity 2',Found)
+   IF(.NOT. Found) THEN
+     CALL FATAL(SolverName, "Basal Velocity 2 variable name was not found.")
+   END IF
+   BasalVelVar2 => VariableGet(Mesh % Variables,BasalVelName2, .TRUE., UnfoundFatal=.TRUE.)
 
    TangledVarName = "Tangled"
    TangledVar => VariableGet(Mesh % Variables, TangledVarName, .TRUE., UnfoundFatal=.TRUE.)
@@ -242,8 +256,14 @@
      IF(Perm(i) <= 0) CYCLE
 
      !Compute front normal component of velocity
-     NodeVelo(1) = VeloVar % Values(((VeloVar % Perm(i)-1)*VeloVar % DOFs) + 1)
-     NodeVelo(2) = VeloVar % Values(((VeloVar % Perm(i)-1)*VeloVar % DOFs) + 2)
+     !Use the following two lines if you want depth-varying velocities
+     !NodeVelo(1) = VeloVar % Values(((VeloVar % Perm(i)-1)*VeloVar % DOFs) + 1)
+     !NodeVelo(2) = VeloVar % Values(((VeloVar % Perm(i)-1)*VeloVar % DOFs) + 2)
+     
+     !Use basal velocities, making the assumption that overhangs immediately calve
+     NodeVelo(1) = BasalVelVar1 % Values(BasalVelVar1 % Perm(i))
+     NodeVelo(2) = BasalVelVar2 % Values(BasalVelVar2 % Perm(i))
+     
      NodeVelo(3) = VeloVar % Values(((VeloVar % Perm(i)-1)*VeloVar % DOFs) + 3)
 
      Displace = 0.0
