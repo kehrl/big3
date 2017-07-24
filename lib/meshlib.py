@@ -150,8 +150,6 @@ def xy_to_gmsh_3d(glacier,date,exterior,holes,refine,DIRM,lc1,lc2,lc3,lc4,\
   fid.write("lc2 = %f; \n" % lc2)
   fid.write("lc3 = %f; \n" % lc3)
   fid.write("lc4 = %f; \n" % lc4)
-  lc5 = lc3/2
-  fid.write("lc5 = %f; \n" % lc5)
   
   n=1      # Set index for counting
   ind_1=[] # Entire mesh
@@ -172,8 +170,8 @@ def xy_to_gmsh_3d(glacier,date,exterior,holes,refine,DIRM,lc1,lc2,lc3,lc4,\
   for i in range(0,X):
     if i != 0:
       d = math.sqrt((exterior[last,0]-exterior[i,0])**2+(exterior[last,1]-exterior[i,1])**2)
-    if (exterior[i,2] == 2) and (d > lc5/2):
-      fid.write('Point({}) = {{{}, {}, 0, lc5}}; \n'.format(n,exterior[i,0],exterior[i,1]))
+    if (exterior[i,2] == 2) and (d > lc3/2):
+      fid.write('Point({}) = {{{}, {}, 0, lc3}}; \n'.format(n,exterior[i,0],exterior[i,1]))
       last = i
       indices.append(i)
       n = n+1
