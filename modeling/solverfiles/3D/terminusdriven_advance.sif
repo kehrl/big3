@@ -360,17 +360,14 @@ Solver 10
   
   Flow Solver Name = String "Flow Solution"
   Stress Variable Name = String "Stress"
-  Linear System Solver = Direct
-  Linear System Direct Method =  mumps
-  mumps percentage increase working space = integer 60
-  Linear System Convergence Tolerance = 1.0E-06
-  !Linear System Solver = "Iterative"
-  !Linear System Iterative Method = "BiCGStab"
-  !Linear System Max Iterations = 300
-  !Linear System Convergence Tolerance = 1.0E-9
-  !Linear System Abort Not Converged = False
-  !Linear System Preconditioning = "ILU0"
-  !Linear System Residual Output = 0
+
+  Linear System Solver = "Iterative"
+  Linear System Iterative Method = "BiCGStab"
+  Linear System Max Iterations = 300
+  Linear System Convergence Tolerance = 1.0E-9
+  Linear System Abort Not Converged = False
+  Linear System Preconditioning = "ILU0"
+  Linear System Residual Output = 0
   Optimize Bandwidth = Logical True
 End 
 
@@ -388,53 +385,53 @@ Solver 11
 
   Flow Solver Name = String "Flow Solution"
 
-  Linear System Solver = Direct
-  Linear System Direct Method =  mumps
-  mumps percentage increase working space = integer 60
-  Linear System Convergence Tolerance = 1.0E-06
-  !Linear System Solver = "Iterative"
-  !Linear System Iterative Method = "BiCGStab"
-  !Linear System Max Iterations = 300
-  !Linear System Convergence Tolerance = 1.0E-09
-  !Linear System Abort Not Converged = False
-  !Linear System Preconditioning = "ILU0"
-  !Linear System Residual Output = 0
+  Linear System Solver = "Iterative"
+  Linear System Iterative Method = "BiCGStab"
+  Linear System Max Iterations = 300
+  Linear System Convergence Tolerance = 1.0E-9
+  Linear System Abort Not Converged = False
+  Linear System Preconditioning = "ILU0"
+  Linear System Residual Output = 0
   Optimize Bandwidth = Logical True
 End
 
 Solver 12
-  Exec Solver = "Never"
-
-End
-
-Solver 13
-  Exec Solver = "Never"  
-
-End
-
-Solver 14
   Exec Solver = "After TimeStep"
   Equation = "ExportVertically1"
   Procedure = File "ElmerIceSolvers" "ExportVertically"
   Variable = String "BasalVelocity1"
   Variable DOFs = 1
-  Linear System Solver = "Direct"
-  Linear System Direct Method = mumps
+
+  Linear System Solver = "Iterative"
+  Linear System Iterative Method = "BiCGStab"
+  Linear System Max Iterations = 300
+  Linear System Convergence Tolerance = 1.0E-9
+  Linear System Abort Not Converged = False
+  Linear System Preconditioning = "ILU0"
+  Linear System Residual Output = 0
+  Optimize Bandwidth = Logical True
 End
 
 
-Solver 15
+Solver 13
   Exec Solver = "After TimeStep"
   Equation = "ExportVertically2"
   Procedure = File "ElmerIceSolvers" "ExportVertically"
   Variable = String "BasalVelocity2"
   Variable DOFs = 1
-  Linear System Solver = "Direct"
-  Linear System Direct Method = mumps
+
+  Linear System Solver = "Iterative"
+  Linear System Iterative Method = "BiCGStab"
+  Linear System Max Iterations = 300
+  Linear System Convergence Tolerance = 1.0E-9
+  Linear System Abort Not Converged = False
+  Linear System Preconditioning = "ILU0"
+  Linear System Residual Output = 0
+  Optimize Bandwidth = Logical True
 End
 
 
-Solver 16
+Solver 14
   Equation = "ResultOutput1"
   Procedure = File "ResultOutputSolve" "ResultOutputSolver"
   !Exec Solver = String "After All"
@@ -448,7 +445,7 @@ Solver 16
   Binary Output = True
 End
 
-Solver 17
+Solver 15
   Exec Solver = "After TimeStep"
   Equation = "Front Advance"
   Procedure =  File "TerminusDriven_Advance.so" "FrontAdvance3D"
@@ -470,7 +467,7 @@ Solver 17
   Exported Variable 1 = "Tangled"
 End
 
-Solver 18
+Solver 16
   Exec Solver = "After TimeStep"
   Equation = "Longitudinal Mesh Update"
   Procedure =  File "MeshSolve" "MeshSolver"
@@ -487,7 +484,7 @@ Solver 18
   Nonlinear System Convergence Tolerance = 1.0e-06
 End
 
-Solver 19
+Solver 17
   !Exec Solver = "Never"
   Exec Solver = "After TimeStep"
   Equation = "Free Surface Top"
@@ -532,7 +529,7 @@ Solver 19
   ALE Formulation = Logical True
 End
 
-Solver 20
+Solver 18
   !Exec Solver = "Never"
   Exec Solver = "After TimeStep"
   Equation = "Free Surface Sea/Shelf"
@@ -577,7 +574,7 @@ Solver 20
   ALE Formulation = Logical True
 End
 
-Solver 21
+Solver 19
   Equation = "Vertical Mesh Update"
   Exec Solver = "After Timestep"
   Procedure =  File "MeshSolve1" "MeshSolver"
@@ -595,7 +592,7 @@ Solver 21
 End
 
 !! Compute the Mask 
-Solver 22
+Solver 20
   !Exec Solver = "After TimeStep"
   Equation = GroundedMask
   Procedure = "ElmerIceSolvers" "GroundedSolver"
@@ -605,7 +602,7 @@ Solver 22
   Toler = Real $groundtoler
 End
 
-Solver 23
+Solver 21
   Exec Solver = String "Never"
   Equation = "Save Mesh"
   Procedure = "SaveMesh" "SaveMesh"
@@ -616,7 +613,7 @@ Solver 23
   !Save All Timesteps = Logical True
 End
 
-Solver 24
+Solver 22
   Exec Solver = "Never"
   Equation = "Save BC Params"
   Procedure = "SaveData" "SaveBoundaryValues"
@@ -626,7 +623,7 @@ Solver 24
   Parameter 4 = String "Slip Coefficient 3"
 End
 
-Solver 25
+Solver 23
   !Exec Solver = "Never"
   Exec Solver = String "After Timestep"
   Equation = String "ReMesh"
@@ -649,7 +646,7 @@ Solver 25
   Restart Timestep = Integer {nrestart}
 End
 
-Solver 26
+Solver 24
   Equation = "Remesh Map Coordinate"
   Procedure = "StructuredMeshMapper" "StructuredMeshMapper"
   Exec Solver = "Never"
@@ -659,7 +656,7 @@ Solver 26
   Always Detect Structure = Logical True
 End
 
-Solver 27
+Solver 25
   Exec Solver = "Never"
   !Exec Solver = String "After Timestep"
   Equation = "ResultOutput2"
@@ -680,28 +677,28 @@ End
 
 ! Body
 Equation 1
-  Active Solvers(21) = 1 2 3 4 5 8 9 10 11 12 13 14 15 16 18 21 23 24 25 26 27
+  Active Solvers(19) = 1 2 3 4 5 8 9 10 11 12 13 14 16 19 21 22 23 24 25
   Flow Solution Name = String "Flow Solution"
   Convection = String Computed
 End
 
 ! Surface
 Equation 2
-  Active Solvers(1) = 19
+  Active Solvers(1) = 17
   Flow Solution Name = String "Flow Solution"
   Convection = String Computed
 End
 
 ! Bed
 Equation 3
-  Active Solvers(4) = 6 7 20 22
+  Active Solvers(4) = 6 7 18 20
   Flow Solution Name = String "Flow Solution"
   Convection = String Computed
 End
 
 ! Front
 Equation 4
-  Active Solvers(1) = 17
+  Active Solvers(1) = 15
   Flow Solution Name = String "Flow Solution"
   Convection = String Computed
 End
