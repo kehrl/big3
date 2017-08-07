@@ -37,7 +37,7 @@ elif glacier == 'Kanger':
 ################
 
 time1 = 2008.0 #start time for plot
-time2 = 2016 # end time for plot
+time2 = 2016.0 # end time for plot
 vbars = 'runoff' # plot seasonal bars, to highlight seasonal trends
 normalized = 0
 lagrangian = 0
@@ -310,7 +310,7 @@ if plot_overview == 1:
   ind = np.where(calvingstyle[:,1] == 'Tabular')[0]
   ax.set_ylim([-6,6])
   slope,intercept,r,p,std_error=stats.linregress(terminus_time,terminus_val)
-  plt.plot(terminus_time,(terminus_time*slope+intercept)/1e3,'k--',lw=0.75)
+  plt.plot(terminus_time,(terminus_time*slope+intercept)/1e3,'k--',lw=1)
   if vbars == 'seasonal':
     xTickPos = np.linspace(np.floor(time1)-0.25,np.ceil(time2)-0.25,(np.ceil(time2)-np.floor(time1))*2+1)
     ax.bar(xTickPos,[max(plt.ylim())-min(plt.ylim())] * len(xTickPos), (xTickPos[1]-xTickPos[0]), bottom=min(plt.ylim()), color=['0.85','w'],linewidth=0)
@@ -327,18 +327,15 @@ if plot_overview == 1:
   ind = np.where((calvingstyle[:,1] == 'Mixed'))[0]
   for i in ind:
     if i == ind[1]:
-      plt.bar(float(calvingstyle[i,0])-0.025,10.0,width=0.025,color=[0.4,0.8,0.6],edgecolor='none',label='Mixed',bottom=-5)
+      plt.bar(float(calvingstyle[i,0])-0.025,10.0,width=0.025,color='gold',edgecolor='none',label='Mixed',bottom=-5)
     elif i != 0:
-      plt.bar(float(calvingstyle[i,0])-0.025,10.0,width=0.025,color=[0.4,0.8,0.6],edgecolor='none',bottom=-5)
+      plt.bar(float(calvingstyle[i,0])-0.025,10.0,width=0.025,color='gold',edgecolor='none',bottom=-5)
   ind = np.where((calvingstyle[:,1] == 'Domino'))[0]
   for i in ind:
     if i == ind[1]:
       plt.bar(float(calvingstyle[i,0])-0.025,10.0,width=0.025,color=[1,0.6,0.6],edgecolor='none',label='Non-tabular',bottom=-5)
     elif i != 0:
       plt.bar(float(calvingstyle[i,0])-0.025,10.0,width=0.025,color=[1,0.6,0.6],edgecolor='none',bottom=-5)
-  if plot_images == 1:
-   for i in range(0,len(images)):
-      plt.plot([images_time[i][3],images_time[i][3]],ax.get_ylim(),'--',color='0.3')
   nonnan = np.where(~(np.isnan(terminus_val)))[0]
   if glacier == 'Helheim':
     # Get water depth at calving front
@@ -375,7 +372,7 @@ if plot_overview == 1:
 
   handles, labels = ax.get_legend_handles_labels()
   ind = [4,0,2,1,3]
-  ax.legend(loc=2,fontsize=8,numpoints=1,handlelength=0.3,labelspacing=0.05,ncol=3,columnspacing=0.7,handletextpad=0.2,borderpad=0.25)
+  ax.legend(loc=2,fontsize=8,numpoints=1,handlelength=0.5,labelspacing=0.05,ncol=3,columnspacing=0.7,handletextpad=0.2,borderpad=0.25)
   if glacier == 'Helheim':
     ax.set_ylim([-4,4])
     ax.text(2008.13,-3.5,'a',fontsize=10,fontname='arial',weight='bold')
@@ -389,7 +386,10 @@ if plot_overview == 1:
   ax = plt.subplot(gs[1:3, :]) 
   #plt.plot([2000,2014],[0,0],'k')
   #coloptions=['k','r','y','g','b']
-  coloptions=['r','b','g','limegreen','gold']
+  #coloptions=['r','b','g','limegreen','gold']
+  #coloptions = [[200./255,0,0], [182./255,219./255,1],'gold',[0,146./255,146./255],[0.3,0.3,0.3]]
+  coloptions = [[0.1,0.1,200./255],[182./255,219./255,1],'limegreen','gold',[200./255,0,0]]
+
   markoptions=['o','o','o','o','o','o']
   if plot_images == 1:
    for i in range(0,len(images)):
@@ -408,7 +408,7 @@ if plot_overview == 1:
   else:
     for i in range(0,len(dists_eul)):
       nonnan = np.where(~(np.isnan(vel_val[:,i])))[0]
-      plt.plot(vel_time[nonnan],(vel_val[nonnan,i])/1e3,'k'+markoptions[i],mew=0.5,markerfacecolor=coloptions[i],label=glacier[0]+'{0:02d}'.format(int(abs(dists_eul[i]))),markersize=3.5)
+      plt.plot(vel_time[nonnan],(vel_val[nonnan,i])/1e3,'k'+markoptions[i],mew=0.5,markerfacecolor=coloptions[i],label=glacier[0]+'{0:02d}'.format(int(abs(dists_eul[i]))),markersize=4)
       #nonnan = np.where(~(np.isnan(vel_val_howat[:,i])))[0]
       #plt.plot(vel_time_howat[nonnan,0],(vel_val_howat[nonnan,i])/1e3,'+',color=coloptions[i],markersize=5)
     plt.yticks(range(2,12),fontsize=8,fontname="Arial")
@@ -452,16 +452,16 @@ if plot_overview == 1:
   plt.subplot(gs[3:5, :])
   ax = plt.gca()
   # Set up points for legend
-  plt.errorbar(0,0,capsize=1,yerr=0.5,fmt='o',color='k',markersize=3.5,label='WV')
-  plt.errorbar(0,0,capsize=1,yerr=0.5,fmt='^',color='k',markersize=3.5,label='TDM')
-  plt.plot(0,0,'+',color='k',markersize=5,label='ATM')
+  plt.errorbar(0,0,capsize=1,yerr=0.5,fmt='o',color='k',markersize=4,label='WV',mew=0.5,lw=1)
+  plt.errorbar(0,0,capsize=1,yerr=0.5,fmt='^',color='k',markersize=4,label='TDM',mew=0.5,lw=1)
+  plt.plot(0,0,'d',color='k',markersize=4,label='ATM',mec='k',lw=1)
   if glacier == 'Helheim':
-    plt.plot(0,0,'ks',markerfacecolor='r',label='H02',markersize=3.5,mew=0.5)
-    plt.plot(0,0,'ks',markerfacecolor='b',label='H05',markersize=3.5,mew=0.5)
+    plt.plot(0,0,'ks',markerfacecolor=coloptions[0],label='H02',markersize=4,mew=0.5,lw=1)
+    plt.plot(0,0,'ks',markerfacecolor=coloptions[1],label='H05',markersize=4,mew=0.5,lw=1)
   elif glacier == 'Kanger':
-    plt.errorbar(0,0,capsize=1,yerr=0,fmt='v',color='k',markersize=3.5,label='SPIRIT',mew=0.5)
-    plt.plot(0,0,'ks',markerfacecolor='b',label='K05',markersize=3.5,mew=0.5)
-    plt.plot(0,0,'ks',markerfacecolor='g',label='K10',markersize=3.5,mew=0.5)
+    plt.errorbar(0,0,capsize=1,yerr=0,fmt='v',color='k',markersize=4,label='SPIRIT',mew=0.5,lw=1)
+    plt.plot(0,0,'ks',markerfacecolor=coloptions[1],label='K05',markersize=4,mew=0.5,lw=1)
+    plt.plot(0,0,'ks',markerfacecolor=coloptions[2],label='K10',markersize=4,mew=0.5,lw=1)
   if plot_images == 1:
    for i in range(0,len(images)):
       plt.plot([images_time[i][3],images_time[i][3]],ax.get_ylim(),'--',color='0.3')
@@ -475,19 +475,19 @@ if plot_overview == 1:
       ax.add_patch(patch)
   if glacier == 'Helheim':
 		plt.fill_between([time1,time2],np.ones(2)*floatlib.height(zb[ind_eul[0]]-50)-floatlib.height(zb[ind_eul[0]]),np.ones(2)*floatlib.height(zb[ind_eul[0]]+50)-floatlib.height(zb[ind_eul[0]]),
-  			alpha=0.1,facecolor='r',edgecolor='r',antialiased=True,zorder=2)
-		plt.plot([time1,time2],[0,0],'r:',linewidth=1.0)
-		plt.errorbar(time_wv,zpt_wv[:,0]-floatlib.height(zb[ind_eul[0]]),capsize=1,yerr=zpterror_wv,fmt='o',mew=0.5,mec='k',color=coloptions[0],markersize=3.5)
-		plt.errorbar(time_tdm,zpt_tdm[:,0]-floatlib.height(zb[ind_eul[0]]),capsize=1,yerr=zpterror_tdm,fmt='^',mew=0.5,mec='k',color=coloptions[0],markersize=3.5)
-		plt.plot(time_atm,zpt_atm[:,0]-floatlib.height(zb[ind_eul[0]]),'+',color=coloptions[0],markersize=5)
+  			alpha=0.15,facecolor=coloptions[0],edgecolor=coloptions[0],antialiased=True,zorder=2)
+		plt.plot([time1,time2],[0,0],':',color=coloptions[0],linewidth=1.0)
+		plt.errorbar(time_wv,zpt_wv[:,0]-floatlib.height(zb[ind_eul[0]]),capsize=1,yerr=zpterror_wv,fmt='o',mew=0.5,mec='k',color=coloptions[0],markersize=4,ecolor='k',lw=1)
+		plt.errorbar(time_tdm,zpt_tdm[:,0]-floatlib.height(zb[ind_eul[0]]),capsize=1,yerr=zpterror_tdm,fmt='^',mew=0.5,mec='k',color=coloptions[0],markersize=4,ecolor='k',lw=1)
+		plt.plot(time_atm,zpt_atm[:,0]-floatlib.height(zb[ind_eul[0]]),'d',color=coloptions[0],markersize=4,mew=0.5,mec='k',lw=1)
   if glacier == 'Kanger':
 		plt.fill_between([time1,time2],np.ones(2)*floatlib.height(zb[ind_eul[1]]-50)-floatlib.height(zb[ind_eul[1]]),np.ones(2)*floatlib.height(zb[ind_eul[1]]+50)-floatlib.height(zb[ind_eul[1]]),
-  			alpha=0.1,facecolor='b',edgecolor='b',antialiased=True,zorder=2)
-		plt.plot([time1,time2],[0,0],'b:',linewidth=1.0)
-		plt.errorbar(time_wv,zpt_wv[:,1]-floatlib.height(zb[ind_eul[1]]),capsize=1,yerr=zpterror_wv,fmt='o',color=coloptions[1],mec='k',mew=0.5,markersize=3.5)
-		plt.errorbar(time_tdm,zpt_tdm[:,1]-floatlib.height(zb[ind_eul[1]]),capsize=1,yerr=zpterror_tdm,fmt='^',color=coloptions[1],mec='k',mew=0.5,markersize=3.5)
-		plt.errorbar(time_spirit,zpt_spirit[:,1]-floatlib.height(zb[ind_eul[1]]),capsize=1,yerr=zpterror_spirit,fmt='v',color=coloptions[1],mec='k',mew=0.5,markersize=3.5)
-		plt.plot(time_atm,zpt_atm[:,1]-floatlib.height(zb[ind_eul[1]]),'+',color=coloptions[1],markersize=5)
+  			alpha=0.25,facecolor=coloptions[1],edgecolor=coloptions[1],antialiased=True,zorder=2)
+		plt.plot([time1,time2],[0,0],':',color=coloptions[1],linewidth=1.0)
+		plt.errorbar(time_wv,zpt_wv[:,1]-floatlib.height(zb[ind_eul[1]]),capsize=1,yerr=zpterror_wv,fmt='o',color=coloptions[1],mec='k',mew=0.5,markersize=4,ecolor='k',lw=1)
+		plt.errorbar(time_tdm,zpt_tdm[:,1]-floatlib.height(zb[ind_eul[1]]),capsize=1,yerr=zpterror_tdm,fmt='^',color=coloptions[1],mec='k',mew=0.5,markersize=4,ecolor='k',lw=1)
+		plt.errorbar(time_spirit,zpt_spirit[:,1]-floatlib.height(zb[ind_eul[1]]),capsize=1,yerr=zpterror_spirit,fmt='v',color=coloptions[1],mec='k',mew=0.5,markersize=4,lw=1,ecolor='k')
+		plt.plot(time_atm,zpt_atm[:,1]-floatlib.height(zb[ind_eul[1]]),'d',color=coloptions[1],markersize=4,mec='k',mew=0.5,lw=1)
   x_formatter = matplotlib.ticker.ScalarFormatter(useOffset=False)
   ax.xaxis.set_major_formatter(x_formatter)
   ax.xaxis.set_minor_locator(AutoMinorLocator(2))
@@ -521,15 +521,15 @@ if plot_overview == 1:
   ax2.plot(timerac,runrac,c='0.4',dashes=[2,1],lw=1.5,label='Runoff')
   if glacier == 'Helheim':
     ind = np.where(~(np.isnan(zpt_wv[:,1])))[0]
-    ax2.errorbar(time_wv[ind],zpt_wv[ind,1]-floatlib.height(zb[ind_eul[1]]),capsize=1,yerr=zpterror_wv[ind],fmt='o',mew=0.5,mec='k',color=coloptions[1],markersize=3.5,label='WV')
-    ax2.errorbar(time_tdm,zpt_tdm[:,1]-floatlib.height(zb[ind_eul[1]]),capsize=1,yerr=zpterror_tdm,fmt='^',mew=0.5,mec='k',color=coloptions[1],markersize=3.5,label='TDM')
-    ax2.plot(time_atm,zpt_atm[:,1]-floatlib.height(zb[ind_eul[1]]),'+',color=coloptions[1],markersize=5,label='ATM')
+    ax2.errorbar(time_wv[ind],zpt_wv[ind,1]-floatlib.height(zb[ind_eul[1]]),capsize=1,yerr=zpterror_wv[ind],fmt='o',mew=0.5,mec='k',color=coloptions[1],markersize=4,label='WV',ecolor='k',lw=1)
+    ax2.errorbar(time_tdm,zpt_tdm[:,1]-floatlib.height(zb[ind_eul[1]]),capsize=1,yerr=zpterror_tdm,fmt='^',mew=0.5,mec='k',color=coloptions[1],markersize=4,label='TDM',ecolor='k',lw=1)
+    ax2.plot(time_atm,zpt_atm[:,1]-floatlib.height(zb[ind_eul[1]]),'d',color=coloptions[1],markersize=4,mec='k',mew=0.5,label='ATM')
     ax2.set_ylabel('    Height above flotation at H05 (m)',fontsize=8,fontname='Arial')
   elif glacier == 'Kanger':
-    ax2.errorbar(time_wv,zpt_wv[:,2]-floatlib.height(zb[ind_eul[2]]),capsize=1,yerr=zpterror_wv,fmt='o',mew=0.5,mec='k',color=coloptions[2],markersize=3.5,label='WV')
-    ax2.errorbar(time_tdm,zpt_tdm[:,2]-floatlib.height(zb[ind_eul[2]]),capsize=1,yerr=zpterror_tdm,fmt='^',mew=0.5,mec='k',color=coloptions[2],markersize=3.5,label='TDM')
-    ax2.plot(time_atm,zpt_atm[:,2]-floatlib.height(zb[ind_eul[2]]),'+',color=coloptions[2],markersize=5,label='ATM')
-    ax2.errorbar(time_spirit,zpt_spirit[:,2]-floatlib.height(zb[ind_eul[2]]),capsize=1,yerr=zpterror_spirit,fmt='v',mew=0.5,mec='k',color=coloptions[2],markersize=3.5,label='SPIRIT')
+    ax2.errorbar(time_wv,zpt_wv[:,2]-floatlib.height(zb[ind_eul[2]]),capsize=1,yerr=zpterror_wv,fmt='o',mew=0.5,mec='k',color=coloptions[2],markersize=4,label='WV',ecolor='k',lw=1)
+    ax2.errorbar(time_tdm,zpt_tdm[:,2]-floatlib.height(zb[ind_eul[2]]),capsize=1,yerr=zpterror_tdm,fmt='^',mew=0.5,mec='k',color=coloptions[2],markersize=4,label='TDM',ecolor='k',lw=1)
+    ax2.plot(time_atm,zpt_atm[:,2]-floatlib.height(zb[ind_eul[2]]),'d',color=coloptions[2],markersize=5,label='ATM',mec='k',mew=0.5,lw=1)
+    ax2.errorbar(time_spirit,zpt_spirit[:,2]-floatlib.height(zb[ind_eul[2]]),capsize=1,yerr=zpterror_spirit,fmt='v',mew=0.5,mec='k',color=coloptions[2],markersize=4,label='SPIRIT',lw=1,ecolor='k')
     ax2.set_ylabel('   Height above flotation at K10 (m)',fontsize=8,fontname='Arial')
   ax2.set_xlim([time1,time2])
   ax2.tick_params('both', length=6, width=1.25, which='major')
@@ -564,9 +564,9 @@ if plot_overview == 1:
       ax.add_patch(patch)
   ax.plot([time1,time2],[0,0],'k')
   ax.plot(timerac,smbrac/900.*100,'0.4',lw=1.2,label='SMB')
-  ax.errorbar(dem_time[:,0],dem_dH[:,0]/365.25*100,xerr=dem_time[:,1],yerr=dem_dH[:,1]/365.25*100,fmt='bo',markersize=3,mec='k',mew=0.5,capsize=1,lw=0.5,label='DEM')
+  ax.errorbar(dem_time[:,0],dem_dH[:,0]/365.25*100,xerr=dem_time[:,1],yerr=dem_dH[:,1]/365.25*100,fmt='o',color=[0.7137254901960784, 0.8588235294117647, 1],markersize=3.5,mec='k',mew=0.5,capsize=1,lw=0.5,label='DEM',ecolor='k')
   ind = np.where(~(np.isnan(flux_dH)))[0]
-  ax.errorbar(flux_time[ind],(flux_dH[ind,0]+smb_flux[ind])/365.25*100,yerr=yerr,xerr=5.5/365.25,fmt='rs',markersize=3,mec='k',mew=0.5,capsize=1,lw=0.5,label='Flux')
+  ax.errorbar(flux_time[ind],(flux_dH[ind,0]+smb_flux[ind])/365.25*100,yerr=yerr,xerr=5.5/365.25,fmt='s',color=[200./255,0,0],markersize=3.5,mec='k',mew=0.5,capsize=1,lw=0.5,label='Flux',ecolor='k')
   plt.xlim([time1,time2])
   plt.ylabel(r'$dh/dt$ (cm d$^{-1}$)',fontname='Arial',fontsize=8)
   x_formatter = matplotlib.ticker.ScalarFormatter(useOffset=False)
@@ -619,15 +619,19 @@ if plot_overview == 1:
   ax.set_xticklabels(labels,fontsize=8,fontname='Arial')
   plt.xlim([time1,time2])
   plt.plot(timesif,sif,'k-',lw=1.5,label='SIF')
-  ind = np.where((np.isnan(velmel_val[:,0])))[0]
-  plt.plot(velmel_time[ind,0],0.52*np.ones([len(ind),1]),'b.',label='Free')
-  ind = np.where(~(np.isnan(velmel_val[:,0])))[0]
-  plt.plot(velmel_time[ind,0],0.48*np.ones([len(ind),1]),'r.',label='Rigid')
   ax2 = ax.twinx()
   ax2.plot([0,0],[1,1],'k-',lw=1.5,label='SIF')
   ax2.plot(timerac,runrac,c='0.4',dashes=[2,1],lw=1.5,label='Runoff')
-  ax2.plot(0,0,'r.',label='Rigid')
-  ax2.plot(0,0,'b.',label='Free')
+  ind = np.where((np.isnan(velmel_val[:,0])))[0]
+  ax2.plot(velmel_time[ind,0],0.52*50*np.ones([len(ind),1]),'ko',label='Free',markerfacecolor=[182./255,219./255,1],markersize=4,mew=1)
+  ind = np.where(~(np.isnan(velmel_val[:,0])))[0]
+  ax2.plot(velmel_time[ind,0],0.48*50*np.ones([len(ind),1]),'ko',label='Rigid',markerfacecolor=[200./255,0,0],markersize=4,mew=1)
+  ind = np.where((np.isnan(velmel_val[:,0])))[0]
+  ax2.plot(velmel_time[ind,0],0.52*50*np.ones([len(ind),1]),'o',color=[182./255,219./255,1],markersize=4,mew=0)
+  ind = np.where(~(np.isnan(velmel_val[:,0])))[0]
+  ax2.plot(velmel_time[ind,0],0.48*50*np.ones([len(ind),1]),'o',color=[200./255,0,0],markersize=4,mew=0)
+  #ax2.plot(0,0,'r.',label='Rigid')
+  #ax2.plot(0,0,'.',label='Free',color='#87cefa')
   ax2.set_xlim([time1,time2])
   ax2.set_ylim([0,50])
   ax2.set_yticks([0,25,50])
@@ -659,7 +663,7 @@ if plot_overview == 1:
 
   plt.tight_layout()
   plt.subplots_adjust(hspace=0.03,wspace=0.02,top=0.96,right=0.92,left=0.07,bottom=0.04) 
-  plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+"_vel_time_"+str(int(time1))+"to"+str(int(time2))+".pdf"),FORMAT='PDF',dpi=600)
+  plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+"_vel_time_"+str(int(time1))+"to"+str(int(time2))+".pdf"),FORMAT='pdf',dpi=600)
   plt.close()
 
   #########################################
@@ -1145,27 +1149,27 @@ if glacier == 'Helheim':
   if advance:
     ind = np.where((terminus_time > 2010.49589) & (terminus_time < 2011.49589))[0]
     time_term = (terminus_time[ind]-np.min(np.floor(terminus_time[ind])))*12
-    plt.plot(time_term,terminus_val[ind]/1e3,'g.-',label='2010/11',lw=0.5)
+    plt.plot(time_term,terminus_val[ind]/1e3,'v-',color=[0.1, 0.1, 0.7843137254901961],label='2010/11',lw=0.5,markersize=3)
     ind = np.where((terminus_time > 2013.49589) & (terminus_time < 2014.49589))[0]
     time_term = (terminus_time[ind]-np.min(np.floor(terminus_time[ind])))*12
-    plt.plot(time_term,terminus_val[ind]/1e3,'m.-',label='2013/14',lw=0.5)
+    plt.plot(time_term,terminus_val[ind]/1e3,'s-',color=[0.7843137254901961, 0, 0],label='2013/14',lw=0.5,markersize=3)
     plt.text(6.4,2,'b',fontsize=8,fontname='Arial',fontweight='bold')
   else:
     ind = np.where((terminus_time > 2008.49589) & (terminus_time < 2009.49589))[0]
     time_term = (terminus_time[ind]-np.min(np.floor(terminus_time[ind])))*12
-    plt.plot(time_term,terminus_val[ind]/1e3,'k.-',label='2008/09',lw=0.5)
+    plt.plot(time_term,terminus_val[ind]/1e3,'d-',color='k',label='2008/09',lw=0.5,markersize=3)
     ind = np.where((terminus_time > 2009.49589) & (terminus_time < 2010.49589))[0]
     time_term = (terminus_time[ind]-np.min(np.floor(terminus_time[ind])))*12
-    plt.plot(time_term,terminus_val[ind]/1e3,'r.-',label='2009/10',lw=0.5)
+    plt.plot(time_term,terminus_val[ind]/1e3,'^-',color=[0.7,0.7,0.7],label='2009/10',lw=0.5,markersize=3)
     ind = np.where((terminus_time > 2011.49589) & (terminus_time < 2012.49589))[0]
     time_term = (terminus_time[ind]-np.min(np.floor(terminus_time[ind])))*12
-    plt.plot(time_term,terminus_val[ind]/1e3,'b.-',label='2011/12',lw=0.5)
+    plt.plot(time_term,terminus_val[ind]/1e3,'<-',color=[0.7137254901960784, 0.8588235294117647, 1],label='2011/12',lw=0.5,markersize=3)
     ind = np.where((terminus_time > 2012.49589) & (terminus_time < 2013.49589))[0]
     time_term = (terminus_time[ind]-np.min(np.floor(terminus_time[ind])))*12
-    plt.plot(time_term,terminus_val[ind]/1e3,'c.-',label='2012/13',lw=0.5)
+    plt.plot(time_term,terminus_val[ind]/1e3,'>-',color='g',label='2012/13',lw=0.5,markersize=3)
     ind = np.where((terminus_time > 2014.49589) & (terminus_time < 2015.49589))[0]
     time_term = (terminus_time[ind]-np.min(np.floor(terminus_time[ind])))*12
-    plt.plot(time_term,terminus_val[ind]/1e3,'y.-',label='2014/15',lw=0.5)
+    plt.plot(time_term,terminus_val[ind]/1e3,'o-',color='gold',label='2014/15',lw=0.5,markersize=3)
     plt.text(6.4,2,'a',fontsize=8,fontname='Arial',fontweight='bold')
   plt.xticks(8+np.arange(0.5,12.5,1))
   plt.xlim([6,18])
@@ -1183,42 +1187,44 @@ if glacier == 'Helheim':
   months = np.arange(0,12)
   ind = np.where(months < 6)[0]
   months[ind] = months[ind]+12
-  plt.bar(months+0.5,rigbins/(rigbins+nonrigbins),width=1.00,color='r',label='Rigid')
-  plt.bar(months+0.5,nonrigbins/(rigbins+nonrigbins),width=1.00,bottom=rigbins/(rigbins+nonrigbins),color='b',label='Free')
+  plt.bar(0,0,width=1.00,color=[200./255,0,0],label='Rigid',edgecolor='k',lw=0.75)
+  plt.bar(0,0,width=1.00,color=[182./255,219./255,1],label='Free',edgecolor='k',lw=0.75)
+  plt.bar(months+0.5,rigbins/(rigbins+nonrigbins),width=1.00,color=[200./255,0,0])
+  plt.bar(months+0.5,nonrigbins/(rigbins+nonrigbins),width=1.00,bottom=rigbins/(rigbins+nonrigbins),color=[182./255,219./255,1])
   for i in range(0,len(months)):
-    plt.text(months[i]+0.4,0.9,str(int(rigbins[i]+nonrigbins[i])),color='w',fontsize=8,fontname='Arial')
+    plt.text(months[i]+0.4,0.9,str(int(rigbins[i]+nonrigbins[i])),color='k',fontsize=8,fontname='Arial',bbox=dict(facecolor=[182./255,219./255,1],edgecolor='none',pad=2))
   if advance:
     ind = np.where(((timesif > 2010.49589) & (timesif < 2011.49589)))[0] #| \
     timesif_months = (timesif[ind]-np.min(np.floor(timesif[ind])))*12
-    plt.plot(timesif_months,sif[ind],'w',lw=0.5)
+    plt.plot(timesif_months,sif[ind],'k',lw=0.5)
     ind = np.where(((timesif > 2013.49589) & (timesif < 2014.49589)))[0] #| \
     timesif_months = (timesif[ind]-np.min(np.floor(timesif[ind])))*12
-    plt.plot(timesif_months,sif[ind],'w',lw=0.5)
-    plt.text(6.4,0.06,'d',fontsize=8,fontname='Arial',fontweight='bold',color='w')
+    plt.plot(timesif_months,sif[ind],'k',lw=0.5)
+    plt.text(6.4,0.06,'d',fontsize=8,fontname='Arial',fontweight='bold',color='k')
   else:
     ind = np.where(((timesif > 2008.49589) & (timesif < 2009.49589)))[0] #| \
     timesif_months = (timesif[ind]-np.min(np.floor(timesif[ind])))*12
-    plt.plot(timesif_months,sif[ind],'w',lw=0.5)    
+    plt.plot(timesif_months,sif[ind],'k',lw=0.5)    
     ind = np.where(((timesif > 2009.49589) & (timesif < 2010.49589)))[0] #| \
     timesif_months = (timesif[ind]-np.min(np.floor(timesif[ind])))*12
-    plt.plot(timesif_months,sif[ind],'w',lw=0.5)    
+    plt.plot(timesif_months,sif[ind],'k',lw=0.5)    
     ind = np.where(((timesif > 2011.49589) & (timesif < 2012.49589)))[0] #| \
     timesif_months = (timesif[ind]-np.min(np.floor(timesif[ind])))*12
-    plt.plot(timesif_months,sif[ind],'w',lw=0.5)    
+    plt.plot(timesif_months,sif[ind],'k',lw=0.5)    
     ind = np.where(((timesif > 2012.49589) & (timesif < 2013.49589)))[0] #| \
     timesif_months = (timesif[ind]-np.min(np.floor(timesif[ind])))*12
-    plt.plot(timesif_months,sif[ind],'w',lw=0.5) 
+    plt.plot(timesif_months,sif[ind],'k',lw=0.5) 
     ind = np.where(((timesif > 2014.49589) & (timesif < 2015.49589)))[0] #| \
     timesif_months = (timesif[ind]-np.min(np.floor(timesif[ind])))*12
-    plt.plot(timesif_months,sif[ind],'w',lw=0.5)         
-    plt.text(6.4,0.06,'c',fontsize=8,fontname='Arial',fontweight='bold',color='w')
+    plt.plot(timesif_months,sif[ind],'k',lw=0.5)         
+    plt.text(6.2,0.05,'c',fontsize=8,fontname='Arial',fontweight='bold',color='k')
   plt.xticks(6+np.arange(0.5,12.5,1))
   ax.set_xticklabels(['Jul','','Sept','','Nov','','Jan','','Mar','','May',''],fontsize=8,fontname='Arial')
   plt.yticks([0,.25,0.5,0.75,1],fontsize=8,fontname='Arial')
   plt.ylabel(r'SIF and M$\'e$lange',fontsize=8,fontname='Arial')
   plt.ylim([0,1])
   plt.xlim([6,18])
-  plt.legend(loc=4,fontsize=8,numpoints=1,handlelength=0.3,labelspacing=0.05,ncol=3,columnspacing=0.7,handletextpad=0.2,borderpad=0.25)
+  plt.legend(loc=4,fontsize=8,numpoints=1,handlelength=0.5,labelspacing=0.05,ncol=3,columnspacing=0.7,handletextpad=0.2,borderpad=0.25)
   if advance:
     years = [2010,2013]
   else:
@@ -1265,12 +1271,14 @@ elif glacier == 'Kanger':
   
   plt.subplot(gs[0])
   ax = plt.gca()
-  colors=['k','r','g','b','c','m','y']
+  colors=['k',[0.7,0.7,0.7],[0.1, 0.1, 0.7843137254901961],[0.7137254901960784, 0.8588235294117647, 1],\
+      'g',[0.7843137254901961, 0, 0],'gold']
+  markershapes=['d','^','v','<','>','s','o']
   for i in range(0,len(years)):
     year = years[i]
     ind = np.where((terminus_time > year+.49589) & (terminus_time < year+1+.49589))[0]
     time_term = (terminus_time[ind]-np.min(np.floor(terminus_time[ind])))*12
-    plt.plot(time_term,terminus_val[ind]/1e3,'.-',color=colors[i],label=str(year)+'/'+'{0:02d}'.format(int(1+year-2000)),lw=0.5)
+    plt.plot(time_term,terminus_val[ind]/1e3,markershapes[i]+'-',color=colors[i],label=str(year)+'/'+'{0:02d}'.format(int(1+year-2000)),lw=0.5,markersize=3)
   plt.xticks(6+np.arange(0.5,12.5,1))
   plt.xlim([6,18])
   plt.yticks([-3,0,3],fontsize=8,fontname='Arial')
@@ -1284,22 +1292,24 @@ elif glacier == 'Kanger':
   months = np.arange(0,12)
   ind = np.where(months < 6)[0]
   months[ind] = months[ind]+12
-  plt.bar(months+0.5,rigbins/(rigbins+nonrigbins),width=1.00,color='r',label='Rigid')
-  plt.bar(months+0.5,nonrigbins/(rigbins+nonrigbins),width=1.00,bottom=rigbins/(rigbins+nonrigbins),color='b',label='Free')
+  plt.bar(0,0,width=1.00,color=[200./255,0,0],label='Rigid',edgecolor='k',lw=0.75)
+  plt.bar(0,0,width=1.00,color=[182./255,219./255,1],label='Free',edgecolor='k',lw=0.75)
+  plt.bar(months+0.5,rigbins/(rigbins+nonrigbins),width=1.00,color=[200./255,0,0])
+  plt.bar(months+0.5,nonrigbins/(rigbins+nonrigbins),width=1.00,bottom=rigbins/(rigbins+nonrigbins),color=[182./255,219./255,1])
   for year in years:
     ind = np.where((timesif > year+0.49589) & (timesif < year+1+0.49589))[0]
     months_sif = (timesif[ind]-np.min(np.floor(timesif[ind])))*12
-    plt.plot(months_sif,sif[ind],'w',lw=0.5)
+    plt.plot(months_sif,sif[ind],'k',lw=0.5)
   for i in range(0,len(months)):
-    plt.text(months[i]+0.2,0.06,'{0:2d}'.format((int(rigbins[i]+nonrigbins[i]))),color='w',fontsize=8,fontname='Arial',bbox=dict(facecolor='r', edgecolor='none', pad=1.0))
+    plt.text(months[i]+0.2,0.06,'{0:2d}'.format((int(rigbins[i]+nonrigbins[i]))),color='k',fontsize=8,fontname='Arial',bbox=dict(facecolor=[200./255,0,0], edgecolor='none', pad=1.0))
   plt.xticks(6+np.arange(0.5,12.5,1))
   ax.set_xticklabels(['Jul','','Sept','','Nov','','Jan','','Mar','','May',''],fontsize=8,fontname='Arial')
   plt.yticks([0,.25,0.5,0.75,1],fontsize=8,fontname='Arial')
   plt.ylabel(r'SIF and M$\'e$lange',fontsize=8,fontname='Arial')
   plt.ylim([0,1])
   plt.xlim([6,18])
-  plt.legend(loc=0,fontsize=8,numpoints=1,handlelength=0.3,labelspacing=0.05,ncol=3,columnspacing=0.7,handletextpad=0.2,borderpad=0.25)
-  plt.text(6.4,0.7,'b',fontsize=8,fontname='Arial',fontweight='bold',color='w')  
+  plt.legend(loc=0,fontsize=8,numpoints=1,handlelength=0.5,labelspacing=0.05,ncol=3,columnspacing=0.7,handletextpad=0.2,borderpad=0.25)
+  plt.text(6.4,0.7,'b',fontsize=8,fontname='Arial',fontweight='bold',color='k')  
   
   plt.tight_layout()
   plt.subplots_adjust(hspace=0.05,wspace=0.05,top=0.98,right=0.97,left=0.18,bottom=0.1) 

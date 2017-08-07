@@ -118,7 +118,7 @@ for i in range(0,len(timedem)):
   plt.tight_layout()
   plt.subplots_adjust(hspace=10,wspace=0) 
   
-  plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/movie/"+'{0:02g}'.format(i)+'.png'),format='PNG',dpi=400)
+  plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/model_movie/"+'{0:02g}'.format(i)+'.png'),format='PNG',dpi=400)
   plt.close()
 
 

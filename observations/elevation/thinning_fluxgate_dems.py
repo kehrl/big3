@@ -143,7 +143,7 @@ plt.figure(figsize=(4,4))
 matplotlib.rc('font',family='Arial')
 plt.plot([-110,100],[-110,100],c='k',lw=1)
 plt.errorbar(dH_dem_K[:,0]/365.25*100,dH_flux_K[:,0]/365.25*100,yerr=5,xerr=dH_dem_K[:,1]/365.25*100,fmt='o',color='0.7',mec='k',markersize=4,zorder=3,label='Kangerlugssuaq',mew=0.5,elinewidth=0.5)
-plt.errorbar(dH_dem_H[:,0]/365.25*100,dH_flux_H[:,0]/365.25*100,yerr=3,xerr=dH_dem_H[:,1]/365.25*100,fmt='ro',markersize=3,mec='k',zorder=4,label='Helheim',mew=0.5,elinewidth=0.5)
+plt.errorbar(dH_dem_H[:,0]/365.25*100,dH_flux_H[:,0]/365.25*100,yerr=3,xerr=dH_dem_H[:,1]/365.25*100,fmt='o',color=[200./255,0,0],markersize=4,mec='k',zorder=4,label='Helheim',mew=0.5,elinewidth=0.5)
 plt.xticks(np.arange(-30,30,10),fontsize=8)
 plt.yticks(np.arange(-30,30,10),fontsize=8)
 plt.ylim([-35,22])
@@ -170,13 +170,17 @@ time2 = 2016.
 
 plt.subplot(gs[0:2])
 ax = plt.gca()
+ax.tick_params(axis='x',which='both',direction='in')
+ax.xaxis.set_ticks_position('both')
 plt.plot([time1,time2],[0,0],'k')
 plt.plot(timerac_H,smbrac_H/900.*100,'0.4',lw=1.2,label='SMB')
 #plt.plot(timezsrac_H[1:],np.convolve(np.diff(zsrac_H)/np.diff(timezsrac_H),np.ones((11,))/11.,mode='same'),c='0.4',lw=1.2,label='SMB')
 #plt.plot(time_H,smb_H,c='0.5',lw=0.75,label='SMB')
-plt.errorbar(dem_time_H[:,0],dem_dH_H[:,0]/365.25*100,xerr=dem_time_H[:,1],yerr=dem_dH_H[:,1]/365.25*100,fmt='bo',mec='k',mew=0.5,markersize=3,capsize=1,lw=0.5,label='DEM')
+plt.errorbar(dem_time_H[:,0],dem_dH_H[:,0]/365.25*100,xerr=dem_time_H[:,1],yerr=dem_dH_H[:,1]/365.25*100,\
+		fmt='o',color=[182./255,219./255,1],mec='k',mew=0.5,markersize=3,capsize=1,lw=0.5,label='DEM',ecolor='k')
 #plt.errorbar(time_H_2,dH_H_2,label='Helheim',fmt='r.',markersize=4,capsize=1,lw=0.5)
-plt.errorbar(time_H,(dH_H[:,0]+smb_H)/365.25*100,yerr=3.,fmt='rs',mec='k',mew=0.5,markersize=3,capsize=1,lw=0.5,label='Flux-gate')
+plt.errorbar(time_H,(dH_H[:,0]+smb_H)/365.25*100,yerr=3.,fmt='s',color=[200./255,0,0],\
+		mec='k',mew=0.5,markersize=3,capsize=1,lw=0.5,label='Flux-gate')
 #time_H_2,dH_H_2,Q_H_2,hbar_H_2,ubar_H_2 = fluxlib.fluxgate_thinning('Helheim','fluxgate1','cresis',10.,timing='velocity')
 #plt.plot(timezsrac_K[1:],np.diff(zsrac_K)/np.diff(timezsrac_K),c='r',lw=0.5)
 plt.xticks(range(2008,2017),fontsize=8,fontname='Arial')
@@ -196,12 +200,14 @@ plt.legend(loc=1,numpoints=1,ncol=3,handletextpad=0.2,fontsize=8,columnspacing=0
 
 plt.subplot(gs[4])
 ax = plt.gca()
+ax.tick_params(axis='x',which='both',direction='in')
+ax.xaxis.set_ticks_position('both')
 #plt.plot(time_H_2,Q_H_2[:,0]*917./1e12,'k.-',markersize=4,label = 'Flux in')
 #plt.plot([2008,2017],np.array([30,30])*1e9*917/1e12,'k',lw=1.5,label='Balance')
-ind = np.where(~(np.isnan(Q_H[:,0])))[0]
-plt.plot(time_H[ind],Q_H[ind,0]/1e9,'b.',markersize=5,label = 'Inflow')
 ind = np.where(~(np.isnan(Q_H[:,1])))[0]
-plt.plot(time_H[ind],Q_H[ind,1]/1e9,'r.',markersize=5, label = 'Outflow')
+plt.plot(time_H[ind],Q_H[ind,1]/1e9,'o',color=[200./255,0,0],markersize=3,mec='k',mew=0.5, label = 'Outflow')
+ind = np.where(~(np.isnan(Q_H[:,0])))[0]
+plt.plot(time_H[ind],Q_H[ind,0]/1e9,'o',color=[182./255,219./255,1],markersize=3,mec='k',mew=0.5,label = 'Inflow')
 plt.ylabel('Ice flux \n'+r'(km$^3$ yr$^{-1}$)',fontsize=9,fontname='Arial')
 plt.xticks(range(2008,2017))
 plt.xlim([time1,time2])
@@ -222,6 +228,8 @@ ax.set_xticklabels(labels,fontsize=8,fontname='Arial')
 
 plt.subplot(gs[2])
 ax = plt.gca()
+ax.tick_params(axis='x',which='both',direction='in')
+ax.xaxis.set_ticks_position('both')
 #plt.errorbar(time_H,(ubar_H[:,1]-ubar_H[:,0])/1e3,yerr=(ubar_H[:,1]+ubar_H[:,0])/1e3*0.03/np.sqrt(2000./100),fmt='ko',markersize=2.5,capsize=1,lw=0.5)
 plt.errorbar(time_H,(ubar_H[:,1]-ubar_H[:,0])/1e3,yerr=0,fmt='ko',markersize=2.5,capsize=1,lw=0.5)
 #plt.ylabel(r'$\bar{u}_{in}-\bar{u}_{out}$'+'\n'+r'(km yr$^{-1}$)',fontsize=9,fontname='Arial')
@@ -241,6 +249,8 @@ plt.text(time1+0.2,1.4,'b',fontsize=9,fontname='Arial',fontweight='bold')
 
 plt.subplot(gs[3])
 ax = plt.gca()
+ax.tick_params(axis='x',which='both',direction='in')
+ax.xaxis.set_ticks_position('both')
 #plt.errorbar(time_H_zs,(hbar_H_zs[:,0]-hbar_H_zs[:,1]),yerr=hbar_H_zs[:,2]+hbar_H_zs[:,3],fmt='ko',markersize=2.5,capsize=1,lw=0.5)
 plt.errorbar(time_H_zs,(hbar_H_zs[:,0]-hbar_H_zs[:,1]),yerr=0,fmt='ko',markersize=2.5,capsize=1,lw=0.5)
 #plt.ylabel(r'$\bar{H}_in-\bar{H}_out$'+'\n (m)',fontsize=9,fontname='Arial')
@@ -275,11 +285,16 @@ time2 = 2016.
 
 plt.subplot(gs[0:2])
 ax = plt.gca()
+ax.tick_params(axis='x',which='both',direction='in')
+ax.xaxis.set_ticks_position('both')
 plt.plot([time1,time2],[0,0],'k')
 plt.plot(timerac_K,smbrac_K/900.*100,'0.4',lw=1.2,label='SMB')
-plt.errorbar(dem_time_K[:,0],dem_dH_K[:,0]/365.25*100,xerr=dem_time_K[:,1],yerr=dem_dH_K[:,1]/365.25*100,fmt='bo',mec='k',mew=0.5,markersize=3,capsize=1,lw=0.5,label='DEM')
+plt.errorbar(dem_time_K[:,0],dem_dH_K[:,0]/365.25*100,xerr=dem_time_K[:,1],\
+		yerr=dem_dH_K[:,1]/365.25*100,fmt='o',color=[182./255,219./255,1],mec='k',mew=0.5,\
+		markersize=3,capsize=1,lw=0.5,label='DEM',ecolor='k')
 #plt.errorbar(time_K_2,dH_K_2,label='Helheim',fmt='r.',markersize=4,capsize=1,lw=0.5)
-plt.errorbar(time_K,(dH_K[:,0]+smb_K)/365.25*100,yerr=5.,fmt='rs',mec='k',mew=0.5,markersize=3,capsize=1,lw=0.5,label='Flux')
+plt.errorbar(time_K,(dH_K[:,0]+smb_K)/365.25*100,yerr=5.,fmt='s',color=[200./255,0,0],\
+		mec='k',mew=0.5,markersize=3,capsize=1,lw=0.5,label='Flux',ecolor='k')
 #plt.errorbar(time_K_zs,dH_K_zs[:,0]+smb_K_zs,fmt='bo',markersize=2.5,capsize=1,lw=0.5,label='Flux')
 #time_K_2,dH_K_2,Q_K_2,hbar_K_2,ubar_K_2 = fluxlib.fluxgate_thinning('Helheim','fluxgate1','cresis',10.,timing='velocity')
 #plt.plot(timezsrac_K[1:],np.diff(zsrac_K)/np.diff(timezsrac_K),c='r',lw=0.5)
@@ -300,12 +315,14 @@ plt.legend(loc=1,numpoints=1,ncol=3,handletextpad=0.2,fontsize=8,columnspacing=0
 
 plt.subplot(gs[4])
 ax = plt.gca()
+ax.tick_params(axis='x',which='both',direction='in')
+ax.xaxis.set_ticks_position('both')
 #plt.plot(time_K_2,Q_K_2[:,0]*917./1e12,'k.-',markersize=4,label = 'Flux in')
 #plt.plot([2008,2017],np.array([22.9,22.9])*1e9*917/1e12,'k',lw=1.5,label='Balance')
-ind = np.where(~(np.isnan(Q_K[:,0])))[0]
-plt.plot(time_K[ind],Q_K[ind,0]/1e9,'b.',markersize=5,label = 'Inflow')
 ind = np.where(~(np.isnan(Q_K[:,1])))[0]
-plt.plot(time_K[ind],Q_K[ind,1]/1e9,'r.',markersize=5, label = 'Outflow')
+plt.plot(time_K[ind],Q_K[ind,1]/1e9,'o',color=[200./255,0,0],mec='k',mew=0.5,markersize=3, label = 'Outflow')
+ind = np.where(~(np.isnan(Q_K[:,0])))[0]
+plt.plot(time_K[ind],Q_K[ind,0]/1e9,'o',color=[182./255,219./255,1],mec='k',mew=0.5,markersize=3,label = 'Inflow')
 plt.ylabel('Ice flux \n'+r'(km$^{3}$ yr$^{-1}$)',fontsize=9,fontname='Arial')
 plt.xticks(range(2008,2017))
 plt.xlim([time1,time2])
@@ -326,6 +343,7 @@ ax.set_xticklabels(labels,fontsize=8,fontname='Arial')
 
 plt.subplot(gs[2])
 ax = plt.gca()
+ax.tick_params(axis='x',which='both',direction='in')
 #plt.errorbar(time_K,(ubar_K[:,1]-ubar_K[:,0])/1e3,yerr=(ubar_K[:,1]+ubar_K[:,0])/1e3*0.03/np.sqrt(2000./100),fmt='ko',markersize=2.5,capsize=1,lw=0.5)
 plt.errorbar(time_K,(ubar_K[:,1]-ubar_K[:,0])/1e3,yerr=0,fmt='ko',markersize=2.5,capsize=1,lw=0.5)
 plt.ylabel(r'$\bar{u}_{o}-\bar{u}_{i}$'+'\n'+r'(km yr$^{-1}$)',fontsize=9,fontname='Arial')
@@ -344,6 +362,8 @@ plt.text(time1+0.2,1.87,'b',fontsize=9,fontname='Arial',fontweight='bold')
 
 plt.subplot(gs[3])
 ax = plt.gca()
+ax.tick_params(axis='x',which='both',direction='in')
+ax.xaxis.set_ticks_position('both')
 #plt.errorbar(time_K_zs,(hbar_K_zs[:,0]-hbar_K_zs[:,1]),yerr=hbar_K_zs[:,2]+hbar_K_zs[:,3],fmt='ko',markersize=2.5,capsize=1,lw=0.5)
 plt.errorbar(time_K_zs,(hbar_K_zs[:,0]-hbar_K_zs[:,1]),yerr=0,fmt='ko',markersize=2.5,capsize=1,lw=0.5)
 plt.ylabel(r'$\bar{H}_{i}-\bar{H}_{o}$'+'\n (m)',fontsize=9,fontname='Arial')

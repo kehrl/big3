@@ -74,7 +74,7 @@ xflow,yflow,zbflow,distflow = glaclib.load_flowline(glacier,shapefilename='flowl
 
 # Get points for plotting
 dists_eul = -1.0*np.array([0,5.0,10.0,15.0,20.0]) # kilometers
-coloptions=['w','b','g','limegreen','gold']
+coloptions=['w',[182./255,219./255,1],'limegreen','gold',[200./255,0,0]]
 
 # Find where points are located along flowline
 ind_eul=[]

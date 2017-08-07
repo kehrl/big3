@@ -92,38 +92,41 @@ if plot_overview:
   gs = matplotlib.gridspec.GridSpec(2,1)
   matplotlib.rc('font',family='Arial')
 
-  coloptions=['r','b','g','limegreen','gold']
+  coloptions=[[200./255,0,0],[0.1,0.1,200./255],'g','limegreen','gold']
  
   plt.subplot(gs[0])
   ax = plt.gca()
   ind = np.where((terminus_time > 2008.) & (terminus_time < 2016.))
   plt.plot([np.min(terminus_val[ind])/1e3,np.min(terminus_val[ind])/1e3],[-1500,1500],'0.5')
   plt.plot([np.max(terminus_val[ind])/1e3,np.max(terminus_val[ind])/1e3],[-1500,1500],'0.5')
-  ind = np.argmin(abs(dists--5e3))
-  plt.plot(dists[0:ind]/1e3,floatlib.height(zb[0:ind]),'k',linewidth=1.2,label='Flotation',dashes=[2,2,2,2])
+  if glacier == 'Kanger':
+    ind = np.argmin(abs(dists--5e3))
+    plt.plot(dists[0:ind]/1e3,floatlib.height(zb[0:ind]),'k',linewidth=1.2,label='Flotation',dashes=[2,2,2,2])
+  elif glacier == 'Helheim':
+    plt.plot(dists/1e3,floatlib.height(zb),'k',linewidth=1.2,label='Flotation',dashes=[2,2,2,2])
   if glacier == 'Helheim':
     plt.plot(dists/1e3,atm_data['20010521'][:,2],'k',label='21 May 2001',lw=1.2)
   elif glacier == 'Kanger':
     plt.plot(dists/1e3,atm_data['20010520'][:,2],'k',label='20 May 2001',lw=1.2)
-  plt.plot(dists/1e3,atm_data['20050518'][:,2],'b',label='18 May 2005',lw=1.2)
-  plt.plot(dists/1e3,atm_data['20080730'][:,2],'r',label='30 July 2008',lw=1.2)
+  plt.plot(dists/1e3,atm_data['20050518'][:,2],color=[0.1,0.1,200./255],label='18 May 2005',lw=1.2)
+  plt.plot(dists/1e3,atm_data['20080730'][:,2],color=[200./255,0,0],label='30 July 2008',lw=1.2)
   #plt.plot(dists/1e3,atm_data['20140424'][:,2],'g',label='30 July 2008',lw=1.2)
   if glacier == 'Kanger':
     date = str(int(time_dem[ind1,1]))
-    plt.plot(dists/1e3,zs_dem[ind1,:].T,color='g',linewidth=1.2,label='14 July 2013')
+    plt.plot(dists/1e3,zs_dem[ind1,:].T,color=[0.7,0.7,0.7],linewidth=1.2,label='14 July 2013')
   #date = str(int(time_dem[ind2,1]))
-  #plt.plot(dists/1e3,zs_dem[ind2,:].T,color='b',linewidth=1.2,label=date[0:4]+'-'+date[4:6]+'-'+date[6:])
+  #plt.plot(dists/1e3,zs_dem[ind2,:].T,color=[0.1,0.1,200./255],linewidth=1.2,label=date[0:4]+'-'+date[4:6]+'-'+date[6:])
   plt.xticks(np.arange(-30,10,5),fontsize=8)
   ax.set_xticklabels([])
   plt.yticks(np.arange(-1000,1000,250),fontsize=8)
   plt.xlim([-21,6])
   if glacier == 'Helheim':
     plt.ylim([0,670])
-    plt.text(-20,500,'b',fontsize=9,fontweight='bold')
+    plt.text(-20.4,500,'b',fontsize=9,fontweight='bold')
   elif glacier == 'Kanger':
     plt.ylim([0,800])
-    plt.text(-20,500,'b',fontsize=9,fontweight='bold')
-  plt.plot(dists/1e3,atm_data['20050518'][:,2],'b',lw=1.2)
+    plt.text(-20.4,500,'b',fontsize=9,fontweight='bold')
+  plt.plot(dists/1e3,atm_data['20050518'][:,2],color=[0.1,0.1,200./255],lw=1.2)
   ax.xaxis.set_minor_locator(AutoMinorLocator(2))
   ax.yaxis.set_minor_locator(AutoMinorLocator(2))
   ax.tick_params('both', length=6, width=1.25, which='major')
@@ -131,7 +134,7 @@ if plot_overview:
   ax.tick_params(axis='x',which='both',direction='in')
   ax.xaxis.set_ticks_position('both')
   plt.ylabel('Elevation (m asl)                                    ',fontsize=8)
-  plt.legend(loc=1,fontsize=8,borderpad=0.2,numpoints=1,handlelength=0.6,labelspacing=0.1,handletextpad=0.3,markerscale=2)
+  plt.legend(loc=1,fontsize=8,borderpad=0.2,numpoints=1,handlelength=0.8,labelspacing=0.1,handletextpad=0.3,markerscale=2)
 
   plt.subplot(gs[-1])
   ax = plt.gca()
@@ -144,6 +147,7 @@ if plot_overview:
     plt.plot(dists/1e3,zb,color='k',linewidth=1.2,label='Smoothed')
     plt.ylim([-1150,-300])
     plt.text(np.min(terminus_val[ind])/1e3+0.2,-450,'2008-2016',fontsize=7,fontname='Arial')
+    plt.text(-20.4,-450,'c',fontsize=9,fontweight='bold')
   elif glacier == 'Kanger':
     #plt.plot([0.7,np.max(terminus_val[ind])/1e3],[-425,-425],'0.5')
     plt.text(np.min(terminus_val[ind])/1e3+0.3,-450,'2008-2016',fontsize=7,fontname='Arial')
@@ -154,17 +158,18 @@ if plot_overview:
     plt.text(1.5,-500,'??',fontsize=8,fontname='arial')
     plt.ylim([-1300,-300])
     ax.arrow(-6,-800,0.7,-200,lw=1,fc='k',ec='k',head_width=0.5,head_length=50)
-    ax.plot([-2.8,-1.5],[-1070,-970],lw=1.5,color='r')
+    ax.plot([-2.8,-1.5],[-1070,-970],lw=1.5,color=[200./255,0,0])
     ax.text(-13,-650,'Rough grounding-line',fontname='Arial',fontsize=7)
     ax.text(-13,-750,'position from 2011-2016',fontname='Arial',fontsize=7)
     ax.text(-2.1,-860,'Potential',fontname='Arial',fontsize=7)
     ax.text(-2.1,-940,'overdeepening',fontname='Arial',fontsize=7)
-    ellipse = Ellipse(xy=(-3.7,-1100),width=2,height=90,angle=0.0,edgecolor='r',fill=False,lw=1.5,ls=(0,(2,1)))
+    ellipse = Ellipse(xy=(-3.7,-1100),width=2,height=90,angle=0.0,edgecolor=[200./255,0,0],fill=False,lw=1.5,ls=(0,(2,1)))
     ax.add_artist(ellipse)
+    plt.text(-20.4,-480,'c',fontsize=9,fontweight='bold')
   plt.xlabel('Distance along flowline (km)',fontsize=8)
   plt.xticks(np.arange(-30,10,5),fontsize=8)
   plt.xlim([-21,6])
-  plt.text(-20,-450,'c',fontsize=9,fontweight='bold')
+
   ax.xaxis.set_minor_locator(AutoMinorLocator(2))
   ax.yaxis.set_minor_locator(AutoMinorLocator(2))
   ax.tick_params('both', length=6, width=1.25, which='major')
@@ -275,7 +280,7 @@ if plot_surfaceslopes and glacier == 'Kanger':
 
   fig = plt.figure(figsize=(4,2.7))
   gs = matplotlib.gridspec.GridSpec(2,1)
-  coloptions=['r','b','g','limegreen','gold']
+  coloptions=[[200./255,0,0],[0.1,0.1,200./255],'g','limegreen','gold']
  
   plt.subplot(gs[0])
   ax = plt.gca()
@@ -290,7 +295,7 @@ if plot_surfaceslopes and glacier == 'Kanger':
     ind = np.where(np.isnan(zs_filtered[i,:]))[0]
     plt.plot(np.r_[dists[0:ind[0]]/1e3,dists[ind[0]]/1e3],np.r_[zs_filtered[i,0:ind[0]].T,0],linewidth=1.2,label=date)
   #date = str(int(time_dem[ind2,1]))
-  #plt.plot(dists/1e3,zs_dem[ind2,:].T,color='b',linewidth=1.2,label=date[0:4]+'-'+date[4:6]+'-'+date[6:])
+  #plt.plot(dists/1e3,zs_dem[ind2,:].T,color=[0.1,0.1,200./255],linewidth=1.2,label=date[0:4]+'-'+date[4:6]+'-'+date[6:])
   plt.xticks(np.arange(-30,10,2.5),fontsize=8)
   ax.set_xticklabels([])
   plt.yticks(np.arange(-1000,1000,100),fontsize=8)
@@ -319,7 +324,7 @@ if plot_surfaceslopes and glacier == 'Kanger':
   plt.xlabel('Distance along flowline (km)',fontsize=8)
   plt.xticks(np.arange(-30,10,2.5),fontsize=8)
   plt.xlim([-10,2.5])
-  plt.text(-9.7,-0.09,'b',fontsize=9,fontweight='bold')
+  plt.text(-9.7,-0.09,[0.1,0.1,200./255],fontsize=9,fontweight='bold')
   ax.xaxis.set_minor_locator(AutoMinorLocator(2))
   ax.yaxis.set_minor_locator(AutoMinorLocator(2))
   ax.tick_params('both', length=6, width=1.25, which='major')
