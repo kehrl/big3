@@ -265,9 +265,9 @@ if ssa:
 racmo_res = 1
 if racmo_res == 1:
   xrac,yrac,t2m,timet2m = climlib.racmo_grid(x[0],x[-1],y[0],y[-1],'t2m',\
-  	epsg=3413,resolution=racmores,maskvalues='ice')
+  	epsg=3413,resolution=racmo_res,maskvalues='ice')
   xrac,yrac,smb,timesmb = climlib.racmo_grid(x[0],x[-1],y[0],y[-1],'smb',\
-  	epsg=3413,resolution=racmores,maskvalues='ice')
+  	epsg=3413,resolution=racmo_res,maskvalues='ice')
 elif racmo_res == 11:
   xrac = np.arange(np.ceil(x[0]),x[-1],1e3)
   yrac = np.arange(np.ceil(y[0]),y[-1],1e3)
