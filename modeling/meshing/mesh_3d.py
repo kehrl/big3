@@ -264,21 +264,19 @@ if ssa:
 
 racmo_res = 1
 if racmo_res == 1:
-  xrac,yrac,t2m,timet2m = climlib.racmo_grid(x[0],x[-1],y[0],y[-1],'t2m',\
-  	epsg=3413,resolution=racmores,maskvalues='ice')
+  if temperature == 'model':
+    xrac,yrac,t2m,timet2m = climlib.racmo_grid(x[0],x[-1],y[0],y[-1],'t2m',\
+  	  epsg=3413,resolution=racmores,maskvalues='ice')
   xrac,yrac,smb,timesmb = climlib.racmo_grid(x[0],x[-1],y[0],y[-1],'smb',\
-  	epsg=3413,resolution=racmores,maskvalues='ice')
+  	epsg=3413,resolution=racmo_res,maskvalues='ice')
 elif racmo_res == 11:
   xrac = np.arange(np.ceil(x[0]),x[-1],1e3)
   yrac = np.arange(np.ceil(y[0]),y[-1],1e3)
-  timet2m,t2m = climlib.racmo_interpolate_to_cartesiangrid(xrac,yrac,'t2m',\
-     maskvalues='ice',timing='none',time1=times[0],time2=times[-1])
+  if temperature == 'model':
+    timet2m,t2m = climlib.racmo_interpolate_to_cartesiangrid(xrac,yrac,'t2m',\
+       maskvalues='ice',timing='none',time1=times[0],time2=times[-1])
   timesmb,smb = climlib.racmo_interpolate_to_cartesiangrid(xrac,yrac,'smb',\
      maskvalues='ice',timing='none',time1=times[0],time2=times[-1])
-
-# Get averages
-smb_ave = np.mean(smb,axis=0)
-t2m_ave = np.mean(t2m,axis=0)
 
 if timeseries == True:
   smb2 = np.zeros([len(yrac),len(xrac),len(times)])
@@ -305,46 +303,57 @@ if timeseries == True:
 	
 #ggrid = bedlib.geothermalflux_grid(xrac,yrac,model='davies',method='nearest')
 
-# Set maximum temperature to -1 deg C
-ind = np.where(t2m_ave > 272.15)
-t2m_ave[ind] = 272.15
+# Get smb average and save to file for steady state runs
+smb_ave = np.mean(smb,axis=0)
 
-fidt2m = open(inputs+"t2m.xy","w")
 fidsmb = open(inputs+"smb.xy","w")
-fidt2m.write('{}\n{}\n'.format(len(xrac),len(yrac)))
 fidsmb.write('{}\n{}\n'.format(len(xrac),len(yrac)))
 #fidgeo = open(inputs+"geothermal.xy","w")
 #fidgeo.write('{}\n{}\n'.format(len(xrac),len(yrac)))
 for i in range(0,len(xrac)):
   for j in range(0,len(yrac)):
-    fidt2m.write('{0} {1} {2}\n'.format(xrac[i],yrac[j],t2m_ave[j,i]))
     # Divide by rho_i to convert from kg/m2/d to m/d and multiply by 365.25 to conver to m/yr
     fidsmb.write('{0} {1} {2}\n'.format(xrac[i],yrac[j],smb_ave[j,i]/rho_i*365.25))
-fidt2m.close()
 fidsmb.close()
- 
-# Get surface heights on same grid as temperature and surface mass balance so that
-# we can get vertical steady state temperatures.
-xgrid,ygrid = np.meshgrid(xrac,yrac)
-f = RegularGridInterpolator((y,x),zsur-zbed)
-Hflat = f((ygrid.flatten(),xgrid.flatten()))
-H = np.reshape(Hflat,[len(yrac),len(xrac)])
-del Hflat,f,xgrid,ygrid
-  
-# Get 3D grid of temperatures  
-T = flowparameterlib.steadystate_vprofile(H,t2m_ave,smb_ave/rho_i*365.25,levels=12)
- 
-fidT = open(inputs+"tsteady_icedivide.xyz", "w")
-fidT.write("{0}\n{1}\n{2}\n".format(len(xrac), len(yrac), len(T[0,0,:])))
-for j in range(len(xrac)):
-  for i in range(len(yrac)):
-    fidT.write("{0} {1} ".format(xrac[j], yrac[i]))
-    for k in range(len(T[0,0,:])):
-      fidT.write("{0} ".format(T[i, j, k]))
-    fidT.write("\n")
-fidT.close()
+del fidsmb
 
-del fidt2m, H, fidT
+# Get average t2m and save to file if using modeled temperature
+if temperature == 'model':
+  t2m_ave = np.mean(t2m,axis=0)
+  # Set maximum temperature to -1 deg C
+  ind = np.where(t2m_ave > 272.15)
+  t2m_ave[ind] = 272.15
+
+  fidt2m = open(inputs+"t2m.xy","w")
+  fidt2m.write('{}\n{}\n'.format(len(xrac),len(yrac)))
+  for i in range(0,len(xrac)):
+    for j in range(0,len(yrac)):
+      fidt2m.write('{0} {1} {2}\n'.format(xrac[i],yrac[j],t2m_ave[j,i]))
+  fidt2m.close()
+
+  # Get surface heights on same grid as temperature and surface mass balance so that
+  # we can get vertical steady state temperatures.
+  xgrid,ygrid = np.meshgrid(xrac,yrac)
+  f = RegularGridInterpolator((y,x),zsur-zbed)
+  Hflat = f((ygrid.flatten(),xgrid.flatten()))
+  H = np.reshape(Hflat,[len(yrac),len(xrac)])
+  del Hflat,f,xgrid,ygrid
+  
+  # Get 3D grid of temperatures  
+  T = flowparameterlib.steadystate_vprofile(H,t2m_ave,smb_ave/rho_i*365.25,levels=12)
+ 
+  fidT = open(inputs+"tsteady_icedivide.xyz", "w")
+  fidT.write("{0}\n{1}\n{2}\n".format(len(xrac), len(yrac), len(T[0,0,:])))
+  for j in range(len(xrac)):
+    for i in range(len(yrac)):
+      fidT.write("{0} {1} ".format(xrac[j], yrac[i]))
+      for k in range(len(T[0,0,:])):
+        fidT.write("{0} ".format(T[i, j, k]))
+      fidT.write("\n")
+  fidT.close()
+
+  del fidt2m, H, fidT
+
 # del fidgeo, ggrid
 
 ##################################################
@@ -356,8 +365,6 @@ print "Trying to pull temperatures from model...\n"
 # Set up lower resolution grid and interpolate variables to that grid
 xT = np.arange(x[0],x[-1],100)
 yT = np.arange(y[0],y[-1],100)
-#xT = np.array(x)
-#yT = np.array(y)
 xTgrid,yTgrid = np.meshgrid(xT,yT)
 f = RegularGridInterpolator((y,x),zsur)
 zsT = np.reshape(f((yTgrid.flatten(),xTgrid.flatten())),[len(yT),len(xT)])

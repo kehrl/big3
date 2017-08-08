@@ -23,7 +23,7 @@ SUBROUTINE InterpolateAccumulation(Model,Solver,dt,Transient )
   
   CHARACTER(LEN=MAX_NAME_LEN) :: SolverName='InterpolateAccumulation', FileName,TopMaskName
   
-  LOGICAL :: FirstTime=.TRUE., UnfoundFatal=.TRUE.,Found
+  LOGICAL :: FirstTime=.TRUE., UnfoundFatal=.TRUE.,Found, Steady
 
   INTEGER :: i, j, nx, ny, dummyint, TimeStep, TimeStepLast, restartposition
   INTEGER, POINTER :: Permutation(:), TopPerm(:)=>NULL()
@@ -34,9 +34,13 @@ SUBROUTINE InterpolateAccumulation(Model,Solver,dt,Transient )
   REAL(kind=dp) :: LinearInterp
   
   SAVE smbgrid, xx, yy, nx, ny
-  SAVE FirstTime, TimeStepLast, restartposition
+  SAVE FirstTime, TimeStepLast, restartposition, Steady
   
   Params => GetSolverParams()  
+
+  PointerToVariable => Solver % Variable
+  Permutation  => PointerToVariable % Perm
+  VariableValues => PointerToVariable % Values
   
   ! Find out if this run is a restart of a previous run, and if so add that to the timestep
   ! to get the right accumulation rate
@@ -45,40 +49,63 @@ SUBROUTINE InterpolateAccumulation(Model,Solver,dt,Transient )
       IF (.NOT. Found) THEN
         CALL FATAL(SolverName, 'No restart position given.')
       END IF
+      Steady = ListGetLogical(Params,'Steady State',Found)
+      IF (.NOT. Found) THEN
+        CALL INFO(SolverName, 'Steady State not given, assuming it is false.')
+      END IF
+      print *,'STEADY',Steady
   
       TopMaskName = "Top Surface Mask"
   END IF
   
-  PointerToVariable => Solver % Variable
-  Permutation  => PointerToVariable % Perm
-  VariableValues => PointerToVariable % Values
-
-  TimestepVar => VariableGet( Model % Variables,'Timestep')
-  Timestep = TimestepVar % Values(1) + restartposition
-
-  IF ((FirstTime) .OR. (TimeStep /= TimeStepLast)) THEN
-			
-			IF (.NOT. FirstTime) THEN
-			  DEALLOCATE(xx,yy,smbgrid)
-			END IF
-    	FirstTime=.False.
-
-      WRITE (FileName, "(A10,I4.4,A3)") "inputs/smb", Timestep,".xy"
+  IF (Steady) THEN
+    
+    IF (FirstTime) THEN
+      FirstTime = .FALSE.
 
       ! open file
-      OPEN(10,file=FileName)
+      OPEN(10,file="inputs/smb.xy")
       READ(10,*) nx
       READ(10,*) ny
       ALLOCATE(xx(nx),yy(ny))
       ALLOCATE(smbgrid(nx,ny))
       DO i=1,nx
         DO j=1,ny
-        	READ(10,*) xx(i),yy(j),smbgrid(i,j)
+          READ(10,*) xx(i),yy(j),smbgrid(i,j)
         END DO
-			END DO
-			CLOSE(10)
+		  END DO
+		  CLOSE(10)
+    END IF
+  ELSE
+
+    TimestepVar => VariableGet( Model % Variables,'Timestep')
+    Timestep = TimestepVar % Values(1) + restartposition
+
+    IF ((FirstTime) .OR. (TimeStep /= TimeStepLast)) THEN
+			
+			  IF (.NOT. FirstTime) THEN
+			    DEALLOCATE(xx,yy,smbgrid)
+			  END IF
+    	  FirstTime=.False.
+
+        WRITE (FileName, "(A10,I4.4,A3)") "inputs/smb", Timestep,".xy"
+
+        ! open file
+        OPEN(10,file=FileName)
+        READ(10,*) nx
+        READ(10,*) ny
+        ALLOCATE(xx(nx),yy(ny))
+        ALLOCATE(smbgrid(nx,ny))
+        DO i=1,nx
+          DO j=1,ny
+        	  READ(10,*) xx(i),yy(j),smbgrid(i,j)
+          END DO
+			  END DO
+			  CLOSE(10)
     
-      TimestepLast = Timestep
+        TimestepLast = Timestep
+    
+    END IF
     
   END IF
 
@@ -96,7 +123,7 @@ SUBROUTINE InterpolateAccumulation(Model,Solver,dt,Transient )
     VariableValues(Permutation(i)) = LinearInterp(smbgrid,xx,yy,nx,ny,x,y)
   END DO
   
-  CALL INFO(SolverName, 'End',level=3)
+  CALL INFO(SolverName, 'End', level=3)
 
 !------------------------------------------------------------------------------
 END SUBROUTINE InterpolateAccumulation 
