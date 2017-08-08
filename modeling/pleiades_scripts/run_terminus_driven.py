@@ -5,8 +5,8 @@ import os
 glacier = 'Helheim'
 
 # Mesh characteristics and geometry
-meshshp = 'glacier_extent_terminus_front'
-extrude = 11
+meshshp = 'glacier_extent_terminus_nofront'
+extrude = 12
 bname = 'smith'
 bmodel = 'aniso'
 bsmooth = '5'
@@ -15,13 +15,16 @@ temperature = -10.0 #'model'
 #lc = '500 1000 1000 2000'
 lc = '200 450 700 1000'
 
+# Info for steady state simulation to relax model
+steadystate_nt = 365
+
 # Info terminus driven model
-date1 = '20110615'#'20110615'
-date2 = '20120615'#'20160615'#'20120615'
+date1 = '20120316'
+date2 = '20160616'
 dt = '1/365.25'
 timeseries = 'True'
 
-runname = 'TD_'+date1+'_'+date2+'_bsmooth'+bsmooth+'_advance_half'
+runname = 'TD_'+date1+'_'+date2+'_bsmooth'+bsmooth
 
 # Inversion options
 method = 'adjoint'
@@ -35,7 +38,7 @@ queue = 'long'
 model = 'has'
 nparts = 96
 ncpus = 24
-runtime = '120:00:00'
+runtime = '100:00:00'
 
 # Mesh directory
 dir = "/nobackupp8/lkehrl/Models/"+glacier+"/3D/"+runname+"/"
@@ -85,9 +88,43 @@ fid = open("PBS_inversion.pbs","w")
 fid.write(job_string)
 fid.close()
 
-####################################
-# Create simulation PBS job script #
-####################################
+#####################################
+# Create steadystate PBS job script #
+#####################################
+
+command = "python /u/lkehrl/Code/big3/modeling/simulations/"+\
+          "simulation_3d.py -glacier {0} -sif iceshelf.sif".format(glacier)+\
+          " -mesh {0} -extrude {1} -n {2}".format(runname,extrude,nparts)+\
+          " -dt {0} -nt {1} -temperature {2}".format(dt,steadystate_nt,temperature)+\
+          " -slipcoefficient {0}".format(slipcoefficient)
+
+job_name = glacier+"_"+runname+"_terminusdriven"
+walltime = runtime
+processors = "select={0}:ncpus={1}:mpiprocs={2}:model={3}".format(nparts/ncpus,ncpus,ncpus,model)
+
+job_string = """
+#PBS -S /bin/bash
+#PBS -M kehrl@uw.edu
+#PBS -m abe
+#PBS -N %s
+#PBS -l walltime=%s
+#PBS -l %s
+#PBS -o %s
+#PBS -e %s
+source /u/lkehrl/.profile
+source /u/lkehrl/.bashrc_pleiades_haswell_sles12
+cd %s
+%s""" % (job_name, walltime, processors, dir+"PBS_relaxation.out",dir+"PBS_relaxation.err",dir,command)
+
+print command
+os.chdir(dir)
+fid = open("PBS_relaxation.pbs","w")
+fid.write(job_string)
+fid.close()
+
+#########################################
+# Create terminus-driven PBS job script #
+#########################################
 
 # Get number of timesteps from mesh files
 nt = 0
@@ -101,7 +138,7 @@ for file in files:
       nt = int(file[-11:-7])
    
 command = "python /u/lkehrl/Code/big3/modeling/simulations/"+\
-          "simulation_3d.py -glacier {0} -sif terminusdriven.sif".format(glacier)+\
+          "simulation_3d.py -glacier {0} -sif terminusdriven_advance.sif".format(glacier)+\
           " -mesh {0} -extrude {1} -n {2}".format(runname,extrude,nparts)+\
           " -dt {0} -nt {1} -temperature {2}".format(dt,nt,temperature)+\
           " -slipcoefficient {0}".format(slipcoefficient)
