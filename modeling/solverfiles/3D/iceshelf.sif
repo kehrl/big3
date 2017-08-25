@@ -243,7 +243,7 @@ Solver 2
 End
 
 Solver 3 
-  Exec Solver = "Before TimeStep"
+  Exec Solver = "Before Simulation"
   Equation = "InterpolateBeta"
   Procedure = "USF_Beta.so" "InterpolateBeta"
   Data File = String "{BetaDataFile}"
@@ -251,7 +251,7 @@ Solver 3
 End
 
 Solver 4 
-  Exec Solver = "Before TimeStep"
+  Exec Solver = "Before Simulation"
   Equation = "InterpolateAccumulation"
   Procedure = "USF_Accumulation.so" "InterpolateAccumulation"
   Variable = String "Bdot"
@@ -292,7 +292,7 @@ End
 
 Solver 8
   Equation = Distance
-  Exec Solver = "Before Timestep"
+  Exec Solver = "Before Simulation"
   Procedure = "DistanceSolve" "DistanceSolver1"
   Variable = "Distance"
   Solver Timing = Logical True
@@ -305,7 +305,6 @@ Solver 8
 End
 
 Solver 9
-  !Exec Solver = "Never"
   Equation = "Navier-Stokes"
   Stabilize = Logical True
   Solver Timing = Logical True
@@ -344,7 +343,6 @@ Solver 9
 End
 
 Solver 10
-  !Exec Solver = "Never"
   Exec Solver = "After TimeStep"
   Equation = String "StressSolver"
   Procedure = "ElmerIceSolvers" "ComputeDevStress"          
@@ -367,7 +365,6 @@ Solver 10
 End 
 
 Solver 11
-  !Exec Solver = "Never"
   Exec Solver = "After TimeStep"
   Equation = String "StrainSolver"
   Procedure =  File "ElmerIceSolvers" "ComputeStrainRate"
@@ -518,8 +515,6 @@ Solver 17
   Update Exported Variables = Logical True
   Nonlinear Update Exported Variables = Logical True
   Calculate Loads = Logical True
-  
-  ALE Formulation = Logical True
 End
 
 Solver 18
@@ -562,8 +557,6 @@ Solver 18
   Update Exported Variables = Logical True
   Nonlinear Update Exported Variables = Logical True
   Calculate Loads = Logical True
-  
-  ALE Formulation = Logical True
 End
 
 Solver 19
@@ -712,10 +705,6 @@ Boundary Condition 1
   Distance = Real 0.0
   ComputeNormal = Logical True
   
-  Longitudinal Mesh Update 1 = Equals FrontAdvance 1
-  Longitudinal Mesh Update 2 = Equals FrontAdvance 2
-  Longitudinal Mesh Update 3 = Equals FrontAdvance 3  
-  
   Vertical Mesh Update 1 = Real 0.0
   Vertical Mesh Update 2 = Real 0.0
 End
@@ -730,10 +719,6 @@ Boundary Condition 2
   Velocity 1 = Real 0.0
   Slip Coefficient 2 = Real {SlipCoefficient}
   Slip Coefficient 3 = Real {SlipCoefficient}
-  
-  Longitudinal Mesh Update 1 = Real 0.0
-  Longitudinal Mesh Update 2 = Real 0.0
-  Longitudinal Mesh Update 3 = Real 0.0
 
   Vertical Mesh Update 1 = Real 0.0
   Vertical Mesh Update 2 = Real 0.0
@@ -751,10 +736,6 @@ Boundary Condition 3
 
   Zs Top = Equals Reference Zs Top
   Zs Bottom = Equals Reference Zs Bottom
-  
-  Longitudinal Mesh Update 1 = Real 0.0
-  Longitudinal Mesh Update 2 = Real 0.0
-  Longitudinal Mesh Update 3 = Real 0.0
 
   Vertical Mesh Update 1 = Real 0.0
   Vertical Mesh Update 2 = Real 0.0
@@ -818,8 +799,6 @@ Boundary Condition 4
   Vertical Mesh Update 2 = Real 0.0
   Vertical Mesh Update 3 = Variable Zs Bottom, Reference Zs Bottom
     Real MATC "tx(0)-tx(1)"
-
-  Longitudinal Mesh Update 3 = Real 0.0
   
   BasalVelocity1 = Equals Velocity 1
   BasalVelocity2 = Equals Velocity 2
@@ -840,8 +819,6 @@ Boundary Condition 5
     Real MATC "tx(0)-tx(1)"
 
   Flow Force BC = Logical True
-  
-  Longitudinal Mesh Update 3 = Real 0.0
   
   Depth = Real 0.0
 End 
