@@ -314,12 +314,6 @@ Solver 9
   Variable = Flow Solution[Velocity:3 Pressure:1]
   ! mandatory to save bulk stiffness matrix
 
-  !Linear System Solver = Direct
-  !Linear System Direct Method =  MUMPS
-  !mumps percentage increase working space = integer 60
-  !Linear System Convergence Tolerance = 1.0E-08
-  !Optimize Bandwidth = Logical True
-
   Linear System Solver = "Iterative"
   Linear System Iterative Method = "GCR"
   BiCGStabl Polynomial Degree = 4
@@ -330,17 +324,17 @@ Solver 9
   Linear System Residual Output = 1
   Optimize Bandwidth = Logical True
 
-  Nonlinear System Max Iterations = 100
+  Nonlinear System Max Iterations = 50
   Nonlinear System Convergence Tolerance = 1.0E-5
   Nonlinear System Newton After Iterations = 100
-  Nonlinear System Newton After Tolerance = 1.0E-6
+  Nonlinear System Newton After Tolerance = 0.5E-3
   Nonlinear System Newton Max Tolerance = Real 1.0E-2
   Nonlinear System Newton Max Iterations = Integer 15 !Give up newton
   Nonlinear System Reset Newton = Logical True
   
-  Nonlinear System Relaxation Factor = Real 0.9
+  Nonlinear System Relaxation Factor = Real 1.0
 
-  Steady State Convergence Tolerance = Real 1.0e-4
+  Steady State Convergence Tolerance = Real 1.0E-6
 
   Update Exported Variables = Logical True
   Nonlinear Update Exported Variables = Logical True
@@ -485,7 +479,6 @@ Solver 16
 End
 
 Solver 17
-  !Exec Solver = "Never"
   Exec Solver = "After TimeStep"
   Equation = "Free Surface Top"
   Procedure =  "FreeSurfaceSolver" "FreeSurfaceSolver"
@@ -530,7 +523,6 @@ Solver 17
 End
 
 Solver 18
-  !Exec Solver = "Never"
   Exec Solver = "After TimeStep"
   Equation = "Free Surface Sea/Shelf"
   Procedure =  "FreeSurfaceSolver" "FreeSurfaceSolver"
