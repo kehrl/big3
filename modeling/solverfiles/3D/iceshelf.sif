@@ -424,6 +424,7 @@ End
 
 
 Solver 14
+  Exec Solver = "Never"
   Equation = "ResultOutput1"
   Procedure = File "ResultOutputSolve" "ResultOutputSolver"
   !Exec Solver = String "After All"
@@ -641,8 +642,7 @@ Solver 24
 End
 
 Solver 25
-  Exec Solver = "Never"
-  !Exec Solver = String "After Timestep"
+  Exec Solver = String "After Timestep"
   Equation = "ResultOutput2"
   Procedure = File "ResultOutputSolve1.so" "ResultOutputSolver"
 
