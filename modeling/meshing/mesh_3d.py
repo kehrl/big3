@@ -52,7 +52,7 @@ parser.add_argument("-timeseries",dest="timeseries",required=False, default='Fal
         help = "Calculate a timeseries of meshes.")
 parser.add_argument("-d2", dest="date2", required = False,
         help = "Date for end of timeseries.")
-parser.add_argument("-dt", dest="dt", required = False, default = '1/365.25',
+parser.add_argument("-dt", dest="dt", required = False, default = 1/365.25,
         help = "Timestep for timeseries (in years).")
 
 
@@ -236,12 +236,10 @@ if timeseries == True:
     os.system("tar -czf"+file_2d_temp+".tar.gz"+" "+file_2d_temp)
     if i > 10:
       os.system("rm -r "+file_2d_temp)
-  os.chdir(CURDIR)
-  del CURDIR, file_2d_temp, exterior_temp, xnew, ynew, zbed_new, zsur_new,zbot_new
-  os.system("tar -czf mesh_gmsh.tar.gz *.msh")
-  os.system("rm *.msh")
-
-
+os.system("tar -czf mesh_gmsh.tar.gz *.msh")
+os.system("rm *.msh")
+os.chdir(CURDIR)
+del CURDIR, file_2d_temp, exterior_temp, xnew, ynew, zbed_new, zsur_new,zbot_new
     
 
 ##########################################
@@ -277,12 +275,8 @@ elif racmo_res == 11:
   if temperature == 'model':
     timet2m,t2m = climlib.racmo_interpolate_to_cartesiangrid(xrac,yrac,'t2m',\
        maskvalues='ice',timing='none',time1=times[0],time2=times[-1])
-  if timeseries == True:
-    timesmb,smb = climlib.racmo_interpolate_to_cartesiangrid(xrac,yrac,'smb',\
-       maskvalues='ice',timing='none',time1=times[0],time2=times[-1])
-  else:
-    timesmb,smb = climlib.racmo_interpolate_to_cartesiangrid(xrac,yrac,'smb',\
-       maskvalues='ice',timing='none')
+  timesmb,smb = climlib.racmo_interpolate_to_cartesiangrid(xrac,yrac,'smb',\
+     maskvalues='ice',timing='none',time1=times[0],time2=times[-1])
 
 if timeseries == True:
   smb2 = np.zeros([len(yrac),len(xrac),len(times)])
