@@ -90,6 +90,7 @@ inputs = os.path.join(DIRM+"inputs/")
 if not(os.path.isdir(DIRM)):
   os.makedirs(DIRM)
   os.makedirs(DIRM+"/inputs")
+  os.makedirs(DIRM+"/figures")
 
 # Densities for finding floating ice
 rho_i = 917.0
@@ -236,13 +237,11 @@ if timeseries == True:
     os.system("tar -czf"+file_2d_temp+".tar.gz"+" "+file_2d_temp)
     if i > 10:
       os.system("rm -r "+file_2d_temp)
-  os.chdir(CURDIR)
-  del CURDIR, file_2d_temp, exterior_temp, xnew, ynew, zbed_new, zsur_new,zbot_new
   os.system("tar -czf mesh_gmsh.tar.gz *.msh")
   os.system("rm *.msh")
 
-
-    
+  os.chdir(CURDIR)
+  del CURDIR, file_2d_temp, exterior_temp, xnew, ynew, zbed_new, zsur_new,zbot_new
 
 ##########################################
 # Print out velocity data for inversions #
