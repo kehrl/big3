@@ -1,10 +1,10 @@
 !------------------------------------------------------------------!
 FUNCTION UIni( Model, nodenumber, dumy) RESULT(U) !
 !------------------------------------------------------------------!
-	USE types
+  USE types
 
   IMPLICIT NONE
-	TYPE(Model_t) :: Model
+  TYPE(Model_t) :: Model
   REAL(kind=dp) :: dumy, U
   INTEGER :: nodenumber
 
@@ -30,12 +30,12 @@ FUNCTION UIni( Model, nodenumber, dumy) RESULT(U) !
     ALLOCATE( xx(nx), yy(ny))
     ALLOCATE( dem(nx,ny))
     DO i=1,nx
-    	DO j=1,ny
-      	READ(10,*) xx(i), yy(j), dem(i,j)
+      DO j=1,ny
+        READ(10,*) xx(i), yy(j), dem(i,j)
       END DO
-		END DO
-		CLOSE(10)
-		
+    END DO
+   CLOSE(10)
+  
   END IF
 
   ! position current point
@@ -50,7 +50,7 @@ END
 !------------------------------------------------------------------!
 FUNCTION VIni( Model, nodenumber, dumy) RESULT(V) !
 !------------------------------------------------------------------!
-	USE types
+  USE types
 
   IMPLICIT NONE
   TYPE(Model_t) :: Model
@@ -79,12 +79,12 @@ FUNCTION VIni( Model, nodenumber, dumy) RESULT(V) !
     ALLOCATE( xx(nx), yy(ny))
     ALLOCATE( dem(nx,ny))
     DO i=1,nx
-    	DO j=1,ny
-      	READ(10,*) xx(i), yy(j), dem(i,j)
+      DO j=1,ny
+        READ(10,*) xx(i), yy(j), dem(i,j)
       END DO
-		END DO
-		CLOSE(10)
-		
+    END DO
+    CLOSE(10)
+
   END IF
 
   ! position current point
@@ -99,10 +99,10 @@ END
 !------------------------------------------------------------------!
 FUNCTION zsIni( Model, nodenumber, dumy) RESULT(zs) !
 !------------------------------------------------------------------!
-	USE types
+  USE types
 
   IMPLICIT NONE
-	TYPE(Model_t) :: Model
+  TYPE(Model_t) :: Model
   REAL(kind=dp) :: dumy,zs
   INTEGER :: nodenumber
 
@@ -118,7 +118,7 @@ FUNCTION zsIni( Model, nodenumber, dumy) RESULT(zs) !
   SAVE Firsttime
 
   IF (Firsttime) THEN
-		Firsttime=.False.
+    Firsttime=.False.
 
     ! open file
     OPEN(10,file='inputs/zsdem.xy')
@@ -127,12 +127,12 @@ FUNCTION zsIni( Model, nodenumber, dumy) RESULT(zs) !
     ALLOCATE( xx(nx),yy(ny))
     ALLOCATE( dem(nx,ny))
     DO i=1,nx
-    	DO j=1,ny
-      	READ(10,*) xx(i), yy(j), dem(i,j)
+      DO j=1,ny
+        READ(10,*) xx(i), yy(j), dem(i,j)
       END DO
-		END DO
-		CLOSE(10)
-		
+    END DO
+    CLOSE(10)
+
   END IF
 
   ! position current point
@@ -147,11 +147,11 @@ END
 !------------------------------------------------------------------!
 FUNCTION zbIni( Model, nodenumber, dumy) RESULT(zb) !
 !------------------------------------------------------------------!
-	USE types
-	IMPLICIT NONE
-	TYPE(Model_t) :: Model
+  USE types
+  IMPLICIT NONE
+  TYPE(Model_t) :: Model
   REAL(kind=dp) :: dumy,zb
-	INTEGER :: nodenumber
+  INTEGER :: nodenumber
 
   REAL(kind=dp),ALLOCATABLE :: dem(:,:), xx(:), yy(:)
   REAL(kind=dp) :: x,y
@@ -166,7 +166,7 @@ FUNCTION zbIni( Model, nodenumber, dumy) RESULT(zb) !
   SAVE Firsttime
 
   IF (Firsttime) THEN
-		Firsttime=.False.
+    Firsttime=.False.
 
     ! open file
     OPEN(10,file='inputs/zbdem.xy')
@@ -175,12 +175,11 @@ FUNCTION zbIni( Model, nodenumber, dumy) RESULT(zb) !
     ALLOCATE( xx(nx), yy(ny))
     ALLOCATE( dem(nx,ny))
     DO i=1,nx
-    	DO j=1,ny
-      	READ(10,*) xx(i),yy(j),dem(i,j)
+      DO j=1,ny
+        READ(10,*) xx(i),yy(j),dem(i,j)
       END DO
-		END DO
-		CLOSE(10)
-		
+    END DO
+    CLOSE(10)
   END IF
 
   ! position current point
@@ -195,11 +194,11 @@ END
 !------------------------------------------------------------------!
 FUNCTION Bedrock( Model, nodenumber, dumy) RESULT(zb) !
 !------------------------------------------------------------------!
-	USE types
-	IMPLICIT NONE
-	TYPE(Model_t) :: Model
+  USE types
+  IMPLICIT NONE
+  TYPE(Model_t) :: Model
   REAL(kind=dp) :: dumy, zb
-	INTEGER :: nodenumber
+  INTEGER :: nodenumber
 
   REAL(kind=dp),ALLOCATABLE :: dem(:,:), xx(:), yy(:)
   REAL(kind=dp) :: x, y
@@ -213,7 +212,7 @@ FUNCTION Bedrock( Model, nodenumber, dumy) RESULT(zb) !
   SAVE Firsttime
 
   IF (Firsttime) THEN
-		Firsttime=.False.
+    Firsttime=.False.
 
     ! open file
     OPEN(10,file='inputs/bedrock.xy')
@@ -222,12 +221,12 @@ FUNCTION Bedrock( Model, nodenumber, dumy) RESULT(zb) !
     ALLOCATE( xx(nx),yy(ny))
     ALLOCATE( dem(nx,ny))
     DO i=1,nx
-    	DO j=1,ny
-      	READ(10,*) xx(i), yy(j), dem(i,j)
+      DO j=1,ny
+        READ(10,*) xx(i), yy(j), dem(i,j)
       END DO
-		END DO
-		CLOSE(10)
-		
+    END DO
+    CLOSE(10)
+
   END IF
 
   ! position current point
@@ -243,11 +242,11 @@ END
 !------------------------------------------------------------------!
 FUNCTION UbIni( Model, nodenumber, dumy) RESULT(ub) !
 !------------------------------------------------------------------!
-	USE types
-	IMPLICIT NONE
-	TYPE(Model_t) :: Model
+  USE types
+  IMPLICIT NONE
+  TYPE(Model_t) :: Model
   REAL(kind=dp) :: dumy, ub
-	INTEGER :: nodenumber
+  INTEGER :: nodenumber
 
   REAL(kind=dp),ALLOCATABLE :: dem(:,:), xx(:), yy(:)
   REAL(kind=dp) :: x,y
@@ -261,7 +260,7 @@ FUNCTION UbIni( Model, nodenumber, dumy) RESULT(ub) !
   SAVE Firsttime
 
   IF (Firsttime) THEN
-		Firsttime=.False.
+    Firsttime=.False.
 
     ! open file
     OPEN(10,file='inputs/ubdem.xy')
@@ -270,12 +269,12 @@ FUNCTION UbIni( Model, nodenumber, dumy) RESULT(ub) !
     ALLOCATE( xx(nx), yy(ny))
     ALLOCATE( dem(nx,ny))
     DO i=1,nx
-    	DO j=1,ny
-      	READ(10,*) xx(i), yy(j), dem(i,j)
+      DO j=1,ny
+        READ(10,*) xx(i), yy(j), dem(i,j)
       END DO
-		END DO
-		CLOSE(10)
-		
+    END DO
+    CLOSE(10)
+
   END IF
 
   ! position current point
@@ -290,11 +289,11 @@ END
 !------------------------------------------------------------------!
 FUNCTION VbIni( Model, nodenumber, dumy) RESULT(vb) !
 !------------------------------------------------------------------!
-	USE types
-	IMPLICIT NONE
-	TYPE(Model_t) :: Model
+  USE types
+  IMPLICIT NONE
+  TYPE(Model_t) :: Model
   REAL(kind=dp) :: dumy, vb
-	INTEGER :: nodenumber
+  INTEGER :: nodenumber
 
   REAL(kind=dp),ALLOCATABLE :: dem(:,:), xx(:), yy(:)
   REAL(kind=dp) :: x, y
@@ -308,7 +307,7 @@ FUNCTION VbIni( Model, nodenumber, dumy) RESULT(vb) !
   SAVE Firsttime
 
   IF (Firsttime) THEN
-		Firsttime=.False.
+    Firsttime=.False.
 
     ! open file
     OPEN(10,file='inputs/vbdem.xy')
@@ -317,12 +316,12 @@ FUNCTION VbIni( Model, nodenumber, dumy) RESULT(vb) !
     ALLOCATE(xx(nx),yy(ny))
     ALLOCATE(dem(nx,ny))
     DO i=1,nx
-    	DO j=1,ny
-      	READ(10,*) xx(i), yy(j), dem(i,j)
+      DO j=1,ny
+        READ(10,*) xx(i), yy(j), dem(i,j)
       END DO
-		END DO
-		CLOSE(10)
-		
+    END DO
+    CLOSE(10)
+
   END IF
 
   ! position current point
@@ -337,7 +336,7 @@ END
 !------------------------------------------------------------------!
 FUNCTION UWa( Model, nodenumber, dumy) RESULT(U)                   !
 !------------------------------------------------------------------!
-	USE types
+  USE types
 
   IMPLICIT NONE
   TYPE(Model_t) :: Model
@@ -358,20 +357,20 @@ FUNCTION UWa( Model, nodenumber, dumy) RESULT(U)                   !
   us = UIni( Model, nodenumber, dumy )
   ub = UbIni( Model, nodenumber, dumy )
 
-	IF (z > zs) THEN
-		U = us
-	ELSE
-  	U = ub + (1.0_dp - ((zs - z) / (zs - zb))**4) * (us - ub)
+  IF (z > zs) THEN
+    U = us
+  ELSE
+    U = ub + (1.0_dp - ((zs - z) / (zs - zb))**4) * (us - ub)
   END IF
   
-	RETURN 
+  RETURN 
 END
 
 
 !------------------------------------------------------------------!
 FUNCTION VWa( Model, nodenumber, dumy) RESULT(V)                   !
 !------------------------------------------------------------------!
-	USE types
+  USE types
 
   IMPLICIT NONE
   TYPE(Model_t) :: Model
@@ -393,9 +392,9 @@ FUNCTION VWa( Model, nodenumber, dumy) RESULT(V)                   !
   vb = VbIni( Model, nodenumber, dumy )
 
   IF (z > zs) THEN
-  	V = vs
+    V = vs
   ELSE
-  	V = vb + (1.0_dp - ((zs - z) / (zs - zb))**4) * (vs - vb)
+    V = vb + (1.0_dp - ((zs - z) / (zs - zb))**4) * (vs - vb)
   END IF
   
   RETURN 
@@ -404,10 +403,10 @@ END
 !------------------------------------------------------------------!
 FUNCTION GuessBeta( Model, nodenumber, dumy) RESULT(coeff) !
 !------------------------------------------------------------------!
-	USE types
-	USE DefUtils
+  USE types
+  USE DefUtils
   IMPLICIT NONE
-	TYPE(Model_t) :: Model
+  TYPE(Model_t) :: Model
   REAL(kind=dp) :: dumy,coeff
   INTEGER :: nodenumber
   REAL(kind=dp) :: LinearInterp
@@ -416,7 +415,6 @@ FUNCTION GuessBeta( Model, nodenumber, dumy) RESULT(coeff) !
   REAL(kind=dp) :: x, y, z
     
   INTEGER :: nx, ny, i, j
-		
   LOGICAL :: FirstTimeBeta=.true.
 
   SAVE xx, yy, beta0, nx, ny
@@ -436,27 +434,27 @@ FUNCTION GuessBeta( Model, nodenumber, dumy) RESULT(coeff) !
       DO j=1,ny
         READ(10,*) xx(i),yy(j),beta0(i,j)
       END DO
-		END DO
-		CLOSE(10)
-			
+    END DO
+    CLOSE(10)
+
   END IF
 
   ! position current point
   x = Model % Mesh % Nodes % x (nodenumber)
   y = Model % Mesh % Nodes % y (nodenumber)
-
+  
   coeff = LinearInterp(beta0, xx, yy, nx, ny, x, y)
-		
+
   RETURN
 END
 
 !------------------------------------------------------------------!
 FUNCTION SSAViscosity( Model, nodenumber, dumy) RESULT(eta) !
 !------------------------------------------------------------------!
-	USE types
-	USE DefUtils
+  USE types
+  USE DefUtils
   IMPLICIT NONE
-	TYPE(Model_t) :: Model
+  TYPE(Model_t) :: Model
   REAL(kind=dp) :: dumy, eta, E, yearinsec
   INTEGER :: nodenumber
   REAL(kind=dp) :: LinearInterp
@@ -465,8 +463,8 @@ FUNCTION SSAViscosity( Model, nodenumber, dumy) RESULT(eta) !
   REAL(kind=dp) :: x, y, z
     
   INTEGER :: nx, ny, i, j
-		
-  LOGICAL :: FirstTimeSSAViscosity=.true.
+
+  LOGICAL :: FirstTimeSSAViscosity=.TRUE.
 
   SAVE xx,yy,flowA,nx,ny
   SAVE FirstTimeSSAViscosity
@@ -485,8 +483,8 @@ FUNCTION SSAViscosity( Model, nodenumber, dumy) RESULT(eta) !
       DO j=1,ny
         READ(10,*) xx(i),yy(j),flowA(i,j)
       END DO
-		END DO
-		CLOSE(10)
+    END DO
+    CLOSE(10)
     
   END IF
 
@@ -502,7 +500,7 @@ FUNCTION SSAViscosity( Model, nodenumber, dumy) RESULT(eta) !
 
   eta = LinearInterp(flowA, xx, yy, nx, ny, x, y)
   eta = ((E * eta * yearinsec)**(-1.0/3.0d0)) * 1.0e-6    
-		
+
   RETURN
 END
 
@@ -510,80 +508,80 @@ END
 !------------------------------------------------------------------!
 FUNCTION ModelViscosity( Model, nodenumber, dumy) RESULT(eta) !
 !------------------------------------------------------------------!
-    USE types
-		Use DefUtils
-    IMPLICIT NONE
-		TYPE(Model_t) :: Model
-    REAL(kind=dp) :: dumy,eta
-    INTEGER :: nodenumber
+  USE types
+  Use DefUtils
+  IMPLICIT NONE
+  TYPE(Model_t) :: Model
+  REAL(kind=dp) :: dumy,eta
+  INTEGER :: nodenumber
 
-		REAL(kind=dp),ALLOCATABLE :: dem(:,:,:), xx(:), yy(:)
-		REAL(kind=dp) :: x, y, z, zs , zb, dz
-		REAL(kind=dp) :: yearinsec, E, alpha
-		INTEGER :: nx, ny, nz, k, i, j
-		REAL(kind=dp) :: LinearInterp, zsIni, zbIni
-		
-		TYPE(Variable_t), POINTER :: dSVariable
-    INTEGER, POINTER :: dSPerm(:) 
-    REAL(KIND=dp), POINTER :: dSValues(:)
+  REAL(kind=dp),ALLOCATABLE :: dem(:,:,:), xx(:), yy(:)
+  REAL(kind=dp) :: x, y, z, zs , zb, dz
+  REAL(kind=dp) :: yearinsec, E, alpha
+  INTEGER :: nx, ny, nz, k, i, j
+  REAL(kind=dp) :: LinearInterp, zsIni, zbIni
 
-    LOGICAL :: Firsttime=.true.
+  TYPE(Variable_t), POINTER :: dSVariable
+  INTEGER, POINTER :: dSPerm(:) 
+  REAL(KIND=dp), POINTER :: dSValues(:)
 
-    SAVE dem, xx, yy, nx, ny, nz
-    SAVE Firsttime
+  LOGICAL :: Firsttime=.true.
 
-    IF (Firsttime) THEN
+  SAVE dem, xx, yy, nx, ny, nz
+  SAVE Firsttime
 
-      Firsttime=.False.
+  IF (Firsttime) THEN
 
-      ! open file
-      OPEN(10,file='inputs/flowA.xyz')
-      READ(10,*) nx
-      READ(10,*) ny
-      READ(10,*) nz
+    Firsttime=.False.
+
+    ! open file
+    OPEN(10,file='inputs/flowA.xyz')
+    READ(10,*) nx
+    READ(10,*) ny
+    READ(10,*) nz
       
-      ALLOCATE( xx(nx), yy(ny))
-      ALLOCATE( dem(nx,ny,nz))
+    ALLOCATE( xx(nx), yy(ny))
+    ALLOCATE( dem(nx,ny,nz))
 
-      DO i=1,nx
-      	DO j=1,ny
-          READ(10, *) xx(i), yy(j), dem(i,j,:)
-        END DO
+    DO i=1,nx
+      DO j=1,ny
+        READ(10, *) xx(i), yy(j), dem(i,j,:)
       END DO
-      CLOSE(10)
+    END DO
+    CLOSE(10)
       
-    END IF
+  END IF
 
-  	x = Model % Mesh % Nodes % x (nodenumber)
-  	y = Model % Mesh % Nodes % y (nodenumber)
-    z = Model % Mesh % Nodes % y (nodenumber)
+  x = Model % Mesh % Nodes % x (nodenumber)
+  y = Model % Mesh % Nodes % y (nodenumber)
+  z = Model % Mesh % Nodes % y (nodenumber)
 
-    zs = zsIni( Model, nodenumber, dumy )
-    zb = zbIni( Model, nodenumber, dumy )		
+  zs = zsIni( Model, nodenumber, dumy )
+  zb = zbIni( Model, nodenumber, dumy )
 
-    ! year in seconds for conversion		
-    yearinsec=365.25d0*24*60*60
-		
-    ! Enhanced factor
-    E = 3.d0
-		
-    ! Find which vertical layer the current point belongs to
-    dz = (zs - zb) / (nz - 1)
-    k = int( (z-zb) / dz)+1
-    IF (k < 0) THEN
-      PRINT *,k,z,zb,zs,dz
-    END IF
+  ! year in seconds for conversion		
+  yearinsec=365.25d0*24*60*60
+
+  ! Enhanced factor
+  E = 3.d0
+
+  ! Find which vertical layer the current point belongs to
+  dz = (zs - zb) / (nz - 1)
+  k = int( (z-zb) / dz)+1
+  IF (k < 0) THEN
+    PRINT *,k,z,zb,zs,dz
+  END IF
     
-    ! Interpolate the value of the temperature from nearby points in
-    ! the layers above and below it
-    alpha = (z - (zb + (k - 1) * dz)) / dz
-    eta = (1 - alpha) * LinearInterp(dem(:,:,k), xx, yy, nx, ny, x, y) &
-    				+ alpha * LinearInterp(dem(:,:,k+1), xx, yy, nx, ny, x, y)
+  ! Interpolate the value of the temperature from nearby points in
+  ! the layers above and below it
+  alpha = (z - (zb + (k - 1) * dz)) / dz
+  eta = (1 - alpha) * LinearInterp(dem(:,:,k), xx, yy, nx, ny, x, y) &
+        + alpha * LinearInterp(dem(:,:,k+1), xx, yy, nx, ny, x, y)
     
-    ! Get the viscosity in the correct units
-    eta = ((E*eta*yearinsec)**(-1.0/3.0d0))*1.0e-6
+  ! Get the viscosity in the correct units
+  eta = ((E*eta*yearinsec)**(-1.0/3.0d0))*1.0e-6
     
-    RETURN
+  RETURN
 END
 
 
@@ -602,12 +600,10 @@ FUNCTION ModelTemperature( Model, nodenumber, dumy) RESULT(T) !
     REAL(kind=dp) :: alpha
     INTEGER :: nx, ny, nz, k, i, j, Timestep, TimestepInit
     REAL(kind=dp) :: LinearInterp, zsIni, zbIni
-		
     TYPE(Variable_t), POINTER :: dSVariable, TimestepVariable
     INTEGER, POINTER :: dSPerm(:) 
     REAL(KIND=dp), POINTER :: dSValues(:)
 
-		
     LOGICAL :: Firsttime=.true.
     LOGICAL :: NotMapped=.false.
 
@@ -616,9 +612,9 @@ FUNCTION ModelTemperature( Model, nodenumber, dumy) RESULT(T) !
 
     IF (Firsttime) THEN
 
-    	Firsttime=.False.
+      Firsttime=.False.
 
-    	! open file
+      ! open file
       OPEN(10,file='inputs/modelT.xyz')
       READ(10,*) nx
       READ(10,*) ny
@@ -628,25 +624,25 @@ FUNCTION ModelTemperature( Model, nodenumber, dumy) RESULT(T) !
       ALLOCATE( dem(nx,ny,nz))
 
       DO i = 1, nx
-      	DO j = 1, ny
-        	read(10, *) xx(i), yy(j), dem(i,j,:)
+        DO j = 1, ny
+          READ(10, *) xx(i), yy(j), dem(i,j,:)
         END DO
       END DO
       CLOSE(10)
       
       TimestepVariable => VariableGet( Model % Variables,'Timestep')
-	    TimestepInit=TimestepVariable % Values(1)
+      TimestepInit=TimestepVariable % Values(1)
       
     END IF
 
     ! Get coordinates
-  	x = Model % Mesh % Nodes % x (nodenumber)
-  	y = Model % Mesh % Nodes % y (nodenumber)
+    x = Model % Mesh % Nodes % x (nodenumber)
+    y = Model % Mesh % Nodes % y (nodenumber)
     z = Model % Mesh % Nodes % z (nodenumber)
 
     zs = zsIni( Model, nodenumber, dumy )
-    zb = zbIni( Model, nodenumber, dumy )		
-		
+    zb = zbIni( Model, nodenumber, dumy )
+
     ! On the first iteration, we still have z mapped from 0 to 1, so we need to 
     ! check to make sure that it isn't the first iteration. If it is, we just 
     ! set the temperature to a default of -10 deg C.
@@ -690,162 +686,160 @@ END
 !------------------------------------------------------------------!
 FUNCTION SurfaceTemperature( Model, nodenumber, dumy) RESULT(Ts) !
 !------------------------------------------------------------------!
-		USE types
-		USE DefUtils
-  	IMPLICIT NONE
-		TYPE(Model_t) :: Model
-  	REAL(kind=dp) :: dumy,Ts
-  	INTEGER :: nodenumber
-  	REAL(kind=dp) :: LinearInterp
+  USE types
+  USE DefUtils
+  IMPLICIT NONE
+  TYPE(Model_t) :: Model
+  REAL(kind=dp) :: dumy,Ts
+  INTEGER :: nodenumber
+  REAL(kind=dp) :: LinearInterp
 
-  	REAL(kind=dp),ALLOCATABLE :: xx(:),yy(:),Tgrid(:,:)
-    REAL(kind=dp) :: x,y,z
+  REAL(kind=dp),ALLOCATABLE :: xx(:),yy(:),Tgrid(:,:)
+  REAL(kind=dp) :: x,y,z
     
-    INTEGER :: nx,ny
-    INTEGER :: i,j
-		
-    LOGICAL :: FirstTimeTs=.true.
+  INTEGER :: nx,ny
+  INTEGER :: i,j
+  LOGICAL :: FirstTimeTs=.TRUE.
 
-    SAVE xx,yy,Tgrid,nx,ny
-    SAVE FirstTimeTs
+  SAVE xx,yy,Tgrid,nx,ny
+  SAVE FirstTimeTs
 
-    IF (FirstTimeTs) THEN
+  IF (FirstTimeTs) THEN
 
-    	FirstTimeTs=.False.
-    	
-        ! open file
-      OPEN(10,file='inputs/t2m.xy')
-      READ(10,*) nx
-      READ(10,*) ny
-      ALLOCATE(xx(nx),yy(ny))
-      ALLOCATE(Tgrid(nx,ny))
-      DO i=1,nx
-        DO j=1,ny
-        	READ(10,*) xx(i), yy(j), Tgrid(i,j)
-        END DO
-			END DO
-			CLOSE(10)
-			
-    END IF
+    FirstTimeTs=.False.
+ 
+    ! open file
+    OPEN(10,file='inputs/t2m.xy')
+    READ(10,*) nx
+    READ(10,*) ny
+    ALLOCATE(xx(nx),yy(ny))
+    ALLOCATE(Tgrid(nx,ny))
+    DO i=1,nx
+      DO j=1,ny
+        READ(10,*) xx(i), yy(j), Tgrid(i,j)
+      END DO
+    END DO
+    CLOSE(10)
 
-    ! position current point
-  	x = Model % Mesh % Nodes % x (nodenumber)
-  	y = Model % Mesh % Nodes % y (nodenumber)
+  END IF
 
-    Ts = LinearInterp(Tgrid, xx, yy, nx, ny, x, y)
-		
-    Return
+  ! position current point
+  x = Model % Mesh % Nodes % x (nodenumber)
+  y = Model % Mesh % Nodes % y (nodenumber)
+
+  Ts = LinearInterp(Tgrid, xx, yy, nx, ny, x, y)
+
+  RETURN
 END
 
 !------------------------------------------------------------------!
 FUNCTION Accumulation( Model, nodenumber, dumy) RESULT(a) !
 !------------------------------------------------------------------!
-		USE types
-		USE DefUtils
-  	IMPLICIT NONE
-		TYPE(Model_t) :: Model
-  	REAL(kind=dp) :: dumy,a
-  	INTEGER :: nodenumber
-  	REAL(kind=dp) :: LinearInterp
+  USE types
+  USE DefUtils
+  IMPLICIT NONE
+  TYPE(Model_t) :: Model
+  REAL(kind=dp) :: dumy,a
+  INTEGER :: nodenumber
+  REAL(kind=dp) :: LinearInterp
 
-  	REAL(kind=dp),ALLOCATABLE :: xx(:),yy(:),smbgrid(:,:)
-    REAL(kind=dp) :: x,y,z
+  REAL(kind=dp),ALLOCATABLE :: xx(:),yy(:),smbgrid(:,:)
+  REAL(kind=dp) :: x,y,z
     
-    INTEGER :: nx,ny
-    INTEGER :: i,j
-		
-    LOGICAL :: FirstTimea=.true.
+  INTEGER :: nx,ny
+  INTEGER :: i,j
+  
+  LOGICAL :: FirstTimea=.true.
 
-    SAVE xx,yy,smbgrid,nx,ny
-    SAVE FirstTimea
+  SAVE xx,yy,smbgrid,nx,ny
+  SAVE FirstTimea
 
-    IF (FirstTimea) THEN
+  IF (FirstTimea) THEN
 
-    	FirstTimea=.False.
+    FirstTimea=.False.
 
-      ! open file
-      OPEN(10,file='inputs/smb.xy')
-      READ(10,*) nx
-      READ(10,*) ny
-      ALLOCATE(xx(nx),yy(ny))
-      ALLOCATE(smbgrid(nx,ny))
-      DO i=1,nx
-        DO j=1,ny
-        	READ(10,*) xx(i),yy(j),smbgrid(i,j)
-        END DO
-			END DO
-			CLOSE(10)
+    ! open file
+    OPEN(10,file='inputs/smb.xy')
+    READ(10,*) nx
+    READ(10,*) ny
+    ALLOCATE(xx(nx),yy(ny))
+    ALLOCATE(smbgrid(nx,ny))
+    DO i=1,nx
+      DO j=1,ny
+        READ(10,*) xx(i),yy(j),smbgrid(i,j)
+      END DO
+    END DO
+    CLOSE(10)
     
-    END IF
+  END IF
 
-    ! position current point
-  	x = Model % Mesh % Nodes % x (nodenumber)
-  	y = Model % Mesh % Nodes % y (nodenumber)
+  ! position current point
+  x = Model % Mesh % Nodes % x (nodenumber)
+  y = Model % Mesh % Nodes % y (nodenumber)
 
-    a = LinearInterp(smbgrid, xx, yy, nx, ny, x, y)
-		
-    Return
+  a = LinearInterp(smbgrid, xx, yy, nx, ny, x, y)
+
+  RETURN
 END
 
 FUNCTION TimeVaryingAccumulation( Model, nodenumber, dumy) RESULT(a) !
 !------------------------------------------------------------------!
-		USE types
-		USE DefUtils
-  	IMPLICIT NONE
-		TYPE(Model_t) :: Model
-  	REAL(kind=dp) :: dumy,a
-  	TYPE(Variable_t), POINTER :: TimestepVar
-  	INTEGER :: nodenumber, Timestep, TimestepLast=0
-  	REAL(kind=dp) :: LinearInterp
-  	CHARACTER(LEN=MAX_NAME_LEN) :: FileName
-  	
-  	REAL(kind=dp),ALLOCATABLE :: xx(:), yy(:), smbgrid(:,:)
-    REAL(kind=dp) :: x,y
+  USE types
+  USE DefUtils
+  IMPLICIT NONE
+  TYPE(Model_t) :: Model
+  REAL(kind=dp) :: dumy,a
+  TYPE(Variable_t), POINTER :: TimestepVar
+  INTEGER :: nodenumber, Timestep, TimestepLast=0
+  REAL(kind=dp) :: LinearInterp
+  CHARACTER(LEN=MAX_NAME_LEN) :: FileName
+  
+  REAL(kind=dp),ALLOCATABLE :: xx(:), yy(:), smbgrid(:,:)
+  REAL(kind=dp) :: x,y
     
-    INTEGER :: nx, ny, i, j
-		
-    LOGICAL :: FirstTime=.TRUE.
+  INTEGER :: nx, ny, i, j
 
-    SAVE xx,yy,smbgrid,nx,ny
-    SAVE FirstTime, TimestepLast
+  LOGICAL :: FirstTime=.TRUE.
 
-    TimestepVar => VariableGet( Model % Variables,'Timestep')
-    Timestep = TimestepVar % Values(1)
+  SAVE xx,yy,smbgrid,nx,ny
+  SAVE FirstTime, TimestepLast
 
-    IF ((FirstTime) .OR. (TimeStep /= TimeStepLast)) THEN
-			
-			!IF (.NOT. FirstTime) THEN
-			DEALLOCATE(xx,yy,smbgrid)
-			!END IF
-    	FirstTime=.False.
+  TimestepVar => VariableGet( Model % Variables,'Timestep')
+  Timestep = TimestepVar % Values(1)
 
-      WRITE (FileName, "(A10,I4.4,A3)") "inputs/smb", Timestep,".xy"
-      print *,FileName
+  IF ((FirstTime) .OR. (TimeStep /= TimeStepLast)) THEN
+    !IF (.NOT. FirstTime) THEN
+    DEALLOCATE(xx,yy,smbgrid)
+    !END IF
+    FirstTime=.False.
 
-      ! open file
-      OPEN(10,file=FileName)
-      READ(10,*) nx
-      READ(10,*) ny
-      ALLOCATE(xx(nx),yy(ny))
-      ALLOCATE(smbgrid(nx,ny))
-      DO i=1,nx
-        DO j=1,ny
-        	READ(10,*) xx(i),yy(j),smbgrid(i,j)
-        END DO
-			END DO
-			CLOSE(10)
+    WRITE (FileName, "(A10,I4.4,A3)") "inputs/smb", Timestep,".xy"
+    PRINT *,FileName
+
+    ! open file
+    OPEN(10,file=FileName)
+    READ(10,*) nx
+    READ(10,*) ny
+    ALLOCATE(xx(nx),yy(ny))
+    ALLOCATE(smbgrid(nx,ny))
+    DO i=1,nx
+      DO j=1,ny
+        READ(10,*) xx(i),yy(j),smbgrid(i,j)
+      END DO
+    END DO
+    CLOSE(10)
     
-      TimestepLast = Timestep
+    TimestepLast = Timestep
     
-    END IF
+  END IF
 
-    ! position current point
-  	x = Model % Mesh % Nodes % x (nodenumber)
-  	y = Model % Mesh % Nodes % y (nodenumber)
+  ! position current point
+  x = Model % Mesh % Nodes % x (nodenumber)
+  y = Model % Mesh % Nodes % y (nodenumber)
 
-    a = LinearInterp(smbgrid, xx, yy, nx, ny, x, y)
-		
-    Return
+  a = LinearInterp(smbgrid, xx, yy, nx, ny, x, y)
+
+  RETURN
 END
 
 !------------------------------------------------------------------!
@@ -863,7 +857,7 @@ FUNCTION IceDivideTemperature( Model, nodenumber, dumy) RESULT(T) !
     REAL(kind=dp) :: alpha
     INTEGER :: nx, ny, nz, k, i, j, Timestep, TimestepInit
     REAL(kind=dp) :: LinearInterp, zsIni, zbIni
-		
+
     TYPE(Variable_t), POINTER :: dSVariable, TimestepVariable
     INTEGER, POINTER :: dSPerm(:) 
     REAL(KIND=dp), POINTER :: dSValues(:)
@@ -876,9 +870,9 @@ FUNCTION IceDivideTemperature( Model, nodenumber, dumy) RESULT(T) !
 
     IF (Firsttime) THEN
 
-    	Firsttime=.False.
+      Firsttime=.False.
 
-    	! open file
+      ! open file
       OPEN(10,file='inputs/tsteady_icedivide.xyz')
       READ(10,*) nx
       READ(10,*) ny
@@ -888,8 +882,8 @@ FUNCTION IceDivideTemperature( Model, nodenumber, dumy) RESULT(T) !
       ALLOCATE( dem(nx,ny,nz))
 
       DO i = 1, nx
-      	DO j = 1, ny
-        	READ(10,*) xx(i), yy(j), dem(i, j, :)
+        DO j = 1, ny
+          READ(10,*) xx(i), yy(j), dem(i, j, :)
         END DO
       END DO
       CLOSE(10)
@@ -900,13 +894,13 @@ FUNCTION IceDivideTemperature( Model, nodenumber, dumy) RESULT(T) !
     END IF
 
     ! Get coordinates
-  	x = Model % Mesh % Nodes % x (nodenumber)
-  	y = Model % Mesh % Nodes % y (nodenumber)
+    x = Model % Mesh % Nodes % x (nodenumber)
+    y = Model % Mesh % Nodes % y (nodenumber)
     z = Model % Mesh % Nodes % z (nodenumber)
 
     zs = zsIni( Model, nodenumber, dumy )
-    zb = zbIni( Model, nodenumber, dumy )		
-		
+    zb = zbIni( Model, nodenumber, dumy )
+
     ! On the first iteration, we still have z mapped from 0 to 1, so we need to check to make
     ! sure that it isn't the first iteration. If it is, we just set the temperature to a 
     ! default of -20 deg C.
@@ -957,22 +951,22 @@ FUNCTION UModel( Model, nodenumber, dumy) RESULT(T) !
     REAL(kind=dp) :: alpha
     INTEGER :: nx, ny, nz, k, i, j, Timestep, TimestepInit
     REAL(kind=dp) :: LinearInterp, zsIni, zbIni
-		
+
     TYPE(Variable_t), POINTER :: dSVariable, TimestepVariable
     INTEGER, POINTER :: dSPerm(:) 
     REAL(KIND=dp), POINTER :: dSValues(:)
 
-    LOGICAL :: Firsttime=.true.
-    LOGICAL :: NotMapped=.false.
+    LOGICAL :: Firsttime=.TRUE.
+    LOGICAL :: NotMapped=.FALSE.
 
     SAVE dem, xx, yy, nx, ny, nz, TimestepInit
     SAVE Firsttime
 
     IF (Firsttime) THEN
 
-    	Firsttime=.False.
+      Firsttime=.FALSE.
 
-    	! open file
+      ! open file
       OPEN(10,file='inputs/modelU.xyz')
       READ(10,*) nx
       READ(10,*) ny
@@ -982,25 +976,25 @@ FUNCTION UModel( Model, nodenumber, dumy) RESULT(T) !
       ALLOCATE( dem(nx,ny,nz))
 
       DO i = 1, nx
-      	DO j = 1, ny
-        	READ(10, *) xx(i), yy(j), dem(i, j, :)
+        DO j = 1, ny
+          READ(10, *) xx(i), yy(j), dem(i, j, :)
         END DO
       END DO
       CLOSE(10)
       
       TimestepVariable => VariableGet( Model % Variables,'Timestep')
-	    TimestepInit = TimestepVariable % Values(1)
+      TimestepInit = TimestepVariable % Values(1)
       
     END IF
 
     ! Get coordinates
-  	x = Model % Mesh % Nodes % x (nodenumber)
-  	y = Model % Mesh % Nodes % y (nodenumber)
+    x = Model % Mesh % Nodes % x (nodenumber)
+    y = Model % Mesh % Nodes % y (nodenumber)
     z = Model % Mesh % Nodes % z (nodenumber)
 
     zs = zsIni( Model, nodenumber, dumy )
-    zb = zbIni( Model, nodenumber, dumy )		
-		
+    zb = zbIni( Model, nodenumber, dumy )
+
     ! On the first iteration, we still have z mapped from 0 to 1, so we need to 
     ! check to make sure that it isn't the first iteration. If it is, we just 
     ! set the temperature to a default of -10 deg C.
@@ -1056,23 +1050,23 @@ FUNCTION VModel( Model, nodenumber, dumy) RESULT(T) !
     REAL(kind=dp) :: alpha
     INTEGER :: nx, ny, nz, k, i, j, Timestep, TimestepInit
     REAL(kind=dp) :: LinearInterp, zsIni, zbIni
-		
+
     TYPE(Variable_t), POINTER :: dSVariable, TimestepVariable
     INTEGER, POINTER :: dSPerm(:) 
     REAL(KIND=dp), POINTER :: dSValues(:)
 
-		
-    LOGICAL :: Firsttime=.true.
-    LOGICAL :: NotMapped=.false.
+
+    LOGICAL :: Firsttime=.TRUE.
+    LOGICAL :: NotMapped=.FALSE.
 
     SAVE dem,xx,yy,nx,ny,nz,TimestepInit
     SAVE Firsttime
 
     IF (Firsttime) THEN
 
-    	Firsttime=.False.
+      Firsttime=.FALSE.
 
-    	! open file
+      ! open file
       OPEN(10,file='inputs/modelV.xyz')
       READ(10,*) nx
       READ(10,*) ny
@@ -1082,25 +1076,25 @@ FUNCTION VModel( Model, nodenumber, dumy) RESULT(T) !
       ALLOCATE(dem(nx, ny, nz))
 
       DO i = 1, nx
-      	DO j = 1, ny
-        	READ(10, *) xx(i), yy(j), dem(i, j, :)
+        DO j = 1, ny
+          READ(10, *) xx(i), yy(j), dem(i, j, :)
         END DO
       END DO
       CLOSE(10)
       
       TimestepVariable => VariableGet( Model % Variables,'Timestep')
-	    TimestepInit = TimestepVariable % Values(1)
+      TimestepInit = TimestepVariable % Values(1)
       
     END IF
 
     ! Get coordinates
-  	x = Model % Mesh % Nodes % x (nodenumber)
-  	y = Model % Mesh % Nodes % y (nodenumber)
+    x = Model % Mesh % Nodes % x (nodenumber)
+    y = Model % Mesh % Nodes % y (nodenumber)
     z = Model % Mesh % Nodes % z (nodenumber)
 
     zs = zsIni( Model, nodenumber, dumy )
-    zb = zbIni( Model, nodenumber, dumy )		
-		
+    zb = zbIni( Model, nodenumber, dumy )
+
     ! On the first iteration, we still have z mapped from 0 to 1, so we need to 
     ! check to make sure that it isn't the first iteration. If it is, we just 
     ! set the temperature to a default of -10 deg C.
