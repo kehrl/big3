@@ -22,7 +22,7 @@ parser.add_argument("-runname",dest="runname",required = False,
         default='terminusdriven',
         help = "runname in mesh2d directory (default = 'terminusdriven'.")
 parser.add_argument("-t2",dest="t2",required = False, default='none',
-        help = "runname in mesh2d directory (default = 'terminusdriven'.")
+        help = "maximum timestep to plot (default = 'none'.")
 
 args, _ = parser.parse_known_args(sys.argv)
 
