@@ -253,9 +253,12 @@ matplotlib.rcParams['contour.negative_linestyle'] = 'solid'
 ax1 = plt.gca()
 plt.imshow(image[:,:,0],extent=[np.min(ximage),np.max(ximage),np.min(yimage),np.max(yimage)],cmap='Greys_r',origin='lower',clim=[0,0.6])
 norms = matplotlib.colors.BoundaryNorm(np.arange(-500,1,10),cx.N)
-p=plt.imshow(veltrend,extent=[np.min(xvel),np.max(xvel),np.min(yvel),np.max(yvel)],origin='lower',clim=[-500,0],cmap=cx,norm=norms)
-p.cmap.set_under('k')
-p.cmap.set_over('w')
+if glacier == 'Kanger':
+  p=plt.imshow(veltrend,extent=[np.min(xvel),np.max(xvel),np.min(yvel),np.max(yvel)],origin='lower',clim=[-500,0],cmap=cx,norm=norms)
+  p.cmap.set_under('k')
+  p.cmap.set_over('w')
+else: 
+  p=plt.imshow(veltrend,extent=[np.min(xvel),np.max(xvel),np.min(yvel),np.max(yvel)],origin='lower',clim=[-100,100],cmap='RdBu_r')  
 ax1.axes.set_xlim([xmin,xmax])
 ax1.axes.set_ylim([ymin,ymax])
 ax1.set_xticks([])
@@ -270,7 +273,10 @@ path = matplotlib.path.Path([[0.46*(xmax1-xmin1)+xmin,0.98*(ymax1-ymin1)+ymin1],
 patch = matplotlib.patches.PathPatch(path,edgecolor='k',facecolor='w',lw=1,zorder=3)
 ax1.add_patch(patch)
 cbaxes = fig.add_axes([0.28, 0.87, 0.17, 0.03]) 
-cb = plt.colorbar(p,cax=cbaxes,orientation='horizontal',ticks=[-500,-250,0],extend='both') 
+if glacier == 'Kanger':
+  cb = plt.colorbar(p,cax=cbaxes,orientation='horizontal',ticks=[-500,-250,0],extend='both') 
+else:
+  cb = plt.colorbar(p,cax=cbaxes,orientation='horizontal',ticks=[-100,0,100],extend='both') 
 cb.set_label('Velocity trend \n (m yr$^{-2}$)',size=8,fontname='arial')
 cb.ax.tick_params(labelsize=8,length=5)
 for i in range(0,len(dists_eul)):
@@ -298,9 +304,12 @@ plt.subplot(gs[1])
 ax2 = plt.gca()
 plt.imshow(image[:,:,0],extent=[np.min(ximage),np.max(ximage),np.min(yimage),np.max(yimage)],cmap='Greys_r',origin='lower',clim=[0,0.6])
 norms = matplotlib.colors.BoundaryNorm(np.arange(-10,0,1),cx.N)
-p=plt.imshow(zstrend,extent=[np.min(xzs),np.max(xzs),np.min(yzs),np.max(yzs)],origin='lower',cmap=cx,clim=[-10,0])
-p.cmap.set_under('k')
-p.cmap.set_over('w')
+if glacier == 'Kanger':
+  p=plt.imshow(zstrend,extent=[np.min(xzs),np.max(xzs),np.min(yzs),np.max(yzs)],origin='lower',cmap=cx,clim=[-10,0])
+  p.cmap.set_under('k')
+  p.cmap.set_over('w')
+else:
+  p=plt.imshow(zstrend,extent=[np.min(xzs),np.max(xzs),np.min(yzs),np.max(yzs)],origin='lower',cmap='RdBu_r',clim=[-10,10])
 ax2.set_xticks([])
 ax2.set_yticks([])
 ax2.axes.set_xlim([xmin,xmax])
@@ -315,7 +324,10 @@ path = matplotlib.path.Path([[0.48*(xmax1-xmin1)+xmin,0.98*(ymax1-ymin1)+ymin1],
 patch = matplotlib.patches.PathPatch(path,edgecolor='k',facecolor='w',lw=1,zorder=3)
 ax2.add_patch(patch)
 cbaxes = fig.add_axes([0.77, 0.87, 0.17, 0.03]) 
-cb = plt.colorbar(p,cax=cbaxes,orientation='horizontal',ticks=[-10,-5,0],extend='both') 
+if glacier == 'Kanger':
+  cb = plt.colorbar(p,cax=cbaxes,orientation='horizontal',ticks=[-10,-5,0],extend='both') 
+else:
+  cb = plt.colorbar(p,cax=cbaxes,orientation='horizontal',ticks=[-10,0,10],extend='both') 
 cb.set_label("Elevation trend \n (m yr$^{-1}$)",size=8,fontname='arial')
 cb.ax.tick_params(labelsize=9)
 ax2.text(0.05*(xmax1-xmin1)+xmin1,0.05*(ymax1-ymin1)+ymin1,'b',weight='bold',fontsize=9)

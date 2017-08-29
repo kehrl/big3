@@ -333,7 +333,7 @@ if plot_overview == 1:
   ind = np.where((calvingstyle[:,1] == 'Domino'))[0]
   for i in ind:
     if i == ind[1]:
-      plt.bar(float(calvingstyle[i,0])-0.025,10.0,width=0.025,color=[1,0.6,0.6],edgecolor='none',label='Non-tabular',bottom=-5)
+      plt.bar(float(calvingstyle[i,0])-0.025,10.0,width=0.025,color=[1,0.6,0.6],edgecolor='none',label='Nontabular',bottom=-5)
     elif i != 0:
       plt.bar(float(calvingstyle[i,0])-0.025,10.0,width=0.025,color=[1,0.6,0.6],edgecolor='none',bottom=-5)
   nonnan = np.where(~(np.isnan(terminus_val)))[0]
@@ -566,7 +566,7 @@ if plot_overview == 1:
   ax.plot(timerac,smbrac/900.*100,'0.4',lw=1.2,label='SMB')
   ax.errorbar(dem_time[:,0],dem_dH[:,0]/365.25*100,xerr=dem_time[:,1],yerr=dem_dH[:,1]/365.25*100,fmt='o',color=[0.7137254901960784, 0.8588235294117647, 1],markersize=3.5,mec='k',mew=0.5,capsize=1,lw=0.5,label='DEM',ecolor='k')
   ind = np.where(~(np.isnan(flux_dH)))[0]
-  ax.errorbar(flux_time[ind],(flux_dH[ind,0]+smb_flux[ind])/365.25*100,yerr=yerr,xerr=5.5/365.25,fmt='s',color=[200./255,0,0],markersize=3.5,mec='k',mew=0.5,capsize=1,lw=0.5,label='Flux',ecolor='k')
+  ax.errorbar(flux_time[ind],(flux_dH[ind,0]+smb_flux[ind])/365.25*100,yerr=yerr,xerr=5.5/365.25,fmt='s',color=[200./255,0,0],markersize=3.5,mec='k',mew=0.5,capsize=1,lw=0.5,label='Fluxgate',ecolor='k')
   plt.xlim([time1,time2])
   plt.ylabel(r'$dh/dt$ (cm d$^{-1}$)',fontname='Arial',fontsize=8)
   x_formatter = matplotlib.ticker.ScalarFormatter(useOffset=False)
