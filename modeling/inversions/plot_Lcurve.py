@@ -19,10 +19,10 @@ parser.add_argument("-glacier",dest="glacier",required = True,
         help = "Name of glacier.")
 parser.add_argument("-mesh", dest="meshname", required = True,
         help = "Name of mesh.")
-parser.add_argument("-dim", dest="dimension",required = True,
-		help = "3D or Flowline.")
+parser.add_argument("-dim", dest="dimension",required = False,
+	default='3D',help = "3D or Flowline.")
 parser.add_argument("-method", dest="method",required = True,
-                help = "adjoint or robin.")
+        help = "adjoint or robin.")
 args, _ = parser.parse_known_args(sys.argv)
 RES = args.meshname
 ver = args.dimension
@@ -83,9 +83,11 @@ ymin,ymax = plt.ylim()
 for i in range(0,len(strings)):
   plt.text(cost_bed[i]+0.15,cost_sur[i]+0.1*(ymax-ymin),strings[i],fontsize=10,rotation=45)
 plt.xlim([-0.4,np.max(cost_bed)+(np.max(cost_bed)-np.min(cost_bed))/4])
+
 plt.tight_layout()
 plt.subplots_adjust(left=0.2, bottom=0.11, right=0.98, top=0.97, wspace=0.0, hspace=0.0)
-plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/Lcurve_"+glacier+"_"+RES+".pdf"),format='PDF')
+#plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/Lcurve_"+glacier+"_"+RES+".pdf"),format='PDF')
+plt.savefig(DIR+"/figures/Lcurve_"+method+".pdf")
 plt.close()
 
-print "Saving as "+os.path.join(os.getenv("HOME"),"Bigtmp/Lcurve_"+glacier+"_"+RES+".pdf")
+print "Saving as "+DIR+"/figures/Lcurve_"+method+".pdf"

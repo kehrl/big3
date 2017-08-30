@@ -502,7 +502,7 @@ def pvtu_file(file,variables,reader='none',returnreader=False):
   else:
     return data_final
 
-def pvtu_timeseries_grid(x,y,DIR,fileprefix,variables,inputsdir,layer='surface',debug=False,t1=1,t2=np.Inf):
+def pvtu_timeseries_grid(x,y,DIR,fileprefix,variables,inputsdir,layer='surface',debug=False,crop_mesh=True,t1=1,t2=np.Inf):
 
   from scipy.interpolate import griddata
   import numpy as np
@@ -528,7 +528,7 @@ def pvtu_timeseries_grid(x,y,DIR,fileprefix,variables,inputsdir,layer='surface',
         totsteps = timestep     
   if totsteps == 0:
     sys.exit("Check that file "+DIR+fileprefix+" actually exists.")
-  
+ 
   if t2 > totsteps:
     t2 = totsteps
   
@@ -540,9 +540,23 @@ def pvtu_timeseries_grid(x,y,DIR,fileprefix,variables,inputsdir,layer='surface',
     freesurfacevar = 'zs bottom'
   if freesurfacevar not in variables:
     variables.append(freesurfacevar)
+  
+  if crop_mesh:
+    mesh_extent_x = np.loadtxt(inputsdir+'/mesh_timeseries_x.dat')
+    mesh_extent_y = np.loadtxt(inputsdir+'/mesh_timeseries_y.dat')
+  try:
+    mesh_extent_x = np.loadtxt(inputsdir+'/mesh_timeseries_x.dat')
+    mesh_extent_y = np.loadtxt(inputsdir+'/mesh_timeseries_y.dat')
 
-  mesh_extent_x = np.loadtxt(inputsdir+'/mesh_timeseries_x.dat')
-  mesh_extent_y = np.loadtxt(inputsdir+'/mesh_timeseries_y.dat')
+    path = matplotlib.path.Path(np.column_stack([mesh_extent_x[:,0],mesh_extent_y[:,0]]))
+    inmesh = path.contains_points(np.column_stack([xgrid.flatten(),ygrid.flatten()]))
+    inmesh = inmesh.reshape(len(y),len(x))
+  except:
+    mesh_extent = np.loadtxt(inputsdir+'/mesh_extent.dat')
+
+    path = matplotlib.path.Path(np.column_stack([mesh_extent_x[:,0],mesh_extent_y[:,1]]))
+    inmesh = path.contains_points(np.column_stack([xgrid.flatten(),ygrid.flatten()]))
+    inmesh = inmesh.reshape(len(y),len(x))    
   try: 
     mesh_hole1 = np.loadtxt(inputsdir+'/mesh_hole1.dat')
     mesh_hole2 = np.loadtxt(inputsdir+'/mesh_hole2.dat')
@@ -582,11 +596,12 @@ def pvtu_timeseries_grid(x,y,DIR,fileprefix,variables,inputsdir,layer='surface',
       datagrid = np.zeros([len(y),len(x),t2-t1+1], dtype=zip(varnames,types)) 
       del types
 
-    ind = np.where(mesh_extent_x[:,t-1] != 0)
-    path = matplotlib.path.Path(np.column_stack([mesh_extent_x[:,t-1],mesh_extent_y[:,t-1]]))
-    inmesh = path.contains_points(np.column_stack([xgrid.flatten(),ygrid.flatten()]))
-    inmesh = inmesh.reshape(len(y),len(x))
-    del path
+    if crop_mesh:
+      ind = np.where(mesh_extent_x[:,t-1] != 0)
+      path = matplotlib.path.Path(np.column_stack([mesh_extent_x[:,t-1],mesh_extent_y[:,t-1]]))
+      inmesh = path.contains_points(np.column_stack([xgrid.flatten(),ygrid.flatten()]))
+      inmesh = inmesh.reshape(len(y),len(x))
+      del path
 
     for var in varnames:
       if var == 'dh':
@@ -599,12 +614,16 @@ def pvtu_timeseries_grid(x,y,DIR,fileprefix,variables,inputsdir,layer='surface',
       else:
         datagrid[var][:,:,i] = griddata((surf['x'],surf['y']),surf[var],(xgrid,ygrid))
       
+      #if crop_mesh: 
       datagrid[var][~inmesh,i] = float('nan')
+      
       if holes:
         datagrid[var][inhole1,i] = float('nan')
         datagrid[var][inhole2,i] = float('nan')   
 
-    del surf,pvtufile,inmesh,ind
+    del surf,pvtufile
+    if crop_mesh:
+      del inmesh,ind
     gc.collect()
     
   return datagrid

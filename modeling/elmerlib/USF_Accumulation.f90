@@ -53,7 +53,6 @@ SUBROUTINE InterpolateAccumulation(Model,Solver,dt,Transient )
       IF (.NOT. Found) THEN
         CALL INFO(SolverName, 'Steady State not given, assuming it is false.')
       END IF
-      print *,'STEADY',Steady
   
       TopMaskName = "Top Surface Mask"
   END IF
