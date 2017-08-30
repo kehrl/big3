@@ -49,7 +49,7 @@ xb,yb,zb = bedlib.morlighem_grid(xmin,xmax,ymin,ymax,verticaldatum='geoid')
 #xb,yb,zb = bedlib.smith_grid(glacier,xmin,xmax,ymin,ymax,verticaldatum='geoid',model='aniso',smoothing=4,grid='structured')
 
 # Load velocity variability
-xvel,yvel,velall,veltrend,veldetrend,velrange,velcount,veltime = vellib.variability(glacier,time1,time2)
+xvel,yvel,velall,veltrend,veldetrend,velrange,velcount,veltrend_error,veltime = vellib.variability(glacier,time1,time2)
 
 # Load elevation variability
 xzs,yzs,zsall,zstrend,zsdetrend,zsrange,zscount,zstrend_error,zstime = zslib.variability(glacier,time1,time2)
