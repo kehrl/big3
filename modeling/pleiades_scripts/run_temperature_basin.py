@@ -10,12 +10,12 @@ glacier = 'Kanger'
 # Mesh geometry
 
 meshshp = 'glacier_extent_basin_front'
-extrude = 10
+extrude = 12
 bname = 'morlighem'
 bmodel = 'aniso'
 bsmooth = '4'
 #lc = '300 500 750 2500'
-lc = '300 500 1000 5000'
+lc = '300 600 1000 2500'
 dx = 100
 
 if glacier == 'Helheim':
@@ -34,15 +34,15 @@ elif method == 'robin':
 temp_simulation = 'steady'
 temp_iterations = 100
 temp_timestep = 1
-temperature = -10.0 # Constant temperature for initial inversion
+temperature = -15.0 # Constant temperature for initial inversion
 
 # Options for PBS submission
 queue = 'long'
-model = 'ivy'
-nparts = 140
-ncpus = 20
-itmax = 300
-runtime = '24:00:00'
+model = 'has'
+nparts = 240
+ncpus = 24
+itmax = 200
+runtime = '48:00:00'
 
 if meshshp.endswith('nofront'):
   frontBC = 'pressure'
@@ -54,7 +54,7 @@ else:
 #################
 
 # Output mesh name
-meshname = 'BASIN'+date+'_NewMesh'
+meshname = 'BASIN'+date
 
 # Create mesh
 command = "python /u/lkehrl/Code/big3/modeling/meshing/"+\
@@ -84,7 +84,7 @@ job_string = """
 #PBS -o %s
 #PBS -e %s
 source /u/lkehrl/.profile
-source /u/dlilien/sw/elmer/.bashrc_pleiades
+source /u/lkehrl/.bashrc_pleiades_haswell_sles12
 cd %s
 %s""" % (job_name, walltime, processors, dir+"PBS_"+method+"_"+regpar+".out",dir+"PBS_"+method+"_"+regpar+".err",dir,command)
      
@@ -120,7 +120,7 @@ job_string = """
 #PBS -o %s
 #PBS -e %s
 source /u/lkehrl/.profile
-source /u/dlilien/sw/elmer/.bashrc_pleiades
+source /u/lkehrl/.bashrc_pleiades_haswell_sles12
 cd %s
 %s""" % (job_name, walltime, processors, dir+"PBS_temperature.out",dir+"PBS_temperature.err",dir,command)
      

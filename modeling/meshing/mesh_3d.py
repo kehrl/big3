@@ -265,16 +265,16 @@ if ssa:
 
 racmo_res = 1
 if racmo_res == 1:
-  if temperature == 'model':
-    xrac,yrac,t2m,timet2m = climlib.racmo_grid(x[0],x[-1],y[0],y[-1],'t2m',\
-  	  epsg=3413,resolution=racmores,maskvalues='ice')
+  #if temperature == 'model':
+  xrac,yrac,t2m,timet2m = climlib.racmo_grid(x[0],x[-1],y[0],y[-1],'t2m',\
+  	  epsg=3413,resolution=racmo_res,maskvalues='ice')
   xrac,yrac,smb,timesmb = climlib.racmo_grid(x[0],x[-1],y[0],y[-1],'smb',\
   	epsg=3413,resolution=racmo_res,maskvalues='ice')
 elif racmo_res == 11:
   xrac = np.arange(np.ceil(x[0]),x[-1],1e3)
   yrac = np.arange(np.ceil(y[0]),y[-1],1e3)
-  if temperature == 'model':
-    timet2m,t2m = climlib.racmo_interpolate_to_cartesiangrid(xrac,yrac,'t2m',\
+  #if temperature == 'model':
+  timet2m,t2m = climlib.racmo_interpolate_to_cartesiangrid(xrac,yrac,'t2m',\
        maskvalues='ice',timing='none',time1=times[0],time2=times[-1])
   if timeseries == True:
     timesmb,smb = climlib.racmo_interpolate_to_cartesiangrid(xrac,yrac,'smb',\
@@ -323,41 +323,41 @@ fidsmb.close()
 del fidsmb
 
 # Get average t2m and save to file if using modeled temperature
-if temperature == 'model':
-  t2m_ave = np.mean(t2m,axis=0)
-  # Set maximum temperature to -1 deg C
-  ind = np.where(t2m_ave > 272.15)
-  t2m_ave[ind] = 272.15
+#if temperature == 'model':
+t2m_ave = np.mean(t2m,axis=0)
+# Set maximum temperature to -1 deg C
+ind = np.where(t2m_ave > 272.15)
+t2m_ave[ind] = 272.15
 
-  fidt2m = open(inputs+"t2m.xy","w")
-  fidt2m.write('{}\n{}\n'.format(len(xrac),len(yrac)))
-  for i in range(0,len(xrac)):
-    for j in range(0,len(yrac)):
-      fidt2m.write('{0} {1} {2}\n'.format(xrac[i],yrac[j],t2m_ave[j,i]))
-  fidt2m.close()
+fidt2m = open(inputs+"t2m.xy","w")
+fidt2m.write('{}\n{}\n'.format(len(xrac),len(yrac)))
+for i in range(0,len(xrac)):
+  for j in range(0,len(yrac)):
+    fidt2m.write('{0} {1} {2}\n'.format(xrac[i],yrac[j],t2m_ave[j,i]))
+fidt2m.close()
 
-  # Get surface heights on same grid as temperature and surface mass balance so that
-  # we can get vertical steady state temperatures.
-  xgrid,ygrid = np.meshgrid(xrac,yrac)
-  f = RegularGridInterpolator((y,x),zsur-zbed)
-  Hflat = f((ygrid.flatten(),xgrid.flatten()))
-  H = np.reshape(Hflat,[len(yrac),len(xrac)])
-  del Hflat,f,xgrid,ygrid
+# Get surface heights on same grid as temperature and surface mass balance so that
+# we can get vertical steady state temperatures.
+xgrid,ygrid = np.meshgrid(xrac,yrac)
+f = RegularGridInterpolator((y,x),zsur-zbed)
+Hflat = f((ygrid.flatten(),xgrid.flatten()))
+H = np.reshape(Hflat,[len(yrac),len(xrac)])
+del Hflat,f,xgrid,ygrid
   
-  # Get 3D grid of temperatures  
-  T = flowparameterlib.steadystate_vprofile(H,t2m_ave,smb_ave/rho_i*365.25,levels=12)
+# Get 3D grid of temperatures  
+T = flowparameterlib.steadystate_vprofile(H,t2m_ave,smb_ave/rho_i*365.25,levels=12)
  
-  fidT = open(inputs+"tsteady_icedivide.xyz", "w")
-  fidT.write("{0}\n{1}\n{2}\n".format(len(xrac), len(yrac), len(T[0,0,:])))
-  for j in range(len(xrac)):
-    for i in range(len(yrac)):
-      fidT.write("{0} {1} ".format(xrac[j], yrac[i]))
-      for k in range(len(T[0,0,:])):
-        fidT.write("{0} ".format(T[i, j, k]))
-      fidT.write("\n")
-  fidT.close()
+fidT = open(inputs+"tsteady_icedivide.xyz", "w")
+fidT.write("{0}\n{1}\n{2}\n".format(len(xrac), len(yrac), len(T[0,0,:])))
+for j in range(len(xrac)):
+  for i in range(len(yrac)):
+    fidT.write("{0} {1} ".format(xrac[j], yrac[i]))
+    for k in range(len(T[0,0,:])):
+      fidT.write("{0} ".format(T[i, j, k]))
+    fidT.write("\n")
+fidT.close()
 
-  del fidt2m, H, fidT
+del fidt2m, H, fidT
 
 # del fidgeo, ggrid
 
