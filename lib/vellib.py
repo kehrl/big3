@@ -657,6 +657,7 @@ def variability(glacier,time1,time2):
   # Remove insignifcant trends      
   ind = np.where(veltrend_p > 0.05)
   veltrend[ind] = float('nan')
+  veltrend_error[ind] = float('nan')
 
   # Get number of nonnan velocities for each pixel
   velcount = np.zeros([ny,nx])
@@ -669,7 +670,7 @@ def variability(glacier,time1,time2):
   velgrid_mask = velgrid_mask[:,:,sortind]
   time = time[sortind]
   
-  return x,y,velgrid_mask,veltrend,veldetrend,velrange,velcount,time
+  return x,y,velgrid_mask,veltrend,veldetrend,velrange,velcount,veltrend_error,time
 
 #########################################################################################
 def divergence_at_eulpoints(xpt,ypt):
