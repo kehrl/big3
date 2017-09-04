@@ -323,7 +323,7 @@ def main():
       os.rename(DIRM+"/mesh2d/"+name,DIRR_lambda+name)
 
   bed = elmerreadlib.saveline_boundary(DIRM+"/mesh2d/",runname,bbed,['velocity','beta','groundedmask'])
-  surf = elmerreadlib.saveline_boundary(DIRM+"/mesh2d/",runname,bsurf,['vsurfini','velocity'])
+  surf = elmerreadlib.saveline_boundary(DIRM+"/mesh2d/",runname,bsurf,['vsurfini 1','vsurfini 2','velocity'])
 
   # Move saveline results
   files = os.listdir(DIRM+"/mesh2d/")
