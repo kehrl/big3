@@ -1684,6 +1684,11 @@ CONTAINS
   n = COUNT(UnfoundNodes)
   IF (n > 0) THEN
     IF (COUNT(NoNearest) > 0) THEN
+      DO nn=1,SIZE(UnfoundNodes)
+        IF (NoNearest(nn)) THEN
+          PRINT *,'STILL unfound', NewMesh % Nodes % x(nn), NewMesh % Nodes % y(nn), nn
+        END IF
+      END DO
       CALL FATAL(SolverName, "Still unable to find nodes ")
     ELSE
       PRINT *,'InterpolateUnfoundPointsNearest: Found all remaining ',n,'nodes on ',HeightName
