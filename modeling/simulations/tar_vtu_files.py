@@ -25,7 +25,6 @@ glacier = args.glacier
 runname = args.runname
 t1 = args.t1
 t2 = args.t2
-print t1, t2
 
 DIRM = os.path.join(os.getenv("MODEL_HOME"),glacier+"/3D/"+RES+"/")
 
@@ -39,6 +38,6 @@ for file in files:
   if file.startswith(runname) and file.endswith('.pvtu'):
     i = int(file[len(runname):len(runname)+4])
     if (i >= t1 and i <= t2):
-      os.system('tar -czvf '+runname+'{0:04d}.pvtu.tar.gz '.format(i)+\
+      os.system('tar -czf '+runname+'{0:04d}.pvtu.tar.gz '.format(i)+\
                 runname+'*{0:04d}.'.format(i)+'*vtu')
       os.system('rm '+runname+'*{0:04d}.'.format(i)+'*vtu')
