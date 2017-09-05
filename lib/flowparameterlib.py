@@ -89,7 +89,7 @@ def load_temperature_model(glacier,x,y,modelfile='none',outputdir='none'):
   if (modelfile == 'none') and (glacier == 'Helheim'):
     modelfile = os.path.join(os.getenv("MODEL_HOME"),"Helheim/3D/BASIN20120316_NewMesh/mesh2d/temperature/temperature_20160925/temperature0017.pvtu")
   elif (modelfile == 'none') and (glacier == 'Kanger'):
-    modelfile = os.path.join(os.getenv("MODEL_HOME"),"Kanger/3D/BASIN20120213_NewMesh/mesh2d/temperature/temperature_20160925/temperature0018.pvtu")
+    modelfile = os.path.join(os.getenv("MODEL_HOME"),"Kanger/3D/BASIN20120213/mesh2d/temperature/temperature_20170901/temperature0006.pvtu")
 
   # What variables to load 
   variables = ['temp homologous','velocity']
