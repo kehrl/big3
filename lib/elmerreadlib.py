@@ -73,6 +73,9 @@ def saveline(DIR,runname,variables):
   if ('beta' in varnames) and ('velocity 1' in varnames):
     varnames.append('taub')
     types.append(np.float64) 
+  if ('velocity' in varnames) and ('vsurfini' in varnames): 
+    varnames.append('misfit')
+    types.append(np.float64)
   
   # Get number of points 
   n=0
@@ -93,16 +96,20 @@ def saveline(DIR,runname,variables):
   # Calculate velocity magnitude for 3D simulations
   if ('velocity 3' in varnames):
     data['velocity'] = np.sqrt(data['velocity 1']**2+data['velocity 2']**2)
-  elif ('velocity 2' in varnames):
-    data['velocity'] = data['velocity 1']
+  #elif ('velocity 2' in varnames):
+  #  data['velocity'] = data['velocity 1']
   if ('vsurfini 2' in varnames):
     data['vsurfini'] = np.sqrt(data['vsurfini 1']**2+data['vsurfini 2']**2)
-  elif ('vsurfini 1' in varnames):
-    data['vsurfini'] = data['vsurfini 1']
+  #elif ('vsurfini 1' in varnames):
+  #  data['vsurfini'] = data['vsurfini 1']
    
   # Calculate basal shear stress, if it is an inversion and we have a variable beta
   if 'taub' in varnames:
     data['taub']= (data['beta']**2*data['velocity'])
+
+  # Calculate misfit
+  if 'misfit' in varnames:
+    data['misfit'] = data['velocity']-data['vsurfini']
          
   return data
   

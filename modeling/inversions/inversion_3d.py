@@ -305,11 +305,18 @@ def main():
   fid_info.close()
   del fid
 
-	#######################################
-	# Combine elmer results into one file #
-	#######################################
+  #######################################
+  # Move results to one directory #
+  #######################################
 
   DIRR_lambda = DIRR+"lambda_"+regpar+"_"+date+"/"
+
+  # Something wrong with saveline boundary, so moving to reading pvtu_files
+  #bed = elmerreadlib.saveline_boundary(DIRM+"/mesh2d/",runname,bbed,['velocity 1','velocity 2','velocity 3','beta','groundedmask'])
+  #surf = elmerreadlib.saveline_boundary(DIRM+"/mesh2d/",runname,bsurf,['vsurfini 1','vsurfini 2','velocity 1','velocity 2','velocity 3'])
+  data = elmerreadlib.pvtu_file(DIRM+"/mesh2d/"+runname+"0001.pvtu",['beta','velocity','vsurfini 1','vsurfini 2','groundedmask'])
+  surf = elmerreadlib.values_in_layer(data,'surf')
+  bed = elmerreadlib.values_in_layer(data,'bed')
 
   names = os.listdir(DIRM+"/mesh2d")
   if not os.path.exists(DIRR_lambda):
@@ -322,9 +329,6 @@ def main():
     elif name.startswith(method) and 'result' in name:
       os.rename(DIRM+"/mesh2d/"+name,DIRR_lambda+name)
 
-  bed = elmerreadlib.saveline_boundary(DIRM+"/mesh2d/",runname,bbed,['velocity','beta','groundedmask'])
-  surf = elmerreadlib.saveline_boundary(DIRM+"/mesh2d/",runname,bsurf,['vsurfini 1','vsurfini 2','velocity'])
-
   # Move saveline results
   files = os.listdir(DIRM+"/mesh2d/")
   for file in files:
@@ -336,9 +340,9 @@ def main():
   os.rename(DIRM+"gradientnormadjoint_"+method+"_beta.dat",DIRR_lambda+"gradient_"+runname+".dat")
   os.rename(DIRM+"cost_"+method+"_beta.dat",DIRR_lambda+"cost_"+runname+".dat")
   
-	################################
-	# Output friction coefficients #
-	################################
+  ################################
+  # Output friction coefficients #
+  ################################
 
   # Gridded linear beta square
   x,y,u = elmerreadlib.input_file(inputs+"udem.xy", dim=2)
@@ -379,8 +383,9 @@ def main():
 
   xgrid,ygrid,taubgrid = elmerreadlib.grid3d(bed,'taub',holes,extent)
   xgrid,ygrid,vmodgrid = elmerreadlib.grid3d(surf,'velocity',holes,extent)
-  xgrid,ygrid,vmesgrid = elmerreadlib.grid3d(surf,'vsurfini',holes,extent)
-  
+  xgrid,ygrid,vmesgrid1 = elmerreadlib.grid3d(surf,'vsurfini 1',holes,extent)
+  xgrid,ygrid,vmesgrid2 = elmerreadlib.grid3d(surf,'vsurfini 2',holes,extent)
+
   plt.figure(figsize=(6.5,3))
   plt.subplot(121)
   plt.imshow(taubgrid*1e3,origin='lower',clim=[0,500],cmap='jet')
@@ -391,7 +396,7 @@ def main():
   cb.set_label('Basal shear stress (kPa)')
   
   plt.subplot(122)
-  plt.imshow(vmodgrid-vmesgrid,origin='lower',clim=[-500,500],cmap='RdBu_r')
+  plt.imshow(vmodgrid-np.sqrt(vmesgrid1**2+vmesgrid2**2),origin='lower',clim=[-200,200],cmap='RdBu_r')
   plt.xticks([])
   plt.yticks([])
   cb = plt.colorbar(ticks=np.arange(-500,600,100))
