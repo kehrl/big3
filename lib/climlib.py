@@ -89,10 +89,6 @@ def racmo_grid(xmin,xmax,ymin,ymax,variable,epsg=3413,maskvalues='ice',time1=-np
           var_subset[j,ind[0],ind[1]] = scipy.interpolate.griddata((yrac_grid[ind_ice],xrac_grid[ind_ice]),\
             	var_subset[j,ind_ice[0],ind_ice[1]],(yrac_subset[ind[0]],xrac_subset[ind[1]]),method='nearest')
     
-    if variable == 'smb' or variable == 'precip' or variable == 'runoff':
-      # Convert mmWE per day to mWe per day
-      var_subset = var_subset/1000.0  
-    
     # Sort by time
     ind = np.argsort(time)
     time = time[ind]
