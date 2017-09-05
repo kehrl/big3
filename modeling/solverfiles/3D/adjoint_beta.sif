@@ -120,6 +120,10 @@ End
 Material 1
   Density = Real $rhoi
 
+  !Viscosity = Real $ (3*3.5e-25*yearinsec)^(-1.0/3.0)*1.0e-6 
+  !Viscosity Exponent = Real $1.0e00/3.0e00
+  !Critical Shear Rate = Real 1.0e-10
+
   Viscosity Model = String "Glen"
 ! Viscosity has to be set to a dummy value
 ! to avoid warning output from Elmer
