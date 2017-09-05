@@ -120,7 +120,8 @@ Material 1
 ! two regimes in the flow law
   Limit Temperature = Real -10.0
 ! In case there is no temperature variable
-  Constant Temperature = Real -10.0
+  
+  {Temperature}
   
   Cauchy = Logical True
   

@@ -36,6 +36,8 @@ def get_arguments():
        default=5,help = "Number of extrusion levels.")
   parser.add_argument("-restartfile",dest="restartfile",required = False,\
        default="none",help = "Name of restart file.")
+  parser.add_argument("-temperature",dest="temperature",required = False,\
+       default=-10.0,help = "Temperature for Navier Stokes solver")
   parser.add_argument("-restartposition",dest="restartposition",required = False,\
        default=0,type=int,\
        help = "Restart position in results file (if applicable.")  
@@ -61,6 +63,7 @@ def main():
   simulation = args.simulation
   iterations = args.iterations
   dt = args.timestepsize
+  temperature = args.temperature
   restartfile = args.restartfile
   restartposition = args.restartposition
 
@@ -106,7 +109,20 @@ def main():
   BDF Order = 1
   Timestep Intervals = {0}     
   Timestep Sizes = {1}""".format(iterations,dt)
-  
+ 
+  # Set up text for temperature in viscosity parameter
+  if temperature == 'model':
+    temperature_text="""
+  Constant Temperature = Variable Coordinate 1, Coordinate 2
+    Real Procedure "USF_Init.so" "ModelTemperature" """
+  else:
+    try:
+      float(temperature)
+      temperature_text="""
+  Constant Temperature = Real """+str(temperature)
+    except:
+      sys.exit("Unknown temperature of "+temperature)
+ 
   # Add in restart file and restart position into simulation text if we are using it
   if restartfile != 'none':
     simulation_text = simulation_text+"""
@@ -130,6 +146,7 @@ def main():
   lines=lines.replace('{Simulation Type}', '{0}'.format(simulation_text))
   lines=lines.replace('{Extrude}', '{0}'.format(extrude))
   lines=lines.replace('{FrontBC}', '{0}'.format(frontbc_text))
+  lines=lines.replace('{Temperature}', '{0}'.format(temperature_text))  
   fid2.write(lines)
   fid1.close()
   fid2.close()
