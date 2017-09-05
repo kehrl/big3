@@ -598,14 +598,16 @@ FUNCTION ModelTemperature( Model, nodenumber, dumy) RESULT(T) !
     REAL(kind=dp),ALLOCATABLE :: dem(:,:,:), xx(:), yy(:)
     REAL(kind=dp) :: x, y, z, zs , zb, dz
     REAL(kind=dp) :: alpha
-    INTEGER :: nx, ny, nz, k, i, j, Timestep, TimestepInit
+    INTEGER :: nx, ny, nz, k, i, j, Timestep, TimestepInit, ExtrudeLevels
     REAL(kind=dp) :: LinearInterp, zsIni, zbIni
     TYPE(Variable_t), POINTER :: dSVariable, TimestepVariable
     INTEGER, POINTER :: dSPerm(:) 
     REAL(KIND=dp), POINTER :: dSValues(:)
+    LOGICAL :: Found
 
-    LOGICAL :: Firsttime=.true.
-    LOGICAL :: NotMapped=.false.
+    LOGICAL :: Firsttime=.TRUE.
+    LOGICAL :: NotMapped=.FALSE.
+    LOGICAL :: Debug=.FALSE.
 
     SAVE dem, xx, yy, nx, ny, nz, TimestepInit
     SAVE Firsttime
@@ -615,11 +617,17 @@ FUNCTION ModelTemperature( Model, nodenumber, dumy) RESULT(T) !
       Firsttime=.False.
 
       ! open file
+      IF (Debug) THEN
+        PRINT *,'MODELT: Reading data file'
+      END IF
       OPEN(10,file='inputs/modelT.xyz')
       READ(10,*) nx
       READ(10,*) ny
       READ(10,*) nz
       
+      IF (Debug) THEN
+        PRINT *,'MODELT: Allocating file'
+      END IF
       ALLOCATE( xx(nx), yy(ny))
       ALLOCATE( dem(nx,ny,nz))
 
@@ -634,6 +642,9 @@ FUNCTION ModelTemperature( Model, nodenumber, dumy) RESULT(T) !
       TimestepInit=TimestepVariable % Values(1)
       
     END IF
+
+    ! Get number of extruded levels
+    ExtrudeLevels = GetInteger(Model % Simulation,'Extruded Mesh Levels',Found)
 
     ! Get coordinates
     x = Model % Mesh % Nodes % x (nodenumber)
@@ -668,7 +679,12 @@ FUNCTION ModelTemperature( Model, nodenumber, dumy) RESULT(T) !
       IF (alpha < 0) THEN
         alpha = 0.0d0
       END IF
-      IF (k == 10) THEN
+
+      IF (Debug) THEN
+        PRINT *,'MODELT: k,alpha=',k,alpha
+      END IF
+
+      IF (k == ExtrudeLevels) THEN
         T = (1 - alpha) * LinearInterp(dem(:,:,k), xx, yy, nx, ny, x, y) 
       ELSE
         T = (1 - alpha) * LinearInterp(dem(:,:,k), xx, yy, nx, ny, x, y)+ alpha * LinearInterp(dem(:,:,k+1), xx, yy, nx, ny, x, y)
