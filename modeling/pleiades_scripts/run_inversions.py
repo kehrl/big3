@@ -4,20 +4,20 @@ import subprocess
 import time
 import os
 
-#glacier = 'Kanger'
-glacier = 'Helheim'
+glacier = 'Kanger'
+#glacier = 'Helheim'
 
 # Mesh geometry
 
-meshshp = 'glacier_extent_inversion_large_front'
-extrude = 10
+meshshp = 'glacier_extent_inversion_front'
+extrude = 12
 #bname = 'smith'
 bname = 'morlighem'
 bmodel = 'aniso'
-bsmooth = '4'
+bsmooth = '5'
 bottomsurface = 'bed' # or 'iceshelf'
-temperature = 'model'
-lc = '300 300 300 500'
+temperature = 'model'#'-10.0'#'model'
+lc = '250 250 250 250'
 #lc = '1000 1000 4000 5000'
 
 if glacier == 'Helheim':
@@ -27,23 +27,25 @@ if glacier == 'Helheim':
   #         '20130209','20130508','20130804','20131031',\
   #         '20140127','20140509','20140731','20141016']
 elif glacier == 'Kanger':
-  dates = ['20120213']
-  #dates = ['20110708','20110826','20111106',\
+  #dates = ['20120213']
+  dates = ['20130210','20131004','20131204']
+  #dates = ['20110308','20110708','20110826','20111106',\
   #         '20120213','20120522','20121012','20121217',\
   #         '20130210','20130714','20131004','20131204',\
   #         '20140213']  
 
 # Inversion options
 method = 'adjoint'
-#regpars = ['5e11']
-regpars = ['1e8','1e9','1e10','1e11','5e11','1e12','1e13','1e14'] 
+itmax = 500
+regpars = ['1e11']
+#regpars = ['1e8','1e9','1e10','5e11','1e11','2e11','5e11','1e12','1e13','1e14'] 
 
 
 # Options for PBS submission
 queue = 'normal'
-model = 'ivy'
-nparts = 60
-ncpus = 20
+model = 'has'
+nparts = 96
+ncpus = 24
 runtime = '8:00:00'
 
 if meshshp.endswith('nofront'):
@@ -59,11 +61,15 @@ else:
 for date in dates:
 
   # Output mesh name
-  meshname = 'DEM'+date+'_Lcurve'
+  meshname = 'DEM'+date+'_modelT'
 
   # Create mesh
   command = "python /u/lkehrl/Code/big3/modeling/meshing/"+\
-          "mesh_3d.py -glacier {0} -mesh {1} -d {2} -bname {3} -bmodel {4} -bsmooth {5} -lc {6} -n {7} -output {8} -zb {9} -temperature {10}".format(glacier,meshshp,date,bname,bmodel,bsmooth,lc,nparts,meshname,bottomsurface,temperature)
+            "mesh_3d.py -glacier {0} -mesh {1}".format(glacier,meshshp)+\
+            " -d {0} -bname {1} -bmodel {2}".format(date,bname,bmodel,bsmooth)+\
+            " -bsmooth {0} -lc {1} -n {2}".format(bsmooth,lc,nparts)+\
+            " -output {0} -zb {1}".format(meshname,bottomsurface)+\
+            "  -temperature {0}".format(temperature)
   print command
   os.system(command)
 
@@ -75,7 +81,7 @@ for date in dates:
     walltime = runtime
     processors = "select={0}:ncpus={1}:mpiprocs={2}:model={3}".format(nparts/ncpus,ncpus,ncpus,model)
     command = "python /u/lkehrl/Code/big3/modeling/inversions/inversion_3d.py"+\
-              " -glacier {0} -method {1} -regpar {2} -mesh {3} -extrude {4} -front {5} -n {6} -temperature {7}".format(glacier,method,regpar,meshname,extrude,frontBC,nparts,temperature)
+              " -glacier {0} -method {1} -regpar {2} -mesh {3} -extrude {4} -front {5} -n {6} -temperature {7} -itmax {8} -sidewall velocity".format(glacier,method,regpar,meshname,extrude,frontBC,nparts,temperature,itmax)
     dir = "/nobackupp8/lkehrl/Models/"+glacier+"/3D/"+meshname+"/"
 
     job_string = """
@@ -88,7 +94,7 @@ for date in dates:
     #PBS -o %s
     #PBS -e %s
     source /u/lkehrl/.profile
-    source /u/dlilien/sw/elmer/.bashrc_pleiades
+    source /u/lkehrl/.bashrc_pleiades_haswell_sles12
     cd %s
     %s""" % (job_name, walltime, processors, dir+"PBS_"+method+"_"+regpar+".out",dir+"PBS_"+method+"_"+regpar+".err",dir,command)
      
