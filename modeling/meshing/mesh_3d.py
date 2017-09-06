@@ -236,8 +236,7 @@ if timeseries == True:
     os.system("rm mesh2d.geo")
     
     os.system("tar -czf"+file_2d_temp+".tar.gz"+" "+file_2d_temp)
-    if i > 10:
-      os.system("rm -r "+file_2d_temp)
+    os.system("rm -r "+file_2d_temp)
   os.system("tar -czf mesh_gmsh.tar.gz *.msh")
   os.system("rm *.msh")
 
