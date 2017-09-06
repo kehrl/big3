@@ -50,6 +50,9 @@ Simulation
   Stabilization Use Longest Element Edge = Logical True
 
   Set Dirichlet BCs By BC Numbering = Logical True
+
+  !Restart File = "iceshelf.result"
+  !Restart Position = 525
 End
 
 !---------------------------------------------------
@@ -461,7 +464,7 @@ Solver 15
   Front Gradient Threshold = Real 5.0
   Front Projectability Epsilon = Real 1.0
   Column Max Longitudinal Range = Real 350.0
-  Maximum Node Displacement = Real 1.0E4
+  Maximum Node Displacement = Real 1.0E3
 
 
   Exported Variable 1 = "Tangled"
