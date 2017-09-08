@@ -83,7 +83,7 @@ End
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 Material 1
 
-  Viscosity Exponent = Real $1.0e00/3.0e00
+  Viscosity Exponent = Real $(1.0e00/3.0e00)
   Critical Shear Rate = Real 1.0e-10
 
   SSA Mean Density = Real $rhoi

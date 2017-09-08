@@ -434,6 +434,12 @@ def pvtu_file(file,variables,reader='none',returnreader=False):
         varnames.append(opt)
         types.append(np.float64)
       del opt, opts
+    elif var == 'ssavelocity':
+      opts = ['ssavelocity 1','ssavelocity 2','ssavelocity 3','ssavelocity']
+      for opt in opts:
+        varnames.append(opt)
+        types.append(np.float64)
+      del opt, opts
     elif var.endswith('update'):
       opts = [var+' 1',var+' 2',var+' 3']
       for opt in opts:
@@ -448,7 +454,7 @@ def pvtu_file(file,variables,reader='none',returnreader=False):
     else:
       types.append(np.float64)
       varnames.append(var)
-  if ('beta' in varnames) and ('velocity 1' in varnames):
+  if ('beta' in varnames) and (('velocity 1' in varnames) or ('ssavelocity 1' in varnames)):
     varnames.append('taub')
     types.append(np.float64) 
   data = np.empty(n,dtype = zip(varnames, types))  
@@ -472,10 +478,22 @@ def pvtu_file(file,variables,reader='none',returnreader=False):
       data['velocity 2'][:] = velocity[:,1]
       data['velocity 3'][:] = velocity[:,2]
       data['velocity'][:] = np.sqrt(data['velocity 1']**2+data['velocity 2']**2)
+    elif var == 'ssavelocity':
+      ssavelocity = numpy_support.vtk_to_numpy(vtudata.GetPointData().GetArray(var))
+      data['ssavelocity 1'][:] = ssavelocity[:,0]
+      data['ssavelocity 2'][:] = ssavelocity[:,1]
+      data['ssavelocity 3'][:] = ssavelocity[:,2]
+      data['ssavelocity'][:] = np.sqrt(data['ssavelocity 1']**2+data['ssavelocity 2']**2)
     elif var == 'vsurfini': 
-      data['vsurfini 1'][:] = numpy_support.vtk_to_numpy(vtudata.GetPointData().GetArray('vsurfini 1'))
-      data['vsurfini 2'][:] = numpy_support.vtk_to_numpy(vtudata.GetPointData().GetArray('vsurfini 2'))
-      data['vsurfini'][:] = np.sqrt(data['vsurfini 1']**2+data['vsurfini 2']**2)
+      try:
+        vsurfini = numpy_support.vtk_to_numpy(vtudata.GetPointData().GetArray(var))
+        data['vsurfini 1'][:] = vsurfini[:,0]
+        data['vsurfini 2'][:] = vsurfini[:,1]
+        data['vsurfini'][:] = np.sqrt(data['vsurfini 1']**2+data['vsurfini 2']**2)
+      except: 
+        data['vsurfini 1'][:] = numpy_support.vtk_to_numpy(vtudata.GetPointData().GetArray('vsurfini 1'))
+        data['vsurfini 2'][:] = numpy_support.vtk_to_numpy(vtudata.GetPointData().GetArray('vsurfini 2'))
+        data['vsurfini'][:] = np.sqrt(data['vsurfini 1']**2+data['vsurfini 2']**2)
     elif var.endswith('update'):
       update = numpy_support.vtk_to_numpy(vtudata.GetPointData().GetArray(var))
       data[var+' 1'] = update[:,0]
@@ -483,7 +501,9 @@ def pvtu_file(file,variables,reader='none',returnreader=False):
       data[var+' 3'] = update[:,2]
     else:
       data[var][:] = numpy_support.vtk_to_numpy(vtudata.GetPointData().GetArray(var))
-  if 'taub' in varnames:
+  if ('taub' in varnames) and ('ssavelocity' in varnames):
+    data['taub'][:] = data['beta']**2*np.sqrt(data['ssavelocity 1']**2+data['ssavelocity 2']**2)
+  elif ('taub' in varnames) and ('velocity' in varnames):
     data['taub'][:] = data['beta']**2*np.sqrt(data['velocity 1']**2+data['velocity 2']**2) 
  
   # Some of the nodes are shared/repeated between partitions, so we need to remove those

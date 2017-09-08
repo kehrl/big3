@@ -19,6 +19,7 @@ import elmerreadlib, meshlib, flowparameterlib
 import numpy as np
 import argparse
 import datetime
+import scipy.interpolate
 import matplotlib, elmerrunlib
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
@@ -199,8 +200,7 @@ def main():
   line=lines[-1]
   p=line.split()
   nsim = float(p[0])
-  costtot = float(p[1])
-  costsur = float(p[2])
+  costsur = float(p[1])
   fidcost.close()
   
   fidcostreg = open(DIRM+"costreg.dat")
@@ -208,19 +208,19 @@ def main():
   line=lines[-1]
   p=line.split()
   nsim = float(p[0])
-  costbed = float(p[1])
+  costbed = float(p[1])*2.0/float(regpar)
   fidcostreg.close()
-  
-  #costtot = costsur+costbed
+
+  costtot = costsur+0.5*float(regpar)*costbed  
 
   fid_info = open(DIRR+"summary.dat","a")
   fid_info.write('{} {} {} {} {}\n'.format(regpar,nsim+restartposition,costtot,costsur,costbed))
   fid_info.close()
   del fidcost, fidcostreg
 
-	#######################################
-	# Combine elmer results into one file #
-	#######################################
+  #######################################
+  # Combine elmer results into one file #
+  #######################################
 
   DIRR_lambda = DIRR+"lambda_"+regpar+"_"+date+"/"
  
@@ -234,7 +234,8 @@ def main():
       os.rename(DIRM+"/mesh2d/"+name,DIRR_lambda+'{0}{1:04d}{2}'.format(name[0:-8],int(name[-8:-4])+restartposition,'.vtu'))
     elif name.startswith('adjoint') and 'result' in name:
       os.rename(DIRM+"/mesh2d/"+name,DIRR_lambda+name)
-  bed = elmerreadlib.result_file(DIRM+"/mesh2d/",DIRR_lambda+'adjoint_beta_ssa.result',['ssavelocity 1','ssavelocity 2','beta','vsurfini 1','vsurfini 2'])
+  
+  bed = elmerreadlib.pvtu_file(DIRR_lambda+'adjoint_beta_ssa0001.pvtu',['ssavelocity','beta','vsurfini'])
    
   # Move outputs for optimization
   os.rename(DIRM+"M1QN3_adjoint_beta_ssa.out",DIRR_lambda+"M1QN3_adjoint_beta_ssa.out")
@@ -242,22 +243,26 @@ def main():
   os.rename(DIRM+"costreg.dat",DIRR_lambda+"costreg.dat")
   os.rename(DIRM+"gradientnormadjoint_adjoint_beta_ssa.dat",DIRR_lambda+"gradientnormadjoint_adjoint_beta_ssa.dat")
 
-	################################
-	# Output friction coefficients #
-	################################
+  ################################
+  # Output friction coefficients #
+  ################################
 
   # Gridded linear beta square
   x,y,u = elmerreadlib.input_file(inputs+"udem.xy", dim=2)
   xx,yy = np.meshgrid(x,y)
-  beta_linear = scipy.interpolate.griddata((bed['x'],bed['y']),bed['beta']**2,(xx,yy),method='nearest')
-  beta_linear_lin = scipy.interpolate.griddata((bed['x'],bed['y']),bed['beta']**2,(xx,yy),method='linear')
+  beta_linear = scipy.interpolate.griddata((bed['x'],bed['y']),bed['beta']**2,(xx,yy),\
+      method='nearest')
+  beta_linear_lin = scipy.interpolate.griddata((bed['x'],bed['y']),bed['beta']**2,(xx,yy),\
+      method='linear')
+  beta_weertman_lin = scipy.interpolate.griddata((bed['x'],bed['y']),\
+      (bed['beta']**2)/(bed['ssavelocity']**(-2.0/3.0)), (xx,yy), method='linear')
   beta_weertman = scipy.interpolate.griddata((bed['x'],bed['y']),\
-      (bed['beta']**2)*(bed['velocity']**(-2.0/3.0)),(xx,yy),method='linear')
+      (bed['beta']**2)*(bed['ssavelocity']**(-2.0/3.0)),(xx,yy),method='nearest')
   ind = np.where(~(np.isnan(beta_linear_lin)))
   beta_linear[ind] = beta_linear_lin[ind]
-  ind = np.where(np.isnan(beta_weertman))
-  beta_weertman[ind] = -2.0e9
-  del beta_linear_lin
+  ind = np.where(~(np.isnan(beta_weertman_lin)))
+  beta_weertman[ind] = beta_weertman_lin[ind]  
+  del beta_linear_lin, beta_weertman_lin
   
   fidl = open(inputs+"beta_linear.xy",'w')
   fidw = open(inputs+"beta_weertman.xy",'w')
@@ -285,7 +290,7 @@ def main():
   cb.set_label('Basal shear stress (kPa)')
    
   plt.subplot(122)
-  plt.imshow(vmodgrid-vmesgrid,origin='lower',clim=[-500,500],cmap='RdBu_r')
+  plt.imshow(vmodgrid-vmesgrid,origin='lower',clim=[-200,200],cmap='RdBu_r')
   plt.xticks([])
   plt.yticks([])
   cb = plt.colorbar(ticks=np.arange(-500,600,100))
