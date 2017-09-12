@@ -5,6 +5,7 @@ import shutil
 import distlib, elmerreadlib
 import scipy
 from scipy.spatial import cKDTree
+import scipy.interpolate
 import math
 
 def arrhenius(T,paterson_version=2010):
@@ -83,13 +84,15 @@ def arrhenius_reverse(A,paterson_version=2010):
       	
   return T
 
-def load_temperature_model(glacier,x,y,modelfile='none',outputdir='none'):
+def load_temperature_model(glacier,x,y,modelfile='none',outputdir='none',method='linear'):
 
   # Choose file
   if (modelfile == 'none') and (glacier == 'Helheim'):
-    modelfile = os.path.join(os.getenv("MODEL_HOME"),"Helheim/3D/BASIN20120316_NewMesh/mesh2d/temperature/temperature_20160925/temperature0017.pvtu")
+    modelfile = os.path.join(os.getenv("MODEL_HOME"),"Helheim/3D/BASIN20120316/mesh2d/temperature/temperature_20170906/temperature0005.pvtu")
   elif (modelfile == 'none') and (glacier == 'Kanger'):
     modelfile = os.path.join(os.getenv("MODEL_HOME"),"Kanger/3D/BASIN20120213/mesh2d/temperature/temperature_20170901/temperature0006.pvtu")
+
+  print "Pulling temperatures from "+modelfile
 
   # What variables to load 
   variables = ['temp homologous','velocity']
@@ -141,55 +144,91 @@ def load_temperature_model(glacier,x,y,modelfile='none',outputdir='none'):
   v = np.zeros((ny,nx,nz))
   v[:,:,:] = 0.
 
+  if method=='linear':
+    Tnew = np.zeros([len(X),len(T[0])])
+    Unew = np.zeros([len(X),len(U[0])])
+    Vnew = np.zeros([len(X),len(V[0])])
+    for i in range(0,len(T)):
+      Tnew[i,:] = T[i]    
+      Unew[i,:] = U[i]
+      Vnew[i,:] = V[i]
 
-  # Make a KD-tree so we can do range searches fast
-  tree = cKDTree(np.column_stack([X,Y]))
-
-  # Make a gridded data set from the model output
-  # For each point in the grid,
-  for i in range(ny):
-    for j in range(nx):
-		    
-      L = tree.query_ball_point( (x[j], y[i]), 2500. )
-		    
-      # Initialize the weights to 0
-      weights = 0.0
-		    
-      # For all the nearby model points,
-      if len(L) > 0:
-        for l in L:
-          xp = X[l]
-          yp = Y[l]
-		      
-          # find the distance to the current point and the
-	  # appropriate weight
-	  r = np.sqrt( (x[j] - xp)**2 + (y[i] - yp)**2 )
-          w = (2500./(r+dx))
-          weights += w
-		      
-	  # For each point within the current vertical column,
-          for k in range(nz):
-            # find which point within the nearby vertical
-            # column to interpolate from
-	    m = (k * (len(Z[l]) - 1)) / (nz - 1)
-		        
-	    # Add up the value to the running average
-	    temp[i, j, k] += w * T[l][m]
-            u[i, j, k] += w * U[l][m]
-            v[i, j, k] += w * V[l][m]
-		    
-        # Normalize the running average by the weight sum
-        temp[i,j,:] /= weights
-        u[i,j,:] /= weights
-        v[i,j,:] /= weights  
+    # Get flattened grid for interpolation
+    xgrid,ygrid = np.meshgrid(x,y)
+    xflat = xgrid.flatten()
+    yflat = ygrid.flatten()
+    ind = np.where((X >= (x[0]-5e3)) & (X <= (x[-1]+5e3)) & (Y >= (y[0]-5e3)) & (Y <= (y[-1]+5e3)))
     
-      else:
-        # If no points within that distance, set to constant temperature value
-        temp[i,j,:] = -10.0
-        u[i,j,:] = -2.0e9
-        v[i,j,:] = -2.0e9
-        #L = np.argmin(np.sqrt((X-x[j])**2+(Y-y[i])**2))
-        #temp[i,j,:] = T[L]
+    for k in range(0,nz):
+      temp[:,:,k] = np.reshape(scipy.interpolate.griddata((X[ind],Y[ind]),\
+                  Tnew[ind,k][0],(xflat,yflat),method='nearest'),(ny,nx))
+      u[:,:,k] = np.reshape(scipy.interpolate.griddata((X[ind],Y[ind]),\
+                  Unew[ind,k][0],(xflat,yflat),method='nearest'),(ny,nx))
+      v[:,:,k] = np.reshape(scipy.interpolate.griddata((X[ind],Y[ind]),\
+                  Vnew[ind,k][0],(xflat,yflat),method='nearest'),(ny,nx))      
+
+      temp_linear = np.reshape(scipy.interpolate.griddata((X[ind],Y[ind]),\
+                  Tnew[ind,k][0],(xflat,yflat),method='linear') ,(ny,nx))
+      u_linear = np.reshape(scipy.interpolate.griddata((X[ind],Y[ind]),\
+                  Unew[ind,k][0],(xflat,yflat),method='linear') ,(ny,nx))
+      v_linear = np.reshape(scipy.interpolate.griddata((X[ind],Y[ind]),\
+                  Vnew[ind,k][0],(xflat,yflat),method='linear') ,(ny,nx))
+
+      
+      nonnan = np.where(~(np.isnan(temp_linear)))
+      temp[nonnan[0],nonnan[1],k] = temp_linear[nonnan[0],nonnan[1]]
+      v[nonnan[0],nonnan[1],k] = u_linear[nonnan[0],nonnan[1]]
+      u[nonnan[0],nonnan[1],k] = v_linear[nonnan[0],nonnan[1]] 
+
+  else:
+    # Make a KD-tree so we can do range searches fast
+    tree = cKDTree(np.column_stack([X,Y]))
+
+    # Make a gridded data set from the model output
+    # For each point in the grid,
+    for i in range(ny):
+      for j in range(nx):
+		    
+        L = tree.query_ball_point( (x[j], y[i]), 1500. )
+		    
+        # Initialize the weights to 0
+        weights = 0.0
+		    
+        # For all the nearby model points,
+        if len(L) > 0:
+          for l in L:
+            xp = X[l]
+            yp = Y[l]
+		      
+            # find the distance to the current point and the
+	    # appropriate weight
+	    r = np.sqrt( (x[j] - xp)**2 + (y[i] - yp)**2 )
+            w = (1500./(r+dx)**2.0)
+            weights += w
+		      
+	    # For each point within the current vertical column,
+            for k in range(nz):
+              # find which point within the nearby vertical
+              # column to interpolate from
+	      m = (k * (len(Z[l]) - 1)) / (nz - 1)
+		        
+	      # Add up the value to the running average
+	      temp[i, j, k] += w * T[l][m]
+              u[i, j, k] += w * U[l][m]
+              v[i, j, k] += w * V[l][m]
+		    
+          # Normalize the running average by the weight sum
+          temp[i,j,:] /= weights
+          u[i,j,:] /= weights
+          v[i,j,:] /= weights  
+    
+        else:
+          # If no points within that distance, set to constant temperature value
+          temp[i,j,:] = -10.0
+          u[i,j,:] = -2.0e9
+          v[i,j,:] = -2.0e9
+          #L = np.argmin(np.sqrt((X-x[j])**2+(Y-y[i])**2))
+          #temp[i,j,:] = T[L]
   
   Agrid = arrhenius(273.15+temp.flatten()).reshape(ny,nx,nz)
   output = temp 

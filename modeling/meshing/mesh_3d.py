@@ -381,6 +381,9 @@ uT = np.reshape(f((yTgrid.flatten(),xTgrid.flatten())),[len(yT),len(xT)])
 f = RegularGridInterpolator((y,x),v)
 vT = np.reshape(f((yTgrid.flatten(),xTgrid.flatten())),[len(yT),len(xT)])  
 
+#if (temperature == 'model') and (ssa != True) and (timeseries == True):
+#  modelfile = os.path.join(os.getenv("MODEL_HOME"),glacier+"/3D/BASIN20140127/mesh2d/temperature/temperature_20170908/temperature0005.pvtu")
+#  flowT,flowA,flowU,flowV = flowparameterlib.load_temperature_model(glacier,xT,yT,outputdir=inputs,modelfile=modelfile)  
 if (temperature == 'model') and (ssa != True):
   flowT,flowA,flowU,flowV = flowparameterlib.load_temperature_model(glacier,xT,yT,outputdir=inputs)
 elif (temperature == 'model') and (ssa == True):
