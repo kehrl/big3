@@ -1096,6 +1096,8 @@ def dem_continuous(glacier,xmin,xmax,ymin,ymax,date,verticaldatum='geoid',blur=F
       dates = ['20110712','20110808','20110823']
     elif date == '20110826':
       dates = ['20110826','20110824']
+    elif date == '20150808':
+      dates = ['20150808','20150814','20150818']  
     else:
       dates = np.array([date])
   
