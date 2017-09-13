@@ -856,22 +856,40 @@ def inversion_3D(glacier,x,y,time,dir_velocity_out='none',blur=False,dx='none'):
   # inSAR velocity map
   file_velocity_global = os.path.join(os.getenv("DATA_HOME"),"Velocity/Random/Greenland/AllGLVel/mosaicOffsets")
 
-  # Individual velocity map for time step
-  filename1,time1 = tsx_near_time(time,glacier,just_filename=True)
-  filename2,time2 = tsx_near_time(time-11/365.,glacier,just_filename=True)
-  filename3,time3 = tsx_near_time(time+11/365.,glacier,just_filename=True)
   year,month,day = datelib.fracyear_to_date(time)
   date = "%04d%02d%02d" % (year,month,day)
-  
-  if abs(time-time2) < abs(time-time3): 
-    files_vx = ' '+filename1+'_vx.tif'+' '+filename2+'_vx.tif'+\
-  	' '+filename3+'_vx.tif'+' '+file_velocity_all+'_vx.tif'+' '+file_velocity_global+'_vx.tif'
-    files_vy = ' '+filename1+'_vy.tif'+' '+filename2+'_vy.tif'+\
-  	' '+filename3+'_vy.tif'+' '+file_velocity_all+'_vy.tif'+' '+file_velocity_global+'_vy.tif'
+
+  # Individual velocity map for time step
+  if time <= 2008:
+    # Use Howat velocity maps
+    if glacier == 'Kanger':
+      if '200707' in date:
+        filename1 = os.path.join(os.getenv("DATA_HOME"),"Velocity/Howat/Kanger/OPT_E68.80N_2007-08/OPT_E68.80N_2007-08")
+        filename2 = os.path.join(os.getenv("DATA_HOME"),"Velocity/Howat/Kanger/OPT_E68.80N_2007-07/OPT_E68.80N_2007-07")
+    elif glacier == 'Helheim':
+      if '200709' in date:
+        filename1 = os.path.join(os.getenv("DATA_HOME"),"Velocity/Howat/Helheim/OPT_E66.50N_2007-09/OPT_E66.50N_2007-09")
+        filename2 = os.path.join(os.getenv("DATA_HOME"),"Velocity/Howat/Helheim/OPT_E66.50N_2007-08/OPT_E66.50N_2007-08")
+    
+    files_vx = ' '+filename1+'.vx.tif '+filename2+'.vx.tif '+\
+            file_velocity_all+'_vx.tif'+' '+file_velocity_global+'_vx.tif'
+    files_vy = ' '+filename1+'.vy.tif '+filename2+'.vy.tif '+\
+            file_velocity_all+'_vy.tif'+' '+file_velocity_global+'_vy.tif'
   else:
-    files_vx = ' '+filename1+'_vx.tif'+' '+filename3+'_vx.tif'+\
+    # Use TSX velocity maps  
+    filename1,time1 = tsx_near_time(time,glacier,just_filename=True)
+    filename2,time2 = tsx_near_time(time-11/365.,glacier,just_filename=True)
+    filename3,time3 = tsx_near_time(time+11/365.,glacier,just_filename=True)
+  
+    if abs(time-time2) < abs(time-time3): 
+      files_vx = ' '+filename1+'_vx.tif'+' '+filename2+'_vx.tif'+\
+  	' '+filename3+'_vx.tif'+' '+file_velocity_all+'_vx.tif'+' '+file_velocity_global+'_vx.tif'
+      files_vy = ' '+filename1+'_vy.tif'+' '+filename2+'_vy.tif'+\
+  	' '+filename3+'_vy.tif'+' '+file_velocity_all+'_vy.tif'+' '+file_velocity_global+'_vy.tif'
+    else:
+      files_vx = ' '+filename1+'_vx.tif'+' '+filename3+'_vx.tif'+\
         ' '+filename2+'_vx.tif'+' '+file_velocity_all+'_vx.tif'+' '+file_velocity_global+'_vx.tif'
-    files_vy = ' '+filename1+'_vy.tif'+' '+filename3+'_vy.tif'+\
+      files_vy = ' '+filename1+'_vy.tif'+' '+filename3+'_vy.tif'+\
         ' '+filename2+'_vy.tif'+' '+file_velocity_all+'_vy.tif'+' '+file_velocity_global+'_vy.tif'
   
 
@@ -892,7 +910,7 @@ def inversion_3D(glacier,x,y,time,dir_velocity_out='none',blur=False,dx='none'):
   
   xu,yu,uu = geotifflib.read(filename_vx+"-tile-0.tif")
   xv,yv,vv = geotifflib.read(filename_vy+"-tile-0.tif")
- 
+
   if (blur == True) and (dx == 'none'):
     print "Blurring DEM over 17 pixels (roughly 1.5km in each direction)..."
     # 17 pixel gaussian blur

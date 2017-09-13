@@ -1050,8 +1050,10 @@ def dem_continuous(glacier,xmin,xmax,ymin,ymax,date,verticaldatum='geoid',blur=F
   # Load correct file for geoid or ellipsoid heights
   if verticaldatum == 'geoid':
     fileend = 'trans-adj.tif'
+    fileend_spirit = 'DEM-adj.tif'
   elif verticaldatum == 'ellipsoid':
     fileend = 'trans.tif'
+    fileend_spirit = 'DEM.tif'
   else:
     sys.exit("Unknown vertical datum.")
   
@@ -1102,16 +1104,24 @@ def dem_continuous(glacier,xmin,xmax,ymin,ymax,date,verticaldatum='geoid',blur=F
   dirs_wv = os.listdir(WVDIR)
   dirs_tdm = os.listdir(TDMDIR)
   dirs_spirit = os.listdir(SPIRITDIR)
+  foundfile = False
   for d in dates:
     for dir in dirs_tdm:
       if (d in dir) and (dir.endswith(fileend)):
         files = files+' '+TDMDIR+dir
+        foundfile = True
     for dir in dirs_wv:
       if (d in dir) and (dir.endswith(fileend)):
         files = files+' '+WVDIR+dir
+        foundfile = True
     for dir in dirs_spirit:
-      if (d in dir) and (dir.endswith(fileend)):
-        files = files+' '+WVDIR+dir
+      print dir
+      if (d in dir) and (dir.endswith(fileend_spirit)):
+        files = files+' '+SPIRITDIR+dir
+        foundfile = True
+
+  if not(foundfile):
+    sys.exit("Cannot find individual DEM for date "+d)
 
   files = files+' '+TDMfile+' '+gimpfile1+ ' '+gimpfile2 
   
