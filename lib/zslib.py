@@ -1081,7 +1081,7 @@ def dem_continuous(glacier,xmin,xmax,ymin,ymax,date,verticaldatum='geoid',blur=F
     elif date == '20120624':
       dates = ['20120624','20120629','20120513']
     elif date == '20140509':
-      dates = ['20140509','2014611','20140408','20130508']
+      dates = ['20140509','20140611','20140418','20130508']
     elif date == '20140731':
       dates = ['20140731','20130508']
     elif date == '20141016':
