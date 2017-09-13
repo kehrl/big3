@@ -1117,7 +1117,6 @@ def dem_continuous(glacier,xmin,xmax,ymin,ymax,date,verticaldatum='geoid',blur=F
         files = files+' '+WVDIR+dir
         foundfile = True
     for dir in dirs_spirit:
-      print dir
       if (d in dir) and (dir.endswith(fileend_spirit)):
         files = files+' '+SPIRITDIR+dir
         foundfile = True
