@@ -868,8 +868,8 @@ def inversion_3D(glacier,x,y,time,dir_velocity_out='none',blur=False,dx='none'):
         filename2 = os.path.join(os.getenv("DATA_HOME"),"Velocity/Howat/Kanger/OPT_E68.80N_2007-07/OPT_E68.80N_2007-07")
     elif glacier == 'Helheim':
       if '200709' in date:
-        filename1 = os.path.join(os.getenv("DATA_HOME"),"Velocity/Howat/Helheim/OPT_E66.50N_2007-09/OPT_E66.50N_2007-09")
-        filename2 = os.path.join(os.getenv("DATA_HOME"),"Velocity/Howat/Helheim/OPT_E66.50N_2007-08/OPT_E66.50N_2007-08")
+        filename1 = os.path.join(os.getenv("DATA_HOME"),"Velocity/Howat/Helheim/OPT_E66.50N_2007-09/OPT_E66.50N_2007-08")
+        filename2 = os.path.join(os.getenv("DATA_HOME"),"Velocity/Howat/Helheim/OPT_E66.50N_2007-08/OPT_E66.50N_2007-09")
     
     files_vx = ' '+filename1+'.vx.tif '+filename2+'.vx.tif '+\
             file_velocity_all+'_vx.tif'+' '+file_velocity_global+'_vx.tif'
