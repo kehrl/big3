@@ -34,6 +34,8 @@ parser.add_argument("-nt",dest="nt",required  = False,type=str,\
        default='10',help = "Number of timesteps (10).") 
 parser.add_argument("-dt",dest="dt",required  = False,type=str,\
        default='1/365.25',help = "Timestep size (1/365.25, i.e., 1 day).") 
+parser.add_argument("-sidewall", dest="sidewallbc", required = False,\
+        default='velocity',help = "Sidewall boundary condition (velocity or friction).")
 parser.add_argument("-slipcoefficient",dest="slipcoefficient",required  = False,type=str,\
        default='1.0E-3',help = "Sidewall slip coefficient.")
 parser.add_argument("-slidinglaw",dest="slidinglaw",required  = False,type=str,\
@@ -54,6 +56,7 @@ dt = args.dt
 nt = args.nt
 slipcoefficient = args.slipcoefficient
 slidinglaw = args.slidinglaw
+sidewallbc = str(args.sidewallbc)
 
 # Directories
 DIRS=os.path.join(os.getenv("CODE_HOME"),"big3/modeling/solverfiles/3D/")
@@ -88,6 +91,22 @@ elif (frontbc == 'dirichlet') or (frontbc == 'velocity'):
     Real procedure "USF_Init.so" "VWa"""
 else:
   sys.exit("Unknown BC for front of glacier.")
+
+# Grab boundary condition for sidewall
+if sidewallbc == 'friction':
+  sidewallbc_text = """
+  Normal-Tangential Velocity = Logical True
+  Flow Force BC = Logical True
+
+  Velocity 1 = Real 0.0
+  Slip Coefficient 2 = Real """+slipcoefficient+"""
+  Slip Coefficient 3 = Real """+slipcoefficient
+elif sidewallbc == 'velocity':
+  sidewallbc_text = """
+  Velocity 1 = Variable Coordinate 1
+    Real procedure "USF_Init.so" "UWa"
+  Velocity 2 = Variable Coordinate 1
+    Real procedure "USF_Init.so" "VWa" """
 
 if temperature == 'model':
   temperature_text="""
@@ -139,7 +158,7 @@ else:
   lines=lines.replace('{Temperature}', '{0}'.format(temperature_text))
   lines=lines.replace('{TimeStepSize}', '$({0})'.format(dt))
   lines=lines.replace('{TimeSteps}', '{0}'.format(nt))
-  lines=lines.replace('{SlipCoefficient}', '{0}'.format(slipcoefficient))
+  lines=lines.replace('{SidewallBC}', '{0}'.format(sidewallbc_text))  
   lines=lines.replace('{BetaDataFile}', '{0}'.format(beta_data_file))
   lines=lines.replace('{SlidingExponent}', '{0}'.format(sliding_exponent))
   lines=lines.replace('{nrestart}','{0}'.format(restartposition))

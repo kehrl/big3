@@ -32,14 +32,9 @@ runname = args.runname
 t2 = args.t2
 
 DIRM=os.path.join(os.getenv("MODEL_HOME"),glacier+"/3D/"+meshname+"/")
-DIRO=os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+"_"+meshname+"_movie")
 
 if not(os.path.isdir(DIRM)):
   sys.exit("Mesh directory "+meshname+" does not exist for "+glacier+".")
-
-if not(os.path.isdir(DIRO)):
-  os.makedirs(DIRO)
-
 
 # Load flowline
 print "Loading flowline..."
@@ -157,8 +152,7 @@ plt.xlim([model_time[1],model_time[-1]])
 plt.yticks(np.arange(-2,4,2),fontsize=8,fontname='Arial')
 plt.ylim([-2.5,3])
 plt.ylabel('Terminus \n (km)',fontsize=8,fontname='Arial')
-plt.xlim([2012.5,2016.5])
-plt.text(2012.55,-2.2,'b',fontsize=8,fontname='Arial',fontweight='bold')
+#plt.text(2012.55,-2.2,'b',fontsize=8,fontname='Arial',fontweight='bold')
   
 plt.subplot(gs[1:3,1:3])
 ax = plt.gca()
@@ -173,14 +167,12 @@ plt.ylim([3,11.5])
 plt.ylabel('Velocity \n (km/yr)',fontsize=8,fontname='Arial')
 x_formatter = matplotlib.ticker.ScalarFormatter(useOffset=False)
 ax.xaxis.set_major_formatter(x_formatter)
-plt.xlim([2012.5,2016.5])
-plt.text(2012.55,3.3,'c',fontsize=8,fontname='Arial',fontweight='bold')
+#plt.text(2012.55,3.3,'c',fontsize=8,fontname='Arial',fontweight='bold')
 plt.legend(loc=2,borderpad=0.3,fontsize=8,numpoints=1,handlelength=0.2,handletextpad=0.5,labelspacing=0.1,ncol=3,columnspacing=0.8)
 
-  
 plt.tight_layout()
 plt.subplots_adjust(hspace=0.2,wspace=0.25,top=0.97,right=0.98,left=0.01,bottom=0.1) 
   
-plt.savefig(DIRM+'figures/model_simulation.pdf',format='PDF',dpi=600)
+plt.savefig(DIRM+'figures/model_'+runname+'.pdf',format='PDF',dpi=600)
 plt.close()
 

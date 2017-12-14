@@ -32,7 +32,7 @@ runname = args.runname
 t2 = args.t2
 
 DIRM=os.path.join(os.getenv("MODEL_HOME"),glacier+"/3D/"+meshname+"/")
-DIRO=os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+"_"+meshname+"_movie")
+DIRO=os.path.join(DIRM+"figures/movie_"+runname)
 
 if not(os.path.isdir(DIRM)):
   sys.exit("Mesh directory "+meshname+" does not exist for "+glacier+".")
@@ -261,7 +261,7 @@ ffmpeg_out_opt = "-an -vcodec mpeg4 -f mp4"
 #scale='iw/4:-1'"
 
 os.chdir(DIRO)
-outmov = glacier+'_'+meshname+'.mp4'
+outmov = 'movie.mp4'
 #cmd = 'ffmpeg {0} -i %04d.jpg {1} {2}'.format(ffmpeg_in_opt, ffmpeg_out_opt, outmov)
 #cmd = 'ffmpeg {0} -pattern_type glob -i *_clip.png {1} {2}'.format(ffmpeg_in_opt, ffmpeg_out_opt, outmov)
 cmd = 'ffmpeg {0} -i %04d.png {1} {2}'.format(ffmpeg_in_opt, ffmpeg_out_opt, outmov)

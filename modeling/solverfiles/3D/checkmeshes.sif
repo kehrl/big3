@@ -538,6 +538,7 @@ Solver 17
   Strain Rate Variable = String "StrainRate"
   Grounded Toler = Real $groundtoler
   Minimum Height = Real $minheight
+  Restart Timestep = Integer 0
 End
 
 Solver 18

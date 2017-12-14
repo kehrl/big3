@@ -16,37 +16,41 @@ bname = 'morlighem'
 bmodel = 'aniso'
 bsmooth = '5'
 bottomsurface = 'bed' # or 'iceshelf'
-temperature = 'model'#'-10.0'#'model'
+temperature = '-10.0'#'-10.0'#'model'
+#lc = '300 300 300 300'
 lc = '250 250 250 250'
 #lc = '1000 1000 4000 5000'
 
 if glacier == 'Helheim':
-  dates = ['20120316']
-  #dates = ['20110319','20110615','20110828','20111116',\
-  #         '20120316','20120624','20120908','20121205',\
-  #         '20130209','20130508','20130804','20131031',\
-  #         '20140127','20140509','20140731','20141016']
+  #dates = ['20070912']
+  #dates = ['20120624']
+  dates = ['20070912',\
+           '20110319','20110615','20110828','20111116',\
+           '20120316','20120624','20120908','20121205',\
+           '20130209','20130508','20130804','20131031',\
+           '20140127','20140509','20140731','20141016']
 elif glacier == 'Kanger':
-  #dates = ['20120213']
-  dates = ['20130210','20131004','20131204']
-  #dates = ['20110308','20110708','20110826','20111106',\
+  #dates = ['20070728']
+  dates = ['20120213']
+  #dates = ['20070728',\
+  #         '20110308','20110708','20110826','20111106',\
   #         '20120213','20120522','20121012','20121217',\
   #         '20130210','20130714','20131004','20131204',\
-  #         '20140213']  
+  #         '20140213','20150808']  
 
 # Inversion options
 method = 'adjoint'
 itmax = 500
-regpars = ['1e11']
-#regpars = ['1e8','1e9','1e10','5e11','1e11','2e11','5e11','1e12','1e13','1e14'] 
+#regpars = ['1e11']
+regpars = ['1e8','1e9','1e10','5e11','1e11','2e11','5e11','1e12','1e13','1e14'] 
 
 
 # Options for PBS submission
 queue = 'normal'
 model = 'has'
-nparts = 96
+nparts = 24
 ncpus = 24
-runtime = '8:00:00'
+runtime = '20:00:00'
 
 if meshshp.endswith('nofront'):
   frontBC = 'pressure'
@@ -61,7 +65,7 @@ else:
 for date in dates:
 
   # Output mesh name
-  meshname = 'DEM'+date+'_modelT'
+  meshname = 'DEM'+date+'_constantT_Lcurve'
 
   # Create mesh
   command = "python /u/lkehrl/Code/big3/modeling/meshing/"+\

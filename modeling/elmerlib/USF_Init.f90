@@ -684,13 +684,19 @@ FUNCTION ModelTemperature( Model, nodenumber, dumy) RESULT(T) !
         PRINT *,'MODELT: k,alpha=',k,alpha
       END IF
 
-      IF (k == ExtrudeLevels) THEN
-        T = (1 - alpha) * LinearInterp(dem(:,:,k), xx, yy, nx, ny, x, y) 
-      ELSE
-        T = (1 - alpha) * LinearInterp(dem(:,:,k), xx, yy, nx, ny, x, y)+ alpha * LinearInterp(dem(:,:,k+1), xx, yy, nx, ny, x, y)
+      IF (k >= ExtrudeLevels) THEN
+        k = ExtrudeLevels
+        T = LinearInterp(dem(:,:,k), xx, yy, nx, ny, x, y) 
+      ELSE 
+        IF (k <= 1) THEN
+          k = 1
+          T = LinearInterp(dem(:,:,k), xx, yy, nx, ny, x, y)
+        ELSE
+          T = (1 - alpha) * LinearInterp(dem(:,:,k), xx, yy, nx, ny, x, y)+ alpha * LinearInterp(dem(:,:,k+1), xx, yy, nx, ny, x, y)
+        END IF
       END IF
       
-      ! In case we have restarted the file, we DOn't want to later end up 
+      ! In case we have restarted the file, we don't want to later end up 
       ! with this timestep
       TimestepInit = 0
     

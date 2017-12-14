@@ -11,12 +11,12 @@ bname = 'smith'
 bmodel = 'aniso'
 bsmooth = '5'
 bottomsurface = 'iceshelf'
-temperature = -15.0 #'model'
+temperature = 'model' #'-10.0' #'model'
 #lc = '500 1000 1000 2000'
-lc = '200 450 700 1000'
+lc = '150 400 700 1000'
 
 # Info for steady state simulation to relax model
-steadystate_nt = 525 # 10 years
+steadystate_nt = 105 # 2 years
 
 # Info terminus driven model
 date1 = '20120908'
@@ -24,24 +24,25 @@ date2 = '20160615' #20160616
 dt_relax = '7/365.25'
 dt_terminus = '1/365.25'
 timeseries = 'True'
+slidinglaw = 'linear'#'linear' #'weertman'
 
 # Inversion options
 method = 'adjoint'
 regpar = '3e11'
 frontBC = 'pressure'
-slipcoefficient = '1.0E-3'
+slipcoefficient = '1.0E-1'
 sidewallBC = 'friction' # or velocity or friction
 
-runname = 'TD_'+date1+'_'+date2+'_bsmooth'+bsmooth+'_'+frontBC
+runname = 'TD_'+date1+'_'+date2+'_modelT_linearB_1E1_pressure'
 
 # Options for PBS submission
 queue = 'long'
 model = 'has'
 nparts = 96
 ncpus = 24
-runtime_relax = '32:00:00'
+runtime_relax = '10:00:00'
 runtime_inversion = '8:00:00'
-runtime_terminus = '110:00:00'
+runtime_terminus = '50:00:00'
 
 # Mesh directory
 dir = "/nobackupp8/lkehrl/Models/"+glacier+"/3D/"+runname+"/"
@@ -90,6 +91,11 @@ fid = open("PBS_inversion.pbs","w")
 fid.write(job_string)
 fid.close()
 
+try:
+  subprocess.call(['qsub','PBS_inversion.pbs'])
+except:
+  print "Couldn't submit inversion"
+
 #####################################
 # Create steadystate PBS job script #
 #####################################
@@ -98,7 +104,7 @@ command = "python /u/lkehrl/Code/big3/modeling/simulations/"+\
           "simulation_3d.py -glacier {0} -sif iceshelf.sif".format(glacier)+\
           " -mesh {0} -extrude {1} -n {2}".format(runname,extrude,nparts)+\
           " -dt {0} -nt {1} -temperature {2}".format(dt_relax,steadystate_nt,temperature)+\
-          " -slipcoefficient {0}".format(slipcoefficient)
+          " -slipcoefficient {0} -slidinglaw {1}".format(slipcoefficient,slidinglaw)
 
 job_name = glacier+"_"+runname+"_relaxation"
 processors = "select={0}:ncpus={1}:mpiprocs={2}:model={3}".format(nparts/ncpus,ncpus,ncpus,model)
@@ -142,7 +148,7 @@ command = "python /u/lkehrl/Code/big3/modeling/simulations/"+\
           "simulation_3d.py -glacier {0} -sif terminusdriven_advance.sif".format(glacier)+\
           " -mesh {0} -extrude {1} -n {2}".format(runname,extrude,nparts)+\
           " -dt {0} -nt {1} -temperature {2}".format(dt_terminus,nt,temperature)+\
-          " -slipcoefficient {0}".format(slipcoefficient)
+          " -slipcoefficient {0} -slidinglaw {1}".format(slipcoefficient,slidinglaw)
 
 job_name = glacier+"_"+runname+"_terminusdriven"
 processors = "select={0}:ncpus={1}:mpiprocs={2}:model={3}".format(nparts/ncpus,ncpus,ncpus,model)

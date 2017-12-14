@@ -39,7 +39,7 @@ Simulation
   Timestep Sizes = {TimeStepSize}
 
   Initialize Dirichlet Conditions = Logical False  
-  Steady State Max Iterations = 50
+  Steady State Max Iterations = 20
   Steady State Min Iterations = 1
 
   Max Output Level = 4
@@ -50,6 +50,9 @@ Simulation
   Stabilization Use Longest Element Edge = Logical True
 
   Set Dirichlet BCs By BC Numbering = Logical True
+
+  !Restart File = "$name$.result"
+  !Restart Position = 525
 End
 
 !---------------------------------------------------
@@ -313,15 +316,31 @@ Solver 9
   Variable = Flow Solution[Velocity:3 Pressure:1]
   ! mandatory to save bulk stiffness matrix
 
-  Linear System Solver = "Iterative"
-  Linear System Iterative Method = "GCR"
-  BiCGStabl Polynomial Degree = 4
-  Linear System Max Iterations = 500
-  Linear System Convergence Tolerance = Real 1.0E-6
-  Linear System Abort Not Converged = False
-  Linear System Preconditioning = "ILU2"
-  Linear System Residual Output = 1
+  Linear System Solver = Direct
+  Linear System Direct Method =  Mumps
+  Mumps Percentage Increase Working Space = Integer 60
   Optimize Bandwidth = Logical True
+  Stabilization Method = Stabilized
+  Linear System Convergence Tolerance = 1.0E-6
+
+  !Linear System Solver = "Iterative"
+  !Linear System Iterative Method = "BiCGStab" 
+  !Linear System Max Iterations = 1000
+  !Linear System Convergence Tolerance = 1.0E-6 
+  !Linear System Abort Not Converged = False 
+  !Linear System Preconditioning = "ILU2" 
+  !Linear System Residual Output = 1
+  !Stabilization Method = Stabilized
+
+  !Linear System Solver = "Iterative"
+  !Linear System Iterative Method = "GCR"
+  !BiCGStabl Polynomial Degree = 4
+  !Linear System Max Iterations = 1000
+  !Linear System Convergence Tolerance = Real 1.0E-6
+  !Linear System Abort Not Converged = False
+  !Linear System Preconditioning = "ILU2"
+  !Linear System Residual Output = 1
+  !Optimize Bandwidth = Logical True
 
   Nonlinear System Max Iterations = 50
   Nonlinear System Convergence Tolerance = 1.0E-5
@@ -331,9 +350,9 @@ Solver 9
   Nonlinear System Newton Max Iterations = Integer 15 !Give up newton
   Nonlinear System Reset Newton = Logical True
   
-  Nonlinear System Relaxation Factor = Real 1.0
+  !Nonlinear System Relaxation Factor = Real 0.5
 
-  Steady State Convergence Tolerance = Real 1.0E-6
+  Steady State Convergence Tolerance = Real 1.0E-4
 
   Update Exported Variables = Logical True
   Nonlinear Update Exported Variables = Logical True
@@ -427,8 +446,6 @@ Solver 14
   Exec Solver = "Never"
   Equation = "ResultOutput1"
   Procedure = File "ResultOutputSolve" "ResultOutputSolver"
-  !Exec Solver = String "After All"
-  Exec Solver = String "After Timestep"
   
   Save Geometry IDs = True
   !Save Boundaries Only = Logical True
@@ -477,6 +494,7 @@ Solver 16
 End
 
 Solver 17
+  !Exec Solver = "Never"
   Exec Solver = "After TimeStep"
   Equation = "Free Surface Top"
   Procedure =  "FreeSurfaceSolver" "FreeSurfaceSolver"
@@ -519,6 +537,7 @@ Solver 17
 End
 
 Solver 18
+  !Exec Solver = "Never"
   Exec Solver = "After TimeStep"
   Equation = "Free Surface Sea/Shelf"
   Procedure =  "FreeSurfaceSolver" "FreeSurfaceSolver"
@@ -646,9 +665,9 @@ Solver 25
   Equation = "ResultOutput2"
   Procedure = File "ResultOutputSolve1.so" "ResultOutputSolver"
 
-  !Save Geometry IDs = True
+  Save Geometry IDs = True
   !Save Boundaries Only = Logical True
-  Output File Name = File "after"
+  Output File Name = File "$name""  
   Vtu Format = Logical True
   Single Precision = True
   Binary Output = True
@@ -713,12 +732,7 @@ Boundary Condition 2
   Name = "Side Walls"
   Target Boundaries = 2
 
-  Normal-Tangential Velocity = Logical True
-  Flow Force BC = Logical True
-
-  Velocity 1 = Real 0.0
-  Slip Coefficient 2 = Real {SlipCoefficient}
-  Slip Coefficient 3 = Real {SlipCoefficient}
+{SidewallBC}
 
   Vertical Mesh Update 1 = Real 0.0
   Vertical Mesh Update 2 = Real 0.0
@@ -772,7 +786,7 @@ Boundary Condition 4
   ! Grounding Line Definition = String "Last Grounded"
   Grounding Line Definition = String "Discontinuous"
   ! Grounding Line Definition = String "First Floating"
-  Test Contact Tolerance = real 1.0e-3
+  Test Contact Tolerance = REAL $groundtoler
 
   Velocity 1 = Real 0.0
   Velocity 1 Condition = Variable GroundedMask

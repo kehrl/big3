@@ -52,7 +52,7 @@ Simulation
   Set Dirichlet BCs By BC Numbering = Logical True
 
   !Restart File = "iceshelf.result"
-  !Restart Position = 525
+  !Restart Position = 105
 End
 
 !---------------------------------------------------
@@ -332,15 +332,15 @@ Solver 9
   Linear System Residual Output = 1
   Optimize Bandwidth = Logical True
 
-  Nonlinear System Max Iterations = 100
+  Nonlinear System Max Iterations = 50
   Nonlinear System Convergence Tolerance = 1.0E-5
-  Nonlinear System Newton After Iterations = 100
+  Nonlinear System Newton After Iterations = 50
   Nonlinear System Newton After Tolerance = 1.0E-6
   Nonlinear System Newton Max Tolerance = Real 1.0E-2
   Nonlinear System Newton Max Iterations = Integer 15 !Give up newton
   Nonlinear System Reset Newton = Logical True
   
-  Nonlinear System Relaxation Factor = Real 0.9
+  Nonlinear System Relaxation Factor = Real 0.6
 
   Steady State Convergence Tolerance = Real 1.0e-4
 
@@ -736,12 +736,7 @@ Boundary Condition 2
   Name = "Side Walls"
   Target Boundaries = 2
 
-  Normal-Tangential Velocity = Logical True
-  Flow Force BC = Logical True
-
-  Velocity 1 = Real 0.0
-  Slip Coefficient 2 = Real {SlipCoefficient}
-  Slip Coefficient 3 = Real {SlipCoefficient}
+{SidewallBC}
   
   Longitudinal Mesh Update 1 = Real 0.0
   Longitudinal Mesh Update 2 = Real 0.0
