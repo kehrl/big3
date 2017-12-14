@@ -83,8 +83,8 @@ def saveline(DIR,runname,variables):
     fid = open(DIR+file,"r")
     lines = fid.readlines()
     n = n+len(lines)
-  data = np.empty(n,dtype = zip(varnames, types))  
-      
+  data = np.empty(n,dtype = zip(varnames, types))   
+    
   # Read in data
   n = 0
   for file in files:
@@ -195,6 +195,7 @@ def grid3d(data,variable,holes=[],extent=[],dx=50):
       mask[bool==1] = 1
   
   if (len(holes) > 0) or (len(extent) > 0):  
+    zz[mask] = float('nan')
     masked = np.ma.masked_array(zz,mask)
   else:
     masked = zz
