@@ -1,3 +1,5 @@
+# Adapted from https://zulko.wordpress.com/2012/09/29/extract-data-from-graph-pictures-with-python/
+
 from urlparse import urlparse
  
 import pygtk
