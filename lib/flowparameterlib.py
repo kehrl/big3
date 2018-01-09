@@ -472,7 +472,35 @@ def load_kristin(glacier,x,y,type='A',dir='none'):
       fidA.close()
       
   return output
+
+def convert_B_to_A(B):
+  '''
+  Convert flow law parameter B (used in shallow shelf approximation) to flow parameter A (used in all flow laws).
   
+  Inputs:
+  B: flow parameter B
+
+  Outputs:
+  A: flow parameter A
+  '''
+
+  A = 1.0/(B**n)
+
+  return A
+
+def convert_A_to_B(A)
+  '''
+    Convert flow law parameter B (used in shallow shelf approximation) to flow parameter A (used in all flow laws).
+
+  Inputs:
+  B: flow parameter B
+
+  Outputs:
+  A: flow parameter A
+  '''
+
+  B = (1.0/A)**(1.0/n)
+
 def steadystate_vprofile(H,Ts,bdot_myr,levels=20):
 
   '''
@@ -523,4 +551,3 @@ def steadystate_vprofile(H,Ts,bdot_myr,levels=20):
           Tgrid[j,i,k] = Ts[j,i] + zstar*(np.sqrt(np.pi)/2)*dTdz*(math.erf(z[k]/zstar)-math.erf(H[j,i]/zstar))
   
   return Tgrid
-  
