@@ -484,11 +484,14 @@ def convert_B_to_A(B):
   A: flow parameter A
   '''
 
-  A = 1.0/(B**n)
+  n = 3
+  A = np.zeros_like(B)
+  for i in range(0,len(B)):
+    A[i] = 1.0/(B[i]**n)
 
   return A
 
-def convert_A_to_B(A)
+def convert_A_to_B(A):
   '''
     Convert flow law parameter B (used in shallow shelf approximation) to flow parameter A (used in all flow laws).
 
@@ -499,7 +502,12 @@ def convert_A_to_B(A)
   A: flow parameter A
   '''
 
-  B = (1.0/A)**(1.0/n)
+  n = 3
+  B = np.zeros_like(A)
+  for i in range(0,len(A)):
+    B[i] = (1.0/A[i])**(1.0/n)
+
+  return B
 
 def steadystate_vprofile(H,Ts,bdot_myr,levels=20):
 
