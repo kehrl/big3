@@ -12,7 +12,7 @@ Code developed as part of my dissertation at the University of Washington.
 ## To run code
 - `big3/lib` includes all python libraries and will need to be bundled or added to python path
 - elmer functions and modules in `big3/modeling/elmerlib` will need to be compiled and added to `DYLD_LIBRARY_PATH` to run simulations in Elmer 
-- paths are presently hardcoded, so you will need to have a similar data and modeling directory structure to automatically load data and save model outputs (environment variables `MODEL_HOME`, `DATA_HOME`, and `CODE_HOME` will need to be set)
+- paths are presently hardcoded, so you will need to have a similar data and modeling directory structure to automatically load data and save model outputs (environment variables `MODEL_HOME`, `DATA_HOME`, `DATA2_HOME`, and `CODE_HOME` will need to be set)
 
 ## big3/lib
 - `bedlib.py`,`climlib.py`,`icefrontlib.py`,`vellib.py`, and `zslib.py` - pull, process, and output bed elevations, climate data (RACMO, OSTIA SIF/SST), ice-front positions, velocity measurements, and surface-elevation measurements
