@@ -2,7 +2,7 @@
 #
 # LMK, UW, 10/16/2014
 
-import os, sys, datetime
+import os, sys, datetime, shutil
 import argparse
 import elmerrunlib
 
@@ -13,15 +13,15 @@ import elmerrunlib
 # Get inputs to file
 parser = argparse.ArgumentParser()
 parser.add_argument("-glacier",dest="glacier",required = True, 
-        help = "Name of glacier (Kanger or Helheim)")
+       help = "Name of glacier (Kanger or Helheim)")
 parser.add_argument("-mesh", dest="mesh", required = True,
-        help = "Name of mesh directory") 
+       help = "Name of mesh directory") 
 parser.add_argument("-sif",dest="solverfile",required = True, 
-        help = "SIF file to run")
+       help = "SIF file to run")
 parser.add_argument("-front", dest="frontbc", required = False,default='pressure',
-        help = "Calving front boundary condition (velocity or pressure).") 
+       help = "Calving front boundary condition (velocity or pressure).") 
 parser.add_argument("-n", dest="n", required = True,
-        help = "Number of partitions.")
+       help = "Number of partitions.")
 parser.add_argument("-extrude", dest="extrude", type=int,required = False,\
        default=10,help = "Number of extrusion levels.")
 parser.add_argument("-restartfile",dest="restartfile",required = False,\
@@ -34,8 +34,10 @@ parser.add_argument("-nt",dest="nt",required  = False,type=str,\
        default='10',help = "Number of timesteps (10).") 
 parser.add_argument("-dt",dest="dt",required  = False,type=str,\
        default='1/365.25',help = "Timestep size (1/365.25, i.e., 1 day).") 
+parser.add_argument("-beta",dest="beta_suffix",required = False,\
+       default="",help = "File ending for beta file.")
 parser.add_argument("-sidewall", dest="sidewallbc", required = False,\
-        default='velocity',help = "Sidewall boundary condition (velocity or friction).")
+       default='velocity',help = "Sidewall boundary condition (velocity or friction).")
 parser.add_argument("-slipcoefficient",dest="slipcoefficient",required  = False,type=str,\
        default='1.0E-3',help = "Sidewall slip coefficient.")
 parser.add_argument("-slidinglaw",dest="slidinglaw",required  = False,type=str,\
@@ -57,6 +59,7 @@ nt = args.nt
 slipcoefficient = args.slipcoefficient
 slidinglaw = args.slidinglaw
 sidewallbc = str(args.sidewallbc)
+beta_suffix = args.beta_suffix
 
 # Directories
 DIRS=os.path.join(os.getenv("CODE_HOME"),"big3/modeling/solverfiles/3D/")
@@ -76,6 +79,15 @@ else:
   if not(os.path.exists(DIRS+solverfile_in+'.sif')):
     sys.exit('No solverfile with name '+solverfile_in+'.sif')
 
+# Get beta file for Sliding_Beta.f90
+if not(beta_suffix==""):
+  beta_suffix = "_"+beta_suffix
+  beta_file = "beta_linear"+beta_suffix+".xy"
+  if os.path.isfile(DIRM+"/inputs/"+beta_file):
+    shutil.copy(DIRM+"/inputs/"+beta_file,DIRM+"/inputs/beta_linear.xy")
+  else:
+    sys.exit("No beta file with name "+beta_file)
+
 # Grab boundary condition for front -- it will be different if we are using an actual
 # terminus position (neumann, pressure BC) or an outflow boundary (dirichlet, velocity BC)
 if (frontbc == 'neumann') or (frontbc == 'pressure'):
@@ -86,9 +98,9 @@ if (frontbc == 'neumann') or (frontbc == 'pressure'):
 elif (frontbc == 'dirichlet') or (frontbc == 'velocity'):
   frontbc_text = """
   Velocity 1 = Variable Coordinate 1
-    Real procedure "USF_Init.so" "UWa"
+    Real procedure "USF_Init.so" "UIni"
   Velocity 2 = Variable Coordinate 1
-    Real procedure "USF_Init.so" "VWa"""
+    Real procedure "USF_Init.so" "VIni"""
 else:
   sys.exit("Unknown BC for front of glacier.")
 
@@ -141,7 +153,7 @@ if restartposition > 0:
 ###################################
 
 if restartfile !='none':
-  solverfile_out = solverfile_in
+  solverfile_out = solverfile_in+beta_suffix
 else:
   # Get current date
   now = datetime.datetime.now()
@@ -149,7 +161,7 @@ else:
  
   os.chdir(DIRM)
   fid1 = open(DIRS+solverfile_in+'.sif', 'r')
-  solverfile_out = solverfile_in+'_'+date
+  solverfile_out = solverfile_in+'_'+date+beta_suffix
   fid2 = open(DIRM+solverfile_out+'.sif', 'w')
 
   lines=fid1.read()
@@ -162,6 +174,7 @@ else:
   lines=lines.replace('{BetaDataFile}', '{0}'.format(beta_data_file))
   lines=lines.replace('{SlidingExponent}', '{0}'.format(sliding_exponent))
   lines=lines.replace('{nrestart}','{0}'.format(restartposition))
+  lines=lines.replace('{steady_name}','steady{0}'.format(beta_suffix))
 
   fid2.write(lines)
   fid1.close()

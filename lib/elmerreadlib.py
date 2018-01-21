@@ -492,9 +492,16 @@ def pvtu_file(file,variables,reader='none',returnreader=False):
         data['vsurfini 2'][:] = vsurfini[:,1]
         data['vsurfini'][:] = np.sqrt(data['vsurfini 1']**2+data['vsurfini 2']**2)
       except: 
-        data['vsurfini 1'][:] = numpy_support.vtk_to_numpy(vtudata.GetPointData().GetArray('vsurfini 1'))
-        data['vsurfini 2'][:] = numpy_support.vtk_to_numpy(vtudata.GetPointData().GetArray('vsurfini 2'))
-        data['vsurfini'][:] = np.sqrt(data['vsurfini 1']**2+data['vsurfini 2']**2)
+        try:
+          data['vsurfini 1'][:] = numpy_support.vtk_to_numpy(vtudata.GetPointData().GetArray('vsurfini 1'))
+          data['vsurfini 2'][:] = numpy_support.vtk_to_numpy(vtudata.GetPointData().GetArray('vsurfini 2'))
+          data['vsurfini'][:] = np.sqrt(data['vsurfini 1']**2+data['vsurfini 2']**2)
+        except:
+          # To account for bug in steady.sif, which won't save "vsurfini 1" and "vsurfini 2" 
+          # at the same time, so I've saved "vsurfini 2" as vsurfini2
+          data['vsurfini 1'][:] = numpy_support.vtk_to_numpy(vtudata.GetPointData().GetArray('vsurfini 1'))
+          data['vsurfini 2'][:] = numpy_support.vtk_to_numpy(vtudata.GetPointData().GetArray('vsurfini2'))
+          data['vsurfini'][:] = np.sqrt(data['vsurfini 1']**2+data['vsurfini 2']**2)
     elif var.endswith('update'):
       update = numpy_support.vtk_to_numpy(vtudata.GetPointData().GetArray(var))
       data[var+' 1'] = update[:,0]

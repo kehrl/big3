@@ -1,0 +1,158 @@
+$name="{steady_name}"
+
+$yearinsec = 365.25*24*60*60
+$rhoi = 917.0/(1.0e6*yearinsec^2)
+$rhow = 1028.0/(1.0e6*yearinsec^2) 
+$gravity = -9.81*yearinsec^2
+$n = 3.0
+$eta = (2.0*100.0)^(-1.0/n)
+
+Header
+  Mesh DB "." "mesh2d"
+End
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Constants
+  Gas Constant = Real 8.314 !Joule/mol x  K
+  Sea Level = Real 0.0
+  Water density = Real $rhow
+End
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Simulation
+  Coordinate System  = Cartesian 2D
+  Simulation Type = Steady State
+
+  Steady State Min Iterations = 1
+  Steady State Max Iterations = 20
+  
+  Timestepping Method = "bdf"
+  BDF Order = 1
+  Timestep Intervals = 5
+  Output Intervals = 1        
+  Timestep Sizes = $(5/365)
+
+  Output File = "$name$.result"
+  Post File = "$name$.vtu"
+
+  Max Output Level = 3
+End
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Body 1
+  Equation = 1
+  Body Force = 1
+  Material = 1
+  Initial Condition = 1
+End
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Initial Condition 1
+  Temperature = Real 263.15
+{Temperature}
+
+  Zs = Variable Coordinate 1, Coordinate 2
+    REAL procedure "USF_Init.so" "zsIni"
+  Zb = Variable Coordinate 1, Coordinate 2
+    REAL procedure "USF_Init.so" "zbIni"
+  
+! Surface velocities (data)
+  Vsurfini 1 = Variable Coordinate 1, Coordinate 2
+    Real procedure "USF_Init.so" "UIni"
+  Vsurfini 2 = Variable Coordinate 1, Coordinate 2
+    Real procedure "USF_Init.so" "VIni"
+
+  SSAVelocity 1 = Real 0.0
+  SSAVelocity 2 = Real 0.0
+End
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Body Force 1
+  Flow BodyForce 1 = Real 0.0            
+  Flow BodyForce 2 = Real 0.0              
+  Flow BodyForce 3 = Real $gravity
+End
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Material 1
+
+  Viscosity Exponent = Real $1.0e00/3.0e00
+  Critical Shear Rate = Real 1.0e-10
+
+  SSA Mean Density = Real $rhoi
+  SSA Mean Viscosity = Equals mu
+
+  SSA Friction Law = String "linear"
+  ! The friction parameter is the square of the optimized variable to insure > 0
+  SSA Friction Parameter = Variable Coordinate 1, Coordinate 2
+     REAL Procedure "Sliding_Beta.so" "Linear"
+  
+  Min H = Real 0.0
+End
+ 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+Solver 1
+  Equation = "SSA"
+  Variable = -dofs 2 "SSAVelocity"
+  Procedure = "AdjointSSASolvers.so" "SSABasalSolver"
+
+!! Mandatory for the adjoint 
+  Calculate Loads = Logical True
+
+  Linear System Solver = Direct
+  Linear System Direct Method = mumps
+
+  Nonlinear System Max Iterations = 50
+  Nonlinear System Convergence Tolerance  = 1.0e-10
+  Nonlinear System Newton After Iterations = 40
+  Nonlinear System Newton After Tolerance = 1.0e-06
+  Nonlinear System Relaxation Factor = 1.00
+
+  Steady State Convergence Tolerance = Real 1.0e-12
+
+  Exported Variable 1 = -dofs 1 "vsurfini 1"
+  Exported Variable 2 = -dofs 1 "vsurfini 2"
+  Exported Variable 3 = Zb
+  Exported Variable 4 = Zs
+  Exported Variable 5 = mu
+End
+
+Solver 2
+  Equation = "UpdateExport"
+  Procedure = File "ElmerIceSolvers" "UpdateExport"
+  Variable = -nooutput "dumy"
+
+  Exported Variable 1 = -dofs 1 "Zs"
+  Exported Variable 2 = -dofs 1 "Zb"
+End
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Equation 1
+  Active Solvers(2) = 1 2
+End
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Boundary Condition 1
+  Name = "Side Walls"
+  Target Boundaries = 2
+
+  SSAVelocity 1= Equals vsurfini 1
+  SSAVelocity 2= Equals vsurfini 2
+End
+
+Boundary Condition 2
+  Name = "Inflow"
+  Target Boundaries = 3
+
+  SSAVelocity 1= Equals vsurfini 1
+  SSAVelocity 2= Equals vsurfini 2
+End
+
+Boundary Condition 3
+  Name = "Front"
+  Target Boundaries = 1
+
+  SSAVelocity 1= Equals vsurfini 1
+  SSAVelocity 2= Equals vsurfini 2
+End

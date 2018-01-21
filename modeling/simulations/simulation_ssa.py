@@ -2,9 +2,9 @@
 #
 # LMK, UW, 10/16/2014
 
-import os, sys, datetime
+import os, sys, datetime, shutil
 import argparse
-import elmerrunlib
+import elmerrunlib, flowparameterlib
 
 ##########
 # Inputs #
@@ -30,11 +30,12 @@ parser.add_argument("-restartposition",dest="restartposition",required = False,\
        default=0,type=int,help = "Restart position in results file (if applicable).")
 parser.add_argument("-temperature",dest="temperature",required  = False,\
        default=-10.0,help = "Use modeled or constant temperature (-10.0 deg C).") 
+parser.add_argument("-beta",dest="beta_suffix",required = False,\
+       default="",help = "File ending for beta file.")
 parser.add_argument("-nt",dest="nt",required  = False,type=str,\
        default='10',help = "Number of timesteps (10).") 
 parser.add_argument("-dt",dest="dt",required  = False,type=str,\
        default='1/365.25',help = "Timestep size (1/365.25, i.e., 1 day).") 
-
 
 args, _ = parser.parse_known_args(sys.argv)
 
@@ -49,6 +50,7 @@ restartposition = args.restartposition
 temperature = args.temperature
 dt = args.dt
 nt = args.nt
+beta_suffix = args.beta_suffix
 
 # Directories
 DIRS=os.path.join(os.getenv("CODE_HOME"),"big3/modeling/solverfiles/SSA/")
@@ -62,6 +64,15 @@ if solverfile_in.endswith('.sif'):
 if not(os.path.exists(DIRS+solverfile_in+'.sif')):
   sys.exit('No solverfile with name '+solverfile_in+'.sif')
 
+# Get beta file for Sliding_Beta.f90
+if not(beta_suffix==""):
+  beta_suffix = "_"+beta_suffix
+  beta_file = "beta_linear"+beta_suffix+".xy"
+  if os.path.isfile(DIRM+"/inputs/"+beta_file):
+    shutil.copy(DIRM+"/inputs/"+beta_file,DIRM+"/inputs/beta_linear.xy")
+  else:
+    sys.exit("No beta file with name "+beta_file)
+ 
 # Grab boundary condition for front -- it will be different if we are using an actual
 # terminus position (neumann, pressure BC) or an outflow boundary (dirichlet, velocity BC)
 if (frontbc == 'neumann') or (frontbc == 'pressure'):
@@ -80,13 +91,15 @@ else:
 
 if temperature == 'model':
   temperature_text="""
-  Constant Temperature = Variable Coordinate 1, Coordinate 2
-    Real Procedure "USF_Init.so" "ModelTemperature" """
+  mu = Variable Coordinate 1, Coordinate 2\r
+    Real Procedure "USF_Init.so" "SSAViscosity"""""
 else:
   try:
-    float(temperature)
+    print float(temperature)
+    A = flowparameterlib.arrhenius(273.15+float(temperature))
+    E = 3
     temperature_text="""
-  Constant Temperature = Real """+str(temperature)
+    mu = Real $(("""+str(E)+'*'+str(A[0])+'*'+'yearinsec)^(-1.0/3.0)*1.0e-6)'
   except:
     sys.exit("Unknown temperature of "+temperature)
 
@@ -101,7 +114,7 @@ restartposition = 0
  
 os.chdir(DIRM)
 fid1 = open(DIRS+solverfile_in+'.sif', 'r')
-solverfile_out = solverfile_in+'_'+date
+solverfile_out = solverfile_in+'_'+date+beta_suffix
 fid2 = open(DIRM+solverfile_out+'.sif', 'w')
 
 lines=fid1.read()
@@ -110,6 +123,7 @@ lines=lines.replace('{FrontBC}', '{0}'.format(frontbc_text))
 lines=lines.replace('{Temperature}', '{0}'.format(temperature_text))
 lines=lines.replace('{TimeStepSize}', '$({0})'.format(dt))
 lines=lines.replace('{TimeSteps}', '{0}'.format(nt))
+lines=lines.replace('{steady_name}','steady{0}'.format(beta_suffix))
 
 fid2.write(lines)
 fid1.close()
@@ -121,3 +135,6 @@ del fid1, fid2
 ###################
 
 returncode = elmerrunlib.run_elmer(DIRM+solverfile_out+'.sif',n=partitions)
+
+if not(beta_suffix==""):
+  os.system("rm "+DIRM+"inputs/beta_linear.xy")
