@@ -861,16 +861,48 @@ def inversion_3D(glacier,x,y,time,dir_velocity_out='none',blur=False,dx='none'):
 
   # Individual velocity map for time step
   if time <= 2008:
+    HOWATDIR = os.path.join(os.getenv("DATA_HOME"),"Velocity/Howat/"+glacier+"/")
     # Use Howat velocity maps
+    print date
     if glacier == 'Kanger':
       if '200707' in date:
-        filename1 = os.path.join(os.getenv("DATA_HOME"),"Velocity/Howat/Kanger/OPT_E68.80N_2007-08/OPT_E68.80N_2007-08")
-        filename2 = os.path.join(os.getenv("DATA_HOME"),"Velocity/Howat/Kanger/OPT_E68.80N_2007-07/OPT_E68.80N_2007-07")
+        filename1 = HOWATDIR+"OPT_E68.80N_2007-08/OPT_E68.80N_2007-08"
+        filename2 = HOWATDIR+"OPT_E68.80N_2007-07/OPT_E68.80N_2007-07"
+      elif '200107' in date:
+        filename1 = HOWATDIR+"OPT_E68.80N_2001-07/OPT_E68.80N_2001-07"
+        filename2 = filename1
+      elif ('200308' in date) or ('200307' in date):
+        filename1 = HOWATDIR+"OPT_E68.80N_2003-07/OPT_E68.80N_2003-07"
+        filename2 = HOWATDIR+"OPT_E68.80N_2003-08/OPT_E68.80N_2003-08"
+      elif '200506' in date:
+        filename1 = HOWATDIR+"OPT_E68.80N_2005-06/OPT_E68.80N_2005-06"
+        filename2 = filename1
+      elif '200508' in date:
+        filename1 = HOWATDIR+"OPT_E68.80N_2005-08/OPT_E68.80N_2005-08"
+        filename2 = filename1
+      elif '200605' in date:
+        filename2 = HOWATDIR+"OPT_E68.80N_2006-05/OPT_E68.80N_2006-05"
+        filename1 = HOWATDIR+"OPT_E68.80N_2006-04/OPT_E68.80N_2006-04"
+      elif '200607' in date:
+        filename2 = HOWATDIR+"OPT_E68.80N_2006-07/OPT_E68.80N_2006-07"
+        filename1 = HOWATDIR+"OPT_E68.80N_2006-06/OPT_E68.80N_2006-06"
+      elif '200609' in date:
+        filename1 = HOWATDIR+"OPT_E68.80N_2006-09/OPT_E68.80N_2006-09"
+        filename2 = filename1
     elif glacier == 'Helheim':
       if '200709' in date:
-        filename1 = os.path.join(os.getenv("DATA_HOME"),"Velocity/Howat/Helheim/OPT_E66.50N_2007-08/OPT_E66.50N_2007-08")
-        filename2 = os.path.join(os.getenv("DATA_HOME"),"Velocity/Howat/Helheim/OPT_E66.50N_2007-09/OPT_E66.50N_2007-09")
-    
+        filename1 = HOWATDIR+"OPT_E66.50N_2007-08/OPT_E66.50N_2007-08"
+        filename2 = HOWATDIR+"OPT_E66.50N_2007-09/OPT_E66.50N_2007-09"
+      elif '200408' in date:
+        filename1 = HOWATDIR+"OPT_E66.50N_2004-08/OPT_E66.50N_2004-08"
+        filename2 = HOWATDIR+"OPT_E66.50N_2004-07/OPT_E66.50N_2004-07"
+      elif '200508' in date:
+        filename1 = HOWATDIR+"OPT_E66.50N_2005-09/OPT_E66.50N_2005-09"
+        filename2 = HOWATDIR+"OPT_E66.50N_2005-07/OPT_E66.50N_2005-07"
+      elif '200608' in date:
+        filename1 = HOWATDIR+"OPT_E66.50N_2006-09/OPT_E66.50N_2006-09"
+        filename2 = HOWATDIR+"OPT_E66.50N_2006-07/OPT_E66.50N_2006-07"
+
     files_vx = ' '+filename1+'.vx.tif '+filename2+'.vx.tif '+\
             file_velocity_all+'_vx.tif'+' '+file_velocity_global+'_vx.tif'
     files_vy = ' '+filename1+'.vy.tif '+filename2+'.vy.tif '+\

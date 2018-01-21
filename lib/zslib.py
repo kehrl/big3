@@ -8,6 +8,7 @@ LMK, UW, 11/12/2015
 
 import os
 import sys
+import datetime, scipy.io
 import numpy as np
 import icefrontlib, coordlib, masklib, distlib,datelib, geotifflib, floatlib
 import scipy.interpolate
@@ -547,7 +548,9 @@ def dem_grid(glacier,xmin=-np.Inf,xmax=np.Inf,ymin=-np.Inf,ymax=np.Inf,
   
   SPIRITDIR = os.path.join(os.getenv("DATA_HOME"),'Elevation/SPIRIT/'+glacier+'/')
   SPIRITDIRs = os.listdir(SPIRITDIR)
-  
+ 
+  ASTERDIR = os.path.join(os.getenv("DATA_HOME"),'Elevation/ASTER/')
+
   # Find file ending based on whether we want elevation relative to geoid or ellipsoid
   if verticaldatum == 'geoid':
     filestring = 'trans-adj.tif'
@@ -608,6 +611,19 @@ def dem_grid(glacier,xmin=-np.Inf,xmax=np.Inf,ymin=-np.Inf,ymax=np.Inf,
             else:
               if DIR[0:8] in years:
                 dates.append(DIR[0:13])
+  # For ASTER...
+  if ('ASTER' in data) or (data == 'all'):
+    if glacier == 'Helheim':
+      asterdata = scipy.io.loadmat(ASTERDIR+'ASTERZ_helheim.mat',squeeze_me=True)
+    elif glacier == 'Kanger':
+      asterdata = scipy.io.loadmat(ASTERDIR+'ASTERZ_kangerd.mat',squeeze_me=True)
+    for i in range(0,len(asterdata['t'])):
+      year,month,day = matlab2datetime(asterdata['t'][i])
+      if not(years) or (years == 'all'):
+        dates.append(str(year)+"{0:02d}".format(month)+"{0:02d}".format(day))
+      else:
+        if year in years:
+          dates.append(str(year)+"{0:02d}".format(month)+"{0:02d}".format(day))
 
   # Load data
   time = np.zeros(len(dates))
@@ -615,6 +631,7 @@ def dem_grid(glacier,xmin=-np.Inf,xmax=np.Inf,ymin=-np.Inf,ymax=np.Inf,
   zs[:,:] = float('NaN')
   error = np.zeros(len(dates))
   for i in range(0,len(dates)):
+    found = False
     date = dates[i]
     n = 1 # Count number of files for that date
     ngrid = np.ones([ny,nx])
@@ -623,33 +640,59 @@ def dem_grid(glacier,xmin=-np.Inf,xmax=np.Inf,ymin=-np.Inf,ymax=np.Inf,
       if DIR.startswith(date) and (DIR.endswith(filestring) or DIR.endswith(spiritstring)):
         print "Loading ", DIR
         if os.path.isfile(WVDIR+DIR):
-          xwv,ywv,zwv = geotifflib.read(WVDIR+DIR) 
+          xwv,ywv,zwv = geotifflib.read(WVDIR+DIR)
           error[i] = dem_error(glacier,DIR[0:47],'WV')
+          found = True
         elif os.path.isfile(TDMDIR+DIR):
           xwv,ywv,zwv = geotifflib.read(TDMDIR+DIR) 
           error[i] = dem_error(glacier,DIR[0:25],'TDM')
+          found = True
         else:
           xwv,ywv,zwv = geotifflib.read(SPIRITDIR+DIR)
           error[i] = dem_error(glacier,date,'SPIRIT')
-        
+          found = True
+
         # Interpolate onto output grid
-        zwv_dem = scipy.interpolate.RegularGridInterpolator([ywv,xwv],zwv,bounds_error = False,method=method,fill_value=float('nan'))
+        zwv_dem = scipy.interpolate.RegularGridInterpolator([ywv,xwv],zwv,bounds_error = False,\
+                method=method,fill_value=float('nan'))
         zwv_flattened = zwv_dem(np.column_stack([ygrid.flatten(),xgrid.flatten()]))
-    
+
         # Reshape to grid
         zwv_on_grid = np.reshape(zwv_flattened,(len(y),len(x)))
-        
+
         if n > 1: # there is more than one file for that date, so we need to treat it differently
           nonnan = np.array(np.where(~(np.isnan(zwv_on_grid))))
           for [k,j] in nonnan.T:
             if np.isnan(zs[k,j,i]):
               zs[k,j,i] = zwv_on_grid[k,j]
             elif ~(np.isnan(zwv_on_grid[k,j])):
-              zs[k,j,i] = zwv_on_grid[k,j]#(zs[k,j,i]*(ngrid[k,j]-1)+zwv_on_grid[k,j])/ngrid[k,j]
-              ngrid[k,j] = ngrid[k,j]+1
+              zs[k,j,i] = zwv_on_grid[k,j]#(zs[k,j,i]*(ngrid[k,j]-1)+zwv_on_grid[k,j])/ngrid[k,j] ngrid[k,j] = ngrid[k,j]+1
         else:
-          zs[:,:,i] = zwv_on_grid
+          zs[:,:,i] = zwv_on_grid  
           n = n+1
+
+    if not(found) and ('ASTER' in data) or (data == 'all'):
+      for j in range(0,len(asterdata['t'])):
+        year,month,day = matlab2datetime(asterdata['t'][j])
+        if date == str(year)+"{0:02d}".format(month)+"{0:02d}".format(day):
+          found = True
+          xwv = asterdata['x']
+          ywv = np.flipud(asterdata['y'])
+          if verticaldatum == 'geoid':
+            zwv = coordlib.geoidheight(x,y,np.flipud(asterdata['z'][:,:,j]))
+          else: 
+            zwv = np.flipud(asterdata['z'][:,:,j])
+            error[i] = 10.0 # Made up a number, should be set to the correct value
+    
+      if found:
+        # Interpolate onto output grid
+        zwv_dem = scipy.interpolate.RegularGridInterpolator([ywv,xwv],zwv,bounds_error = False,\
+              method=method,fill_value=float('nan'))
+        zwv_flattened = zwv_dem(np.column_stack([ygrid.flatten(),xgrid.flatten()]))
+    
+        # Reshape to grid
+        zwv_on_grid = np.reshape(zwv_flattened,(len(y),len(x)))
+        zs[:,:,i] = zwv_on_grid
       
   # It's possible we still pulled a DEM full of NaNs in the desired region. If so, let's chuck those.
   nonnan=[]
@@ -691,6 +734,8 @@ def dem_along_flowline(xpts,ypts,glacier,years='all',cutoff='terminus',verticald
   SPIRITDIR = os.path.join(os.getenv("DATA_HOME"),"Elevation/SPIRIT/"+glacier+"/")
   SPIRITDIRs = os.listdir(SPIRITDIR)
 
+  ASTERDIR = os.path.join(os.getenv("DATA_HOME"),"Elevation/ASTER/")
+
   # Find file ending based on whether we want elevation relative to geoid or ellipsoid
   if verticaldatum == 'geoid':
     filestring = 'trans-adj.tif'
@@ -705,7 +750,6 @@ def dem_along_flowline(xpts,ypts,glacier,years='all',cutoff='terminus',verticald
   dists = distlib.transect(xpts,ypts)
   if cutoff == 'terminus': 
     term_values, term_time = icefrontlib.distance_along_flowline(xpts,ypts,dists,glacier,type='icefront')
-  
   
 # Find dates where we have data in the desired region
   dates=[]
@@ -757,7 +801,19 @@ def dem_along_flowline(xpts,ypts,glacier,years='all',cutoff='terminus',verticald
             else:
               if DIR[0:8] in years:
                 dates.append(DIR[0:8])
-  
+  # For ASTER...
+  if ('ASTER' in data) or (data == 'all'):
+    if glacier == 'Helheim': 
+      asterdata = scipy.io.loadmat(ASTERDIR+'ASTERZ_helheim.mat',squeeze_me=True)
+    elif glacier == 'Kanger':
+      asterdata = scipy.io.loadmat(ASTERDIR+'ASTERZ_kangerd.mat',squeeze_me=True)
+    for i in range(0,len(asterdata['t'])):
+      year,month,day = matlab2datetime(asterdata['t'][i])
+      if not(years) or (years == 'all'):
+        dates.append(str(year)+"{0:02d}".format(month)+"{0:02d}".format(day))
+      else:
+        if year in years:
+          dates.append(str(year)+"{0:02d}".format(month)+"{0:02d}".format(day))
 
   # Set up output 
   zs = np.zeros((len(dates),len(xpts)))
@@ -765,49 +821,65 @@ def dem_along_flowline(xpts,ypts,glacier,years='all',cutoff='terminus',verticald
   times = np.zeros((len(dates),2))
   error = np.zeros(len(dates))
   for i in range(0,len(dates)):
+    found = False
     date = dates[i]
     times[i,0] = datelib.date_to_fracyear(float(date[0:4]),float(date[4:6]),float(date[6:]))
     times[i,1] = date
+    # Get TDM, WV, and SPIRIT DEMs
     for DIR in np.r_[TDMDIRs,WVDIRs,SPIRITDIRs]:
       if DIR.startswith(date) and (DIR.endswith(filestring) or DIR.endswith(spiritstring)): 
         #print "Loading data from "+DIR+"\n"
         if os.path.isfile(WVDIR+DIR):
+          found = True
           x,y,z = geotifflib.read(WVDIR+DIR) 
           error[i] = dem_error(glacier,DIR[0:47],'WV')
         elif os.path.isfile(TDMDIR+DIR):
+          found = True
           x,y,z = geotifflib.read(TDMDIR+DIR) 
           error[i] = dem_error(glacier,DIR[0:25],'TDM')
         else:
+          found = True
           x,y,z = geotifflib.read(SPIRITDIR+DIR)
           error[i] = dem_error(glacier,date,'SPIRIT')
-
-        dem = scipy.interpolate.RegularGridInterpolator([y,x],z,method=method)
-    
-        # Find points that fall within the DEM
-        ind = np.where((xpts > np.min(x)) & (xpts < np.max(x)) & (ypts > np.min(y)) & (ypts < np.max(y)))
-        if ind:
-          # Get elevation at coordinates
-          zpts = np.zeros(len(xpts)); zpts[:] = 'NaN'
-          zpts[ind] = dem(np.column_stack([ypts[ind],xpts[ind]]))
-          
-          # Get fractional year
-          time = datelib.date_to_fracyear(float(date[0:4]),float(date[4:6]),float(date[6:8]))
-
-          if cutoff == 'terminus':
-            # Get terminus position at time of worldview image
-            termpos = np.interp(time,term_time,term_values)
-            ind = np.where(dists > termpos)[0]
-            zpts[ind] = float('NaN')
-          
-          # Save points to output dictionary
-          if len(np.where(~(np.isnan(zpts)))[0]) < 1:
-            print "Not loading ",DIR
-          elif date in times[:,1]:
-            nans = np.where((np.isnan(pts[date][:,2])))
-            zs[i,nans] = zpts[nans] 
+    if not(found) and ('ASTER' in data) or (data == 'all'):
+      for j in range(0,len(asterdata['t'])):
+        year,month,day = matlab2datetime(asterdata['t'][j])
+        if date == str(year)+"{0:02d}".format(month)+"{0:02d}".format(day):
+          found = True
+          x = asterdata['x']
+          y = np.flipud(asterdata['y'])
+          if verticaldatum == 'geoid':
+            z = coordlib.geoidheight(x,y,np.flipud(asterdata['z'][:,:,j]))
           else:
-            zs[i,:] = zpts
-  
+            z = np.flipud(asterdata['z'][:,:,j])
+          error[i] = 10.0 # Made up a number, should be set to the correct value
+
+    if found:
+      dem = scipy.interpolate.RegularGridInterpolator([y,x],z,method=method)
+    
+      # Find points that fall within the DEM
+      ind = np.where((xpts > np.min(x)) & (xpts < np.max(x)) & (ypts > np.min(y)) & (ypts < np.max(y)))
+      if ind:
+        # Get elevation at coordinates
+        zpts = np.zeros(len(xpts)); zpts[:] = 'NaN'
+        zpts[ind] = dem(np.column_stack([ypts[ind],xpts[ind]]))
+          
+
+        if cutoff == 'terminus':
+          # Get terminus position at time of worldview image
+          termpos = np.interp(times[i,0],term_time,term_values)
+          ind = np.where(dists > termpos)[0]
+          zpts[ind] = float('NaN')
+          
+        # Save points to output dictionary
+        if len(np.where(~(np.isnan(zpts)))[0]) < 1:
+          print "Not loading ",DIR
+        elif date in times[:,1]:
+          nans = np.where((np.isnan(pts[date][:,2])))
+          zs[i,nans] = zpts[nans] 
+        else:
+          zs[i,:] = zpts
+
   # Sort by time
   sortind = np.argsort(times[:,0])
   times = times[sortind,:]
@@ -834,7 +906,16 @@ def dem_along_flowline(xpts,ypts,glacier,years='all',cutoff='terminus',verticald
     return zs,times
   else:
     return zs,times,error
-  
+
+def matlab2datetime(matlab_datenum):
+  day = datetime.datetime.fromordinal(int(matlab_datenum))
+  dayfrac = datetime.timedelta(days=matlab_datenum%1) - datetime.timedelta(days = 366)
+  time = day+dayfrac
+  year = time.year
+  month = time.month
+  day = time.day
+  return year,month,day
+
 def dem_at_pts(xpts,ypts,glacier,years='all',verticaldatum='geoid',cutoff='none',method='linear',radius=200,data='all'):
 
   '''
@@ -1069,12 +1150,25 @@ def dem_continuous(glacier,xmin,xmax,ymin,ymax,date,verticaldatum='geoid',blur=F
   WVDIR = os.path.join(os.getenv("DATA_HOME"),"Elevation/Worldview/"+glacier+"/")
   TDMDIR = os.path.join(os.getenv("DATA_HOME"),"Elevation/TDM/"+glacier+"/")
   SPIRITDIR = os.path.join(os.getenv("DATA_HOME"),"Elevation/SPIRIT/"+glacier+"/")
-  
-  # Select dates for worldview images 
+  ASTERDIR = os.path.join(os.getenv("DATA_HOME"),"Elevation/ASTER/")
 
-  
+  # Get ASTER DEMs
   if glacier == 'Helheim':
-    if date == '20110319':
+    asterdata = scipy.io.loadmat(ASTERDIR+'ASTERZ_helheim.mat',squeeze_me=True)
+  elif glacier == 'Kanger':
+    asterdata = scipy.io.loadmat(ASTERDIR+'ASTERZ_kangerd.mat',squeeze_me=True)
+
+  # Select dates for DEMs
+  if glacier == 'Helheim':
+    if date == '20040803':
+      dates = ['20040803','20040718','20040623']
+    elif date == '20050829':
+      dates = ['20050829','20050712','20050619']
+    elif date == '20060825':
+      dates = ['20060825','20060830']
+    elif date == '20080814':
+      dates = ['20080814','20080803']
+    elif date == '20110319':
       dates = ['20110319','20110615']
     elif date == '20110828':
       dates = ['20110828','20110824','20110615']
@@ -1090,7 +1184,23 @@ def dem_continuous(glacier,xmin,xmax,ymin,ymax,date,verticaldatum='geoid',blur=F
       dates = np.array([date])
      
   elif glacier == 'Kanger':
-    if date == '20110308':
+    if date == '20010712':
+      dates = ['20010712','20010703']
+    elif date == '20030801':
+      dates = ['20030801','20030630']
+    elif date == '20050621':
+      dates = ['20050621','20050616']
+    elif date == '20050831':
+      dates = ['20050831','20050721']
+    elif date == '20060505':
+      dates = ['20060505','20060428']
+    elif date == '20060708':
+      dates = ['20060708','20060716']
+    elif date == '20060919':
+      dates = ['20060919','20060903']
+    elif date == '20090817':
+      dates = ['20090817','20090815']
+    elif date == '20110308':
       dates = ['20110308','20110311','20110318']
     elif date == '20110712':
       dates = ['20110712','20110808','20110823']
@@ -1106,8 +1216,11 @@ def dem_continuous(glacier,xmin,xmax,ymin,ymax,date,verticaldatum='geoid',blur=F
   dirs_wv = os.listdir(WVDIR)
   dirs_tdm = os.listdir(TDMDIR)
   dirs_spirit = os.listdir(SPIRITDIR)
-  foundfile = False
+  zaster = np.zeros([len(asterdata['y']),len(asterdata['x'])])
+  zaster[:,:] = -9999
+  n = 0
   for d in dates:
+    foundfile = False
     for dir in dirs_tdm:
       if (d in dir) and (dir.endswith(fileend)):
         files = files+' '+TDMDIR+dir
@@ -1120,12 +1233,43 @@ def dem_continuous(glacier,xmin,xmax,ymin,ymax,date,verticaldatum='geoid',blur=F
       if (d in dir) and (dir.endswith(fileend_spirit)):
         files = files+' '+SPIRITDIR+dir
         foundfile = True
+    if not(foundfile):
+      for j in range(0,len(asterdata['t'])):
+        year,month,day = matlab2datetime(asterdata['t'][j])
+        if d == str(year)+"{0:02d}".format(month)+"{0:02d}".format(day):
+          foundfile = True
+          xaster = asterdata['x']
+          yaster = np.flipud(asterdata['y'])
+          if verticaldatum == 'geoid':
+            zaster_now = coordlib.geoidheight(xaster,yaster,np.flipud(asterdata['z'][:,:,j]))
+          else:
+            zaster_now = np.flipud(asterdata['z'][:,:,j])
+          ind = np.where((zaster == -9999) & (~(np.isnan(zaster_now))))
+          zaster[ind] = zaster_now[ind]
+          # There are some issues with some of the ASTER files, so to throw out bad data we use a slope cutoff
+          if d in ['20060830','20060825','20080814','20050831','20060708','20060919']:
+            xdiff = np.zeros_like(zaster)
+            ydiff = np.zeros_like(zaster)
+            dx = xaster[1]-xaster[0]
+            dy = yaster[1]-yaster[0]
+            for i in range(1,len(xaster)-1):
+              for j in range(1,len(yaster)-1):
+                xdiff[j,i] = (zaster[j,i+1]-zaster[j,i-1])/(2*dx)
+                ydiff[j,i] = (zaster[j+1,i]-zaster[j-1,i])/(2*dx)
+            sdiff = np.sqrt(xdiff**2+ydiff**2)
+            ind = np.where(sdiff > 0.6)
+            zaster[ind] = np.float('nan')
 
-  if not(foundfile):
-    sys.exit("Cannot find individual DEM for date "+d)
+    if not(foundfile):
+      sys.exit("Cannot find individual DEM for date "+d)
 
-  files = files+' '+TDMfile+' '+gimpfile1+ ' '+gimpfile2 
-  
+  if np.any(zaster > -9999):
+    asterfile = OUTDIR+'aster'+date+'.tif'
+    geotifflib.write_from_grid(xaster,yaster,np.flipud(zaster),-9999,asterfile)
+    files = ' '+asterfile+' '+gimpfile1+' '+gimpfile2
+  else:
+    files = files+' '+TDMfile+' '+gimpfile1+ ' '+gimpfile2 
+
   CURRENTDIR = os.getcwd()
   os.chdir(OUTDIR)
   filename = 'mosaic-'+date+'-'+verticaldatum
@@ -1162,7 +1306,8 @@ def dem_continuous_flowline(xf,yf,dists,glacier,date,verticaldatum='geoid',filt_
   '''
   
   # Get grid for that date 
-  xg,yg,zgrid = dem_continuous(glacier,np.min(x)-1e3,np.max(x)+1e3,np.min(y)-1e3,np.max(y)+1e3,date,verticaldatum=verticaldatum,blur=False)
+  xg,yg,zgrid = dem_continuous(glacier,np.min(xf)-1e3,np.max(xf)+1e3,np.min(yf)-1e3,np.max(yf)+1e3,\
+          date,verticaldatum=verticaldatum,blur=False)
   
   # Interpolate grid onto flowline
   dem = scipy.interpolate.RegularGridInterpolator([yg,xg],zgrid)

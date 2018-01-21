@@ -50,20 +50,20 @@ def geoidheight(xin,yin,zin,epsg=3413):
   srs_out.ImportFromProj4("+proj=longlat +ellps=WGS84 +no_defs +geoidgrids=egm08_25.gtx") 
   
   ct = osr.CoordinateTransformation(srs_in, srs_out)
-  
+ 
   try:
-    nx,ny=np.shape(xin)
+    ny,nx=np.shape(zin)
     xout=np.zeros_like(xin)
     yout=np.zeros_like(yin)
-    zout=np.zeros_like(xin)
+    zout=np.zeros_like(zin)
     for j in range(0,ny):
       for i in range(0,nx):
-        (xout[i,j],yout[i,j],zout[i,j]) = ct.TransformPoint(float(xin[i,j]),float(yin[i,j]),float(zin[i,j])) #Calculate our transformed points
+        (xout[i],yout[j],zout[j,i]) = ct.TransformPoint(float(xin[i]),float(yin[j]),float(zin[j,i])) #Calculate our transformed points
   except:
     try:
       xout=np.zeros_like(xin)
       yout=np.zeros_like(yin)
-      zout=np.zeros_like(xin)
+      zout=np.zeros_like(zin)
       for i in range(0,len(xin)):
         (xout[i],yout[i],zout[i]) = ct.TransformPoint(float(xin[i]),float(yin[i]),float(zin[i])) #Calculate our transformed points
     except:
