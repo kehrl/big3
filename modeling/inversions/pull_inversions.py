@@ -1,4 +1,5 @@
 import os, sys
+from shutil import copy2
 import numpy as np
 import argparse
 import elmerreadlib, geotifflib
@@ -54,7 +55,20 @@ for dir in DIRs:
          holes = []
       
       dirvtu = DIRR+"/"+dir+"/mesh2d/inversion_adjoint/"+dir_inv
-      
+
+      if ('ModelT' in DIRM) and not(SSA):
+        vtufile = elmerreadlib.pvtu_file(dirvtu+"/adjoint_beta0001.pvtu",['constant temperature'])
+        depth_temp = elmerreadlib.depth_averaged_variables(vtufile)
+        x,y,temp = elmerreadlib.grid3d(depth_temp,'constant temperature',holes,extent)
+
+        geotifflib.write_from_grid(x,y,np.flipud(temp),float('nan'),DIRO+"/"+dir[0:11]+"_depthT.tif")
+        
+        if n == 0:
+          files = os.listdir(dirvtu)
+          for file in files:
+            if file.startswith('adjoint_beta') and file.endswith('vtu'):
+              copy2(dirvtu+'/'+file,DIRO)     
+ 
       if SSA:
         vtufile = elmerreadlib.pvtu_file(dirvtu+"/adjoint_beta_ssa0001.pvtu",['vsurfini','ssavelocity','beta'])
         surf = elmerreadlib.values_in_layer(vtufile,layer='surface')
