@@ -1,5 +1,52 @@
 !Get slip coefficient
 !--------------------------------------------------------------------------!
+FUNCTION Linear_Root_NN( Model, nodenumber, dumy) RESULT(coeff) !
+!------------------------------------------------------------------!
+   USE types
+   USE CoordinateSystems
+   USE SolverUtils
+   USE ElementDescription
+   USE DefUtils
+   IMPLICIT NONE
+   TYPE(Model_t) :: Model
+   TYPE(Solver_t), TARGET :: Solver
+   INTEGER :: nodenumber, nx, i, ind(1)
+   REAL(KIND=dp) :: x, y, dumy, coeff
+   REAL(KIND=dp), ALLOCATABLE :: xb(:), yb(:), betas(:)
+   LOGICAL :: FirstTime=.True.
+   CHARACTER(len=MAX_NAME_LEN) :: filin='inputs/betaroot_linear.dat'
+   REAL(kind=dp) :: LinearInterp
+
+   SAVE betas, xb, yb, nx
+   SAVE FirstTime
+
+   IF (FirstTime) THEN
+      
+      FirstTime=.False.
+
+      ! open file
+      OPEN(10,file='inputs/betaroot_linear.dat')
+      READ(10,*) nx
+      ALLOCATE(xb(nx),yb(nx),betas(nx))
+      DO i=1,nx
+          READ(10,*) xb(i),yb(i),betas(i)
+      END DO
+      CLOSE(10)
+  
+   END IF
+
+   ! position current point
+   x = Model % Mesh % Nodes % x (nodenumber)
+   y = Model % Mesh % Nodes % y (nodenumber)
+
+   ! Get nearest node
+   ind = minloc(sqrt((x-xb)**2+(y-yb)**2),1)
+   coeff = betas(ind(1))**2.0_dp
+
+   Return
+End
+
+
 FUNCTION Linear( Model, nodenumber, dumy) RESULT(coeff) !
     !------------------------------------------------------------------!
 	USE types
@@ -46,6 +93,7 @@ FUNCTION Linear( Model, nodenumber, dumy) RESULT(coeff) !
 
   Return
 End
+
 
 FUNCTION Weertman( Model, nodenumber, dumy) RESULT(coeff) !
     !------------------------------------------------------------------!

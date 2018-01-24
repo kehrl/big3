@@ -23,14 +23,12 @@ Header
   Mesh DB "." "mesh2d"
 End
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 Constants
   Gas Constant = Real 8.314 !Joule/mol x  K
 End
 
-!---------------------------------------------------
-!---------------- SIMULATION -----------------------
-!---------------------------------------------------
-
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 Simulation
   Coordinate System  = Cartesian 3D
   Simulation Type = Steady State
@@ -43,22 +41,20 @@ Simulation
 
   Max Output Level = 3
 
+  !Restart File = "inversion_adjoint/lambda_1e11_20180123/adjoint_beta.result"
+  !Restart Position = 100
+
+
   Output File = "$name$.result"
   Post File = "$name$.vtu"
 
   Initialize Dirichlet Conditions = Logical False
 
-  Restart File = "inversion_adjoint/lambda_1e11_20170918/adjoint_beta.result"
-  Restart Position = 403
-
   Set Dirichlet BCs by BC Numbering = Logical True
 End
 
-!---------------------------------------------------
-!---------------- BODIES ---------------------------
-!---------------------------------------------------
-
-!! the ice core (2d)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!! Main ice body
 Body 1
   Name = "ice"
   Equation = 1
@@ -67,11 +63,7 @@ Body 1
   Initial Condition = 1
 End
 
-!---------------------------------------------------
-!---------------- INITIAL CONDITIONS ---------------
-!---------------------------------------------------
-
-!! for ice core
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 Initial Condition 1
   Pressure = Real 0.0e0
   Velocity 1 = Real 0.0e0
@@ -81,32 +73,26 @@ Initial Condition 1
 ! Surface velocities (data)
   Vsurfini 1 = Variable Coordinate 1, Coordinate 2
     Real procedure "USF_Init.so" "UIni"
-  Vsurfini2 = Variable Coordinate 1, Coordinate 2
+  Vsurfini 2 = Variable Coordinate 1, Coordinate 2
     Real procedure "USF_Init.so" "VIni"
-
-  Zs Bottom = Variable Coordinate 1, Coordinate 2
-    REAL procedure "USF_Init.so" "zbIni"
-
 End
 
-!---------------------------------------------------
-!---------------- BODY FORCES ----------------------
-!---------------------------------------------------
-
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 Body Force 1
   Flow BodyForce 1 = Real 0.0
   Flow BodyForce 2 = Real 0.0
   Flow BodyForce 3 = Real $gravity
 End
 
-
-!---------------------------------------------------
-!---------------- MATERIALS ------------------------
-!---------------------------------------------------
-
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !! ice material properties in MPa - m - a system 
 Material 1
   Density = Real $rhoi
+
+!  Viscosity Model = String "Power Law"
+!  Viscosity = Real $ (3*3.5e-25*yearinsec)^(-1.0/3.0)*1.0e-6
+!  Viscosity Exponent = Real $1.0e00/3.0e00
+!  Critical Shear Rate = Real 1.0e-10
 
   Viscosity Model = String "Glen"
 ! Viscosity has to be set to a dummy value
@@ -131,19 +117,11 @@ Material 1
   
   !! for computeDevStress
   Cauchy = Logical True
-
-  Min Zs Bottom = Variable Coordinate 1
-    REAL procedure "USF_Init.so" "Bedrock"
-  
 End
 
-!---------------------------------------------------
-!---------------- SOLVERS --------------------------
-!---------------------------------------------------
-
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 Solver 1
-  Exec Solver = Never
-  !Exec Solver = Before Simulation
+  Exec Solver = Before Simulation
   Equation = "MapCoordinate"
   Procedure = "StructuredMeshMapper" "StructuredMeshMapper"
   Mesh Update Variable = String "dS"
@@ -154,19 +132,6 @@ Solver 1
 End
 
 Solver 2
-  Exec Solver = Never
-  !Exec Solver = Before All
-  Equation = GroundedMaskIni
-  Procedure = "ElmerIceSolvers" "GroundedSolver"
-  Variable = GroundedMask
-  Variable DOFs = 1
-
-  Toler = Real $groundtoler
-  ! DEFAULT: Bedrock is read in the material parameter "Min Zs Bottom"
-  !Bedrock Variable = String "Bedrock"
-End
-
-Solver 3
   Equation = "Navier-Stokes"
 
   Stabilize = Logical True
@@ -176,8 +141,7 @@ Solver 3
 
   Linear System Solver = Direct
   Linear System Direct Method =  MUMPS
-  mumps percentage increase working space = integer 60
-
+  Mumps Percentage Increase Working Space = integer 60
   !Linear System Solver = "Iterative"
   !Linear System Iterative Method = "GCR"
   !BiCGStabl Polynomial Degree = 4
@@ -188,26 +152,28 @@ Solver 3
   !Linear System Residual Output = 1
   !Optimize Bandwidth = Logical True
 
-  Nonlinear System Max Iterations = 80
-  Nonlinear System Convergence Tolerance = 1.0E-7
-  Nonlinear System Newton After Iterations = 10
-  Nonlinear System Newton After Tolerance = 1.0E-3
-  Nonlinear System Relaxation Factor = 1.0
+  Nonlinear System Max Iterations = Integer 100
+  Nonlinear System Convergence Tolerance = Real 1.0E-7
+  Nonlinear System Newton After Iterations = Integer 10
+  Nonlinear System Newton After Tolerance = Real 1.0E-3
+  Nonlinear System Relaxation Factor = Real 1.0
+
   Nonlinear System Reset Newton = Logical True
   
-  Steady State Convergence Tolerance = Real 1.0E-6
+  Steady State Convergence Tolerance = Real 1.0E-12
   
   !Exported Variable 1 = Flow Solution Loads[Fx:1 Fy:1 Fz:1 CEQ Residual:1]  
   Exported Variable 1 = dS
   Exported Variable 1 DOFS = 1
   Exported Variable 2 = Zs Bottom
   Exported Variable 2 DOFS = 1
-  Exported Variable 3 = -dofs 1 "vsurfini 1"
-  Exported Variable 4 = -dofs 1 "vsurfini2"
-  Exported Variable 5 = -dofs 1 "beta"
+  Exported Variable 3 = Vsurfini
+  Exported Variable 3 DOFs = Integer 2
+  Exported Variable 4 = Beta
+  Exported Variable 4 DOFs = 1
 End
 
-Solver 4
+Solver 3
   Exec Solver = "Never"
   Equation = String "StressSolver"
   Procedure = "ElmerIceSolvers" "ComputeDevStress"          
@@ -222,12 +188,12 @@ Solver 4
   Linear System Direct Method = Mumps
 End 
 
-Solver 5
+Solver 4
   Procedure = "SaveData" "SaveMaterials"
   Parameter 1 = String "Constant Temperature"
 End
 
-Solver 6
+Solver 5
   Equation = SaveLine
   Procedure = "SaveData" "SaveLine"
   Exec Solver = String "After all"
@@ -236,18 +202,13 @@ Solver 6
   !Parallel Reduce = Logical True
 End
 
-!---------------------------------------------------
-!---------------- EQUATIONS ------------------------
-!---------------------------------------------------
-
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 Equation 1
-  Active Solvers(6) = 1 2 3 4 5 6
+  Active Solvers(5) = 1 2 3 4 5
   NS Convect = False
 End
 
-!---------------------------------------------------
-!---------------- BOUNDARY CONDITIONS --------------
-!---------------------------------------------------
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 Boundary Condition 1
   Name = "front"
   Target Boundaries = 1
@@ -283,24 +244,18 @@ Boundary Condition 4
   Name = "Bed"
   Target Boundaries = 4
 
-  Bottom Surface = Equals Zs Bottom
+  Bottom Surface = Variable Coordinate 1, Coordinate 2
+    REAL Procedure "USF_Init.so" "zbIni"
 
   Normal-Tangential Velocity = Logical True
   Flow Force BC = Logical True
   
   Velocity 1 = Real 0.0e0
   
-  !Slip Coefficient 2 = Variable Coordinate 1, Coordinate 2
-  !   REAL Procedure "Sliding_Beta.so" "Linear"
-  !Slip Coefficient 3 = Variable Coordinate 1, Coordinate 2
-  !   REAL Procedure "Sliding_Beta.so" "Linear"
-
-  FreeSlipShelves Beta Formulation = String "beta2"
-  FreeSlipShelves Mask Name = String "GroundedMask"
-  Slip Coefficient 2 = Variable Beta
-     Real Procedure "USF_Sliding.so" "FreeSlipShelves"
-  Slip Coefficient 3 = Variable Beta
-     Real Procedure "USF_Sliding.so" "FreeSlipShelves"
+  Slip Coefficient 2 = Variable Coordinate 1, Coordinate 2
+     REAL Procedure "Sliding_Beta.so" "Linear_Root_NN"
+  Slip Coefficient 3 = Variable Coordinate 1, Coordinate 2
+     REAL Procedure "Sliding_Beta.so" "Linear_Root_NN"
 
   Save Line = Logical True
 End

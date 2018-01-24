@@ -1,0 +1,463 @@
+check keywords warn
+
+! name of the run used for the outputs
+$name="adjoint_beta"
+
+! Regularization Parameter
+$Lambda= {Lambda}
+
+$ function waterpressure(Z) {\
+  rhow = 1025.0;\
+  waterline = 0.0;\
+  G = 9.81;\
+  _waterpressure = 0.0;\
+  if (Z>waterline) {\
+       _waterpressure = 0.0;\
+  }else {\
+       _waterpressure = 1.0 * rhow * G * (waterline - Z);\
+  }\
+}
+
+! Some constants
+$yearinsec = 365.25*24*60*60
+$rhoi = 917.0/(1.0e6*yearinsec^2)  ! MPa - a - m
+$gravity = -9.81*yearinsec^2
+$minheight = 10.0
+
+Header
+  Mesh DB "." "mesh2d"
+End
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Constants
+  Gas Constant = Real 8.314 !Joule/mol x  K
+End
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Simulation
+  Coordinate System  = Cartesian 3D 
+  Simulation Type = Steady State
+
+! Internal extrusion 
+  Extruded Mesh Levels = Integer {Extrude}
+
+  Output Intervals = 50
+
+  Steady State Max Iterations = {ItMax}
+  Steady State Min Iterations = 1
+
+  Output File = "$name$.result"
+  !Post File = "$name$.vtu"
+
+  Initialize Dirichlet Conditions = Logical False
+
+  Max Output Level = 3
+
+  !Restart File = "$name$".result"
+  !Restart Position = 143 
+  
+  Set Dirichlet BCs By BC Numbering = Logical True
+End
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+! Main ice body
+Body 1
+  Equation = 1
+  Body Force = 1
+  Material = 1
+  Initial Condition = 1
+End
+
+! lower surface
+Body 2
+  Equation = 2
+  Body Force = 1
+  Material = 1
+  Initial Condition = 1
+End
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Initial Condition 1
+! initial guess for (square root) slip coeff.
+  Beta = Variable Coordinate 1, Coordinate 2
+    Real Procedure "USF_Init.so" "GuessBeta"
+
+  Pressure = Real 0.0 
+  Velocity 1 = Real 0.0 
+  Velocity 2 = Real 0.0
+  Velocity 3 = Real 0.0
+
+  Adjoint 1 = Real 0.0
+  Adjoint 2 = Real 0.0
+  Adjoint 3 = Real 0.0
+  Adjoint 4 = Real 0.0
+
+! Surface velocities (data)
+  Vsurfini 1 = Variable Coordinate 1
+    Real procedure "USF_Init.so" "UIni"
+  Vsurfini 2 = Variable Coordinate 1
+    Real procedure "USF_Init.so" "VIni"
+End
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Body Force 1
+  Flow BodyForce 1 = Real 0.0                          
+  Flow BodyForce 2 = Real 0.0                          
+  Flow BodyForce 3 = Real $gravity
+End
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!! ice material properties in MPa - m - a system 
+Material 1
+  Density = Real $rhoi
+
+!  Viscosity Model = String "Power Law"
+!  Viscosity = Real $ (3*3.5e-25*yearinsec)^(-1.0/3.0)*1.0e-6 
+!  Viscosity Exponent = Real $1.0e00/3.0e00
+!  Critical Shear Rate = Real 1.0e-10
+
+  Viscosity Model = String "Glen"
+! Viscosity has to be set to a dummy value
+! to avoid warning output from Elmer
+  Viscosity = Real 1.0 
+  Glen Exponent = Real 3.0
+  Critical Shear Rate = Real 1.0e-10
+! Rate factors (Paterson value in MPa^-3a^-1)
+  Rate Factor 1 = Real 1.258e13  
+  Rate Factor 2 = Real 6.046e28
+! these are in SI units - no problem, as long as
+! the gas constant also is 
+  Activation Energy 1 = Real 60e3
+  Activation Energy 2 = Real 139e3  
+  Glen Enhancement Factor = Real 3.0
+! the temperature to switch between the 
+! two regimes in the flow law
+  Limit Temperature = Real -10.0
+
+  {Temperature}
+  
+  Cauchy = Logical True
+End
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Solver 1
+  Exec Solver = Before Simulation
+  Equation = "MapCoordinate"
+  Procedure = "StructuredMeshMapper" "StructuredMeshMapper"
+  Mesh Update Variable = String "dS"
+  Mesh Velocity First Zero = Logical True
+  Active Coordinate = Integer 3
+  Correct Surface = Logical True
+  Minimum Height = Real $minheight
+End
+
+!!!! Navier-Stokes Solution
+Solver 2
+  Equation = "Navier-Stokes"
+  
+  Stabilize = Logical True
+  Flow Model = Stokes
+  
+ ! mandatory to save bulk stiffness matrix
+  Calculate Loads = Logical True
+
+  Linear System Solver = Direct
+  Linear System Direct Method =  Mumps
+  Mumps Percentage Increase Working Space = Integer 60
+  !Linear System Solver = Iterative
+  !Linear System Iterative Method = GMRES
+  !Linear System GMRES Restart = 100
+  !Linear System Preconditioning= ILU0
+  !Linear System Convergence Tolerance= 1.0e-08
+  !Linear System Max Iterations = 1000
+
+! system self adjoint if Newton is used for the last iterations
+  Nonlinear System Max Iterations = Integer 100
+  Nonlinear System Convergence Tolerance  = Real 1.0e-7
+  Nonlinear System Newton After Iterations = Integer 10
+  Nonlinear System Newton After Tolerance = Real 1.0e-03
+  Nonlinear System Relaxation Factor = Real 1.0
+
+  Nonlinear System Reset Newton = Logical True
+
+  Steady State Convergence Tolerance = Real 1.0e-12
+
+! Define  some usefull Variables
+
+! square root of the slip coef
+  Exported Variable 1 = Beta
+  Exported Variable 1 DOFS = Integer 1
+! derivative of the cost fn wr to beta
+  Exported Variable 2 = DJDBeta
+  Exported Variable 2 DOFS = Integer 1
+! value of the cost function
+  Exported Variable 3 = CostValue
+  Exported Variable 3 DOFS = Integer 1
+! Variable used to force the adjoint system/update in CostSolver
+  Exported Variable 4 = Velocityb
+  Exported Variable 4 DOFs = Integer 4
+
+  Exported Variable 5 = VsurfIni
+  Exported Variable 5 DOFS = Integer 2
+  
+  Exported Variable 6 = dS
+  Exported variable 6 DOFS = 1
+End
+
+!!! Compute Cost function
+!!!!!!!!   Has to be run before the Adjoint Solver as adjoint forcing is computed here !!!!!
+Solver 3
+  Equation = "Cost"
+
+!!  Solver need to be associated => Define dumy variable
+  Variable = -nooutput "CostV"
+  Variable DOFs = 1
+
+  Procedure = "ElmerIceSolvers" "CostSolver_Adjoint"
+
+  Cost Variable Name = String "CostValue"  ! Name of Cost Variable
+
+  Optimized Variable Name = String "Beta"  ! Name of Beta for Regularization
+  Lambda = Real $Lambda                   ! Regularization Coef
+! save the cost as a function of iterations
+  Cost Filename = File "cost_$name$.dat"   
+end
+
+!!!!  Adjoint Solution
+Solver 4
+  Equation = "Adjoint"
+  Variable = Adjoint
+  Variable Dofs = 4
+
+  Procedure = "ElmerIceSolvers" "AdjointSolver"
+
+! Name of the flow solution solver
+  Flow Solution Equation Name = string "Navier-Stokes"
+
+  !Linear System Solver = Direct
+  !Linear System Direct Method = mumps
+  Linear System Solver = Iterative
+  Linear System Iterative Method = GMRES
+  Linear System GMRES Restart = 100
+  Linear System Preconditioning= ILU0
+  Linear System Convergence Tolerance= 1.0e-08
+  Linear System Max Iterations = 1000
+End
+
+
+!!!!!  Compute Derivative of Cost function / Beta
+Solver 5
+  Equation = "DJDBeta"
+
+!!  Solver need to be associated => Define dumy variable
+  Variable = -nooutput "DJDB"
+  Variable DOFs = 1
+
+  Procedure = "ElmerIceSolvers" "DJDBeta_Adjoint"
+  
+  Flow Solution Name = String "Flow Solution"
+  Adjoint Solution Name = String "Adjoint"
+  Optimized Variable Name = String "Beta"  ! Name of Beta variable
+  Gradient Variable Name = String "DJDBeta"   ! Name of gradient variable
+  PowerFormulation = Logical False
+  Beta2Formulation = Logical True        ! SlipCoef define as Beta^2
+
+  Lambda = Real $Lambda                   ! Regularization Coef
+End
+
+!!!!! Optimization procedure 
+Solver 6
+  Equation = "Optimize_m1qn3"
+
+!!  Solver need to be associated => Define dumy variable
+  Variable = -nooutput "UB"
+  Variable DOFs = 1
+
+  Procedure = "ElmerIceSolvers" "Optimize_m1qn3Parallel"
+
+  Cost Variable Name = String "CostValue"
+  Optimized Variable Name = String "Beta"
+  Gradient Variable Name = String "DJDBeta"
+  gradient Norm File = String "GradientNormAdjoint_$name$.dat"
+  
+! M1QN3 Parameters
+  M1QN3 dxmin = Real 1.0e-10
+  M1QN3 epsg = Real  1.e-5
+  M1QN3 niter = Integer 400
+  M1QN3 nsim = Integer 400
+  M1QN3 impres = Integer 5
+  M1QN3 DIS Mode = Logical False
+  M1QN3 df1 = Real 0.5
+  M1QN3 normtype = String "dfn"
+  M1QN3 OutputFile = File  "M1QN3_$name$.out"
+  M1QN3 ndz = Integer 20
+End
+
+Solver 7
+  Equation = String "StressSolver"
+  Exec Solver = String "After all"
+  Procedure =  File "ElmerIceSolvers" "ComputeDevStress"
+  ! this is just a dummy, hence no output is needed
+  !-----------------------------------------------------------------------
+  Variable = -nooutput "Sij"
+  Variable DOFs = 1
+  ! the name of the variable containing the flow solution (U,V,W,Pressure)
+  !-----------------------------------------------------------------------
+  Flow Solver Name = String "Flow Solution"
+  ! no default value anymore for "Stress Variable Name"
+  Stress Variable Name = String "Stress"
+  !-----------------------------------------------------------------------
+  Exported Variable 1 = "Stress" ! [Sxx, Syy, Szz, Sxy] in 2D
+                                 ! [Sxx, Syy, Szz, Sxy, Syz, Szx] in 3D
+  Exported Variable 1 DOFs = 6
+  Linear System Solver = "Iterative"
+  Linear System Iterative Method = "BiCGStab"
+  Linear System Max Iterations = 300
+  Linear System Convergence Tolerance = 1.0E-09
+  Linear System Abort Not Converged = True
+  Linear System Preconditioning = "ILU0"
+  Linear System Residual Output = 1
+End
+
+Solver 8
+  Equation = "EigenStress"
+  Exec Solver = String "After all"
+  Variable = -nooutput dumy
+  Variable DOFs = 1
+
+  Procedure = "ElmerIceSolvers" "ComputeEigenValues"
+
+! 3 Eigenvalues    
+  Exported Variable 1 = "EigenStress"
+  EigenValue Variable Name = String "EigenStress"
+  Tensor Variable Name = String "Stress"
+  Exported Variable 1 DOFS = 3
+
+! Principal vectors (optional) 
+  Exported Variable 2 = EigenVector1
+  Exported Variable 2 DOFS = 3
+  Exported Variable 3 = EigenVector2
+  Exported Variable 3 DOFS =  3
+  Exported Variable 4 = EigenVector3
+  Exported Variable 4 DOFS = 3
+End
+
+Solver 9
+  Procedure = "SaveData" "SaveMaterials"
+  Parameter 1 = String "Constant Temperature"
+End
+
+Solver 10
+  Equation = SaveLine
+  Procedure = "SaveData" "SaveLine"
+  Exec Solver = String "After all"
+  Filename = "mesh2d/$name$.dat"
+  
+  !Parallel Reduce = Logical True
+End
+
+Solver 11
+  Equation = "ResultOutput"
+  Exec Solver = "After All"
+
+  Procedure = File "ResultOutputSolve" "ResultOutputSolver"
+
+  Output File Name = File "$name""
+  Vtu Format = Logical True
+End
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Equation 1
+  Active Solvers (9) = 1 2 3 4 7 8 9 10 11
+  NS Convect = False
+End
+
+Equation 2
+ Active Solvers (2) =  5 6
+End
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Boundary Condition 1
+  Name = "Front"
+  Target Boundaries = 1
+
+{FrontBC}
+
+  Save Line = Logical True
+End
+
+Boundary Condition 2
+  Name = "Side Walls"
+  Target Boundaries(1) = 2
+
+{SidewallBC}
+
+  Save Line = Logical True
+End
+
+Boundary Condition 3
+  Name = "Inflow"
+  Target Boundaries = 3
+
+  Velocity 1 = Variable Coordinate 1
+    Real procedure "USF_Init.so" "UWa"
+  Velocity 2 = Variable Coordinate 1
+    Real procedure "USF_Init.so" "VWa"
+
+! Dirichlet BC => Dirichlet = 0 for Adjoint
+  Adjoint 1 = Real 0.0
+  Adjoint 2 = Real 0.0
+  
+  Save Line = Logical True
+End
+
+Boundary Condition 4
+! Name= "bed" mandatory to compute regularistaion term of the cost function (int (dbeta/dx) 2)
+  Name = "bed"
+! Body Id used to solve
+  Body ID = Integer 2
+  Target Boundaries = 4
+  
+  Bottom Surface = Variable Coordinate 1, Coordinate 2
+    REAL Procedure "USF_Init.so" "zbIni"
+
+  Normal-Tangential Velocity = Logical True  
+  Normal-Tangential Adjoint = Logical True  
+
+  Adjoint Force BC = Logical True
+
+  Velocity 1 = Real 0.0e0
+  Adjoint 1 = Real 0.0e0
+
+  Slip Coefficient 2 = Variable Beta
+     REAL MATC "tx*tx"
+  Slip Coefficient 3 = Variable Beta
+     Real MATC "tx*tx"
+
+  Save Line = Logical True  
+End
+
+! Upper Surface
+Boundary Condition 5
+  !Name= "Surface" mandatory to compute cost function
+  Name = "Surface"
+  Target Boundaries = 5
+  
+  Top Surface = Variable Coordinate 1, Coordinate 2
+    REAL procedure "USF_Init.so" "zsIni"
+
+  ! Definition of the Cost function
+  Adjoint Cost = Variable Velocity 1 , Vsurfini 1 , Velocity 2 , Vsurfini 2
+    Real MATC "0.5*((tx(0)-tx(1))*(tx(0)-tx(1))+(tx(2)-tx(3))*(tx(2)-tx(3)))"
+
+  ! Derivative of the cost function wr u and v
+  Adjoint Cost der 1 = Variable Velocity 1 , Vsurfini 1
+    Real MATC "tx(0)-tx(1)"
+  Adjoint Cost der 2 = Variable Velocity 2 , Vsurfini 2
+    Real MATC "tx(0)-tx(1)"
+  
+  Save Line = Logical True
+End 

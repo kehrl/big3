@@ -263,7 +263,15 @@ def main():
   ind = np.where(~(np.isnan(beta_weertman_lin)))
   beta_weertman[ind] = beta_weertman_lin[ind]  
   del beta_linear_lin, beta_weertman_lin
-  
+ 
+  # Output original results
+  fidr = open(inputs+"betaroot_linear.dat",'w')
+  fidr.write('{}\n'.format(len(bed['x'])))
+  for i in range(0,len(bed['x'])):
+    fidr.write('{0} {1} {2:.6f}\n'.format(bed['x'][i],bed['y'][i],bed['beta'][i]))
+  fidr.close()
+  del fidr
+ 
   fidl = open(inputs+"beta_linear.xy",'w')
   fidw = open(inputs+"beta_weertman.xy",'w')
   fidl.write('{}\n{}\n'.format(len(x),len(y)))

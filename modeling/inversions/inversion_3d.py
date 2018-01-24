@@ -312,9 +312,9 @@ def main():
   DIRR_lambda = DIRR+"lambda_"+regpar+"_"+date+"/"
 
   # Something wrong with saveline boundary, so moving to reading pvtu_files
-  #bed = elmerreadlib.saveline_boundary(DIRM+"/mesh2d/",runname,bbed,['velocity 1','velocity 2','velocity 3','beta','groundedmask'])
+  #bed = elmerreadlib.saveline_boundary(DIRM+"/mesh2d/",runname,bbed,['velocity 1','velocity 2','velocity 3','beta'])
   #surf = elmerreadlib.saveline_boundary(DIRM+"/mesh2d/",runname,bsurf,['vsurfini 1','vsurfini 2','velocity 1','velocity 2','velocity 3'])
-  data = elmerreadlib.pvtu_file(DIRM+"/mesh2d/"+runname+"0001.pvtu",['beta','velocity','vsurfini 1','vsurfini 2','groundedmask'])
+  data = elmerreadlib.pvtu_file(DIRM+"/mesh2d/"+runname+"0001.pvtu",['beta','velocity','vsurfini 1','vsurfini 2'])
   surf = elmerreadlib.values_in_layer(data,'surf')
   bed = elmerreadlib.values_in_layer(data,'bed')
 
@@ -347,28 +347,36 @@ def main():
   # Gridded linear beta square
   x,y,u = elmerreadlib.input_file(inputs+"udem.xy", dim=2)
   xx,yy = np.meshgrid(x,y)
-  ind = np.where(bed['groundedmask'] >= 0)[0]
-  beta_linear = scipy.interpolate.griddata((bed['x'][ind],bed['y'][ind]),\
-    bed['beta'][ind]**2, (xx,yy), method='nearest')
-  beta_linear_lin = scipy.interpolate.griddata((bed['x'][ind],bed['y'][ind]),\
-    bed['beta'][ind]**2, (xx,yy), method='linear')
-  beta_weertman = scipy.interpolate.griddata((bed['x'][ind],bed['y'][ind]),\
-      (bed['beta'][ind]**2)/(bed['velocity'][ind]**(-2.0/3.0)), (xx,yy), method='nearest')
-  beta_weertman_lin = scipy.interpolate.griddata((bed['x'][ind],bed['y'][ind]),\
-      (bed['beta'][ind]**2)/(bed['velocity'][ind]**(-2.0/3.0)), (xx,yy), method='linear')
-  if glacier == 'Helheim':
-    # To get rid of edge effects near terminus, we take an average beta from farther upstream
-    # and use that near the terminus
-    ind_ave = np.where((xx > 302000) & (xx < 306000) & (yy < -2576000) & (yy > -2578000))
-    ind = np.where((xx > 306000) & (yy < -2572000) & (yy > -2583000))
-    beta_linear_lin[ind] = np.mean(beta_linear_lin[ind_ave])
-    beta_weertman_lin[ind] = np.mean(beta_weertman_lin[ind_ave])
+  beta_linear = scipy.interpolate.griddata((bed['x'],bed['y']),\
+    bed['beta']**2, (xx,yy), method='nearest')
+  beta_linear_lin = scipy.interpolate.griddata((bed['x'],bed['y']),\
+    bed['beta']**2, (xx,yy), method='linear')
+  beta_weertman = scipy.interpolate.griddata((bed['x'],bed['y']),\
+      (bed['beta']**2)/(bed['velocity']**(-2.0/3.0)), (xx,yy), method='nearest')
+  beta_weertman_lin = scipy.interpolate.griddata((bed['x'],bed['y']),\
+      (bed['beta']**2)/(bed['velocity']**(-2.0/3.0)), (xx,yy), method='linear')
+  #if glacier == 'Helheim':
+  #  # To get rid of edge effects near terminus, we take an average beta from farther upstream
+  #  # and use that near the terminus
+  #  ind_ave = np.where((xx > 302000) & (xx < 306000) & (yy < -2576000) & (yy > -2578000))
+  #  ind = np.where((xx > 306000) & (yy < -2572000) & (yy > -2583000))
+  #  beta_linear_lin[ind] = np.mean(beta_linear_lin[ind_ave])
+  #  beta_weertman_lin[ind] = np.mean(beta_weertman_lin[ind_ave])
   ind = np.where(~(np.isnan(beta_linear_lin)))
   beta_linear[ind] = beta_linear_lin[ind]
   ind = np.where(~(np.isnan(beta_weertman_lin)))
   beta_weertman[ind] = beta_weertman_lin[ind]
   del beta_linear_lin, beta_weertman_lin
-  
+
+  # Output original results
+  fidr = open(inputs+"betaroot_linear.dat",'w')
+  fidr.write('{}\n'.format(len(bed['x'])))
+  for i in range(0,len(bed['x'])):
+    fidr.write('{0} {1} {2:.6f}\n'.format(bed['x'][i],bed['y'][i],bed['beta'][i]))  
+  fidr.close()
+  del fidr
+
+  # Output gridded results
   fidl = open(inputs+"beta_linear.xy",'w')
   fidw = open(inputs+"beta_weertman.xy",'w')
   fidl.write('{}\n{}\n'.format(len(x),len(y)))
