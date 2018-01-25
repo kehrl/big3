@@ -80,13 +80,10 @@ else:
     sys.exit('No solverfile with name '+solverfile_in+'.sif')
 
 # Get beta file for Sliding_Beta.f90
-print beta_suffix
 if not(beta_suffix==""):
   beta_suffix = "_"+beta_suffix
   beta_file = "betaroot_linear"+beta_suffix+".dat"
-  print beta_file
   if os.path.isfile(DIRM+"/inputs/"+beta_file):
-    print "FOUND FILE"
     shutil.copy(DIRM+"/inputs/"+beta_file,DIRM+"/inputs/betaroot_linear.dat")
   else:
     sys.exit("No beta file with name "+beta_file)
