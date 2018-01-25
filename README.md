@@ -4,7 +4,7 @@ Scripts and utilities for running, processing, and plotting satellite observatio
 Code developed as part of my dissertation at the University of Washington.
 
 ## Dependencies
-- Python (numpy, scipy, matplotlib, shapely, gdal, paraview, netcdf, and many others)
+- Python 2.7 (numpy, scipy, matplotlib, shapely, gdal, paraview, netcdf, and many others)
 - [Elmer/Ice parallel version](https://github.com/ElmerCSC/elmerfem) (with fortran, open-mpi, mumps, hypre) for big3/modeling
 - [Gmsh](http://gmsh.info/) for big3/modeling 
 
