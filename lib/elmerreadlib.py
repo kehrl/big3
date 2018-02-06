@@ -72,7 +72,9 @@ def saveline(DIR,runname,variables):
     types.append(np.float64) 
   if ('beta' in varnames) and ('velocity 1' in varnames):
     varnames.append('taub')
-    types.append(np.float64) 
+    types.append(np.float64)
+    varnames.append('betasquared')
+    types.append(np.float64)
   if ('velocity' in varnames) and ('vsurfini' in varnames): 
     varnames.append('misfit')
     types.append(np.float64)
@@ -105,7 +107,11 @@ def saveline(DIR,runname,variables):
    
   # Calculate basal shear stress, if it is an inversion and we have a variable beta
   if 'taub' in varnames:
-    data['taub']= (data['beta']**2*data['velocity'])
+    data['taub'] = (data['beta']**2.0*data['velocity'])
+
+  # Calculate betasquared, if it is an inversion and we have a variable beta
+  if 'betasquared' in varnames:
+    data['betasquared'] = data['beta']**2
 
   # Calculate misfit
   if 'misfit' in varnames:
@@ -269,6 +275,8 @@ def result_file(mesh_dir, result_fn, variables, maps=[], debug=False, **kwargs):
   if ('beta' in varnames) and ('ssavelocity' in varnames): 
     varnames.append('taub')
     types.append(np.float64)
+    varnames.append('betasquared')
+    types.append(np.float64)
   if ('vsurfini 1' in varnames) and ('vsurfini 2' in varnames):
     varnames.append('vsurfini')
     types.append(np.float64) 
@@ -278,7 +286,9 @@ def result_file(mesh_dir, result_fn, variables, maps=[], debug=False, **kwargs):
     if varname == 'ssavelocity':
       data2[varname] = np.sqrt(data['ssavelocity 1']**2+data['ssavelocity 2']**2)
     elif varname == 'taub':
-      data2[varname] = data['beta']**2*np.sqrt(data['ssavelocity 1']**2+data['ssavelocity 2']**2)
+      data2[varname] = (data['beta']*data['beta'])*np.sqrt(data['ssavelocity 1']**2+data['ssavelocity 2']**2)
+    elif varname == 'betasquared':
+      data2[varname] = data['beta']**2
     elif varname == 'vsurfini':
       data2[varname] = np.sqrt(data['vsurfini 1']**2+data['vsurfini 2']**2)
     else:
@@ -458,6 +468,8 @@ def pvtu_file(file,variables,reader='none',returnreader=False):
   if ('beta' in varnames) and (('velocity 1' in varnames) or ('ssavelocity 1' in varnames)):
     varnames.append('taub')
     types.append(np.float64) 
+    varnames.append('betasquared')
+    types.append(np.float64)
   data = np.empty(n,dtype = zip(varnames, types))  
 
   # Get coordinates
@@ -475,45 +487,47 @@ def pvtu_file(file,variables,reader='none',returnreader=False):
   for var in variables:
     if var == 'velocity':
       velocity = numpy_support.vtk_to_numpy(vtudata.GetPointData().GetArray(var))
-      data['velocity 1'][:] = velocity[:,0]
-      data['velocity 2'][:] = velocity[:,1]
-      data['velocity 3'][:] = velocity[:,2]
-      data['velocity'][:] = np.sqrt(data['velocity 1']**2+data['velocity 2']**2)
+      data['velocity 1'] = velocity[:,0]
+      data['velocity 2'] = velocity[:,1]
+      data['velocity 3'] = velocity[:,2]
+      data['velocity'] = np.sqrt(data['velocity 1']**2+data['velocity 2']**2)
     elif var == 'ssavelocity':
       ssavelocity = numpy_support.vtk_to_numpy(vtudata.GetPointData().GetArray(var))
-      data['ssavelocity 1'][:] = ssavelocity[:,0]
-      data['ssavelocity 2'][:] = ssavelocity[:,1]
-      data['ssavelocity 3'][:] = ssavelocity[:,2]
-      data['ssavelocity'][:] = np.sqrt(data['ssavelocity 1']**2+data['ssavelocity 2']**2)
+      data['ssavelocity 1'] = ssavelocity[:,0]
+      data['ssavelocity 2'] = ssavelocity[:,1]
+      data['ssavelocity 3'] = ssavelocity[:,2]
+      data['ssavelocity'] = np.sqrt(data['ssavelocity 1']**2+data['ssavelocity 2']**2)
     elif var == 'vsurfini': 
       try:
         vsurfini = numpy_support.vtk_to_numpy(vtudata.GetPointData().GetArray(var))
-        data['vsurfini 1'][:] = vsurfini[:,0]
-        data['vsurfini 2'][:] = vsurfini[:,1]
-        data['vsurfini'][:] = np.sqrt(data['vsurfini 1']**2+data['vsurfini 2']**2)
+        data['vsurfini 1'] = vsurfini[:,0]
+        data['vsurfini 2'] = vsurfini[:,1]
+        data['vsurfini'] = np.sqrt(data['vsurfini 1']**2+data['vsurfini 2']**2)
       except: 
         try:
-          data['vsurfini 1'][:] = numpy_support.vtk_to_numpy(vtudata.GetPointData().GetArray('vsurfini 1'))
-          data['vsurfini 2'][:] = numpy_support.vtk_to_numpy(vtudata.GetPointData().GetArray('vsurfini 2'))
-          data['vsurfini'][:] = np.sqrt(data['vsurfini 1']**2+data['vsurfini 2']**2)
+          data['vsurfini 1'] = numpy_support.vtk_to_numpy(vtudata.GetPointData().GetArray('vsurfini 1'))
+          data['vsurfini 2'] = numpy_support.vtk_to_numpy(vtudata.GetPointData().GetArray('vsurfini 2'))
+          data['vsurfini'] = np.sqrt(data['vsurfini 1']**2+data['vsurfini 2']**2)
         except:
           # To account for bug in steady.sif, which won't save "vsurfini 1" and "vsurfini 2" 
           # at the same time, so I've saved "vsurfini 2" as vsurfini2
-          data['vsurfini 1'][:] = numpy_support.vtk_to_numpy(vtudata.GetPointData().GetArray('vsurfini 1'))
-          data['vsurfini 2'][:] = numpy_support.vtk_to_numpy(vtudata.GetPointData().GetArray('vsurfini2'))
-          data['vsurfini'][:] = np.sqrt(data['vsurfini 1']**2+data['vsurfini 2']**2)
+          data['vsurfini 1'] = numpy_support.vtk_to_numpy(vtudata.GetPointData().GetArray('vsurfini 1'))
+          data['vsurfini 2'] = numpy_support.vtk_to_numpy(vtudata.GetPointData().GetArray('vsurfini2'))
+          data['vsurfini'] = np.sqrt(data['vsurfini 1']**2+data['vsurfini 2']**2)
     elif var.endswith('update'):
       update = numpy_support.vtk_to_numpy(vtudata.GetPointData().GetArray(var))
       data[var+' 1'] = update[:,0]
       data[var+' 2'] = update[:,1]
       data[var+' 3'] = update[:,2]
     else:
-      data[var][:] = numpy_support.vtk_to_numpy(vtudata.GetPointData().GetArray(var))
+      data[var] = numpy_support.vtk_to_numpy(vtudata.GetPointData().GetArray(var))
   if ('taub' in varnames) and ('ssavelocity' in varnames):
-    data['taub'][:] = data['beta']**2*np.sqrt(data['ssavelocity 1']**2+data['ssavelocity 2']**2)
+    data['taub'] = data['beta']**2.0*np.sqrt(data['ssavelocity 1']**2.0+data['ssavelocity 2']**2.0)
   elif ('taub' in varnames) and ('velocity' in varnames):
-    data['taub'][:] = data['beta']**2*np.sqrt(data['velocity 1']**2+data['velocity 2']**2) 
- 
+    data['taub'] = data['beta']**2.0*np.sqrt(data['velocity 1']**2.0+data['velocity 2']**2.0) 
+  if ('betasquared' in varnames):
+    data['betasquared'] = data['beta']**2
+
   # Some of the nodes are shared/repeated between partitions, so we need to remove those
   var1,ind1 = np.unique(x,return_index = True)
   var2,ind2 = np.unique(y,return_index = True)

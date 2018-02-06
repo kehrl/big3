@@ -71,8 +71,7 @@ for dir in DIRs:
                             copy2(dirvtu+'/'+file,DIRO)     
  
                 if SSA:
-                    vtufile = elmerreadlib.pvtu_file(dirvtu+"/adjoint_beta_ssa0001.pvtu",['vsurfini','ssavelocity','beta'])
-                    surf = elmerreadlib.values_in_layer(vtufile,layer='surface')
+                    surf = elmerreadlib.pvtu_file(dirvtu+"/adjoint_beta_ssa0001.pvtu",['vsurfini','ssavelocity','beta'])
                     bed = surf
 
                     # Get specific bed values for SSA
@@ -85,8 +84,9 @@ for dir in DIRs:
 
                 else:
                     # Get values at bed and surface
-                    bed = elmerreadlib.saveline_boundary(dirvtu+"/","adjoint_beta",bbed,['velocity','beta'])
-                    surf = elmerreadlib.saveline_boundary(dirvtu+"/","adjoint_beta",bsur,['velocity','vsurfini'])
+                    vtu = elmerreadlib.pvtu_file(dirvtu+"/adjoint_beta0001.pvtu",['velocity','vsurfini','beta'])
+                    bed = elmerreadlib.values_in_layer(vtu,'bed')
+                    surf = elmerreadlib.values_in_layer(vtu,'surface')
 
                     # Grid specific bed values for FS
                     x,y,bed_mod_zb = elmerreadlib.grid3d(bed,'z',holes,extent)
@@ -103,16 +103,16 @@ for dir in DIRs:
 
                 # Grid bed values
                 x,y,bed_mod_taub = elmerreadlib.grid3d(bed,'taub',holes,extent)
-                x,y,bed_mod_beta = elmerreadlib.grid3d(bed,'beta',holes,extent)
-      
+                x,y,bed_mod_beta = elmerreadlib.grid3d(bed,'betasquared',holes,extent)
+
                 # Grid surface values
                 x,y,surf_mea_us = elmerreadlib.grid3d(surf,'vsurfini 1',holes,extent)      
                 x,y,surf_mea_vs = elmerreadlib.grid3d(surf,'vsurfini 2',holes,extent)
 
-                geotifflib.write_from_grid(x,y,np.flipud(bed_mod_taub),float('nan'),DIRO+"/"+dir[0:11]+"_bed_mod_taub.tif") 
-                geotifflib.write_from_grid(x,y,np.flipud(bed_mod_beta),float('nan'),DIRO+"/"+dir[0:11]+"_bed_mod_beta.tif")
-                geotifflib.write_from_grid(x,y,np.flipud(bed_mod_ub),float('nan'),DIRO+"/"+dir[0:11]+"_bed_mod_ub.tif")
-                geotifflib.write_from_grid(x,y,np.flipud(bed_mod_vb),float('nan'),DIRO+"/"+dir[0:11]+"_bed_mod_vb.tif")
+                geotifflib.write_from_grid(x,y,np.flipud(bed_mod_taub),np.float('nan'),DIRO+"/"+dir[0:11]+"_bed_mod_taub.tif") 
+                geotifflib.write_from_grid(x,y,np.flipud(bed_mod_beta),np.float('nan'),DIRO+"/"+dir[0:11]+"_bed_mod_beta.tif")
+                geotifflib.write_from_grid(x,y,np.flipud(bed_mod_ub),np.float('nan'),DIRO+"/"+dir[0:11]+"_bed_mod_ub.tif")
+                geotifflib.write_from_grid(x,y,np.flipud(bed_mod_vb),np.float('nan'),DIRO+"/"+dir[0:11]+"_bed_mod_vb.tif")
 
                 geotifflib.write_from_grid(x,y,np.flipud(surf_mea_us),float('nan'),DIRO+"/"+dir[0:11]+"_surf_mea_us.tif")
                 geotifflib.write_from_grid(x,y,np.flipud(surf_mea_vs),float('nan'),DIRO+"/"+dir[0:11]+"_surf_mea_vs.tif")
