@@ -679,7 +679,7 @@ def dem_grid(glacier,xmin=-np.Inf,xmax=np.Inf,ymin=-np.Inf,ymax=np.Inf,
           xwv = asterdata['x']
           ywv = np.flipud(asterdata['y'])
           if verticaldatum == 'geoid':
-            zwv = coordlib.geoidheight(x,y,np.flipud(asterdata['z'][:,:,j]))
+            zwv = coordlib.geoidheight(xwv,ywv,np.flipud(asterdata['z'][:,:,j]))
           else: 
             zwv = np.flipud(asterdata['z'][:,:,j])
             error[i] = 10.0 # Made up a number, should be set to the correct value
