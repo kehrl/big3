@@ -4,8 +4,8 @@ import subprocess
 import time
 import os
 
-glacier = 'Kanger'
-#glacier = 'Helheim'
+#glacier = 'Kanger'
+glacier = 'Helheim'
 
 # Mesh geometry
 
@@ -22,17 +22,20 @@ lc = '250 250 250 250'
 #lc = '1000 1000 4000 5000'
 
 if glacier == 'Helheim':
-  #dates = ['20070912']
-  #dates = ['20120624']
-  dates = ['20070912',\
-           '20110319','20110615','20110828','20111116',\
-           '20120316','20120624','20120908','20121205',\
-           '20130209','20130508','20130804','20131031',\
-           '20140127','20140509','20140731','20141016']
+  dates = ['20120316']
+  #dates = ['20040803','20050829','20060825','20070912',\
+  #         '20080814','20100624',\
+  #         '20110319','20110615','20110828','20111116',\
+  #         '20120316','20120624','20120908','20121205',\
+  #         '20130209','20130508','20130804','20131031',\
+  #         '20140127','20140509','20140731','20141016']
 elif glacier == 'Kanger':
-  #dates = ['20070728']
+  #dates = ['20010712','20030801','20050831','20060505',\
+  #	   '20060808','20060919','20090817','20100603']
   dates = ['20120213']
-  #dates = ['20070728',\
+  #dates = ['20010712','20030801','20050621','20050831',\
+  #         '20060505','20060708','20060919,\
+  #         '20070728','20090817','20100603',\
   #         '20110308','20110708','20110826','20111106',\
   #         '20120213','20120522','20121012','20121217',\
   #         '20130210','20130714','20131004','20131204',\
@@ -41,8 +44,8 @@ elif glacier == 'Kanger':
 # Inversion options
 method = 'adjoint'
 itmax = 500
-#regpars = ['1e11']
-regpars = ['1e8','1e9','1e10','5e11','1e11','2e11','5e11','1e12','1e13','1e14'] 
+regpars = ['1e11']
+#regpars = ['1e8','1e9','1e10','5e11','1e11','2e11','5e11','1e12','1e13','1e14'] 
 
 
 # Options for PBS submission
@@ -50,7 +53,7 @@ queue = 'normal'
 model = 'has'
 nparts = 24
 ncpus = 24
-runtime = '20:00:00'
+runtime = '16:00:00'
 
 if meshshp.endswith('nofront'):
   frontBC = 'pressure'
@@ -65,7 +68,7 @@ else:
 for date in dates:
 
   # Output mesh name
-  meshname = 'DEM'+date+'_constantT_Lcurve'
+  meshname = 'DEM'+date+'_constantT_steady'
 
   # Create mesh
   command = "python /u/lkehrl/Code/big3/modeling/meshing/"+\
@@ -91,6 +94,7 @@ for date in dates:
     job_string = """
     #PBS -S /bin/bash
     #PBS -M kehrl@uw.edu
+    #PBS -W group_list=s1877
     #PBS -m abe
     #PBS -N %s
     #PBS -l walltime=%s

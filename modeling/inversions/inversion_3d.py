@@ -15,7 +15,7 @@ from subprocess import call
 import math
 import glob
 import numpy as np
-import elmerreadlib, meshlib
+import elmerreadlib, meshlib, flowparameterlib
 import numpy as np
 import argparse
 import datetime
@@ -220,12 +220,16 @@ def main():
       
   if temperature == 'model':
     temperature_text="""
+  Viscosity = Variable Coordinate 1, Coordinate 2
+    Real Procedure "USF_Init.so" "ModelViscosity"
   Constant Temperature = Variable Coordinate 1, Coordinate 2
     Real Procedure "USF_Init.so" "ModelTemperature" """
   else:
     try:
-      float(temperature)
+      A = flowparameterlib.arrhenius(273.15+float(temperature))
+      E = 3
       temperature_text="""
+  Viscosity = Real $(("""+'2*'+str(E)+'*'+str(A[0])+'*'+'yearinsec)^(-1.0/3.0)*1.0e-6)\r'+"""
   Constant Temperature = Real """+str(temperature)
     except:
       sys.exit("Unknown temperature of "+temperature)

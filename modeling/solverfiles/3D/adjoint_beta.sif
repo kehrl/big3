@@ -18,25 +18,6 @@ $ function waterpressure(Z) {\
   }\
 }
 
-!! Glen's flow law (using power law)
-!-----------------
-$ function glen(Th) {\
-   EF = 3.0;\
-   AF = getArrheniusFactor(Th);\
-   _glen = (2.0*EF*AF)^(-1.0/3.0);\
-}
-
-!! Arrhenius factor needed by glen
-!! (in SI units)
-!---------------------------------
-$ function getArrheniusFactor(Th){ \
-    Tstar = 263.15
-    Astar = 3.5E-25
-    if (Th<-Tstar) {_getArrheniusFactor=Astar * exp( (-60.0E03/8.314) * (1/Th - 1/Tstar));}\
-    else {\
-       if (Th>0) _getArrheniusFactor=Astar * exp( (-115.0E03/8.314) *  (1/273.15 - 1/Tstar));\
-            else _getArrheniusFactor=Astar * exp( (-115.0E03/8.314) *  (1/Th - 1/Tstar));}\
-
 ! Some constants
 $yearinsec = 365.25*24*60*60
 $rhoi = 917.0/(1.0e6*yearinsec^2)  ! MPa - a - m
@@ -139,10 +120,8 @@ End
 Material 1
   Density = Real $rhoi
 
+  {Temperature}
   Viscosity Model = String "power law"
-  Viscosity = Variable Constant Temperature
-    Real MATC "glen(tx)*yearinsec^(-1.0/3.0)*1e-6 
-  !Viscosity = Real $ (3*3.5e-25*yearinsec)^(-1.0/3.0)*1.0e-6 
   Viscosity Exponent = Real $1.0e00/3.0e00
   Critical Shear Rate = Real 1.0e-10
 
@@ -164,8 +143,6 @@ Material 1
 ! two regimes in the flow law
   !Limit Temperature = Real -10.0
 
-  {Temperature}
-  
   Cauchy = Logical True
   
   Min Zs Bottom = Variable Coordinate 1
@@ -399,7 +376,8 @@ End
 
 Solver 10
   Procedure = "SaveData" "SaveMaterials"
-  Parameter 1 = String "Constant Temperature"
+  Parameter 1 = String "Viscosity"
+  Parameter 2 = String "Constant Temperature"
 End
 
 Solver 11

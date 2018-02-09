@@ -4,7 +4,7 @@
 
 import os, sys, datetime, shutil
 import argparse
-import elmerrunlib
+import elmerrunlib, flowparameterlib
 
 ##########
 # Inputs #
@@ -122,13 +122,20 @@ elif sidewallbc == 'velocity':
 
 if temperature == 'model':
   temperature_text="""
-  Constant Temperature = Variable Coordinate 1, Coordinate 2
-    Real Procedure "USF_Init.so" "ModelTemperature" """
+  Viscosity = Variable Coordinate 1, Coordinate 2\r
+    Real Procedure "USF_Init.so" "ModelViscosity"""""
+#  temperature_text="""
+#  Constant Temperature = Variable Coordinate 1, Coordinate 2
+#    Real Procedure "USF_Init.so" "ModelTemperature" """
 else:
   try:
-    float(temperature)
-    temperature_text="""
-  Constant Temperature = Real """+str(temperature)
+     A = flowparameterlib.arrhenius(273.15+float(temperature))
+     E = 3     
+     temperature_text="""
+  Viscosity = Real $(("""+'2*'+str(E)+'*'+str(A[0])+'*'+'yearinsec)^(-1.0/3.0)*1.0e-6)'  
+  #  float(temperature)
+  #  temperature_text="""
+  #Constant Temperature = Real """+str(temperature)
   except:
     sys.exit("Unknown temperature of "+temperature)
 
