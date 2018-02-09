@@ -264,7 +264,7 @@ if ssa:
 # Get average 2-m temperatures and surface mass balance
 
 output_temperature = False
-racmo_res = 1
+racmo_res = 11
 if racmo_res == 1:
   if output_temperature:
     xrac,yrac,t2m,timet2m = climlib.racmo_grid(x[0],x[-1],y[0],y[-1],'t2m',\
