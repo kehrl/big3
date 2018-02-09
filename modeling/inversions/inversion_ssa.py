@@ -103,7 +103,7 @@ def main():
       A = flowparameterlib.arrhenius(273.15+float(temperature))
       E = 3
       temperature_text="""
-  mu = Real $(("""+str(E)+'*'+str(A[0])+'*'+'yearinsec)^(-1.0/3.0)*1.0e-6)'
+  mu = Real $(("""+'2*'+str(E)+'*'+str(A[0])+'*'+'yearinsec)^(-1.0/3.0)*1.0e-6)'
     except:
       sys.exit("Unknown temperature of "+temperature)
 

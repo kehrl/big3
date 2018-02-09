@@ -270,7 +270,7 @@ def main():
  
     solverfile = method+'_beta_'+regpar+'_'+date+'.sif'
     os.chdir(DIRM)
-    fid1 = open(DIRS+method+'_beta.sif', 'r')
+    fid1 = open(DIRS+method+'_beta_grounded.sif', 'r')
     fid2 = open(DIRM+solverfile, 'w')
 
     lines=fid1.read()

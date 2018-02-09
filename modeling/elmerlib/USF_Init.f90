@@ -499,33 +499,33 @@ FUNCTION SSAViscosity( Model, nodenumber, dumy) RESULT(eta) !
   y = Model % Mesh % Nodes % y (nodenumber)
 
   eta = LinearInterp(flowA, xx, yy, nx, ny, x, y)
-  eta = ((E * eta * yearinsec)**(-1.0/3.0d0)) * 1.0e-6    
+  eta = ((2 * E * eta * yearinsec)**(-1.0/3.0d0)) * 1.0e-6    
 
   RETURN
 END
 
 
 !------------------------------------------------------------------!
-FUNCTION ModelViscosity( Model, nodenumber, dumy) RESULT(eta) !
+FUNCTION ModelViscosity( Model, nodenumber, dumy) RESULT(viscosity) !
 !------------------------------------------------------------------!
   USE types
   Use DefUtils
   IMPLICIT NONE
   TYPE(Model_t) :: Model
-  REAL(kind=dp) :: dumy,eta
+  REAL(kind=dp) :: dumy, viscosity
   INTEGER :: nodenumber
 
   REAL(kind=dp),ALLOCATABLE :: dem(:,:,:), xx(:), yy(:)
   REAL(kind=dp) :: x, y, z, zs , zb, dz
-  REAL(kind=dp) :: yearinsec, E, alpha
-  INTEGER :: nx, ny, nz, k, i, j
+  REAL(kind=dp) :: yearinsec, E, alpha, eta
+  INTEGER :: nx, ny, nz, k, i, j, ExtrudeLevels
   REAL(kind=dp) :: LinearInterp, zsIni, zbIni
 
   TYPE(Variable_t), POINTER :: dSVariable
   INTEGER, POINTER :: dSPerm(:) 
   REAL(KIND=dp), POINTER :: dSValues(:)
 
-  LOGICAL :: Firsttime=.true.
+  LOGICAL :: Firsttime=.true., Found
 
   SAVE dem, xx, yy, nx, ny, nz
   SAVE Firsttime
@@ -535,7 +535,7 @@ FUNCTION ModelViscosity( Model, nodenumber, dumy) RESULT(eta) !
     Firsttime=.False.
 
     ! open file
-    OPEN(10,file='inputs/flowA.xyz')
+    OPEN(10,file='inputs/modelA.xyz')
     READ(10,*) nx
     READ(10,*) ny
     READ(10,*) nz
@@ -552,9 +552,12 @@ FUNCTION ModelViscosity( Model, nodenumber, dumy) RESULT(eta) !
       
   END IF
 
+  ! Get number of extruded levels
+  ExtrudeLevels = GetInteger(Model % Simulation,'Extruded Mesh Levels',Found)
+
   x = Model % Mesh % Nodes % x (nodenumber)
   y = Model % Mesh % Nodes % y (nodenumber)
-  z = Model % Mesh % Nodes % y (nodenumber)
+  z = Model % Mesh % Nodes % z (nodenumber)
 
   zs = zsIni( Model, nodenumber, dumy )
   zb = zbIni( Model, nodenumber, dumy )
@@ -569,18 +572,29 @@ FUNCTION ModelViscosity( Model, nodenumber, dumy) RESULT(eta) !
   dz = (zs - zb) / (nz - 1)
   k = int( (z-zb) / dz)+1
   IF (k < 0) THEN
-    PRINT *,k,z,zb,zs,dz
+    PRINT *,'k',k,z,zb,zs,dz
   END IF
     
   ! Interpolate the value of the temperature from nearby points in
   ! the layers above and below it
   alpha = (z - (zb + (k - 1) * dz)) / dz
-  eta = (1 - alpha) * LinearInterp(dem(:,:,k), xx, yy, nx, ny, x, y) &
-        + alpha * LinearInterp(dem(:,:,k+1), xx, yy, nx, ny, x, y)
-    
+
+  IF (k >= ExtrudeLevels) THEN
+    k = ExtrudeLevels
+    eta = LinearInterp(dem(:,:,k), xx, yy, nx, ny, x, y)
+  ELSE
+    IF (k <= 1) THEN
+      k = 1
+      eta = LinearInterp(dem(:,:,k), xx, yy, nx, ny, x, y)
+    ELSE
+      eta = (1 - alpha) * LinearInterp(dem(:,:,k), xx, yy, nx, ny, x, y) &
+          + alpha * LinearInterp(dem(:,:,k+1), xx, yy, nx, ny, x, y)
+    END IF  
+  END IF  
+
   ! Get the viscosity in the correct units
-  eta = ((E*eta*yearinsec)**(-1.0/3.0d0))*1.0e-6
-    
+  viscosity = ((2*E*eta*yearinsec)**(-1.0/3.0d0))*1.0e-6
+
   RETURN
 END
 

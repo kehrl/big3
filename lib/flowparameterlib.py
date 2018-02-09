@@ -240,22 +240,28 @@ def load_temperature_model(glacier,x,y,modelfile='none',outputdir='none',method=
     fidU.write("{0}\n{1}\n{2}\n".format(len(x), len(y), len(u[0,0,:])))        
     fidV = open(outputdir+"modelV.xyz", "w")
     fidV.write("{0}\n{1}\n{2}\n".format(len(x), len(y), len(v[0,0,:])))
+    fidA = open(outputdir+"modelA.xyz","w")
+    fidA.write("{0}\n{1}\n{2}\n".format(len(x), len(y), len(output[0,0,:])))
 
     for j in range(len(x)):
       for i in range(len(y)):
         fidT.write("{0} {1} ".format(x[j], y[i]))
         fidU.write("{0} {1} ".format(x[j], y[i]))        
         fidV.write("{0} {1} ".format(x[j], y[i]))
+        fidA.write("{0} {1} ".format(x[j], y[i]))
         for k in range(len(output[0,0,:])):
           fidT.write("{0} ".format(output[i, j, k]))
           fidU.write("{0} ".format(u[i, j, k]))
           fidV.write("{0} ".format(v[i, j, k]))
+          fidA.write("{0} ".format(Agrid[i, j, k]))
         fidT.write("\n") 
         fidU.write("\n")
         fidV.write("\n")
+        fidA.write("\n")
     fidT.close()
     fidU.close()
     fidV.close()
+    fidA.close()
           
   return temp,Agrid,u,v
 
