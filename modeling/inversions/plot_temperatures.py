@@ -814,7 +814,7 @@ if regions == True:
     xmin,xmax = plt.xlim()
     ymin,ymax = plt.ylim()
     #plt.plot(extent[:,0],extent[:,1],'k',lw=2)
-    patch = matplotlib.patches.PathPatch(region_L,edgecolor='k',facecolor='b',lw=2,alpha=0.5)
+    patch = matplotlib.patches.PathPatch(region_L,edgecolor='k',facecolor='c',lw=2,alpha=0.5)
     ax.add_patch(patch)
     if glacier == 'Helheim':
         patch = matplotlib.patches.PathPatch(region_S1,edgecolor='k',facecolor='k',lw=2,alpha=0.5)
@@ -824,11 +824,11 @@ if regions == True:
     elif glacier == 'Kanger':
         patch = matplotlib.patches.PathPatch(region_S,edgecolor='k',facecolor='k',lw=2,alpha=0.5)
         ax.add_patch(patch)
-        patch = matplotlib.patches.PathPatch(region_U,edgecolor='k',facecolor='r',lw=2,alpha=0.5)
-        ax.add_patch(patch)
-        patch = matplotlib.patches.PathPatch(region_M,edgecolor='k',facecolor='w',lw=2,alpha=0.5)
-        ax.add_patch(patch)
-        path = matplotlib.path.Path([[0.6*(xmax-xmin)+xmin,0.98*(ymax-ymin)+ymin],
+    patch = matplotlib.patches.PathPatch(region_U,edgecolor='k',facecolor='g',lw=2,alpha=0.5)
+    ax.add_patch(patch)
+    patch = matplotlib.patches.PathPatch(region_M,edgecolor='k',facecolor='w',lw=2,alpha=0.5)
+    ax.add_patch(patch)
+    path = matplotlib.path.Path([[0.6*(xmax-xmin)+xmin,0.98*(ymax-ymin)+ymin],
                         [0.98*(xmax-xmin)+xmin,0.98*(ymax-ymin)+ymin],
                         [0.98*(xmax-xmin)+xmin,0.90*(ymax-ymin)+ymin],
                         [0.6*(xmax-xmin)+xmin,0.90*(ymax-ymin)+ymin],
@@ -1042,7 +1042,7 @@ if regions == True:
         plt.xlim([0.5,4.5])
         #plt.yticks(np.arange(0.0,1.3,0.2),fontsize=10,fontname='Arial')
         #plt.ylim([0,1.2])
-        plt.ylabel(r'$\beta$ (MPa yr$^{-1}$ m)',fontname='Arial',fontsize=10)
+        plt.ylabel(r'$\beta^2$ (MPa yr$^{-1}$ m)',fontname='Arial',fontsize=10)
         plt.xticks([1,2,3,4],fontsize=10,fontname='Arial')
         ax.set_xticklabels(('L','M','U','S'))
         plt.legend(loc=0,fontsize=10,numpoints=1,ncol=2,handlelength=0.4,handletextpad=0.2,labelspacing=0.2,\
