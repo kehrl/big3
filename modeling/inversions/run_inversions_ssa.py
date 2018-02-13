@@ -3,8 +3,8 @@ import subprocess
 import time
 import os
 
-#glacier = 'Kanger'
-glacier = 'Helheim'
+glacier = 'Kanger'
+#glacier = 'Helheim'
 
 # Mesh geometry
 
@@ -14,7 +14,7 @@ bname = 'morlighem'
 bmodel = 'aniso'
 bsmooth = '5'
 bottomsurface = 'bed' # or 'iceshelf'
-temperature = '-10.0'#'-10.0'#'model'
+temperature = 'model'#'-10.0'#'model'
 lc = '250 250 250 250'
 #lc = '1000 1000 4000 5000'
 
@@ -27,8 +27,8 @@ if glacier == 'Helheim':
   #         '20130209','20130508','20130804','20131031',\
   #         '20140127','20140509','20140731','20141016']
 elif glacier == 'Kanger':
-  dates = ['20070728']
-#  dates = ['20120213']
+#  dates = ['20070728']
+  dates = ['20120213']
 #  dates = ['20110308','20110708','20110826','20111106',\
 #           '20120213','20120522','20121012','20121217',\
 #           '20130210','20130714','20131004','20131204',\
@@ -52,7 +52,7 @@ else:
 for date in dates:
 
   # Output mesh name
-  meshname = 'DEM'+date+'_constantT'
+  meshname = 'DEM'+date+'_modelT'
 
   # Create mesh
   command = "python "+os.path.join(os.getenv("CODE_HOME"),"big3/modeling/meshing/mesh_3d.py")+\
@@ -72,4 +72,4 @@ for date in dates:
               " -glacier {0} -method {1} -regpar {2} -mesh {3} -front {4} -n {5} -temperature {6} -itmax {7} -sidewall velocity".format(glacier,method,regpar,meshname,frontBC,nparts,temperature,itmax)
 
     print command
-    #os.system(command)
+    os.system(command)

@@ -38,10 +38,10 @@ DIR_SSA_ConstantT = os.path.join(os.getenv("MODEL_HOME"),glacier+"/3D/INV_SSA_Co
 modnames = ['FS-CT','FS-MT','SSA-CT','SSA-MT']
 DIRs = [DIR_FS_ConstantT,DIR_FS_ModelT,DIR_SSA_ConstantT,DIR_SSA_ModelT]
 if glacier == 'Kanger':
-    adjointfiles = [DIR_FS_ConstantT+"mesh2d/inversion_adjoint/lambda_1e11_20170908/adjoint_beta0001.pvtu",\
-                    DIR_FS_ModelT+"mesh2d/inversion_adjoint/lambda_1e11_20170918/adjoint_beta0001.pvtu",\
-                    DIR_SSA_ConstantT+"mesh2d/inversion_adjoint/lambda_1e9_20170908/adjoint_beta_ssa0001.pvtu",\
-                    DIR_SSA_ModelT+"mesh2d/inversion_adjoint/lambda_1e9_20180111/adjoint_beta_ssa0001.pvtu"]
+    adjointfiles = [DIR_FS_ConstantT+"mesh2d/inversion_adjoint/lambda_1e11_20180208/adjoint_beta0001.pvtu",\
+                    DIR_FS_ModelT+"mesh2d/inversion_adjoint/lambda_1e11_20180208/adjoint_beta0001.pvtu",\
+                    DIR_SSA_ConstantT+"mesh2d/inversion_adjoint/lambda_1e9_20180209/adjoint_beta_ssa0001.pvtu",\
+                    DIR_SSA_ModelT+"mesh2d/inversion_adjoint/lambda_1e9_20180209/adjoint_beta_ssa0001.pvtu"]
 elif glacier == 'Helheim':
     adjointfiles = [DIR_FS_ConstantT+"mesh2d/inversion_adjoint/lambda_1e11_20170915/adjoint_beta0001.pvtu",\
                     DIR_FS_ModelT+"mesh2d/inversion_adjoint/lambda_1e11_20170912/adjoint_beta0001.pvtu",\
