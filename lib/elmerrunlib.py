@@ -43,7 +43,7 @@ def run_elmer(sif_file,n=20,to=['kehrl@uw.edu'],email=True):
     pass
   now=strftime("%Y-%m-%d %H:%M:%S")
   if returncode==0:
-	  tail=subprocess.Popen(['tail','-n','2',sif_file+'.log'],stdout=subprocess.PIPE).stdout.read()
+	  tail=subprocess.Popen(['tail','-n','2',sif_file+'.log'],stdout=subprocess.PIPE,env=os.getenv(DYLD_LIBRARY_PATH)).stdout.read()
 	  subject=sif_file+' finished successfully'
 	  text=str(sif_file)+' finished running on '+socket.gethostname()+' at '+now+'.\n Last two lines of the log file are:\n'+tail
 	  if email:
