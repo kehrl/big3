@@ -266,10 +266,10 @@ def cresis_grid_pts(xpts,ypts,glacier,verticaldatum='geoid',method='linear'):
 
 #########################################################################################
 
-def morlighem_pts(xpts,ypts,verticaldatum='geoid',method='linear'):
+def morlighem_pts(xpts,ypts,verticaldatum='geoid',method='linear',version=2017):
   
   '''
-  bed = morlighem_pts(xpts,ypts,glacier,verticaldatum='geoid')
+  bed = morlighem_pts(xpts,ypts,glacier,verticaldatum='geoid',version=2017)
   
   Interpolate morlighem gridded bed to select x,y points.
   
@@ -278,7 +278,8 @@ def morlighem_pts(xpts,ypts,verticaldatum='geoid',method='linear'):
   glacier: glacier name
   verticaldatum: ellipsoid or geoid
   method: interpolation method (same options as RegularGridInterpolator)
-  
+  version: 2014 or 2017
+
   Outputs:
   bed: interpolated bed elevations at xpts,ypts
   '''
@@ -290,7 +291,7 @@ def morlighem_pts(xpts,ypts,verticaldatum='geoid',method='linear'):
   ymax = np.max(ypts)+2.0e3
   
   # Load bed DEM
-  xbed,ybed,zbed = morlighem_grid(xmin,xmax,ymin,ymax,verticaldatum=verticaldatum)
+  xbed,ybed,zbed = morlighem_grid(xmin,xmax,ymin,ymax,verticaldatum=verticaldatum,version=version)
   
   f = scipy.interpolate.RegularGridInterpolator((ybed,xbed),zbed,method=method,bounds_error=False)
   zb = f(np.column_stack([ypts,xpts]))
@@ -299,16 +300,17 @@ def morlighem_pts(xpts,ypts,verticaldatum='geoid',method='linear'):
 
 #########################################################################################
   
-def morlighem_grid(xmin=-np.inf,xmax=np.inf,ymin=-np.inf,ymax=np.Inf,verticaldatum='geoid'):
+def morlighem_grid(xmin=-np.inf,xmax=np.inf,ymin=-np.inf,ymax=np.Inf,verticaldatum='geoid',version=2017):
 
   '''
-  xb,yb,bed = morlighem_grid(xmin,xmax,ymin,ymax,verticaldatum='geoid')
+  xb,yb,bed = morlighem_grid(xmin,xmax,ymin,ymax,verticaldatum='geoid',version=2017)
   
   Export morlighem gridded bed.
   
   Inputs:
   xmin,xmax,ymin,ymax: extent of desired grid
   verticaldatum: geoid or ellipsoid
+  version: 2014 or 2017
   
   Outputs:
   xb,yb: coordinates for grid
@@ -316,7 +318,16 @@ def morlighem_grid(xmin=-np.inf,xmax=np.inf,ymin=-np.inf,ymax=np.Inf,verticaldat
   '''
 
   # Load Bed DEM
-  file = os.path.join(os.getenv("DATA_HOME"),"Bed/Morlighem_2014/MCdataset-2015-04-27.tif")
+  if version == 2014:
+    file = os.path.join(os.getenv("DATA_HOME"),"Bed/Morlighem_2014/MCdataset-2015-04-27.tif")
+    geoid = os.path.join(os.getenv("DATA_HOME"),"Bed/Morlighem_2014/geoid.tif")  
+  elif version == 2017:
+    file = os.path.join(os.getenv("DATA_HOME"),"Bed/Morlighem_2017/BedMachineGreenland-2017-09-20.tif")
+    geoid = os.path.join(os.getenv("DATA_HOME"),"Bed/Morlighem_2017/geoid.tif")
+  else:
+    os.system("Unknown Morlighem version "+version)
+ 
+
   [xb,yb,zb]=geotifflib.read(file,xmin,xmax,ymin,ymax)
   zb[zb==-9999] = float('NaN')
   
@@ -324,8 +335,7 @@ def morlighem_grid(xmin=-np.inf,xmax=np.inf,ymin=-np.inf,ymax=np.Inf,verticaldat
   # to correct only if we want the ellipsoid height.
   if verticaldatum == "ellipsoid":
     # Load Geoid 
-    file = os.path.join(os.getenv("DATA_HOME"),"Bed/Morlighem_2014/geoid.tif")
-    [xg,yg,zg]=geotifflib.read(file,xmin,xmax,ymin,ymax)
+    [xg,yg,zg]=geotifflib.read(geoid,xmin,xmax,ymin,ymax)
     bed = zb+zg
   elif verticaldatum == "geoid":
     bed = zb
