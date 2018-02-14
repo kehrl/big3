@@ -318,14 +318,14 @@ def morlighem_grid(xmin=-np.inf,xmax=np.inf,ymin=-np.inf,ymax=np.Inf,verticaldat
   '''
 
   # Load Bed DEM
-  if version == 2014:
+  if float(version) == 2014:
     file = os.path.join(os.getenv("DATA_HOME"),"Bed/Morlighem_2014/MCdataset-2015-04-27.tif")
     geoid = os.path.join(os.getenv("DATA_HOME"),"Bed/Morlighem_2014/geoid.tif")  
-  elif version == 2017:
+  elif float(version) == 2017:
     file = os.path.join(os.getenv("DATA_HOME"),"Bed/Morlighem_2017/BedMachineGreenland-2017-09-20.tif")
     geoid = os.path.join(os.getenv("DATA_HOME"),"Bed/Morlighem_2017/geoid.tif")
   else:
-    os.system("Unknown Morlighem version "+version)
+    os.system("Unknown Morlighem version "+str(version))
  
 
   [xb,yb,zb]=geotifflib.read(file,xmin,xmax,ymin,ymax)
