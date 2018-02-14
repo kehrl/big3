@@ -1,6 +1,6 @@
 !Get slip coefficient
 !--------------------------------------------------------------------------!
-FUNCTION Linear_Root_NN( Model, nodenumber, dumy) RESULT(coeff) !
+FUNCTION Linear_NearestNeighbor( Model, nodenumber, dumy) RESULT(coeff) !
 !------------------------------------------------------------------!
    USE types
    USE CoordinateSystems
@@ -14,7 +14,7 @@ FUNCTION Linear_Root_NN( Model, nodenumber, dumy) RESULT(coeff) !
    REAL(KIND=dp) :: x, y, dumy, coeff
    REAL(KIND=dp), ALLOCATABLE :: xb(:), yb(:), betas(:)
    LOGICAL :: FirstTime=.True.
-   CHARACTER(len=MAX_NAME_LEN) :: filin='inputs/betaroot_linear.dat'
+   CHARACTER(len=MAX_NAME_LEN) :: filin='inputs/beta_linear.dat'
    REAL(kind=dp) :: LinearInterp
 
    SAVE betas, xb, yb, nx
@@ -25,7 +25,7 @@ FUNCTION Linear_Root_NN( Model, nodenumber, dumy) RESULT(coeff) !
       FirstTime=.False.
 
       ! open file
-      OPEN(10,file='inputs/betaroot_linear.dat')
+      OPEN(10,file='inputs/beta_linear.dat')
       READ(10,*) nx
       ALLOCATE(xb(nx),yb(nx),betas(nx))
       DO i=1,nx
@@ -41,7 +41,7 @@ FUNCTION Linear_Root_NN( Model, nodenumber, dumy) RESULT(coeff) !
 
    ! Get nearest node
    ind = minloc(sqrt((x-xb)**2+(y-yb)**2),1)
-   coeff = betas(ind(1))**2.0_dp
+   coeff = betas(ind(1))
 
    Return
 End
@@ -140,6 +140,54 @@ FUNCTION Weertman( Model, nodenumber, dumy) RESULT(coeff) !
   coeff = LinearInterp(betas,xb,yb,nx,ny,x,y)
 
   Return
+End
+
+!Get slip coefficient
+!--------------------------------------------------------------------------!
+FUNCTION Weertman_NearestNeighbor( Model, nodenumber, dumy) RESULT(coeff) !
+!------------------------------------------------------------------!
+   USE types
+   USE CoordinateSystems
+   USE SolverUtils
+   USE ElementDescription
+   USE DefUtils
+   IMPLICIT NONE
+   TYPE(Model_t) :: Model
+   TYPE(Solver_t), TARGET :: Solver
+   INTEGER :: nodenumber, nx, i, ind(1)
+   REAL(KIND=dp) :: x, y, dumy, coeff
+   REAL(KIND=dp), ALLOCATABLE :: xb(:), yb(:), betas(:)
+   LOGICAL :: FirstTime=.True.
+   CHARACTER(len=MAX_NAME_LEN) :: filin='inputs/beta_weertman.dat'
+   REAL(kind=dp) :: LinearInterp
+
+   SAVE betas, xb, yb, nx
+   SAVE FirstTime
+
+   IF (FirstTime) THEN
+      
+      FirstTime=.False.
+
+      ! open file
+      OPEN(10,file='inputs/beta_weertman.dat')
+      READ(10,*) nx
+      ALLOCATE(xb(nx),yb(nx),betas(nx))
+      DO i=1,nx
+          READ(10,*) xb(i),yb(i),betas(i)
+      END DO
+      CLOSE(10)
+  
+   END IF
+
+   ! position current point
+   x = Model % Mesh % Nodes % x (nodenumber)
+   y = Model % Mesh % Nodes % y (nodenumber)
+
+   ! Get nearest node
+   ind = minloc(sqrt((x-xb)**2+(y-yb)**2),1)
+   coeff = betas(ind(1))
+
+   Return
 End
 
 !------------------------------------------------------------------!

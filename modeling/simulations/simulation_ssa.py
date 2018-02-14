@@ -67,9 +67,9 @@ if not(os.path.exists(DIRS+solverfile_in+'.sif')):
 # Get beta file for Sliding_Beta.f90
 if not(beta_suffix==""):
   beta_suffix = "_"+beta_suffix
-  beta_file = "betaroot_linear"+beta_suffix+".dat"
+  beta_file = "beta_linear"+beta_suffix+".dat"
   if os.path.isfile(DIRM+"/inputs/"+beta_file):
-    shutil.copy(DIRM+"/inputs/"+beta_file,DIRM+"/inputs/betaroot_linear.dat")
+    shutil.copy(DIRM+"/inputs/"+beta_file,DIRM+"/inputs/beta_linear.dat")
   else:
     sys.exit("No beta file with name "+beta_file)
  
@@ -95,7 +95,6 @@ if temperature == 'model':
     Real Procedure "USF_Init.so" "SSAViscosity"""""
 else:
   try:
-    print float(temperature)
     A = flowparameterlib.arrhenius(273.15+float(temperature))
     E = 3
     temperature_text="""
@@ -137,4 +136,4 @@ del fid1, fid2
 returncode = elmerrunlib.run_elmer(DIRM+solverfile_out+'.sif',n=partitions)
 
 if not(beta_suffix==""):
-  os.system("rm "+DIRM+"inputs/betaroot_linear.dat")
+  os.system("rm "+DIRM+"inputs/beta_linear.dat")

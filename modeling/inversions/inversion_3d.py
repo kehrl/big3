@@ -373,12 +373,16 @@ def main():
   del beta_linear_lin, beta_weertman_lin
 
   # Output original results
-  fidr = open(inputs+"betaroot_linear.dat",'w')
+  fidr = open(inputs+"beta_linear.dat",'w')
+  fidw = open(inputs+"beta_weertman.dat",'w')
   fidr.write('{}\n'.format(len(bed['x'])))
+  fidw.write('{}\n'.format(len(bed['x'])))
   for i in range(0,len(bed['x'])):
-    fidr.write('{0} {1} {2:.6f}\n'.format(bed['x'][i],bed['y'][i],bed['beta'][i]))  
+    fidr.write('{0} {1} {2:.6f}\n'.format(bed['x'][i],bed['y'][i],bed['beta'][i]**2))  
+    fidw.write('{0} {1} {2:.6f}\n'.format(bed['x'][i],bed['y'][i],(bed['beta'][i]**2)/(bed['velocity'][i]**(-2.0/3.0))))
   fidr.close()
-  del fidr
+  fidw.close()
+  del fidr, fidw
 
   # Output gridded results
   fidl = open(inputs+"beta_linear.xy",'w')
@@ -400,7 +404,7 @@ def main():
 
   plt.figure(figsize=(6.5,3))
   plt.subplot(121)
-  plt.imshow(taubgrid*1e3,origin='lower',clim=[0,500],cmap='jet')
+  plt.imshow(taubgrid*1e3,origin='lower',clim=[0,500])
   plt.xticks([])
   plt.yticks([])
   cb = plt.colorbar(ticks=np.arange(0,600,100))

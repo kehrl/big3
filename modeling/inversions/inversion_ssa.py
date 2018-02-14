@@ -265,13 +265,17 @@ def main():
   del beta_linear_lin, beta_weertman_lin
  
   # Output original results
-  fidr = open(inputs+"betaroot_linear.dat",'w')
+  fidr = open(inputs+"beta_linear.dat",'w')
+  fidw = open(inputs+"beta_weertman.dat",'w')
   fidr.write('{}\n'.format(len(bed['x'])))
+  fidw.write('{}\n'.format(len(bed['x'])))
   for i in range(0,len(bed['x'])):
-    fidr.write('{0} {1} {2:.6f}\n'.format(bed['x'][i],bed['y'][i],bed['beta'][i]))
+    fidr.write('{0} {1} {2:.6f}\n'.format(bed['x'][i],bed['y'][i],bed['beta'][i]**2))
+    fidw.write('{0} {1} {2:.6f}\n'.format(bed['x'][i],bed['y'][i],(bed['beta'][i]**2)/(bed['ssavelocity'][i]**(-2.0/3.0))))
   fidr.close()
-  del fidr
- 
+  fidw.close()
+  del fidr, fidw
+  
   fidl = open(inputs+"beta_linear.xy",'w')
   fidw = open(inputs+"beta_weertman.xy",'w')
   fidl.write('{}\n{}\n'.format(len(x),len(y)))

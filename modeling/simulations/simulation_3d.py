@@ -79,15 +79,6 @@ else:
   if not(os.path.exists(DIRS+solverfile_in+'.sif')):
     sys.exit('No solverfile with name '+solverfile_in+'.sif')
 
-# Get beta file for Sliding_Beta.f90
-if not(beta_suffix==""):
-  beta_suffix = "_"+beta_suffix
-  beta_file = "betaroot_linear"+beta_suffix+".dat"
-  if os.path.isfile(DIRM+"/inputs/"+beta_file):
-    shutil.copy(DIRM+"/inputs/"+beta_file,DIRM+"/inputs/betaroot_linear.dat")
-  else:
-    sys.exit("No beta file with name "+beta_file)
-
 # Grab boundary condition for front -- it will be different if we are using an actual
 # terminus position (neumann, pressure BC) or an outflow boundary (dirichlet, velocity BC)
 if (frontbc == 'neumann') or (frontbc == 'pressure'):
@@ -141,13 +132,30 @@ else:
 
 if slidinglaw == 'linear':
   beta_data_file = 'inputs/beta_linear.xy'
+  sliding_text = """
+  Weertman Friction Coefficient = Variable Coordinate 1
+    REAL Procedure "Sliding_Beta.so" "Linear_NearestNeighbor" """ 
   sliding_exponent='1.0/1.0'
 elif slidinglaw == 'weertman':
   beta_data_file = 'inputs/beta_weertman.xy'
+  sliding_text = """
+    Weertman Friction Coefficient = Variable Coordinate 1
+        REAL Procedure "Sliding_Beta.so" "Weertman_NearestNeighbor" """
   sliding_exponent='1.0/3.0'
 else:
   sys.exit("Unknown sliding law of "+slidinglaw)
-  
+
+# Get beta file for Sliding_Beta.f90
+if not(beta_suffix==""):
+  beta_suffix = "_"+beta_suffix
+  beta_file = "beta_"+slidinglaw+beta_suffix+".dat"
+  if os.path.isfile(DIRM+"/inputs/"+beta_file):
+    shutil.copy(DIRM+"/inputs/"+beta_file,DIRM+"/inputs/beta_"+slidinglaw+".dat")
+  else:
+    sys.exit("No beta file with name "+beta_file)
+else:
+  beta_file = "beta_"+slidinglaw+".dat"
+
 if restartposition > 0:
   print "To restart the model you will also need to:\n"+\
     "(1) move the results file to the desired mesh directory\n"+\
@@ -179,6 +187,7 @@ else:
   lines=lines.replace('{TimeSteps}', '{0}'.format(nt))
   lines=lines.replace('{SidewallBC}', '{0}'.format(sidewallbc_text))  
   lines=lines.replace('{BetaDataFile}', '{0}'.format(beta_data_file))
+  lines=lines.replace('{WeertmanFrictionCoefficient}', '{0}'.format(sliding_text))
   lines=lines.replace('{SlidingExponent}', '{0}'.format(sliding_exponent))
   lines=lines.replace('{nrestart}','{0}'.format(restartposition))
   lines=lines.replace('{steady_name}','steady{0}'.format(beta_suffix))
@@ -267,4 +276,4 @@ if solverfile_in.startswith('terminusdriven') or (solverfile_in == 'checkmeshes'
       os.chdir(DIRM)
 
 if not(beta_suffix==""):
-  os.system("rm "+DIRM+"inputs/betaroot_linear.dat")
+    os.system("rm "+DIRM+"inputs/beta_"+slidinglaw+".dat")

@@ -83,9 +83,8 @@ Material 1
   SSA Mean Viscosity = Equals mu
 
   SSA Friction Law = String "linear"
-  ! The friction parameter is the square of the optimized variable to insure > 0
   SSA Friction Parameter = Variable Coordinate 1, Coordinate 2
-     REAL Procedure "Sliding_Beta.so" "Linear_Root_NN"
+     REAL Procedure "Sliding_Beta.so" "Linear_NearestNeighbor"
   
   Min H = Real 0.0
 End
