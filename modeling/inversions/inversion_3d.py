@@ -29,31 +29,31 @@ def get_arguments():
   # Get inputs to file
   parser = argparse.ArgumentParser()
   parser.add_argument("-glacier",dest="glacier",required = True,\
-        help = "Name of glacier (Kanger or Helheim)")
+        help = "Name of glacier (Kanger or Helheim).")
   parser.add_argument("-mesh", dest="mesh", required = True,\
-        help = "Name of mesh directory") 
+        help = "Name of mesh directory.") 
   parser.add_argument("-n", dest="n", required = True,\
         help = "Number of partitions.")
-  parser.add_argument("-regpar", dest="regpar", required = False,
-       default='1e10',help = "Regularization parameter.")
-  parser.add_argument("-method", dest="method", required = False,
-       default='adjoint',help = "adjoint or robin.")
-  parser.add_argument("-extrude", dest="extrude", type=int,required = False,\
-       default=10,help = "Number of extrusion levels.")
   parser.add_argument("-front", dest="frontbc", required = True,\
-        help = "Calving front boundary condition (velocity or pressure).") 
+        help = "Calving front boundary condition (velocity or pressure).")
+  parser.add_argument("-regpar", dest="regpar", required = False,
+       default='1e10',help = "Regularization parameter. Default is 1e10.")
+  parser.add_argument("-method", dest="method", required = False,
+       default='adjoint',help = "Adjoint or robin. Default is adjoint.")
+  parser.add_argument("-extrude", dest="extrude", type=int,required = False,\
+       default=10,help = "Number of extrusion levels. Default is 10.")
   parser.add_argument("-sidewall", dest="sidewallbc", required = False,\
-        default='velocity',help = "Sidewall boundary condition (velocity or friction).") 
+        default='velocity',help = "Sidewall boundary condition (velocity or friction). Default is velocity.") 
   parser.add_argument("-slipcoefficient", dest="slipcoefficient", required = False,
-        default='1.0E-3',help = "Sidewall boundary condition (default=1.0E-3).")   
+        default='1.0E-3',help = "Sidewall boundary slip coefficient. Default is 1.0E-3.")   
   parser.add_argument("-restartsolverfile",dest="restartfile",required = False,\
-       default="none",help = "Name of restart solver file.")
+       default="none",help = "Name of restart solver file. Default is none.")
   parser.add_argument("-restartposition",dest="restartposition",required = False,\
        default=0,type=int,help = "Restart position in results file (if applicable).")
   parser.add_argument("-temperature",dest="temperature",required  = False,\
-       default=-10.0,help = "Use modeled or constant temperature.") 
+       default=-10.0,help = "Ice temperature in deg C (or 'model'). Default is -10.") 
   parser.add_argument("-itmax",dest="itmax",required = False,\
-       default=1000,help = "Maximum number of steady state iterations.")
+       default=500,help = "Maximum number of steady state iterations. Default is 500.")
 
 
   args, _ = parser.parse_known_args(sys.argv)

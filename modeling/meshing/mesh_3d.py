@@ -32,29 +32,29 @@ parser.add_argument("-d", dest="date1", required = True,
 parser.add_argument("-n", dest="n", required = True,
         help = "Number of partitions.")
 parser.add_argument("-bname", dest="bedname", required = False,default='morlighem',
-        help = "Name of bed file (smith,morlighem,cresis).")
+        help = "Name of bed file (smith,morlighem,cresis). Default is morlighem.")
 parser.add_argument("-bmodel", dest="bedmodel", required = False,default='aniso',
-        help = "Type of bed (aniso,iso).")
+        help = "Type of bed (aniso,iso). Default is aniso.")
 parser.add_argument("-bsmooth", dest="bedsmooth", type=int,required = False,
-	default=4,help = "Smoothness of bed (1-8).")
+	default=4,help = "Smoothness of bed (1-8). Default is 4.")
 parser.add_argument("-dx", dest="dx", required = False,default='none',
-	help = "Grid size for gridded products.")
+	help = "Grid size for gridded products. Default is none.")
 parser.add_argument("-lc", dest="lc", type=int,required = False,nargs='+',
 	default=[1000,1000,3000,5000],\
-	help = "Four numbers that define the mesh resolution for grounding-line (1000 m),channels (1000 m),regions near channels (3000 m), and entire mesh (5000 m).")
+	help = "Four numbers that define the mesh resolution for grounding-line (1000 m), '+\
+            'channels (1000 m), regions near channels (3000 m), and entire mesh (5000 m).")
 parser.add_argument("-zb", dest="bottomsurface", default = 'iceshelf',
-        help = "Use 'iceshelf' base or 'bed' as bottom surface for mesh.",required = False)
+        help = "Use 'iceshelf' base or 'bed' as bottom surface for mesh. Default is iceshelf.",required = False)
 parser.add_argument("-temperature",dest="temp",required=False, default='-10.0',
-        help = "Ice temperature in deg C (or model).")
+        help = "Ice temperature in deg C (or model). Default is -10 deg.")
 parser.add_argument("-ssa",dest="ssa",required=False, default='False',
-        help = "SSA model.")
+        help = "SSA model (True or False). Default is False.")
 parser.add_argument("-timeseries",dest="timeseries",required=False, default='False',
-        help = "Calculate a timeseries of meshes.")
+        help = "Calculate a timeseries of meshes (True or False). Default is False.")
 parser.add_argument("-d2", dest="date2", required = False,
         help = "Date for end of timeseries.")
 parser.add_argument("-dt", dest="dt", required = False, default = '1/365.25',
-        help = "Timestep for timeseries (in years).")
-
+        help = "Timestep for timeseries (in years). Default is 1/365.25.")
 
 #################
 # Get arguments #
@@ -250,12 +250,12 @@ if timeseries == True:
 # Output files for velocities in x,y directions (u,v)
 u,v = vellib.inversion_3D(glacier,x,y,time1,inputs,dx=dx)
 
-if ssa:
-  fid = open(inputs+"velocity.xyuv","w")
-  for i in range(0,len(x)):
-    for j in range(0,len(y)):
-      fid.write('{0} {1} {2} {3} \n'.format(x[i],y[j],u[j,i],v[j,i]))
-  fid.close()
+#if ssa:
+#  fid = open(inputs+"velocity.xyuv","w")
+#  for i in range(0,len(x)):
+#    for j in range(0,len(y)):
+#      fid.write('{0} {1} {2} {3} \n'.format(x[i],y[j],u[j,i],v[j,i]))
+#  fid.close()
 
 ################################################################
 # Get climate variables & calculate temperatures at ice divide #
