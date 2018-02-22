@@ -29,23 +29,23 @@ def get_arguments():
   # Get inputs to file
   parser = argparse.ArgumentParser()
   parser.add_argument("-glacier",dest="glacier",required = True, 
-        help = "Name of glacier (Kanger or Helheim)")
+        help = "Name of glacier (Kanger or Helheim).")
   parser.add_argument("-mesh", dest="mesh", required = True,
-        help = "Name of mesh directory") 
+        help = "Name of mesh directory.") 
   parser.add_argument("-front", dest="frontbc", required = True,
         help = "Calving front boundary condition (velocity or pressure).") 
   parser.add_argument("-n", dest="n", required = True,
         help = "Number of partitions.")
   parser.add_argument("-regpar", dest="regpar", required = False,
-       default='1e10',help = "Regularization parameter.")
+       default='1e10',help = "Regularization parameter. Default is 1e10.")
   parser.add_argument("-restartsolverfile",dest="restartfile",required = False,\
-       default="none",help = "Name of restart solver file.")
+       default="none",help = "Name of restart solver file. Default is none.")
   parser.add_argument("-restartposition",dest="restartposition",required = False,\
        default=0,type=int,help = "Restart position in results file (if applicable).")
   parser.add_argument("-temperature",dest="temperature",required  = False,\
-       default=-10.0,help = "Use modeled or constant temperature.") 
+       default=-10.0,help = "Ice temperature in deg C (or 'model'). Default is -10.") 
   parser.add_argument("-itmax",dest="itmax",required = False,\
-       default=1000,help = "Maximum number of steady state iterations.")
+       default=500,help = "Maximum number of steady state iterations. Default is 500.")
 
 
   args, _ = parser.parse_known_args(sys.argv)
@@ -156,18 +156,6 @@ def main():
     for name in names:
       if name.endswith('vtu') and name.startswith('adjoint'):
         os.rename(DIRM+"/mesh2d/"+name,DIRR_lambda+name)
-#     try:
-#       os.rename(DIRM+"M1QN3_"+method+"_beta.out",DIRR_lambda+"M1QN3_"+method+"_beta_beforerestart.out")
-#       os.rename(DIRM+"gradientnormadjoint_"+method+"_beta.dat",DIRR_lambda+"gradient_"+runname+"_beforerestart.dat")
-#       os.rename(DIRM+"cost_"+method+"_beta.dat",DIRR_lambda+"cost_"+runname+"_beforerestart.dat")
-#     except:
-#       try:
-#         os.rename(DIRR_lambda+"M1QN3_"+method+"_beta.out",DIRR_lambda+"M1QN3_"+method+"_beta_beforerestart.out")
-#         os.rename(DIRR_lambda+"gradientnormadjoint_"+method+"_beta.dat",DIRR_lambda+"gradient_"+runname+"_beforerestart.dat")
-#         os.rename(DIRR_lambda+"cost_"+method+"_beta.dat",DIRR_lambda+"cost_"+runname+"_beforerestart.dat")
-#       except:
-#         pass
-
   else: 
     # Get current date
     now = datetime.datetime.now()
@@ -208,10 +196,10 @@ def main():
   line=lines[-1]
   p=line.split()
   nsim = float(p[0])
-  costbed = float(p[1])*2.0/float(regpar)
+  costbed = float(p[1])#/float(regpar)
   fidcostreg.close()
 
-  costtot = costsur+0.5*float(regpar)*costbed  
+  costtot = costsur+float(regpar)*costbed  
 
   fid_info = open(DIRR+"summary.dat","a")
   fid_info.write('{} {} {} {} {}\n'.format(regpar,nsim+restartposition,costtot,costsur,costbed))

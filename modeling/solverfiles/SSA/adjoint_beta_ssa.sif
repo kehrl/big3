@@ -70,9 +70,19 @@ Body Force 1
   Flow BodyForce 2 = Real 0.0              
   Flow BodyForce 3 = Real $gravity
 
-  ! change of variable; 
+  ! Definition of the Cost function
+  Adjoint Cost = Variable SSAVelocity 1 , Vsurfini 1 , SSAVelocity 2 , Vsurfini 2
+    Real MATC "0.5*((tx(0)-tx(1))*(tx(0)-tx(1))+(tx(2)-tx(3))*(tx(2)-tx(3)))"
+
+  ! Derivative of the cost function wr u and v
+  Adjoint Cost der 1 = Variable SSAVelocity 1 , Vsurfini 1
+    Real MATC "tx(0)-tx(1)"
+  Adjoint Cost der 2 = Variable SSAVelocity 2 , Vsurfini 2
+    Real MATC "tx(0)-tx(1)"
+
+  ! change of variable;
   ! DJDBeta is the derivative of the Cost fn w.r.t. the slip coeff.
-  ! as slip coeff=alpha^2 => DJDalpha=DJDBeta * DBeta / Dalpha
+  ! as slip coeff=alpha^2 => DJDalpha=DJDBeta * DBeta / Dalpha  
   DJDalpha = Variable DJDBeta , alpha
      REAL MATC "2.0*tx(0)*tx(1)"
 
@@ -100,7 +110,7 @@ End
 Solver 1
   Equation = "SSA"
   Variable = -dofs 2 "SSAVelocity"
-  Procedure = "AdjointSSASolvers.so" "SSABasalSolver"
+  Procedure = "ElmerIceSolvers" "SSABasalSolver"
 
 !! Mandatory for the adjoint 
   Calculate Loads = Logical True
@@ -136,17 +146,17 @@ Solver 2
   Variable = -nooutput "CostV"
   Variable DOFs = 1
 
-  Procedure = "AdjointSSASolvers.so" "CostSolver_Disc_Adjoint"
+  Procedure = "ElmerIceSolvers" "AdjointSSA_CostContSolver"
 
   Problem Dimension = Integer 2 !2D mesh and 2D SSA Solution
   Cost Variable Name = String "CostValue"  ! Name of Cost Variable
  ! save the cost as a function of iterations (iterations,Cost,rms=sqrt(2*Cost/Ndata)
   Cost Filename = File "cost.dat"
 
-  Observed Variable Name = String "SSAVelocity"
+  !Observed Variable Name = String "SSAVelocity"
  ! ASCII File with data: x,y,u,v
-  Observation File Name = File "inputs/velocity.xyuv"
-  Save Used Data = Logical True
+  !Observation File Name = File "inputs/velocity.xyuv"
+  !Save Used Data = Logical True
 
 End
 
@@ -156,7 +166,7 @@ Solver 3
   Variable = Adjoint
   Variable Dofs = 2
 
-  Procedure = "AdjointSSASolvers.so" "AdjointSolver_SSA"
+  Procedure = "ElmerIceSolvers" "AdjointSSA_AdjointSolver"
 
   !Name of the flow solution solver
   Flow Solution Equation Name = string "SSA"
@@ -167,7 +177,7 @@ End
 !!!!!  Compute Derivative of Cost function / Beta
 Solver 4
   Equation = "DJDBeta"
-  Procedure = "AdjointSSASolvers.so" "DJDp_Adjoint_SSA"
+  Procedure = "ElmerIceSolvers" "AdjointSSA_GradientSolver"
 
   !!  Solver need to be associated => Define dumy variable
   Variable = -nooutput "DJDB"
@@ -199,7 +209,7 @@ End
 !     OUTPUT are : J and DJDvar
 Solver 6
   Equation = "DJDBeta_Reg"
-  Procedure = "AdjointSSASolvers.so" "CostSolver_SSA_Regularisation"
+  Procedure = "ElmerIceSolvers" "AdjointSSA_CostRegSolver"
 
   !!  Solver need to be associated => Define dumy variable
   Variable = -nooutput "DJDBReg"
@@ -207,11 +217,11 @@ Solver 6
 
   Problem Dimension = Integer 2
   Cost Filename=File "costreg.dat"
-  Optimized Variable Name= String "alpha"
-  Gradient Variable Name= String "DJDalpha"
-  Cost Variable Name= String "CostValue"
-  Lambda= Real {Lambda} !reg. weight set to 0 here as no noise added
-  Reset Cost Value= Logical False  !=> DJDapha already initialized in solver DJDBeta; switch off initialisation to 0 at the beginning of this solver
+  Optimized Variable Name = String "alpha"
+  Gradient Variable Name = String "DJDalpha"
+  Cost Variable Name = String "CostValue"
+  Lambda = Real {Lambda} !reg. weight set to 0 here as no noise added
+  Reset Cost Value = Logical False  !=> DJDapha already initialized in solver DJDBeta; switch off initialisation to 0 at the beginning of this solver
   A priori Regularisation= Logical False
 end
 
@@ -228,7 +238,6 @@ Solver 7
   Optimized Variable Name = String "alpha"
   Gradient Variable Name = String "DJDalpha"
   gradient Norm File = String "GradientNormAdjoint_$name".dat"
-
 
  ! M1QN3 Parameters
   M1QN3 dxmin = Real 1.0e-10
