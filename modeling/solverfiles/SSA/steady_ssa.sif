@@ -82,9 +82,7 @@ Material 1
   SSA Mean Density = Real $rhoi
   SSA Mean Viscosity = Equals mu
 
-  SSA Friction Law = String "linear"
-  SSA Friction Parameter = Variable Coordinate 1, Coordinate 2
-     REAL Procedure "Sliding_Beta.so" "Linear_NearestNeighbor"
+{SlidingLaw}
   
   Min H = Real 0.0
 End
