@@ -9,6 +9,7 @@ import os
 import matplotlib
 import matplotlib.pyplot as plt
 import elmerreadlib
+import shapely.geometry
 from pylab import *
 import argparse
 
@@ -64,8 +65,10 @@ cost_tot = np.array(cost_tot)
 cost_bed = np.array(cost_bed)
 cost_sur = np.array(cost_sur)
 
-ind = np.argsort(cost_bed)
+ind1 = np.argsort(regpar)
+ind = ind1#[np.where((regpar >= 1e11) & (regpar <= 1e14))[0]]
 regpar = regpar[ind]
+regpar_str = [regpar_str[x] for x in ind]
 nsim = nsim[ind]
 cost_tot = cost_tot[ind]
 cost_bed = cost_bed[ind]
@@ -80,30 +83,42 @@ for i in range(0,len(regpar)):
             try:
                 vtudata = elmerreadlib.pvtu_file(DIRR+dir+'/adjoint_beta_ssa0001.pvtu',['vsurfini','ssavelocity'])
                 surf = elmerreadlib.values_in_layer(vtudata,'surface')
-                misfit[i] = np.sqrt(np.mean((surf['vsurfini']-surf['ssavelocity'])**2))
+                misfit[i] = np.sqrt(np.mean((surf['vsurfini 1']-surf['ssavelocity 1'])**2+\
+                        (surf['vsurfini 2']-surf['ssavelocity 2'])**2))
             except:
                 vtudata = elmerreadlib.pvtu_file(DIRR+dir+'/adjoint_beta0001.pvtu',['vsurfini','velocity'])
                 surf = elmerreadlib.values_in_layer(vtudata,'surface')
-                misfit[i] = np.sqrt(np.mean((surf['vsurfini']-surf['velocity'])**2))
+                misfit[i] = np.sqrt(np.mean((surf['vsurfini 1']-surf['ssavelocity 1'])**2+\
+                        (surf['vsurfini 2']-surf['ssavelocity 2'])**2))
 
-plt.figure(figsize=(4.5,4))
+# Get area to get average "misfit"
+area = (shapely.geometry.Polygon(np.loadtxt(DIR+'inputs/mesh_extent.dat'))).area
+#np.sqrt(cost_sur*2/area)
+
+
+fig =  plt.figure(figsize=(3.5,3))
+ax1 = plt.gca()
 matplotlib.rc('font',family='sans-serif',size=10)
 strings=["{:.0e}".format(i) for i in regpar]   
 plt.plot(cost_bed,cost_sur,'ko--',linewidth=1.5)
-plt.xlabel('$J_{reg}$',fontsize=10)
-plt.ylabel(r'$J_o$',fontsize=10)
+ax1.set_xlabel('$J_{reg}$',fontsize=10)
+ax1.set_ylabel(r'$J_o$',fontsize=10)
 plt.xticks(fontsize=10)
-plt.gca().yaxis.set_major_formatter(matplotlib.ticker.FormatStrFormatter("%.1E"))
-plt.ylim([np.min(cost_sur)-(np.max(cost_sur)-np.min(cost_sur))/10,np.max(cost_sur)+(np.max(cost_sur)-np.min(cost_sur))/4])
-ymin,ymax = plt.ylim()
+ax1.yaxis.set_major_formatter(matplotlib.ticker.FormatStrFormatter("%.1E"))
+ax1.set_ylim([np.min(cost_sur)-(np.max(cost_sur)-np.min(cost_sur))/10,np.max(cost_sur)+(np.max(cost_sur)-np.min(cost_sur))/4])
+ymin,ymax = ax1.get_ylim()
+ax2 = ax1.twinx()
+mn, mx = ax1.get_ylim()
+ax2.set_ylim(np.sqrt(mn*2/area), np.sqrt(mx*2/area))
+ax2.set_ylabel('RMSE (m/yr)')
 for i in range(0,len(strings)):
-    plt.text(cost_bed[i]+0.15,cost_sur[i]+0.1*(ymax-ymin),strings[i],fontsize=10,rotation=45)
-plt.xlim([-0.4,np.max(cost_bed)+(np.max(cost_bed)-np.min(cost_bed))/4])
+    ax1.text(cost_bed[i]+0.0,cost_sur[i]+0.13*(ymax-ymin),strings[i],fontsize=10,rotation=45)
+plt.xlim([-0.02,np.max(cost_bed)+(np.max(cost_bed)-np.min(cost_bed))/3])
 
 plt.tight_layout()
-plt.subplots_adjust(left=0.2, bottom=0.11, right=0.98, top=0.97, wspace=0.0, hspace=0.0)
+plt.subplots_adjust(left=0.26, bottom=0.15, right=0.84, top=0.98, wspace=0.0, hspace=0.0)
 #plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/Lcurve_"+glacier+"_"+RES+".pdf"),format='PDF')
 plt.savefig(DIR+"/figures/Lcurve_"+method+".pdf")
 plt.close()
 
-print "Saving as "+DIR+"/figures/Lcurve_"+method+".pdf"
+print "Saving as "+DIR+"figures/Lcurve_"+method+".pdf"

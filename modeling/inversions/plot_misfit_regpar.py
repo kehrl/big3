@@ -70,7 +70,10 @@ elif glacier == "Kanger":
         "TIF/20140706135251_LC82310122014187LGN00.tif"))
 
 # Figure
-fig=plt.figure(figsize=(4.5,3))
+if glacier == 'Helheim':
+    fig=plt.figure(figsize=(5,4.4))
+elif glacier == 'Kanger':
+    fig=plt.figure(figsize=(5,3.2))
 matplotlib.rc('font',family='sans-serif',size=10)
 gs = matplotlib.gridspec.GridSpec(2,3)
 
@@ -92,7 +95,12 @@ for i in range(0,len(regpars)):
                 surf_misfit[name[0]] = surf[name[0]]
             surf_misfit['misfit'] = (surf[vname]-surf['vsurfini'])/surf['vsurfini']*100
 
-    print regpars[i],np.sqrt(np.mean((surf['vsurfini 1']-surf['ssavelocity 1'])**2+(surf['vsurfini 2']-surf['ssavelocity 2'])**2))
+    #ind = np.where(surf_misfit['vsurfini'] > 1000)[0]
+    #print np.percentile(abs(surf_misfit['misfit'][ind]),75)
+    #print np.sqrt(np.mean(((surf['vsurfini 1'][ind]*0.03/np.sqrt(2))**2)+(surf['vsurfini 2'][ind]*0.03/np.sqrt(2))*2))
+    #print regpars[i],np.sqrt(np.mean((surf['vsurfini 1'][ind]-surf['ssavelocity 1'][ind])**2+\
+    #        (surf['vsurfini 2'][ind]-surf['ssavelocity 2'][ind])**2))
+    
     plt.subplot(gs[0,i])
     plt.title(r'$\lambda$ = '+regpars[i],fontsize=10,fontname='Arial',color='k')
     x,y,taub = elmerreadlib.grid3d(bed,'taub',holes,extent)
@@ -112,21 +120,29 @@ for i in range(0,len(regpars)):
     x,y,misfit = elmerreadlib.grid3d(surf_misfit,'misfit',holes,extent)
     plt.imshow(image[:,:,0],extent=[ximage[0],ximage[-1],yimage[0],yimage[-1]],\
                 cmap='Greys_r',origin='lower',clim=[0,0.6])
-    im2 = plt.imshow(misfit,extent=[x[0],x[-1],y[0],y[-1]],origin='lower',vmin=-8,vmax=8,cmap='RdBu_r')
+    im2 = plt.imshow(misfit,extent=[x[0],x[-1],y[0],y[-1]],origin='lower',vmin=-10,vmax=10,cmap='RdBu_r')
     plt.xticks([])
     plt.yticks([])
     plt.plot(np.r_[extent[:,0],extent[0,0]],np.r_[extent[:,1],extent[0,1]],'k',lw=0.5)
     plt.xlim([xmin,xmax])
     plt.ylim([ymin,ymax])
+    if glacier == 'Helheim':
+        bot = 0.83
+    elif glacier == 'Kanger':
+        bot = 0.73
     path = matplotlib.path.Path([[0.65*(xmax-xmin)+xmin,0.98*(ymax-ymin)+ymin],
-                        [0.98*(xmax-xmin)+xmin,0.98*(ymax-ymin)+ymin],
-                        [0.98*(xmax-xmin)+xmin,0.75*(ymax-ymin)+ymin],
-                        [0.65*(xmax-xmin)+xmin,0.75*(ymax-ymin)+ymin],
-                        [0.65*(xmax-xmin)+xmin,0.98*(ymax-ymin)+ymin]])
-    patch = matplotlib.patches.PathPatch(path,edgecolor='k',facecolor='w',lw=1)
+                        [0.97*(xmax-xmin)+xmin,0.98*(ymax-ymin)+ymin],
+                        [0.97*(xmax-xmin)+xmin,bot*(ymax-ymin)+ymin],
+                        [0.67*(xmax-xmin)+xmin,bot*(ymax-ymin)+ymin],
+                        [0.67*(xmax-xmin)+xmin,0.98*(ymax-ymin)+ymin]])
+    patch = matplotlib.patches.PathPatch(path,edgecolor='k',facecolor='w',lw=1,zorder=3)
     ax.add_patch(patch)
-    plt.text(x[-1]-7.7e3,y[-1]-3e3,'Ave',fontsize=10)
-    plt.text(x[-1]-7.7e3,y[-1]-5.5e3,'{0:.1f}%'.format(np.mean(abs(surf_misfit['misfit']))),fontsize=10)
+    if glacier == 'Helheim':
+        plt.text(xmax-0.3*(xmax-xmin),y[-1]-3.5e3,'Ave',fontsize=10)
+        plt.text(xmax-0.3*(xmax-xmin),y[-1]-6.0e3,'{0:.1f}%'.format(np.mean(abs(surf_misfit['misfit']))),fontsize=10)
+    elif glacier == 'Kanger':
+        plt.text(xmax-0.3*(xmax-xmin),y[-1]-3.2e3,'Ave',fontsize=10)
+        plt.text(xmax-0.3*(xmax-xmin),y[-1]-5.7e3,'{0:.1f}%'.format(np.mean(abs(surf_misfit['misfit']))),fontsize=10)
 
     #plt.subplot(gs[1,i])
     #ax = plt.gca()
@@ -141,21 +157,29 @@ for i in range(0,len(regpars)):
     #if i == 1:
     #    plt.xlabel('Percent error (%)',fontsize=10)
 
-cbar_ax1 = fig.add_axes([0.85,0.485,0.02,0.43])
+if glacier == 'Helheim':
+    cbar_ax1 = fig.add_axes([0.86,0.49,0.02,0.45])
+    cbar_ax2 = fig.add_axes([0.86,0.01,0.02,0.45])
+elif glacier == 'Kanger':
+    cbar_ax1 = fig.add_axes([0.86,0.49,0.02,0.43])
+    cbar_ax2 = fig.add_axes([0.86,0.01,0.02,0.43])
 cb1 = fig.colorbar(im1, cax=cbar_ax1)
 cb1.set_label(r'$\tau_b$ (kPa)',fontsize=10,fontname='Arial',color='k')
 cb1.ax.yaxis.set_tick_params(color='k')
 plt.setp(plt.getp(cb1.ax.axes, 'yticklabels'), color='k')
 
-cbar_ax2 = fig.add_axes([0.85,0.02,0.02,0.43])
-cb2 = fig.colorbar(im2, cax=cbar_ax2,ticks=[-5,0,5])
+cb2 = fig.colorbar(im2, cax=cbar_ax2,ticks=np.arange(-8,12,4))
 cb2.set_label(r'Percent error (%)',fontsize=10,fontname='Arial',color='k')
 cb2.ax.yaxis.set_tick_params(color='k')
 plt.setp(plt.getp(cb2.ax.axes, 'yticklabels'), color='k')
 
 plt.tight_layout()
-plt.subplots_adjust(left=0.01, bottom=0.01, right=0.84, top=0.93, wspace=0.0, hspace=0.0)
+if glacier == 'Helheim':
+    plt.subplots_adjust(left=0.01, bottom=0.01, right=0.85, top=0.94, wspace=0.0, hspace=0.0)
+elif glacier == 'Kanger':
+    plt.subplots_adjust(left=0.01, bottom=0.01, right=0.85, top=0.92, wspace=0.0, hspace=0.0)
 plt.savefig(DIR+"/figures/Taub_misfit_"+method+".pdf",DPI=600,transparent=False)
 plt.close()
 
 print "Saving as "+DIR+"figures/Taub_misfit_"+method+".pdf"
+
