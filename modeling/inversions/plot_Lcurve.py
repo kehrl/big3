@@ -109,10 +109,16 @@ ax1.set_ylim([np.min(cost_sur)-(np.max(cost_sur)-np.min(cost_sur))/10,np.max(cos
 ymin,ymax = ax1.get_ylim()
 ax2 = ax1.twinx()
 mn, mx = ax1.get_ylim()
-ax2.set_ylim(np.sqrt(mn*2/area), np.sqrt(mx*2/area))
+ax2.set_ylim(mn,mx)
+#ax2.set_ylim(np.sqrt(mn*2/area), np.sqrt(mx*2/area))
+yticks_RMSE = np.arange(np.ceil(np.sqrt(mn*2/area)/10)*10,np.floor(np.sqrt(mx*2/area)/10)*10+1,10,dtype=int)
+yticks_J = (yticks_RMSE**2.0)*area/2.0
+ax2.set_yticks(yticks_J)
+ax2.set_yticklabels(yticks_RMSE)
 ax2.set_ylabel('RMSE (m/yr)')
 for i in range(0,len(strings)):
-    ax1.text(cost_bed[i]+0.0,cost_sur[i]+0.13*(ymax-ymin),strings[i],fontsize=10,rotation=45)
+    if strings[i].startswith('1') or strings[i].startswith('5'):
+        ax1.text(cost_bed[i]+0.0,cost_sur[i]+0.13*(ymax-ymin),strings[i],fontsize=10,rotation=45)
 plt.xlim([-0.02,np.max(cost_bed)+(np.max(cost_bed)-np.min(cost_bed))/3])
 
 plt.tight_layout()
