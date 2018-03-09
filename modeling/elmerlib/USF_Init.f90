@@ -568,7 +568,12 @@ FUNCTION ModelViscosity( Model, nodenumber, dumy) RESULT(viscosity) !
   ! Enhanced factor
   E = 3.d0
 
-  ! Find which vertical layer the current point belongs to
+  ! Check to make sure min ice thickness is >= 10 m as required by ExtrudeMesh
+  IF (zs - zb < 10) THEN
+    zs = zb + 10
+  END IF
+
+  ! Find which vertical layer the current point belongs to  
   dz = (zs - zb) / (nz - 1)
   k = int( (z-zb) / dz)+1
   IF (k < 0) THEN
@@ -683,6 +688,11 @@ FUNCTION ModelTemperature( Model, nodenumber, dumy) RESULT(T) !
     IF (NotMapped) THEN
       T = -10.0d0
     ELSE
+      ! Check to make sure min ice thickness is >= 10 m as required by ExtrudeMesh
+      IF (zs - zb < 10) THEN
+    	zs = zb + 10
+      END IF
+
       ! Find which vertical layer the current point belongs to
       dz = (zs - zb) / (nz - 1)
       k = int( (z-zb) / dz)+1

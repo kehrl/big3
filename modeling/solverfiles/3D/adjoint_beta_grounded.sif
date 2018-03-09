@@ -134,7 +134,7 @@ Material 1
 !  Glen Enhancement Factor = Real 3.0
 ! the temperature to switch between the 
 ! two regimes in the flow law
-  Limit Temperature = Real -10.0
+!  Limit Temperature = Real -10.0
   
   Cauchy = Logical True
 End
