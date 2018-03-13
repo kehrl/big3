@@ -105,7 +105,7 @@ for i in range(0,len(regpars)):
     x,y,taub = elmerreadlib.grid3d(bed,'taub',holes,extent)
     plt.imshow(image[:,:,0],extent=[ximage[0],ximage[-1],yimage[0],yimage[-1]],\
                 cmap='Greys_r',origin='lower',clim=[0,0.6])
-    im1 = plt.imshow(taub*1e3,extent=[x[0],x[-1],y[0],y[-1]],origin='lower',vmin=0,vmax=400)
+    im1 = plt.imshow(taub*1e3,extent=[x[0],x[-1],y[0],y[-1]],origin='lower',vmin=0,vmax=400,cmap='viridis')
     xmin,xmax = plt.xlim()
     ymin,ymax = plt.ylim()
     plt.plot(np.r_[extent[:,0],extent[0,0]],np.r_[extent[:,1],extent[0,1]],'k',lw=0.5)
@@ -129,20 +129,20 @@ for i in range(0,len(regpars)):
         bot = 0.83
     elif glacier == 'Kanger':
         bot = 0.73
-    path = matplotlib.path.Path([[0.65*(xmax-xmin)+xmin,0.98*(ymax-ymin)+ymin],
+    path = matplotlib.path.Path([[0.63*(xmax-xmin)+xmin,0.98*(ymax-ymin)+ymin],
                         [0.97*(xmax-xmin)+xmin,0.98*(ymax-ymin)+ymin],
                         [0.97*(xmax-xmin)+xmin,bot*(ymax-ymin)+ymin],
-                        [0.65*(xmax-xmin)+xmin,bot*(ymax-ymin)+ymin],
-                        [0.65*(xmax-xmin)+xmin,0.98*(ymax-ymin)+ymin]])
+                        [0.63*(xmax-xmin)+xmin,bot*(ymax-ymin)+ymin],
+                        [0.63*(xmax-xmin)+xmin,0.98*(ymax-ymin)+ymin]])
     patch = matplotlib.patches.PathPatch(path,edgecolor='k',facecolor='w',lw=1,zorder=3)
     ax.add_patch(patch)
     MAPD = np.mean(abs(surf_misfit['misfit']))
     if glacier == 'Helheim':
-        plt.text(xmax-0.33*(xmax-xmin),y[-1]-3.5e3,'MAPE',fontsize=10)
-        plt.text(xmax-0.33*(xmax-xmin),y[-1]-6.0e3,'{0:.1f}%'.format(MAPD),fontsize=10)
+        plt.text(xmax-0.35*(xmax-xmin),y[-1]-3.5e3,'MAR',fontsize=10)
+        plt.text(xmax-0.35*(xmax-xmin),y[-1]-6.0e3,'{0:.1f}%'.format(MAPD),fontsize=10)
     elif glacier == 'Kanger':
-        plt.text(xmax-0.33*(xmax-xmin),y[-1]-3.2e3,'MAPE',fontsize=10)
-        plt.text(xmax-0.33*(xmax-xmin),y[-1]-5.7e3,'{0:.1f}%'.format(MAPD),fontsize=10)
+        plt.text(xmax-0.35*(xmax-xmin),y[-1]-3.2e3,'MAR',fontsize=10)
+        plt.text(xmax-0.35*(xmax-xmin),y[-1]-5.7e3,'{0:.1f}%'.format(MAPD),fontsize=10)
 
     #plt.subplot(gs[1,i])
     #ax = plt.gca()
@@ -155,7 +155,7 @@ for i in range(0,len(regpars)):
     #else:
     #    plt.ylabel('Count')
     #if i == 1:
-    #    plt.xlabel('Percent error (%)',fontsize=10)
+    #    plt.xlabel('Residual (%)',fontsize=10)
 
 if glacier == 'Helheim':
     cbar_ax1 = fig.add_axes([0.86,0.49,0.02,0.45])
@@ -169,7 +169,7 @@ cb1.ax.yaxis.set_tick_params(color='k')
 plt.setp(plt.getp(cb1.ax.axes, 'yticklabels'), color='k')
 
 cb2 = fig.colorbar(im2, cax=cbar_ax2,ticks=np.arange(-8,12,4))
-cb2.set_label(r'Percent error (%)',fontsize=10,fontname='Arial',color='k')
+cb2.set_label(r'Residual (%)',fontsize=10,fontname='Arial',color='k')
 cb2.ax.yaxis.set_tick_params(color='k')
 plt.setp(plt.getp(cb2.ax.axes, 'yticklabels'), color='k')
 
@@ -201,8 +201,8 @@ colors = ['g','b','r']
 for i in [0,1,2]:
     plt.plot(bins+50,e_bins[:,i],c=colors[i],label=r'$\lambda$='+regpars[i])
     plt.fill_between(bins+50, e_bins[:,i]-s_bins[:,i], e_bins[:,i]+s_bins[:,i],alpha=0.2,edgecolor=colors[i])
-plt.legend()
-plt.ylabel('MAPE (%)',fontsize=10)
+plt.legend(fontsize=10)
+plt.ylabel('MAR (%)',fontsize=10)
 plt.xlabel(r'$u^{obs}$ bin (m / yr)',fontsize=10)
 plt.tight_layout()
 plt.subplots_adjust(left=0.13, bottom=0.19, right=0.98, top=0.97, wspace=0.0, hspace=0.0)

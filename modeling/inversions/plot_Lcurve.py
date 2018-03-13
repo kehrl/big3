@@ -88,8 +88,8 @@ for i in range(0,len(regpar)):
             except:
                 vtudata = elmerreadlib.pvtu_file(DIRR+dir+'/adjoint_beta0001.pvtu',['vsurfini','velocity'])
                 surf = elmerreadlib.values_in_layer(vtudata,'surface')
-                misfit[i] = np.sqrt(np.mean((surf['vsurfini 1']-surf['ssavelocity 1'])**2+\
-                        (surf['vsurfini 2']-surf['ssavelocity 2'])**2))
+                misfit[i] = np.sqrt(np.mean((surf['vsurfini 1']-surf['velocity 1'])**2+\
+                        (surf['vsurfini 2']-surf['velocity 2'])**2))
 
 # Get area to get average "misfit"
 area = (shapely.geometry.Polygon(np.loadtxt(DIR+'inputs/mesh_extent.dat'))).area
@@ -111,7 +111,10 @@ ax2 = ax1.twinx()
 mn, mx = ax1.get_ylim()
 ax2.set_ylim(mn,mx)
 #ax2.set_ylim(np.sqrt(mn*2/area), np.sqrt(mx*2/area))
-yticks_RMSE = np.arange(np.ceil(np.sqrt(mn*2/area)/10)*10,np.floor(np.sqrt(mx*2/area)/10)*10+1,10,dtype=int)
+if (mx-mn) < 25:
+    yticks_RMSE = np.arange(np.ceil(np.sqrt(mn*2/area)/10)*10,np.floor(np.sqrt(mx*2/area)/10)*10+1,10,dtype=int)
+else:
+    yticks_RMSE = np.arange(np.ceil(np.sqrt(mn*2/area)/5)*5,np.floor(np.sqrt(mx*2/area)/5)*5+1,5,dtype=int)
 yticks_J = (yticks_RMSE**2.0)*area/2.0
 ax2.set_yticks(yticks_J)
 ax2.set_yticklabels(yticks_RMSE)
@@ -119,7 +122,12 @@ ax2.set_ylabel('RMSE (m/yr)')
 for i in range(0,len(strings)):
     if strings[i].startswith('1') or strings[i].startswith('5'):
         ax1.text(cost_bed[i]+0.0,cost_sur[i]+0.13*(ymax-ymin),strings[i],fontsize=10,rotation=45)
-plt.xlim([-0.02,np.max(cost_bed)+(np.max(cost_bed)-np.min(cost_bed))/3])
+if np.max(cost_bed) > 40:
+    plt.xlim([-2,np.max(cost_bed)+(np.max(cost_bed)-np.min(cost_bed))/3])
+elif np.max(cost_bed) > 12:
+    plt.xlim([-1,np.max(cost_bed)+(np.max(cost_bed)-np.min(cost_bed))/3])
+else:
+    plt.xlim([-0.02,np.max(cost_bed)+(np.max(cost_bed)-np.min(cost_bed))/3])
 
 plt.tight_layout()
 plt.subplots_adjust(left=0.26, bottom=0.15, right=0.84, top=0.98, wspace=0.0, hspace=0.0)
