@@ -873,7 +873,7 @@ def inversion_3D(glacier,x,y,time,dir_velocity_out='none',blur=False,dx='none'):
         filename2 = filename1
       elif ('200308' in date) or ('200307' in date):
         filename1 = HOWATDIR+"OPT_E68.80N_2003-07/OPT_E68.80N_2003-07"
-        filename2 = HOWATDIR+"OPT_E68.80N_2003-08/OPT_E68.80N_2003-08"
+        filename2 = HOWATDIR+"OPT_E68.80N_2001-07/OPT_E68.80N_2001-07"
       elif '200506' in date:
         filename1 = HOWATDIR+"OPT_E68.80N_2005-06/OPT_E68.80N_2005-06"
         filename2 = filename1
