@@ -71,6 +71,11 @@ Body Force 1
   Flow BodyForce 1 = Real 0.0            
   Flow BodyForce 2 = Real 0.0              
   Flow BodyForce 3 = Real $gravity
+
+  ! Definition of the Cost function
+  Adjoint Cost = Variable SSAVelocity 1 , Vsurfini 1 , SSAVelocity 2 , Vsurfini 2
+    Real MATC "0.5*((tx(0)-tx(1))*(tx(0)-tx(1))+(tx(2)-tx(3))*(tx(2)-tx(3)))"
+
 End
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -113,9 +118,32 @@ Solver 1
   Exported Variable 3 = Zb
   Exported Variable 4 = Zs
   Exported Variable 5 = mu
+  Exported Variable 6 = -dofs 2 "Velocityb"
+  Exported Variable 7 = CostValue
 End
 
 Solver 2
+  Equation = "Cost"
+
+  !!  Solver need to be associated => Define dumy variable
+  Variable = -nooutput "CostV"
+  Variable DOFs = 1
+
+  Procedure = "ElmerIceSolvers" "AdjointSSA_CostContSolver"
+
+  Problem Dimension = Integer 2 !2D mesh and 2D SSA Solution
+  Cost Variable Name = String "CostValue"  ! Name of Cost Variable
+ ! save the cost as a function of iterations (iterations,Cost,rms=sqrt(2*Cost/Ndata)
+  Cost Filename = File "cost.dat"
+
+  !Observed Variable Name = String "SSAVelocity"
+ ! ASCII File with data: x,y,u,v
+  !Observation File Name = File "inputs/velocity.xyuv"
+  !Save Used Data = Logical True
+
+End
+
+Solver 3
   Equation = "UpdateExport"
   Procedure = File "ElmerIceSolvers" "UpdateExport"
   Variable = -nooutput "dumy"
@@ -126,7 +154,7 @@ End
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 Equation 1
-  Active Solvers(2) = 1 2
+  Active Solvers(3) = 1 2 3
 End
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -134,22 +162,22 @@ Boundary Condition 1
   Name = "Side Walls"
   Target Boundaries = 2
 
-  SSAVelocity 1= Equals vsurfini 1
-  SSAVelocity 2= Equals vsurfini 2
+  SSAVelocity 1 = Equals vsurfini 1
+  SSAVelocity 2 = Equals vsurfini 2
 End
 
 Boundary Condition 2
   Name = "Inflow"
   Target Boundaries = 3
 
-  SSAVelocity 1= Equals vsurfini 1
-  SSAVelocity 2= Equals vsurfini 2
+  SSAVelocity 1 = Equals vsurfini 1
+  SSAVelocity 2 = Equals vsurfini 2
 End
 
 Boundary Condition 3
   Name = "Front"
   Target Boundaries = 1
 
-  SSAVelocity 1= Equals vsurfini 1
-  SSAVelocity 2= Equals vsurfini 2
+  SSAVelocity 1 = Equals vsurfini 1
+  SSAVelocity 2 = Equals vsurfini 2
 End

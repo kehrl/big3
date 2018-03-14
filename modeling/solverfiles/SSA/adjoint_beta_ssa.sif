@@ -273,8 +273,8 @@ Boundary Condition 1
   Name = "Side Walls"
   Target Boundaries = 2
 
-  SSAVelocity 1= Equals vsurfini 1
-  SSAVelocity 2= Equals vsurfini 2
+  SSAVelocity 1 = Equals vsurfini 1
+  SSAVelocity 2 = Equals vsurfini 2
   Adjoint 1 = Real 0.0
   Adjoint 2 = Real 0.0
 End
@@ -283,8 +283,8 @@ Boundary Condition 2
   Name = "Inflow"
   Target Boundaries = 3
 
-  SSAVelocity 1= Equals vsurfini 1
-  SSAVelocity 2= Equals vsurfini 2
+  SSAVelocity 1 = Equals vsurfini 1
+  SSAVelocity 2 = Equals vsurfini 2
   Adjoint 1 = Real 0.0
   Adjoint 2 = Real 0.0
 End
