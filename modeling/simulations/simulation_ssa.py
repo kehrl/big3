@@ -70,9 +70,9 @@ if not(os.path.exists(DIRS+solverfile_in+'.sif')):
 # Get beta file for Sliding_Beta.f90
 if not(beta_suffix==""):
   beta_suffix = "_"+beta_suffix
-  beta_file = "beta_linear"+beta_suffix+".dat"
+  beta_file = "beta_"+slidinglaw+beta_suffix+".dat"
   if os.path.isfile(DIRM+"/inputs/"+beta_file):
-    shutil.copy(DIRM+"/inputs/"+beta_file,DIRM+"/inputs/beta_linear.dat")
+    shutil.copy(DIRM+"/inputs/"+beta_file,DIRM+"/inputs/beta_"+slidinglaw+".dat")
   else:
     sys.exit("No beta file with name "+beta_file)
  
@@ -133,7 +133,7 @@ restartposition = 0
  
 os.chdir(DIRM)
 fid1 = open(DIRS+solverfile_in+'.sif', 'r')
-solverfile_out = solverfile_in+'_'+date+beta_suffix
+solverfile_out = solverfile_in+'_'+date+beta_suffix+'_'+slidinglaw
 fid2 = open(DIRM+solverfile_out+'.sif', 'w')
 
 lines=fid1.read()
@@ -142,7 +142,7 @@ lines=lines.replace('{FrontBC}', '{0}'.format(frontbc_text))
 lines=lines.replace('{Temperature}', '{0}'.format(temperature_text))
 lines=lines.replace('{TimeStepSize}', '$({0})'.format(dt))
 lines=lines.replace('{TimeSteps}', '{0}'.format(nt))
-lines=lines.replace('{steady_name}','steady{0}'.format(beta_suffix))
+lines=lines.replace('{steady_name}','steady{0}'.format(beta_suffix+'_'+slidinglaw))
 lines=lines.replace('{SlidingLaw}', '{0}'.format(sliding_text))
 
 fid2.write(lines)
@@ -157,4 +157,4 @@ del fid1, fid2
 returncode = elmerrunlib.run_elmer(DIRM+solverfile_out+'.sif',n=partitions)
 
 if not(beta_suffix==""):
-  os.system("rm "+DIRM+"inputs/beta_linear.dat")
+  os.system("rm "+DIRM+"inputs/beta_"+slidinglaw+".dat")
