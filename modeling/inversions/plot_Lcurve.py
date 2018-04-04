@@ -52,12 +52,13 @@ for line in lines:
     if p[0] == 'Lambda':
         pass
     else:
-        regpar_str.append(p[0])
-        regpar.append(float(p[0]))
-        nsim.append(float(p[1]))
-        cost_tot.append(float(p[2]))
-        cost_sur.append(float(p[3]))
-        cost_bed.append(float(p[4]))
+	if p[0].startswith('5') or p[0].startswith('1'):
+            regpar_str.append(p[0])
+	    regpar.append(float(p[0]))
+            nsim.append(float(p[1]))
+            cost_tot.append(float(p[2]))
+            cost_sur.append(float(p[3]))
+            cost_bed.append(float(p[4]))
 
 regpar = np.array(regpar)
 nsim = np.array(nsim)
@@ -65,8 +66,7 @@ cost_tot = np.array(cost_tot)
 cost_bed = np.array(cost_bed)
 cost_sur = np.array(cost_sur)
 
-ind1 = np.argsort(regpar)
-ind = ind1#[np.where((regpar >= 1e11) & (regpar <= 1e14))[0]]
+ind = np.argsort(regpar)
 regpar = regpar[ind]
 regpar_str = [regpar_str[x] for x in ind]
 nsim = nsim[ind]
@@ -77,6 +77,8 @@ cost_sur = cost_sur[ind]
 # Get vtu files
 dirs = os.listdir(DIRR)
 misfit = np.zeros([len(regpar),])
+cutoffs = np.arange(0,1001,250)
+MAPE = np.zeros([len(regpar),len(cutoffs)])
 for i in range(0,len(regpar)):
     for dir in dirs:
         if (dir.startswith('lambda_'+regpar_str[i])) and not(dir.endswith('.pdf')):
@@ -85,11 +87,15 @@ for i in range(0,len(regpar)):
                 surf = elmerreadlib.values_in_layer(vtudata,'surface')
                 misfit[i] = np.sqrt(np.mean((surf['vsurfini 1']-surf['ssavelocity 1'])**2+\
                         (surf['vsurfini 2']-surf['ssavelocity 2'])**2))
-            except:
+		APE = abs((surf['vsurfini']-surf['ssavelocity'])/surf['vsurfini'])*100
+	    except:
                 vtudata = elmerreadlib.pvtu_file(DIRR+dir+'/adjoint_beta0001.pvtu',['vsurfini','velocity'])
                 surf = elmerreadlib.values_in_layer(vtudata,'surface')
                 misfit[i] = np.sqrt(np.mean((surf['vsurfini 1']-surf['velocity 1'])**2+\
                         (surf['vsurfini 2']-surf['velocity 2'])**2))
+                APE = abs((surf['vsurfini']-surf['velocity'])/surf['vsurfini'])*100
+            for j in range(0,len(cutoffs)):
+	        MAPE[i,j] = np.mean(APE[[surf['vsurfini'] > cutoffs[j]]])
 
 # Get area to get average "misfit"
 area = (shapely.geometry.Polygon(np.loadtxt(DIR+'inputs/mesh_extent.dat'))).area
@@ -131,8 +137,25 @@ else:
 
 plt.tight_layout()
 plt.subplots_adjust(left=0.26, bottom=0.15, right=0.84, top=0.98, wspace=0.0, hspace=0.0)
-#plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/Lcurve_"+glacier+"_"+RES+".pdf"),format='PDF')
 plt.savefig(DIR+"/figures/Lcurve_"+method+".pdf")
+plt.close()
+
+fig =  plt.figure(figsize=(3.5,3))
+ax1 = plt.gca()
+matplotlib.rc('font',family='sans-serif',size=10)
+plt.plot([-0.5,len(regpar)],[3,3],'k-')
+for j in range(0,len(cutoffs)):
+    plt.plot(MAPE[:,j],'o--',linewidth=1.5,label=r'$>$'+str(cutoffs[j]))
+ax1.set_xticks(range(0,len(regpar)))
+ax1.set_xlim([-0.2,len(regpar)-0.8])
+ax1.set_xticklabels(strings,rotation=45,fontsize=10,ha='right')
+ax1.set_xlabel('$\lambda$',fontsize=10)
+ax1.set_ylabel(r'MAR (%)',fontsize=10)
+plt.legend(ncol=2,labelspacing=0.25,handlelength=1.5,handletextpad=0.25,columnspacing=0.5)
+
+plt.tight_layout()
+plt.subplots_adjust(left=0.2, bottom=0.24, right=0.98, top=0.98, wspace=0.0, hspace=0.0)
+plt.savefig(DIR+"/figures/Lcurve_"+method+"_MAPE.pdf")
 plt.close()
 
 print "Saving as "+DIR+"figures/Lcurve_"+method+".pdf"

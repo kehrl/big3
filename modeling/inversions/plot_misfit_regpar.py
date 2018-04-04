@@ -195,15 +195,16 @@ for i in range(1,len(bins)):
 
 fig = plt.figure(figsize=(3.75,2.5))
 plt.ylim([0,10])
-plt.plot([0,bins[-1]+50],[3,3],'k')
-plt.xlim([0,bins[-1]+50])
+plt.plot([0,(bins[-1]+50)/1e3],[3,3],'k')
+plt.xticks(np.arange(0,bins[-1]/1e3,1))
+plt.xlim([0,(bins[-1]+50)/1e3])
 colors = ['g','b','r']
 for i in [0,1,2]:
-    plt.plot(bins+50,e_bins[:,i],c=colors[i],label=r'$\lambda$='+regpars[i])
-    plt.fill_between(bins+50, e_bins[:,i]-s_bins[:,i], e_bins[:,i]+s_bins[:,i],alpha=0.2,edgecolor=colors[i])
+    plt.plot((bins+50)/1e3,e_bins[:,i],c=colors[i],label=r'$\lambda$='+regpars[i])
+    plt.fill_between((bins+50)/1e3, e_bins[:,i]-s_bins[:,i], e_bins[:,i]+s_bins[:,i],alpha=0.2,edgecolor=colors[i])
 plt.legend(fontsize=10)
 plt.ylabel('MAR (%)',fontsize=10)
-plt.xlabel(r'$u^{obs}$ bin (m / yr)',fontsize=10)
+plt.xlabel(r'$u^{obs}$ bin (km / yr)',fontsize=10)
 plt.tight_layout()
 plt.subplots_adjust(left=0.13, bottom=0.19, right=0.98, top=0.97, wspace=0.0, hspace=0.0)
 plt.savefig(DIR+"/figures/Regpars_MAPE_misfit_"+method+".pdf",DPI=600,transparent=False)
