@@ -23,8 +23,8 @@ parser.add_argument("-mesh", dest="meshname", required = True,
         help = "Name of mesh.")
 parser.add_argument("-dim", dest="dimension",required = False,
 	default='3D',help = "3D or Flowline.")
-parser.add_argument("-method", dest="method",required = True,
-        help = "adjoint or robin.")
+parser.add_argument("-method", dest="method",required = False,
+        help = "adjoint or robin.",default='adjoint')
 args, _ = parser.parse_known_args(sys.argv)
 RES = args.meshname
 ver = args.dimension
@@ -151,6 +151,7 @@ ax1.set_xlim([-0.2,len(regpar)-0.8])
 ax1.set_xticklabels(strings,rotation=45,fontsize=10,ha='right')
 ax1.set_xlabel('$\lambda$',fontsize=10)
 ax1.set_ylabel(r'MAR (%)',fontsize=10)
+ax1.set_ylim([1,15])
 plt.legend(ncol=2,labelspacing=0.25,handlelength=1.5,handletextpad=0.25,columnspacing=0.5)
 
 plt.tight_layout()
