@@ -117,10 +117,7 @@ ax2 = ax1.twinx()
 mn, mx = ax1.get_ylim()
 ax2.set_ylim(mn,mx)
 #ax2.set_ylim(np.sqrt(mn*2/area), np.sqrt(mx*2/area))
-if (mx-mn) < 25:
-    yticks_RMSE = np.arange(np.ceil(np.sqrt(mn*2/area)/10)*10,np.floor(np.sqrt(mx*2/area)/10)*10+1,10,dtype=int)
-else:
-    yticks_RMSE = np.arange(np.ceil(np.sqrt(mn*2/area)/5)*5,np.floor(np.sqrt(mx*2/area)/5)*5+1,5,dtype=int)
+yticks_RMSE = np.arange(np.ceil(np.sqrt(mn*2/area)/10)*10,np.floor(np.sqrt(mx*2/area)/10)*10+1,10,dtype=int)
 yticks_J = (yticks_RMSE**2.0)*area/2.0
 ax2.set_yticks(yticks_J)
 ax2.set_yticklabels(yticks_RMSE)
@@ -155,7 +152,7 @@ ax1.set_ylim([1,15])
 plt.legend(ncol=2,labelspacing=0.25,handlelength=1.5,handletextpad=0.25,columnspacing=0.5)
 
 plt.tight_layout()
-plt.subplots_adjust(left=0.2, bottom=0.24, right=0.98, top=0.98, wspace=0.0, hspace=0.0)
+plt.subplots_adjust(left=0.15, bottom=0.24, right=0.98, top=0.98, wspace=0.0, hspace=0.0)
 plt.savefig(DIR+"/figures/Lcurve_"+method+"_MAPE.pdf")
 plt.close()
 
