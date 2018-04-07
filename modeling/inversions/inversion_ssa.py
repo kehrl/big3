@@ -260,10 +260,10 @@ def main():
   fidw.write('{}\n'.format(len(bed['x'])))
   fidt.write('{}\n'.format(len(bed['x'])))
   for i in range(0,len(bed['x'])):
-    fidr.write('{0} {1} {2:.6f}\n'.format(bed['x'][i],bed['y'][i],bed['beta'][i]**2))
-    fidw.write('{0} {1} {2:.6f}\n'.format(bed['x'][i],bed['y'][i],\
+    fidr.write('{0} {1} {2:.16f}\n'.format(bed['x'][i],bed['y'][i],bed['beta'][i]**2))
+    fidw.write('{0} {1} {2:.16f}\n'.format(bed['x'][i],bed['y'][i],\
             (bed['beta'][i]**2)/(bed['ssavelocity'][i]**(-2.0/3.0))))
-    fidt.write('{0} {1} {2:.6f}\n'.format(bed['x'][i],bed['y'][i],bed['taub'][i]*1e3))
+    fidt.write('{0} {1} {2:.16f}\n'.format(bed['x'][i],bed['y'][i],bed['taub'][i]*1e3))
   fidr.close()
   fidw.close()
   fidt.close()
