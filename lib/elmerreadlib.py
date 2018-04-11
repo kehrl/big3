@@ -677,6 +677,33 @@ def pvtu_timeseries_grid(x,y,DIR,fileprefix,variables,inputsdir,layer='surface',
     
   return datagrid
 
+def pvtu_flowline(x,y,pvtufile,variables,layer='surface'):
+
+  from scipy.interpolate import griddata
+  import numpy as np
+  import matplotlib.path
+
+
+  data = pvtu_file(pvtufile,variables)
+  surf = values_in_layer(data,layer=layer)
+  del data
+  
+  varnames = list(surf.dtype.names)
+  varnames.remove('Node Number')
+  types = []
+  for var in varnames:
+    types.append(np.float64)
+  dataflow = np.zeros([len(x),], dtype=zip(varnames,types)) 
+
+  for var in varnames:
+    dataflow[var][:] = np.float('nan')
+    dataflow[var] = griddata((surf['x'],surf['y']),surf[var],(x,y))
+    
+  del surf
+     
+  return dataflow
+
+
 def pvtu_timeseries_flowline(x,y,DIR,fileprefix,variables,inputsdir='none',layer='surface',debug=False,t1=1,t2=np.Inf):
 
   from scipy.interpolate import griddata
@@ -713,9 +740,9 @@ def pvtu_timeseries_flowline(x,y,DIR,fileprefix,variables,inputsdir='none',layer
   if freesurfacevar not in variables:
     variables.append(freesurfacevar)
 
-
-  mesh_extent_x = np.loadtxt(inputsdir+'/mesh_timeseries_x.dat')
-  mesh_extent_y = np.loadtxt(inputsdir+'/mesh_timeseries_y.dat')
+  if not(inputsdir == 'none'):
+    mesh_extent_x = np.loadtxt(inputsdir+'/mesh_timeseries_x.dat')
+    mesh_extent_y = np.loadtxt(inputsdir+'/mesh_timeseries_y.dat')
 
   for i in range(0,t2-t1+1):
     t = i+t1
@@ -740,10 +767,13 @@ def pvtu_timeseries_flowline(x,y,DIR,fileprefix,variables,inputsdir='none',layer
       dataflow = np.zeros([len(x),t2-t1+1], dtype=zip(varnames,types)) 
       for var in varnames:
         dataflow[var][:,i] = float('nan')
-
-    ind = np.where(mesh_extent_x[:,t-1] != 0)
-    path = matplotlib.path.Path(np.column_stack([mesh_extent_x[:,t-1],mesh_extent_y[:,t-1]]))
-    inmesh = path.contains_points(np.column_stack([x,y]))
+    
+    if not(inputdirs == 'none'):
+      ind = np.where(mesh_extent_x[:,t-1] != 0)
+      path = matplotlib.path.Path(np.column_stack([mesh_extent_x[:,t-1],mesh_extent_y[:,t-1]]))
+      inmesh = path.contains_points(np.column_stack([x,y]))
+    else:
+      inmesh = np.arange(0,len(x))
 
     for var in varnames:
       dataflow[var][inmesh,i] = griddata((surf['x'],surf['y']),surf[var],(x[inmesh],y[inmesh]))
