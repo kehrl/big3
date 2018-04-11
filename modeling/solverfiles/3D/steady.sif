@@ -46,7 +46,7 @@ Simulation
 
 
   Output File = "$name$.result"
-  Post File = "$name$.vtu"
+  !Post File = "$name$.vtu"
 
   Initialize Dirichlet Conditions = Logical False
 
@@ -183,7 +183,7 @@ Solver 3
 End
 
 Solver 4
-  Exec Solver = "Never"
+  Exec Solver = String "After all"
   Equation = String "StressSolver"
   Procedure = "ElmerIceSolvers" "ComputeDevStress"          
   Variable = -nooutput "Sij"
@@ -205,15 +205,26 @@ End
 Solver 6
   Equation = SaveLine
   Procedure = "SaveData" "SaveLine"
-  Exec Solver = String "After all"
+  !Exec Solver = String "After all"
+  Exec Solver = "Never"
   Filename = "mesh2d/$name$.dat"
   
   !Parallel Reduce = Logical True
 End
 
+Solver 7
+  Equation = "ResultOutput"
+  Exec Solver = "After All"
+
+  Procedure = File "ResultOutputSolve" "ResultOutputSolver"
+
+  Output File Name = File "$name""
+  Vtu Format = Logical True
+End
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 Equation 1
-  Active Solvers(6) = 1 2 3 4 5 6
+  Active Solvers(7) = 1 2 3 4 5 6 7
   NS Convect = False
 End
 
