@@ -33,7 +33,7 @@ Simulation
   Timestep Sizes = $(5/365)
 
   Output File = "$name$.result"
-  Post File = "$name$.vtu"
+  !Post File = "$name$.vtu"
 
   Max Output Level = 3
 End
@@ -152,9 +152,19 @@ Solver 3
   Exported Variable 2 = -dofs 1 "Zb"
 End
 
+Solver 4
+  Equation = "ResultOutput"
+  Exec Solver = "After All"
+
+  Procedure = File "ResultOutputSolve" "ResultOutputSolver"
+
+  Output File Name = File "$name""
+  Vtu Format = Logical True
+End
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 Equation 1
-  Active Solvers(3) = 1 2 3
+  Active Solvers(4) = 1 2 3 4
 End
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
