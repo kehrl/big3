@@ -25,11 +25,15 @@ parser.add_argument("-dim", dest="dimension",required = False,
 	default='3D',help = "3D or Flowline.")
 parser.add_argument("-method", dest="method",required = False,
         help = "adjoint or robin.",default='adjoint')
+parser.add_argument("-highlight",dest="regpar_highlight", required = False,
+        help = "Choose a regularization parameter to highlight with a red circle.",default="none")
+
 args, _ = parser.parse_known_args(sys.argv)
 RES = args.meshname
 ver = args.dimension
 method = args.method
 glacier = args.glacier
+regpar_highlight = args.regpar_highlight
 
 # Input directory
 DIR = os.path.join(os.getenv("MODEL_HOME"),glacier+"/"+ver+"/"+RES+"/")
@@ -107,9 +111,12 @@ ax1 = plt.gca()
 matplotlib.rc('font',family='sans-serif',size=10)
 strings=["{:.0e}".format(i) for i in regpar]   
 plt.plot(cost_bed,cost_sur,'ko--',linewidth=1.5)
-ax1.set_xlabel('$J_{reg}$',fontsize=10)
+ax1.set_xlabel(r'$J_{reg}$',fontsize=10)
 ax1.set_ylabel(r'$J_o$',fontsize=10)
 plt.xticks(fontsize=10)
+if not(regpar_highlight == 'none'):
+    ind = np.where(regpar == float(regpar_highlight))[0]
+    ax1.plot(cost_bed[ind],cost_sur[ind],'ko',markerfacecolor='r')
 ax1.yaxis.set_major_formatter(matplotlib.ticker.FormatStrFormatter("%.1E"))
 ax1.set_ylim([np.min(cost_sur)-(np.max(cost_sur)-np.min(cost_sur))/10,np.max(cost_sur)+(np.max(cost_sur)-np.min(cost_sur))/4])
 ymin,ymax = ax1.get_ylim()
@@ -122,15 +129,23 @@ yticks_J = (yticks_RMSE**2.0)*area/2.0
 ax2.set_yticks(yticks_J)
 ax2.set_yticklabels(yticks_RMSE)
 ax2.set_ylabel('RMSE (m/yr)')
-for i in range(0,len(strings)):
-    if strings[i].startswith('1') or strings[i].startswith('5'):
-        ax1.text(cost_bed[i]+0.0,cost_sur[i]+0.13*(ymax-ymin),strings[i],fontsize=10,rotation=45)
 if np.max(cost_bed) > 40:
     plt.xlim([-2,np.max(cost_bed)+(np.max(cost_bed)-np.min(cost_bed))/3])
 elif np.max(cost_bed) > 12:
     plt.xlim([-1,np.max(cost_bed)+(np.max(cost_bed)-np.min(cost_bed))/3])
+elif np.max(cost_bed) > 1:
+    plt.xlim([-0.15,np.max(cost_bed)+(np.max(cost_bed)-np.min(cost_bed))/4])
 else:
-    plt.xlim([-0.02,np.max(cost_bed)+(np.max(cost_bed)-np.min(cost_bed))/3])
+    plt.xlim([-0.02,np.max(cost_bed)+(np.max(cost_bed)-np.min(cost_bed))/4])
+xmin,xmax = plt.xlim()
+for i in flipud(range(0,len(strings))):
+    if strings[i].startswith('1') or strings[i].startswith('5'):
+        if i != len(strings)-1 and (abs(cost_bed[i+1]-cost_bed[i]) < 0.045*(xmax-xmin) and \
+                abs(cost_sur[i+1]-cost_sur[i]) < 0.05*(ymax-ymin)):
+            if regpar[i] > 1e10:
+                ax1.text(cost_bed[i]+0.02*(xmax-xmin),cost_sur[i]+0.12*(ymax-ymin),strings[i],fontsize=9,rotation=45)
+        else:
+            ax1.text(cost_bed[i]+0.0,cost_sur[i]+0.12*(ymax-ymin),strings[i],fontsize=9,rotation=45)
 
 plt.tight_layout()
 plt.subplots_adjust(left=0.26, bottom=0.15, right=0.84, top=0.98, wspace=0.0, hspace=0.0)
