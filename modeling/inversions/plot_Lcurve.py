@@ -29,6 +29,8 @@ parser.add_argument("-highlight",dest="regpar_highlight", required = False,
         help = "Choose a regularization parameter to highlight with a red circle.",default="none")
 parser.add_argument("-subpanel",dest="subpanel",required = False,
 	help = "Subpanel label.",default="none")
+parser.add_argument("-modelname",dest="modelname",required = False,
+        help = "Model name.",default="none")
 
 args, _ = parser.parse_known_args(sys.argv)
 RES = args.meshname
@@ -37,6 +39,7 @@ method = args.method
 glacier = args.glacier
 regpar_highlight = args.regpar_highlight
 subpanel = args.subpanel
+modelname = args.modelname
 
 # Input directory
 DIR = os.path.join(os.getenv("MODEL_HOME"),glacier+"/"+ver+"/"+RES+"/")
@@ -150,7 +153,9 @@ for i in flipud(range(0,len(strings))):
         else:
             ax1.text(cost_bed[i]+0.01*(xmax-xmin),cost_sur[i]+0.105*(ymax-ymin),strings[i],fontsize=8,rotation=45)
 if subpanel != 'none':
-    ax1.text(xmin+0.03*(xmax-xmin),ymax-0.07*(ymax-ymin),subpanel,fontsize=10,fontweight='bold')
+    ax1.text(xmin+0.33*(xmax-xmin),ymax-0.07*(ymax-ymin),subpanel,fontsize=10,fontweight='bold')
+if modelname != 'none':
+    ax1.text(xmin+0.4*(xmax-xmin),ymax-0.07*(ymax-ymin),modelname,fontsize=10)
 
 plt.tight_layout()
 plt.subplots_adjust(left=0.26, bottom=0.15, right=0.84, top=0.98, wspace=0.0, hspace=0.0)
