@@ -121,7 +121,7 @@ if not(regpar_highlight == 'none'):
     ind = np.where(regpar == float(regpar_highlight))[0]
     ax1.plot(cost_bed[ind],cost_sur[ind],'ko',markerfacecolor='r')
 ax1.yaxis.set_major_formatter(matplotlib.ticker.FormatStrFormatter("%.1E"))
-ax1.set_ylim([np.min(cost_sur)-(np.max(cost_sur)-np.min(cost_sur))/20,np.max(cost_sur)+(np.max(cost_sur)-np.min(cost_sur))/4])
+ax1.set_ylim([np.min(cost_sur)-(np.max(cost_sur)-np.min(cost_sur))/25,np.max(cost_sur)+(np.max(cost_sur)-np.min(cost_sur))/5])
 ymin,ymax = ax1.get_ylim()
 ax2 = ax1.twinx()
 mn, mx = ax1.get_ylim()
@@ -143,15 +143,14 @@ else:
 xmin,xmax = plt.xlim()
 for i in flipud(range(0,len(strings))):
     if strings[i].startswith('1') or strings[i].startswith('5'):
-        if i != len(strings)-1 and (abs(cost_bed[i+1]-cost_bed[i]) < 0.045*(xmax-xmin) and \
+        if i != len(strings)-1 and (abs(cost_bed[i+1]-cost_bed[i]) < 0.05*(xmax-xmin) and \
                 abs(cost_sur[i+1]-cost_sur[i]) < 0.05*(ymax-ymin)):
             if regpar[i] > 1e10:
                 ax1.text(cost_bed[i]+0.04*(xmax-xmin),cost_sur[i]+0.10*(ymax-ymin),strings[i],fontsize=8,rotation=45)
         else:
             ax1.text(cost_bed[i]+0.01*(xmax-xmin),cost_sur[i]+0.105*(ymax-ymin),strings[i],fontsize=8,rotation=45)
 if subpanel != 'none':
-	ax1.text(xmin+0.03*(xmax-xmin),ymax-0.07*(ymax-ymin),subpanel,fontsize=10,fontweight='bold')
-
+    ax1.text(xmin+0.03*(xmax-xmin),ymax-0.07*(ymax-ymin),subpanel,fontsize=10,fontweight='bold')
 
 plt.tight_layout()
 plt.subplots_adjust(left=0.26, bottom=0.15, right=0.84, top=0.98, wspace=0.0, hspace=0.0)
