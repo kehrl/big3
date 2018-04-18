@@ -47,25 +47,31 @@ for dir in dirs:
     if dir.endswith('modelT'):
         # Get area to get average "misfit"
         area = (shapely.geometry.Polygon(np.loadtxt(DIRG+dir+'/inputs/mesh_extent.dat'))).area
-        fid = open(DIRG+dir+'/mesh2d/inversion_'+method+'/summary.dat','r')
-        lines = fid.readlines()
-        for line in lines[1:]:
-            p = line.split()
-            if p[0] == regpar:
-                model_dates.append(dir[3:11])
-                model_times.append(datelib.date_to_fracyear(int(dir[3:7]),int(dir[7:9]),int(dir[9:11])))
-                model_J_surf.append(float(p[3]))
+        try:
+            fid = open(DIRG+dir+'/mesh2d/inversion_'+method+'/summary.dat','r')
+            lines = fid.readlines()
+            for line in lines[1:]:
+                p = line.split()
+                if p[0] == regpar:
+                    model_dates.append(dir[3:11])
+                    model_times.append(datelib.date_to_fracyear(int(dir[3:7]),int(dir[7:9]),int(dir[9:11])))
+                    model_J_surf.append(float(p[3]))
+	except:
+	    pass
     if dir.endswith('constantT'):
         # Get area to get average "misfit"
         area = (shapely.geometry.Polygon(np.loadtxt(DIRG+dir+'/inputs/mesh_extent.dat'))).area
-        fid = open(DIRG+dir+'/mesh2d/inversion_'+method+'/summary.dat','r')
-        lines = fid.readlines()
-        for line in lines[1:]:
-            p = line.split()
-            if p[0] == regpar:
-                constant_dates.append(dir[3:11])
-                constant_times.append(datelib.date_to_fracyear(int(dir[3:7]),int(dir[7:9]),int(dir[9:11])))
-                constant_J_surf.append(float(p[3]))
+        try:
+            fid = open(DIRG+dir+'/mesh2d/inversion_'+method+'/summary.dat','r')
+            lines = fid.readlines()
+            for line in lines[1:]:
+                p = line.split()
+                if p[0] == regpar:
+                    constant_dates.append(dir[3:11])
+                    constant_times.append(datelib.date_to_fracyear(int(dir[3:7]),int(dir[7:9]),int(dir[9:11])))
+                    constant_J_surf.append(float(p[3]))
+        except:
+            pass
 
 fig = plt.figure(figsize=(6,3))
 ax1 = plt.gca()
@@ -76,8 +82,10 @@ ax1.yaxis.set_major_formatter(matplotlib.ticker.FormatStrFormatter('%.1E'))
 plt.ylabel(r'$J_o$',fontsize=10)
 ax2 = ax1.twinx()
 mn, mx = ax1.get_ylim()
+if mn < 0:
+  mn = 0
 ax2.set_ylim(mn,mx)
-#ax2.set_ylim(np.sqrt(mn*2/area), np.sqrt(mx*2/area))
+ax1.set_ylim(mn,mx)
 yticks_RMSE = np.arange(np.ceil(np.sqrt(mn*2/area)/25)*25,np.floor(np.sqrt(mx*2/area)/25)*25+1,25,dtype=int)
 yticks_J = (yticks_RMSE**2.0)*area/2.0
 ax2.set_yticks(yticks_J)
