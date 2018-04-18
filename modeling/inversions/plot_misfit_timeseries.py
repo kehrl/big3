@@ -1,7 +1,8 @@
-# This code plots basal shear stress and velocity misfit for three different regularization parameters. 
+# This code plots the cost function through for individual inversions time.
 #  
 #
-# LMK, UW, 5/30/201522import numpy as np
+# Laura Kehrl, UW, 04/10/2018
+import numpy as np
 import sys
 import os
 import matplotlib
@@ -22,7 +23,7 @@ parser.add_argument("-dim", dest="dimension",required = False,
 parser.add_argument("-method", dest="method",required = False,
         default='adjoint', help = "Adjoint or robin. Default is adjoint.")
 parser.add_argument("-regpar", dest="regpar",required = False,
-        default = '5e12', help = "Regularization parameter.")
+        default = '1e13', help = "Regularization parameter.")
 
 args, _ = parser.parse_known_args(sys.argv)
 dim = args.dimension
