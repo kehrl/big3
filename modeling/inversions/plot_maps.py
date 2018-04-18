@@ -5,9 +5,12 @@
 import os
 import numpy as np
 import cubehelix, matplotlib
-import masklib, geotifflib, datelib, glaclib, vellib
+import masklib, inverselib, geotifflib, datelib, glaclib, vellib
 import matplotlib.pyplot as plt
 from mpl_toolkits.basemap import Basemap
+
+# Cutoff for velocities
+velocity_cutoff = 1000 #m/yr
 
 # Image for plotting
 imagetime_HG = datelib.date_to_fracyear(2014,7,4)
@@ -27,7 +30,6 @@ hole2_HG = np.loadtxt('/Users/kehrl/Models/Helheim/3D/INV_SSA_ModelT/'+
         'DEM20120316_modelT_Lcurve/inputs/mesh_hole2.dat')
 extent_KG = np.loadtxt('/Users/kehrl/Models/Kanger/3D/INV_SSA_ModelT/'+
         'DEM20120522_modelT_Lcurve/inputs/mesh_extent.dat')
-
 
 # Load velocity records
 xvel_HG = np.arange(np.min(ximage_HG),np.max(ximage_HG),100)
@@ -55,6 +57,12 @@ mask[:,xmask > 462000+38e3] = 1
 vel_masked_KG = np.ma.masked_array(vel_KG,mask)
 del vel_KG, vel_HG, xmask, ymask, mask
 
+# Load min velocities for showing region where velocity is above cutoff
+x_cutoff_KG, y_cutoff_KG, vsurfini_cutoff_KG, ind_cutoff_grid, ind_cutoff  = inverselib.get_velocity_cutoff('Kanger',\
+        velocity_cutoff=velocity_cutoff)
+x_cutoff_HG, y_cutoff_HG, vsurfini_cutoff_HG, ind_cutoff_grid, ind_cutoff  = inverselib.get_velocity_cutoff('Helheim',\
+        velocity_cutoff=velocity_cutoff)
+
 # Figure
 fig = plt.figure(figsize=(5.5,3))
 gs = matplotlib.gridspec.GridSpec(1,2)
@@ -62,14 +70,15 @@ gs = matplotlib.gridspec.GridSpec(1,2)
 ax = plt.subplot(gs[0])
 cx = cubehelix.cmap(start=1.2,rot=-1.1,reverse=True,minLight=0.1,sat=2)
 p=plt.imshow(vel_masked_KG/1e3,extent=[np.min(xvel_KG),np.max(xvel_KG),np.min(yvel_KG),\
-        np.max(yvel_KG)],origin='lower',clim=[0,10],cmap=cx)
+        np.max(yvel_KG)],origin='lower',clim=[0,8],cmap=cx)
 ax = plt.gca()
 ax.imshow(image_KG[:,:,0],extent=[np.min(ximage_KG),np.max(ximage_KG),np.min(yimage_KG),\
         np.max(yimage_KG)],cmap='Greys_r',origin='lower',clim=[0,0.6])
 ax.imshow(vel_masked_KG/1e3,extent=[np.min(xvel_KG),np.max(xvel_KG),np.min(yvel_KG),\
-        np.max(yvel_KG)],origin='lower',alpha=0.5,clim=[0,10],cmap=cx)
+        np.max(yvel_KG)],origin='lower',alpha=0.7,clim=[0,8],cmap=cx)
+plt.contour(x_cutoff_KG,y_cutoff_KG,vsurfini_cutoff_KG,[velocity_cutoff],colors='k',linestyles='dashed',linewidths=1.5)
 ax.axis('equal')
-ax.plot(np.r_[extent_KG[:,0],extent_KG[0,0]],np.r_[extent_KG[:,1],extent_KG[0,1]],'k')
+ax.plot(np.r_[extent_KG[:,0],extent_KG[0,0]],np.r_[extent_KG[:,1],extent_KG[0,1]],'k',lw=1.5)
 #path = matplotlib.path.Path(np.column_stack([xflux,yflux]))
 #patch = matplotlib.patches.PathPatch(path,hatch='xxx',edgecolor='k',facecolor='none',lw=1)
 #ax.add_patch(patch)
@@ -82,7 +91,8 @@ ax.set_xticks([])
 xmin,xmax = plt.xlim()
 ymin,ymax = plt.ylim()
 ax.text(xmin+0.03*(xmax-xmin),ymin+0.95*(ymax-ymin),'a',fontsize=10,fontweight='bold')
-ax.text(xmin+0.09*(xmax-xmin),ymin+0.95*(ymax-ymin),'KG',fontsize=10)
+ax.text(xmin+0.08*(xmax-xmin),ymin+0.95*(ymax-ymin),'Kangerlussuaq Glacier',fontsize=10)
+ax.text(xmin+0.08*(xmax-xmin),ymin+0.89*(ymax-ymin),'(KG)',fontsize=10)
 
 path = matplotlib.path.Path([[0.02*(xmax-xmin)+xmin,0.25*(ymax-ymin)+ymin],
                         [0.45*(xmax-xmin)+xmin,0.25*(ymax-ymin)+ymin],
@@ -92,7 +102,7 @@ path = matplotlib.path.Path([[0.02*(xmax-xmin)+xmin,0.25*(ymax-ymin)+ymin],
 patch = matplotlib.patches.PathPatch(path,edgecolor='k',facecolor='w',lw=1)
 ax.add_patch(patch)
 cbaxes = fig.add_axes([0.045, 0.225, 0.17, 0.03])
-cb = plt.colorbar(p,cax=cbaxes,orientation='horizontal',ticks=[0,5,10])
+cb = plt.colorbar(p,cax=cbaxes,orientation='horizontal',ticks=[0,4,8],extend='max')
 ax.text(xmin+0.055*(xmax-xmin),ymin+0.085*(ymax-ymin),'Velocity (km / yr)',fontsize=8)
 cb.ax.tick_params(labelsize=8)
 ax.plot([xmin+0.07*(xmax-xmin),xmin+0.07*(xmax-xmin)+5e3],\
@@ -120,13 +130,14 @@ ax = plt.gca()
 ax.imshow(image_HG[:,:,0],extent=[np.min(ximage_HG),np.max(ximage_HG),np.min(yimage_HG),\
         np.max(yimage_HG)],cmap='Greys_r',origin='lower',clim=[0,0.6])
 ax.imshow(vel_masked_HG/1e3,extent=[np.min(xvel_HG),np.max(xvel_HG),np.min(yvel_HG),\
-        np.max(yvel_HG)],origin='lower',alpha=0.5,clim=[0,10],cmap=cx)
-ax.plot(np.r_[extent_HG[:,0],extent_HG[0,0]],np.r_[extent_HG[:,1],extent_HG[0,1]],'k')
-ax.plot(np.r_[hole1_HG[:,0],hole1_HG[0,0]],np.r_[hole1_HG[:,1],hole1_HG[0,1]],'k')
-ax.plot(np.r_[hole2_HG[:,0],hole2_HG[0,0]],np.r_[hole2_HG[:,1],hole2_HG[0,1]],'k')
+        np.max(yvel_HG)],origin='lower',alpha=0.7,clim=[0,8],cmap=cx)
+plt.contour(x_cutoff_HG,y_cutoff_HG,vsurfini_cutoff_HG,[velocity_cutoff],colors='k',linestyles='dashed',linewidths=1.5)
+ax.plot(np.r_[extent_HG[:,0],extent_HG[0,0]],np.r_[extent_HG[:,1],extent_HG[0,1]],'k',lw=1.5)
+ax.plot(np.r_[hole1_HG[:,0],hole1_HG[0,0]],np.r_[hole1_HG[:,1],hole1_HG[0,1]],'k',lw=1.5)
+ax.plot(np.r_[hole2_HG[:,0],hole2_HG[0,0]],np.r_[hole2_HG[:,1],hole2_HG[0,1]],'k',lw=1.5)
 ax.axis('equal')
-plt.xlim([278000,278000+41e3])
-plt.ylim([-2586500,-2586500+43e3])
+plt.xlim([276000,276000+41e3])
+plt.ylim([-2585500,-2585500+43e3])
 ax.set_xticklabels([])
 ax.set_yticklabels([])
 ax.set_yticks([])
@@ -135,7 +146,9 @@ xmin,xmax = plt.xlim()
 ymin,ymax = plt.ylim()
 ax.text(xmin+0.03
         *(xmax-xmin),ymin+0.95*(ymax-ymin),'b',fontsize=10,fontweight='bold')
-ax.text(xmin+0.09*(xmax-xmin),ymin+0.95*(ymax-ymin),'HG',fontsize=10)
+ax.text(xmin+0.08*(xmax-xmin),ymin+0.95*(ymax-ymin),'Helheim',fontsize=10)
+ax.text(xmin+0.08*(xmax-xmin),ymin+0.90*(ymax-ymin),'Glacier',fontsize=10)
+ax.text(xmin+0.08*(xmax-xmin),ymin+0.84*(ymax-ymin),'(HG)',fontsize=10)
 
 ax2 = fig.add_axes([0.78, 0.515, 0.25, 0.45])
 m = Basemap(width=1600000,height=3000000,
