@@ -85,6 +85,17 @@ for dir in dirs:
         dhdy[1:-1,1:-1] = ((zs[2:,1:-1]-zs[0:-2,1:-1]).T/(y[2:]-y[0:-2])).T
         taud = -rho_i*g*H*(dhdx*u+dhdy*v)/np.sqrt(u**2+v**2)
         taud_blur = scipy.ndimage.filters.gaussian_filter(taud,sigma=2,truncate=4)
+
+        # Save taud to inputs directory for use by other scripts
+        fid = open(maindir+dir+'/inputs/taud.xy','w')
+        fid.write('{0}\n'.format(len(x)))
+        fid.write('{0}\n'.format(len(y)))
+        for i in range(0,len(x)):
+            for j in range(0,len(y)):
+                fid.write('{0:.6f} {1:.6f} {2:.16f}\n'.format(x[i],y[j],taud[j,i]/1e6))
+        fid.close()
+
+        # Mask arrays for plotting
         taud_blur[mask == 1] = np.float('NaN')
         taud[mask == 1] = np.float('NaN')
 

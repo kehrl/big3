@@ -11,9 +11,9 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-glacier",dest="glacier",required = True,
         help = "Name of glacier.")
 parser.add_argument("-regpar", dest="regpar",required = False,
-        default = '5e12', help = "Regularization parameter.")
+        default = '1e13', help = "Regularization parameter.")
 parser.add_argument("-output", dest="output",required = False,
-        default = 'taub', help = "Output (taub or betqsuared).")
+        default = 'taub', help = "Output (taub or betasquared).")
 parser.add_argument("-temperature", dest="temperature",required = True)
 
 args, _ = parser.parse_known_args(sys.argv)
