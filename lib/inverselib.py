@@ -131,10 +131,10 @@ def guess_beta(x,y,zs,zb,u,v,frac,A=3.5e-25*365.25*24*60*60*1.0e18):
       
   return ub,vb,beta
 
-def get_velocity_cutoff(glacier,velocity_cutoff=1000,temperature='model',model_dir='',SSA=True):
+def get_velocity_cutoff(glacier,velocity_cutoff=1000,temperature='model',model_dir='',SSA=True,sign='over'):
     '''
     x_grid,y_grid,vsurfini_grid,ind_cutoff_grid,ind_cutoff = get_velocity_cutoff(glacier,
-    velocity_cutoff=1000,temperature='model',model_dir='',SSA=True)
+    velocity_cutoff=1000,temperature='model',model_dir='',SSA=True,sign='over')
     
     Find nodes and grid indices where the velocity remains above a particular cutoff value, since
     inversion results seem to be better for higher velocities.
@@ -145,6 +145,7 @@ def get_velocity_cutoff(glacier,velocity_cutoff=1000,temperature='model',model_d
     temperature     : model temperature
     model_dir       : add directory if the model results are NOT located in $MODEL_HOME/glacier/3D/
     SSA             : if the model is SSA
+    sign            : find indices where values remain "over" or "under" the cutoff
     
     Outputs:
     x_grid          : x values for vsurfini_grid
@@ -172,6 +173,10 @@ def get_velocity_cutoff(glacier,velocity_cutoff=1000,temperature='model',model_d
     else:
         model_text = '1e12_FS'
 
+    # Check to make sure we have an acceptable value for "sign". If not, exit code.
+    if not(sign == 'under') and not(sign == 'over'):
+        sys.exit("Unacceptable value for sign of "+sign)
+
     # Get indices where velocity is always greater than the cutoff value
     n = 0
     for dir in dirs:
@@ -195,7 +200,10 @@ def get_velocity_cutoff(glacier,velocity_cutoff=1000,temperature='model',model_d
                     holes = []
 
             # Save minimum velocity through time
-            ind = np.where(surf['vsurfini'] > surf['vsurfini'])[0]
+            if sign == 'over':
+                ind = np.where(surf_min['vsurfini'] >= surf['vsurfini'])[0]
+            elif sign == 'under':
+                ind = np.where(surf_min['vsurfini'] <= surf['vsurfini'])[0]
             if len(ind) > 0:
                 surf_min['vsurfini'][ind] = surf['vsurfini'][ind]
 
@@ -207,9 +215,15 @@ def get_velocity_cutoff(glacier,velocity_cutoff=1000,temperature='model',model_d
     vsurfini_grid = scipy.ndimage.filters.gaussian_filter(vsurfini_grid,sigma=2.5,truncate=4)
 
     # Find grid indices that are below the cutoff value
-    ind_cutoff_grid = np.where(vsurfini_grid < velocity_cutoff)
+    if sign == 'over':
+        ind_cutoff_grid = np.where(vsurfini_grid <= velocity_cutoff)
+    elif sign == 'under':
+        ind_cutoff_grid = np.where(vsurfini_grid >= velocity_cutoff)
 
     # Find nodes that remain above the cutoff value
-    ind_cutoff = np.where(surf_min['vsurfini'] >= velocity_cutoff)
+    if sign == 'over':
+        ind_cutoff = np.where(surf_min['vsurfini'] >= velocity_cutoff)[0]
+    elif sign == 'under':
+        ind_cutoff = np.where(surf_min['vsurfini'] <= velocity_cutoff)[0]
 
     return x_grid, y_grid, vsurfini_grid, ind_cutoff_grid, ind_cutoff
