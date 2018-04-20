@@ -6,11 +6,20 @@ import inverselib
 
 glacier = 'Kanger'
 temperature = 'model'
-maindir = '/Users/kehrl/Models/'+glacier+'/3D/'
+maindir = os.path.join(os.getenv("MODEL_HOME"),glacier+'/3D/')
 dirs = os.listdir(maindir)
-beta_date = 'average'
+beta_date = ''
 slidinglaw = 'linear'
 cutoff = 1000
+regpar = '1e12'
+SSA = False
+
+if SSA:
+    modelname = 'SSA'
+    vname = 'ssavelocity'
+else:
+    modelname = 'FS'
+    vname = 'velocity'
 
 if temperature == 'model':
     temperature_text = 'modelT'
@@ -34,20 +43,23 @@ vmax = 20
 cmap = 'RdYlBu_r'
 
 # Get indices where velocity is always greater than the cutoff value
-x_cutoff,y_cutoff,vsurfini_cutoff,ind_cutoff_grid, ind_cutoff  = inverselib.get_velocity_cutoff(glacier,velocity_cutoff=cutoff)
+x_cutoff,y_cutoff,vsurfini_cutoff,ind_cutoff_grid, ind_cutoff  = inverselib.get_velocity_cutoff(glacier,\
+	velocity_cutoff=cutoff,SSA=False)
 
 # Now create plots and get misfit values for velocities > cutoff        
 n = 0
-for dir in dirs:
+for dir in np.sort(dirs):
     if dir.startswith('DEM') and dir.endswith(temperature_text):
         if no_beta_file:
             beta_date = dir[3:11]
-            beta_suffix = '1e13_SSA_DEM'+beta_date+'_'+temperature_text+'_'+slidinglaw
-        else:
-            beta_suffix = '1e13_SSA_average_2000_2016_'+temperature_text+'_'+slidinglaw
-       
+            beta_suffix = regpar+'_'+modelname+'_DEM'+beta_date+'_'+temperature_text+'_'+slidinglaw
+        elif beta_date == 'average':
+            beta_suffix = regpar+'_'+modelname+'_average_2000_2016_'+temperature_text+'_'+slidinglaw
+	else:
+            beta_suffix = regpar+'_'+modelname+'_DEM'+beta_date+'_'+temperature_text+'_'+slidinglaw       
+
         data = elmerreadlib.pvtu_file(maindir+dir+'/mesh2d/steady_'+beta_suffix+\
-                '0001.pvtu',['vsurfini','ssavelocity'])
+                '0001.pvtu',['vsurfini',vname])
         surf = elmerreadlib.values_in_layer(data,'surf')
         if n == 0:
             # Mesh boundaries
@@ -62,8 +74,8 @@ for dir in dirs:
         surf_misfit = np.zeros(surf.shape,dtype=np.dtype(surf.dtype.descr+[('misfit',np.float64)]))
         for name in surf.dtype.descr:
             surf_misfit[name[0]] = surf[name[0]]
-        surf_misfit['misfit'] = (surf['ssavelocity']-surf['vsurfini'])/surf['vsurfini']*100
-
+        surf_misfit['misfit'] = (surf[vname]-surf['vsurfini'])/surf['vsurfini']*100
+	
         x,y,grid = elmerreadlib.grid3d(surf_misfit,'misfit',holes,extent,dx=50)
         grid[ind_cutoff_grid] = np.float('NaN')
         grid[np.isnan(vsurfini_cutoff)] = np.float('NaN') 
@@ -111,7 +123,7 @@ elif glacier == 'Helheim':
     plt.subplots_adjust(hspace=0.02,wspace=0.03,top=0.995,right=0.99,left=0.01,bottom=0.05)
 
 if no_beta_file:
-    beta_suffix = '1e13_SSA_'+temperature_text+'_'+slidinglaw
+    beta_suffix = regpar+'_'+modelname+'_'+temperature_text+'_'+slidinglaw
 plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+'_misfit_beta_'+beta_suffix+'.pdf'),FORMAT='PDF',dpi=400)
 print "Saving as "+os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+'_misfit_beta_'+beta_suffix+'.pdf')
 plt.close()
