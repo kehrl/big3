@@ -50,21 +50,22 @@ for dir in dirs:
         try:
             fid = open(DIRG+dir+'/mesh2d/inversion_'+method+'/summary.dat','r')
             lines = fid.readlines()
-            for line in lines[1:]:
+            for line in lines:
                 p = line.split()
                 if p[0] == regpar:
                     model_dates.append(dir[3:11])
                     model_times.append(datelib.date_to_fracyear(int(dir[3:7]),int(dir[7:9]),int(dir[9:11])))
                     model_J_surf.append(float(p[3]))
+	    fid.close()
 	except:
-	    pass
+	    print "failed "+dir
     if dir.endswith('constantT'):
         # Get area to get average "misfit"
         area = (shapely.geometry.Polygon(np.loadtxt(DIRG+dir+'/inputs/mesh_extent.dat'))).area
         try:
             fid = open(DIRG+dir+'/mesh2d/inversion_'+method+'/summary.dat','r')
             lines = fid.readlines()
-            for line in lines[1:]:
+            for line in lines:
                 p = line.split()
                 if p[0] == regpar:
                     constant_dates.append(dir[3:11])
