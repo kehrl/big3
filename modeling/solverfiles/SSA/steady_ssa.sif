@@ -26,12 +26,6 @@ Simulation
   Steady State Min Iterations = 1
   Steady State Max Iterations = 20
   
-  Timestepping Method = "bdf"
-  BDF Order = 1
-  Timestep Intervals = 5
-  Output Intervals = 1        
-  Timestep Sizes = $(5/365)
-
   Output File = "$name$.result"
   !Post File = "$name$.vtu"
 

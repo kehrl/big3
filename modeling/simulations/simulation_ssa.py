@@ -37,7 +37,7 @@ parser.add_argument("-nt",dest="nt",required  = False,type=str,\
 parser.add_argument("-dt",dest="dt",required  = False,type=str,\
        default='1/365.25',help = "Timestep size (1/365.25, i.e., 1 day).") 
 parser.add_argument("-slidinglaw",dest="slidinglaw",required  = False,type=str,\
-       default='linear',help = "Sliding law (linear or weertman).")
+       default='linear',help = "Sliding law (linear, weertman, or exponent).")
 
 args, _ = parser.parse_known_args(sys.argv)
 
@@ -72,7 +72,10 @@ if not(beta_suffix==""):
   beta_suffix = "_"+beta_suffix
   beta_file = "beta_"+slidinglaw+beta_suffix+".dat"
   if os.path.isfile(DIRM+"/inputs/"+beta_file):
-    shutil.copy(DIRM+"/inputs/"+beta_file,DIRM+"/inputs/beta_"+slidinglaw+".dat")
+    if slidinglaw == 'weertman' or slidinglaw.startswith('m'):         
+      shutil.copy(DIRM+"/inputs/"+beta_file,DIRM+"/inputs/beta_weertman.dat")
+    elif slidinglaw == 'linear':
+      shutil.copy(DIRM+"/inputs/"+beta_file,DIRM+"/inputs/beta_linear.dat")    
   else:
     sys.exit("No beta file with name "+beta_file)
  
@@ -119,6 +122,16 @@ elif slidinglaw == 'weertman':
   SSA Friction Exponent = Real $(1.0/3.0)
   ! Min velocity for linearisation where ub=0
   SSA Friction Linear Velocity = Real 0.0001 """
+elif slidinglaw.startswith('m'):
+    m = int(slidinglaw[1:])
+    sliding_text = """
+  SSA Friction Law = String "weertman"
+  SSA Friction Parameter = Variable Coordinate 1, Coordinate 2
+    REAL Procedure "Sliding_Beta.so" "Weertman_NearestNeighbor"
+  ! Exponent m
+  SSA Friction Exponent = Real $(1.0/"""+str(float(m))+""")
+  ! Min velocity for linearisation where ub=0
+  SSA Friction Linear Velocity = Real 0.0001 """
 else:
     sys.exit("Unknown sliding law of "+slidinglaw)
 
@@ -156,5 +169,9 @@ del fid1, fid2
 
 returncode = elmerrunlib.run_elmer(DIRM+solverfile_out+'.sif',n=partitions)
 
+# Remove beta files created for this simulation
 if not(beta_suffix==""):
-  os.system("rm "+DIRM+"inputs/beta_"+slidinglaw+".dat")
+  if slidinglaw == 'weertman' or slidinglaw.startswith('m'):
+    os.system("rm "+DIRM+"inputs/beta_weertman.dat")
+  elif slidinglaw == 'linear':
+    os.system("rm "+DIRM+"inputs/beta_linear.dat")      
