@@ -149,7 +149,7 @@ for i in flipud(range(0,len(strings))):
         if i != len(strings)-1 and (abs(cost_bed[i+1]-cost_bed[i]) < 0.05*(xmax-xmin) and \
                 abs(cost_sur[i+1]-cost_sur[i]) < 0.05*(ymax-ymin)):
             if regpar[i] > 1e10:
-                ax1.text(cost_bed[i]+0.04*(xmax-xmin),cost_sur[i]+0.10*(ymax-ymin),strings[i],fontsize=8,rotation=45)
+                ax1.text(cost_bed[i]+0.03*(xmax-xmin),cost_sur[i]+0.10*(ymax-ymin),strings[i],fontsize=8,rotation=45)
         else:
             ax1.text(cost_bed[i]+0.01*(xmax-xmin),cost_sur[i]+0.105*(ymax-ymin),strings[i],fontsize=8,rotation=45)
 if subpanel != 'none':
