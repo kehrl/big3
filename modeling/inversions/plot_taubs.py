@@ -27,10 +27,13 @@ if T == 'model':
 else:
     temperature = 'constantT'
 
-maindir = '/Users/kehrl/Models/'+glacier+'/3D/'
+maindir = os.path.join(os.getenv("MODEL_HOME"),glacier+'/3D/')
 dirs = os.listdir(maindir)
 
-fig = plt.figure(figsize=(7.5,15))
+if glacier == 'Kanger':
+  fig = plt.figure(figsize=(7.5,11))
+elif glacier == 'Helheim':
+  fig = plt.figure(figsize=(7.5,15))
 matplotlib.rc('font',family='Arial')
 gs = matplotlib.gridspec.GridSpec(6,4)
 
@@ -44,15 +47,21 @@ else:
     cmap = 'viridis'
 
 n = 0
-for dir in dirs:
+for dir in np.sort(dirs):
     if dir.startswith('DEM') and dir.endswith(temperature):
         try:
             subdirs = os.listdir(maindir+dir+'/mesh2d/inversion_adjoint')
             for subdir in subdirs:
                 if (regpar in subdir) and not(subdir.endswith('.pdf')):
-                    bed = elmerreadlib.pvtu_file(maindir+dir+'/mesh2d/inversion_adjoint/'+subdir+
-                        '/adjoint_beta_ssa0001.pvtu',['ssavelocity','beta','vsurfini'])            
-            if n == 0:
+		  if os.path.isfile(maindir+dir+'/mesh2d/inversion_adjoint/'+subdir+\
+		        '/adjoint_beta_ssa0001.pvtu'):
+		     data = elmerreadlib.pvtu_file(maindir+dir+'/mesh2d/inversion_adjoint/'+subdir+
+                        '/adjoint_beta_ssa0001.pvtu',['ssavelocity','beta','vsurfini'])
+	          else:
+                     data = elmerreadlib.pvtu_file(maindir+dir+'/mesh2d/inversion_adjoint/'+subdir+
+		        '/adjoint_beta0001.pvtu',['velocity','beta','vsurfini'])
+	          bed = elmerreadlib.values_in_layer(data,'bed')
+	    if n == 0:
                 # Mesh boundaries
                 extent = np.loadtxt(maindir+dir+"/inputs/mesh_extent.dat")
                 try:
