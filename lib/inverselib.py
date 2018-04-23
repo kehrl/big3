@@ -155,8 +155,9 @@ def get_velocity_cutoff(glacier,velocity_cutoff=1000,temperature='model',model_d
     ind_cutoff      : node indices that remain above the velocity cutoff
     '''
 
-    import os, scipy, elmerreadlib
+    import os, elmerreadlib
     import numpy as np
+    import scipy.ndimage
     import matplotlib.pyplot as plt
 
     # Get model result directories
