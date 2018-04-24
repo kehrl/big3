@@ -161,7 +161,7 @@ def get_velocity_cutoff(glacier,velocity_cutoff=1000,temperature='model',model_d
     import matplotlib.pyplot as plt
 
     # Get model result directories
-    maindir = os.path.join(os.getenv("MODEL_HOME"),glacier+"/3D/"+model_dir)
+    maindir = os.path.join(os.getenv("MODEL_HOME"),glacier+"/3D/"+model_dir+'/')
     dirs = os.listdir(maindir)
 
     # Set up various parameters for pulling the correct model results
