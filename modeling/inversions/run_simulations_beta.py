@@ -7,11 +7,11 @@ import time
 import os
 import shutil
 
-glacier = 'Kanger'
-#glacier = 'Helheim'
-temperature = '-10.0'
-sliding_exponent = 8
-beta_date = '20120522'#'20120316'
+#glacier = 'Kanger'
+glacier = 'Helheim'
+temperature = 'model'
+sliding_exponent = 1
+beta_date = '20120316'#'20120316'
 regpar = '1e13'
 nparts = 4
 
