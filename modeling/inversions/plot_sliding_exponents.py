@@ -221,4 +221,54 @@ print "Saving as "+os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+'_sliding_ex
         temperature_text+'_RMSE.pdf')
 plt.close()
 
+ms = [0,2,4,9]
+fig = plt.figure(figsize=(6.5,3))
+matplotlib.rc('font',family='Arial')
+gs1 = matplotlib.gridspec.GridSpec(1,1)
+gs1.update(left=0.075, right=0.46, bottom=0.13, top=0.98, wspace=0.03, hspace=0.03)
+ax1 = plt.subplot(gs1[0])
+ax1.tick_params(labelsize=8)
+plt.xlabel(r'Sliding exponent $m$',fontsize=8)
+plt.ylabel(r'RMSE (m yr$^{-1}$)',fontsize=8)
+plt.xticks(np.arange(0,len(m)))
+ax1.set_xticklabels(m)
+ax1.plot([-1,len(m)+1],[np.mean(misfits_inv_rmse),np.mean(misfits_inv_rmse)],'k--',label='Inversion')
+ax1.fill_between([-1,len(m)+1],[iqr_inv[0],iqr_inv[0]],[iqr_inv[1],iqr_inv[1]],color='0.7')
+ax1.errorbar(np.arange(0,len(m)),np.mean(misfits_one_rmse,axis=1),yerr=iqr_one,capsize=3,fmt='ko',ecolor='r',\
+        markersize=5,markerfacecolor='r',label=beta_date_string)
+ax1.errorbar(np.arange(0,len(m)),np.mean(misfits_ave_rmse,axis=1),yerr=iqr_ave,capsize=3,fmt='ks',ecolor='b',\
+        markersize=5,markerfacecolor='b',label='Average')
+ax1.set_xlim([-1,len(m)])
+if glacier == 'Kanger':
+    plt.text(0.7,305,'(a)',fontsize=8,fontweight='bold')
+elif glacier == 'Helheim':
+    plt.text(-0.6,335,'(a)',fontsize=8,fontweight='bold')
+plt.legend(loc=0,labelspacing=0.4,handletextpad=1,handlelength=1.5,fontsize=8)
+gs2 = matplotlib.gridspec.GridSpec(2,1)
+gs2.update(left=0.54, right=0.98, bottom=0.13, top=0.98, wspace=0.03, hspace=0.03)
+ax1 = plt.subplot(gs2[0])
+plt.plot(times,velocities_obs/1e3,'ks',markerfacecolor='w',markersize=8,mew=1.5)
+for j in ms:
+    plt.plot(times,velocities_ave[j,:]/1e3,'.-',label=r'$m=$'+'{0}'.format(int(m[j])))
+plt.ylabel('Velocity (km yr$^{-1}$)',fontsize=8)
+plt.xlim([2001,2016]); ax1.set_xticklabels([])
+if glacier == 'Kanger':
+    plt.text(2001.2,4.4,'(b)',fontsize=8,fontweight='bold')
+elif glacier == 'Helheim':
+    plt.text(2001.2,3.95,'(b)',fontsize=8,fontweight='bold')
+ax2 = plt.subplot(gs2[1])
+ax2.tick_params(labelsize=8)
+plt.plot(times,misfits_inv_rmse,'k.-',label='Inversion')
+for j in ms:
+    plt.plot(times,misfits_ave_rmse[j,:],'.-',label=r'$m=$'+'{0}'.format(int(m[j])))
+plt.xlim([2001,2016])
+plt.ylabel('RMSE (m yr$^{-1}$)',fontsize=8)
+if glacier == 'Kanger':
+    plt.text(2001.2,520,'(c)',fontsize=8,fontweight='bold')
+elif glacier == 'Helheim':
+    plt.text(2001.2,590,'(c)',fontsize=8,fontweight='bold')
+plt.legend(loc=0,labelspacing=0.4,handletextpad=0.5,handlelength=1.5,fontsize=8,ncol=2,columnspacing=0.5)
+plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+'_sliding_exponent_'+modelname+'_'+\
+        temperature_text+'_timeseries.pdf'),FORMAT='PDF',dpi=400)
+plt.close()
 
