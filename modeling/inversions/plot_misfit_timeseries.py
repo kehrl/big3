@@ -72,20 +72,24 @@ ax1.yaxis.set_major_formatter(matplotlib.ticker.FormatStrFormatter('%.1E'))
 ax1.tick_params(axis='both',labelsize=8)
 plt.ylabel(r'$J_o$',fontsize=8,fontname='Arial')
 ax1.set_xlim([2001,2016])
-ax2 = ax1.twinx()
+#ax2 = ax1.twinx()
 mn, mx = ax1.get_ylim()
 if mn < 0:
   mn = 0
-ax2.set_ylim(mn,mx)
+#ax2.set_ylim(mn,mx)
 ax1.set_ylim(mn,mx)
-yticks_RMSE = np.arange(np.ceil(np.sqrt(mn*2/area)/25)*25,np.floor(np.sqrt(mx*2/area)/25)*25+1,25,dtype=int)
+if glacier == 'Kanger':
+    rmse_tick = 25
+elif glacier == 'Helheim':
+    rmse_tick = 50
+yticks_RMSE = np.arange(np.ceil(np.sqrt(mn*2/area)/rmse_tick)*rmse_tick,np.floor(np.sqrt(mx*2/area)/rmse_tick)*rmse_tick+1,rmse_tick,dtype=int)
 yticks_J = (yticks_RMSE**2.0)*area/2.0
-ax2.set_yticks(yticks_J)
-ax2.set_yticklabels(yticks_RMSE,fontsize=8,fontname='Arial')
-ax2.set_ylabel(r'RMSE (m yr$^{-1}$)',fontsize=8,fontname='Arial')
+#ax2.set_yticks(yticks_J)
+#ax2.set_yticklabels(yticks_RMSE,fontsize=8,fontname='Arial')
+#ax2.set_ylabel(r'RMSE (m yr$^{-1}$)',fontsize=8,fontname='Arial')
 ax1.text(2001.2,mx-(mx-mn)*0.11,'(d)',fontsize=8,fontweight='bold',fontname='Arial')
 ax1.legend(labelspacing=0.25,handlelength=1.5,handletextpad=0.25,columnspacing=0.5,fontsize=8)
 plt.tight_layout()
-plt.subplots_adjust(left=0.11, bottom=0.13, right=0.925, top=0.98, wspace=0.0, hspace=0.0)
+plt.subplots_adjust(left=0.11, bottom=0.13, right=0.98, top=0.98, wspace=0.0, hspace=0.0)
 plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+"_misfit_timeseries.pdf"),format="PDF",dpi=400)
 plt.close()
