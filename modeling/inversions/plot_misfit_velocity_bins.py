@@ -21,12 +21,9 @@ parser.add_argument("-glacier",dest="glacier",required = True,
         help = "Name of glacier.")
 parser.add_argument("-mesh",dest = "mesh",required = True,
         help = "Mesh name.")
-parser.add_argument("-subpanel",dest="subpanel",required = False,
-        help = "Subpanel label.", default="none")
 
 args, _ = parser.parse_known_args(sys.argv)
 glacier = args.glacier
-subpanel = args.subpanel
 mesh = args.mesh
 
 # Input directory
@@ -69,6 +66,7 @@ for j in range(0,len(DIRs)):
                 surf_misfit[name[0]] = surf[name[0]]
             surf_misfit['misfit'] = (surf[vname]-surf['vsurfini'])/surf['vsurfini']*100
     
+    # Bin mean absolute residual by velocity, calculate 5 and 95 percentiles
     for i in range(1,len(bins)):
         ind = np.where((surf_misfit['vsurfini'] < bins[i]) & (surf_misfit['vsurfini'] >= bins[i-1]))[0]
         if len(ind) > 0:
@@ -76,6 +74,7 @@ for j in range(0,len(DIRs)):
             s_bins_min[i-1,j] = np.percentile(abs(surf_misfit['misfit'][ind]),5,axis=0)
             s_bins_max[i-1,j] = np.percentile(abs(surf_misfit['misfit'][ind]),95,axis=0)
 
+# Make figure
 fig = plt.figure(figsize=(2.9,2.0))
 ax = plt.gca()
 ax.tick_params(labelsize=8)
@@ -91,11 +90,6 @@ for i in [3,2,1,0]:
     plt.fill_between((bins+50)/1e3, s_bins_min[:,i], s_bins_max[:,i],color=colors[i],alpha=0.2,edgecolor=colors[i])
 plt.plot([0,(bins[-1]+50)/1e3],[3,3],'k',label = 'TSX velocity error')
 plt.legend(labelspacing=0.25,handlelength=1.5,handletextpad=0.25,columnspacing=0.5,fontsize=8)
-if subpanel != 'none':
-    if glacier == 'Kanger':
-        plt.text(0.6,13.8,subpanel,fontsize=8,fontweight='bold')
-    elif glacier == 'Helheim':
-        plt.text(0.3,13.8,subpanel,fontsize=8,fontweight='bold')
 nonnan = np.where(~(np.isnan(e_bins)))[0]
 plt.xlim([0,bins[nonnan[-1]]/1e3])
 if glacier == 'Kanger':
@@ -106,5 +100,5 @@ plt.ylabel('Absolute Residual (%)',fontsize=8)
 plt.xlabel(r'$u^{obs}$ bin (km yr$^{-1}$)',fontsize=8,fontname='Arial')
 plt.tight_layout()
 plt.subplots_adjust(left=0.15, bottom=0.2, right=0.98, top=0.98, wspace=0.0, hspace=0.0)
-plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+"_residual_velocity_bins.pdf"),DPI=400,transparent=False)
+plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+"_residual_velocity_bins.pdf"),DPI=300,transparent=False)
 plt.close()

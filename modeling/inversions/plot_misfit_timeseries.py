@@ -91,5 +91,5 @@ ax1.text(2001.2,mx-(mx-mn)*0.11,'(d)',fontsize=8,fontweight='bold',fontname='Ari
 ax1.legend(labelspacing=0.25,handlelength=1.5,handletextpad=0.25,columnspacing=0.5,fontsize=8)
 plt.tight_layout()
 plt.subplots_adjust(left=0.11, bottom=0.13, right=0.98, top=0.98, wspace=0.0, hspace=0.0)
-plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+"_misfit_timeseries.pdf"),format="PDF",dpi=400)
+plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+"_misfit_timeseries.pdf"),format="PDF",dpi=300)
 plt.close()

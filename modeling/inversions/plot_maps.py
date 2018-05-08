@@ -142,8 +142,6 @@ ax.set_xticks([])
 xmin,xmax = plt.xlim()
 ymin,ymax = plt.ylim()
 ax.text(xmin+0.04*(xmax-xmin),ymin+0.93*(ymax-ymin),'(b)',fontsize=8,fontweight='bold')
-#ax.text(xmin+0.08*(xmax-xmin),ymin+0.95*(ymax-ymin),'Helheim',fontsize=8)
-#ax.text(xmin+0.08*(xmax-xmin),ymin+0.90*(ymax-ymin),'Glacier',fontsize=8)
 ax.text(xmin+0.15*(xmax-xmin),ymin+0.93*(ymax-ymin),'HG',fontsize=8)
 
 ax2 = fig.add_axes([0.78, 0.515, 0.25, 0.45])
@@ -159,6 +157,6 @@ m.plot(xg,yg,'ro',mec='k',mew=0.5,markersize=5)
 plt.tight_layout
 plt.subplots_adjust(wspace=0.0,hspace=0.0,top=0.99,right=0.99,left=0.01,bottom=0.01)
 plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/Overview_maps.pdf"),\
-          FORMAT='PDF',DPI=400)
+          FORMAT='PDF',DPI=300)
 plt.close()
 

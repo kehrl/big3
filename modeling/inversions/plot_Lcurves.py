@@ -159,7 +159,7 @@ elif glacier == 'Helheim':
 
 plt.tight_layout()
 plt.subplots_adjust(left=0.2, bottom=0.2, right=0.97, top=0.98, wspace=0.0, hspace=0.0)
-plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+"_Lcurves.pdf"),DPI=400)
+plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+"_Lcurves.pdf"),DPI=300)
 plt.close()
 
 print "Saving as "+os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+"_Lcurves.pdf")
