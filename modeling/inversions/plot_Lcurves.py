@@ -1,5 +1,5 @@
-# This code plots L-curves for SSA-MT and FS-MT for Kanger or Helheim, highlighting 
-# the chosen regularization paramter.
+# This code plots L-curves (J_reg vs. J_o) for SSA-MT and FS-MT for Kanger or Helheim, highlighting 
+# the chosen regularization paramter with a yellow star.
 #
 # LMK, UW, 24 April 2018
 
@@ -135,13 +135,13 @@ ind = np.where(regpar_SSA == 1e12)[0]
 ax1.plot(cost_bed_FS[ind],cost_sur_FS[ind],'k*',markersize=9,markerfacecolor='y')
 ax1.set_yticks([])
 ax1.set_ylim(ymin,ymax)
-#ax2 = ax1.twinx()
-#ax2.set_ylim(ymin,ymax)
+ax2 = ax1.twinx()
+ax2.set_ylim(ymin,ymax)
 yticks_RMSE = np.arange(np.ceil(np.sqrt(ymin*2/area)/10)*10,np.floor(np.sqrt(ymax*2/area)/10)*10+1,10,dtype=int)
 yticks_J = (yticks_RMSE**2.0)*area/2.0
-#ax2.set_yticks(yticks_J)
-#ax2.set_yticklabels(yticks_RMSE,fontsize=8,fontname='Arial')
-#ax2.set_ylabel(r'RMSE (m yr$^{-1}$)',fontsize=8,fontname='Arial')
+ax2.set_yticks(yticks_J)
+ax2.set_yticklabels(yticks_RMSE,fontsize=8,fontname='Arial')
+ax2.set_ylabel(r'RMSE (m yr$^{-1}$)',fontsize=8,fontname='Arial')
 if glacier == 'Kanger':
     ax1.set_xlim([-1.25,36])
 elif glacier == 'Helheim':
@@ -158,7 +158,7 @@ elif glacier == 'Helheim':
     ax1.text(xmin+0.20*(xmax-xmin),ymax-0.08*(ymax-ymin),'FS-MT',fontsize=8)
 
 plt.tight_layout()
-plt.subplots_adjust(left=0.2, bottom=0.2, right=0.97, top=0.98, wspace=0.0, hspace=0.0)
+plt.subplots_adjust(left=0.2, bottom=0.2, right=0.865, top=0.98, wspace=0.0, hspace=0.0)
 plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+"_Lcurves.pdf"),DPI=300)
 plt.close()
 
