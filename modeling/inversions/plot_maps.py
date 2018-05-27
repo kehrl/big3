@@ -77,6 +77,7 @@ ax.imshow(image_KG[:,:,0],extent=[np.min(ximage_KG),np.max(ximage_KG),np.min(yim
 ax.imshow(vel_masked_KG/1e3,extent=[np.min(xvel_KG),np.max(xvel_KG),np.min(yvel_KG),\
         np.max(yvel_KG)],origin='lower',alpha=0.7,clim=[0,8],cmap=cx)
 plt.contour(x_cutoff_KG,y_cutoff_KG,vsurfini_cutoff_KG,[velocity_cutoff],colors='k',linestyles='dashed',linewidths=1)
+plt.contour(x_cutoff_KG,y_cutoff_KG,vsurfini_cutoff_KG,[4000],colors='w',linestyles='dashed',linewidths=1)
 ax.axis('equal')
 ax.plot(np.r_[extent_KG[:,0],extent_KG[0,0]],np.r_[extent_KG[:,1],extent_KG[0,1]],'k',lw=1)
 plt.xlim([462000,462000+41e3])
@@ -129,6 +130,7 @@ ax.imshow(image_HG[:,:,0],extent=[np.min(ximage_HG),np.max(ximage_HG),np.min(yim
 ax.imshow(vel_masked_HG/1e3,extent=[np.min(xvel_HG),np.max(xvel_HG),np.min(yvel_HG),\
         np.max(yvel_HG)],origin='lower',alpha=0.7,clim=[0,8],cmap=cx)
 plt.contour(x_cutoff_HG,y_cutoff_HG,vsurfini_cutoff_HG,[velocity_cutoff],colors='k',linestyles='dashed',linewidths=1)
+plt.contour(x_cutoff_HG,y_cutoff_HG,vsurfini_cutoff_HG,[4000],colors='w',linestyles='dashed',linewidths=1)
 ax.plot(np.r_[extent_HG[:,0],extent_HG[0,0]],np.r_[extent_HG[:,1],extent_HG[0,1]],'k',lw=1)
 ax.plot(np.r_[hole1_HG[:,0],hole1_HG[0,0]],np.r_[hole1_HG[:,1],hole1_HG[0,1]],'k',lw=1)
 ax.plot(np.r_[hole2_HG[:,0],hole2_HG[0,0]],np.r_[hole2_HG[:,1],hole2_HG[0,1]],'k',lw=1)
