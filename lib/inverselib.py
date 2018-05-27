@@ -213,13 +213,14 @@ def get_velocity_cutoff(glacier,velocity_cutoff=1000,temperature='model',model_d
     # Grid and filter minimum velocity. Filtering removes some of the spurious single grid cells
     # that remain above the cutoff value.
     x_grid,y_grid,vsurfini_grid = elmerreadlib.grid3d(surf_min,'vsurfini',extent=extent,holes=holes)
-    vsurfini_grid = scipy.ndimage.filters.gaussian_filter(vsurfini_grid,sigma=2.5,truncate=4)
+    vsurfini_grid_smooth = scipy.ndimage.filters.gaussian_filter(vsurfini_grid,sigma=2.5,truncate=4)
+    
 
     # Find grid indices that are below the cutoff value
     if sign == 'over':
-        ind_cutoff_grid = np.where(vsurfini_grid <= velocity_cutoff)
+        ind_cutoff_grid = np.where((vsurfini_grid_smooth <= velocity_cutoff) | (np.isnan(vsurfini_grid_smooth)))
     elif sign == 'under':
-        ind_cutoff_grid = np.where(vsurfini_grid >= velocity_cutoff)
+        ind_cutoff_grid = np.where((vsurfini_grid_smooth >= velocity_cutoff) | (np.isnan(vsurfini_grid_smooth)))
 
     # Find nodes that remain above the cutoff value
     if sign == 'over':
