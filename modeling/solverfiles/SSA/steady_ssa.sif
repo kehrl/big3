@@ -100,12 +100,12 @@ Solver 1
   Linear System Direct Method = mumps
 
   Nonlinear System Max Iterations = 50
-  Nonlinear System Convergence Tolerance  = 1.0e-10
+  Nonlinear System Convergence Tolerance  = 1.0e-6
   Nonlinear System Newton After Iterations = 40
   Nonlinear System Newton After Tolerance = 1.0e-06
   Nonlinear System Relaxation Factor = 1.00
 
-  Steady State Convergence Tolerance = Real 1.0e-12
+  Steady State Convergence Tolerance = Real 1.0e-6
 
   Exported Variable 1 = -dofs 1 "vsurfini 1"
   Exported Variable 2 = -dofs 1 "vsurfini 2"
