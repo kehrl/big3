@@ -5,14 +5,14 @@ import matplotlib
 import inverselib
 
 glacier = 'Kanger'
-temperature = 'model'
-maindir = os.path.join(os.getenv("MODEL_HOME"),glacier+'/3D/')
+temperature = '-10.0'
+maindir = os.path.join(os.getenv("MODEL_HOME"),glacier+'/3D/INV_SSA_ConstantT/')
 dirs = os.listdir(maindir)
-beta_date = ''
+beta_date = 'average'
 slidinglaw = 'linear'
 cutoff = 1000
-regpar = '1e12'
-SSA = False
+regpar = '1e13'
+SSA = True
 
 if SSA:
     modelname = 'SSA'
@@ -44,7 +44,7 @@ cmap = 'RdYlBu_r'
 
 # Get indices where velocity is always greater than the cutoff value
 x_cutoff,y_cutoff,vsurfini_cutoff,ind_cutoff_grid, ind_cutoff  = inverselib.get_velocity_cutoff(glacier,\
-	velocity_cutoff=cutoff,SSA=False)
+	velocity_cutoff=cutoff,SSA=SSA,model_dir='INV_SSA_ModelT')
 
 # Now create plots and get misfit values for velocities > cutoff        
 n = 0
@@ -54,7 +54,7 @@ for dir in np.sort(dirs):
             beta_date = dir[3:11]
             beta_suffix = regpar+'_'+modelname+'_DEM'+beta_date+'_'+temperature_text+'_'+slidinglaw
         elif beta_date == 'average':
-            beta_suffix = regpar+'_'+modelname+'_average_2000_2016_'+temperature_text+'_'+slidinglaw
+            beta_suffix = regpar+'_'+modelname+'_average_2011_2016_'+temperature_text+'_'+slidinglaw
 	else:
             beta_suffix = regpar+'_'+modelname+'_DEM'+beta_date+'_'+temperature_text+'_'+slidinglaw       
 

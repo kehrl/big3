@@ -8,10 +8,10 @@ import matplotlib.pyplot as plt
 import matplotlib
 import scipy.ndimage
 
-glacier = 'Kanger'
-output = 'N'
+glacier = 'Helheim'
+output = 'zs'
 temperature = 'constantT'
-beta_date = '20120522'
+beta_date = '20120316'
 beta_file = '1e13_SSA_DEM'
 beta_suffix = beta_file+beta_date+'_'+temperature
 slidinglaw = 'linear'

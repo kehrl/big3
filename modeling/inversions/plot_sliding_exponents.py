@@ -216,7 +216,7 @@ for i in range(0,len(dates)):
     elif glacier == 'Helheim':
         plt.ylim([1.2,10])
 plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+'_sliding_exponent_'+modelname+'_'+\
-        temperature_text+'_RMSE.pdf'),FORMAT='PDF',dpi=400)
+        temperature_text+'_RMSE.pdf'),FORMAT='PDF',dpi=300)
 print "Saving as "+os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+'_sliding_exponent_'+modelname+'_'+\
         temperature_text+'_RMSE.pdf')
 plt.close()
@@ -269,6 +269,6 @@ elif glacier == 'Helheim':
     plt.text(2001.2,590,'(c)',fontsize=8,fontweight='bold')
 plt.legend(loc=0,labelspacing=0.4,handletextpad=0.5,handlelength=1.5,fontsize=8,ncol=2,columnspacing=0.5)
 plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+'_sliding_exponent_'+modelname+'_'+\
-        temperature_text+'_timeseries.pdf'),FORMAT='PDF',dpi=400)
+        temperature_text+'_timeseries.pdf'),FORMAT='PDF',dpi=300)
 plt.close()
 
