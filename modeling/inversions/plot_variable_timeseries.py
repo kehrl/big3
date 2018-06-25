@@ -1,13 +1,17 @@
+# This script plots effective pressure N, surface elevation zs, or velocity from the input files for each inversion.
+#
+# Laura Kehrl, University of Washington, 11 April 2018
+
 import os, elmerreadlib
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
 import scipy.ndimage
 
-glacier = 'Kanger'
+glacier = 'Helheim'
 output = 'zs'
-temperature = 'modelT'
-beta_date = '20120522'
+temperature = 'constantT'
+beta_date = '20120316'
 beta_file = '1e13_SSA_DEM'
 beta_suffix = beta_file+beta_date+'_'+temperature
 slidinglaw = 'linear'
@@ -61,9 +65,9 @@ for dir in dirs:
         elif output == 'N':
             x,y,zs = elmerreadlib.input_file(maindir+dir+'/inputs/zsdem.xy')
             x,y,zb = elmerreadlib.input_file(maindir+dir+'/inputs/zbdem.xy')
-            grid = rho_i*g*(zs-zb)
-            grid[zb < 0] = grid[zb < 0] + rho_w*g*zb[zb < 0]
-            grid[(zs < zb) | (grid < 0)] = np.float('NaN')
+            grid = zs - (1-rho_w/rho_i)*zb #rho_i*g*(zs-zb)
+            #grid[zb < 0] = grid[zb < 0] + rho_w*g*zb[zb < 0]
+            #grid[(zs < zb) | (grid < 0)] = np.float('NaN')
             
         if n == 0:
             extent = np.loadtxt(maindir+dir+'/inputs/mesh_extent.dat')
@@ -96,7 +100,7 @@ for dir in dirs:
         elif output == 'velocity':
             grid_diff = (grid-grid_orig)/grid_orig*100.0
         elif output == 'N':
-            grid_diff = grid/grid_orig
+            grid_diff = grid#/grid_orig
 
         grid_diff[mask == 1] = np.float('NaN')
 
@@ -112,11 +116,11 @@ for dir in dirs:
             beta_new = (scipy.interpolate.griddata((xnonnan,ynonnan),gnonnan,(beta_orig[:,0],beta_orig[:,1]),\
                     method = 'nearest')**m)*beta_orig[:,2]
 
-            fid = open(maindir+dir+'/inputs/beta_'+slidinglaw+'_'+beta_suffix+'_N.dat','w')
-            fid.write('{0}\n'.format(len(beta_orig)))
-            for i in range(0,len(beta_orig)):
-                fid.write('{0} {1} {2}\n'.format(beta_orig[i,0],beta_orig[i,1],beta_new[i]))
-            fid.close()
+            #fid = open(maindir+dir+'/inputs/beta_'+slidinglaw+'_'+beta_suffix+'_N.dat','w')
+            #fid.write('{0}\n'.format(len(beta_orig)))
+            #for i in range(0,len(beta_orig)):
+            #    fid.write('{0} {1} {2}\n'.format(beta_orig[i,0],beta_orig[i,1],beta_new[i]))
+            #fid.close()
 
         
         plt.subplot(gs[n])
@@ -127,8 +131,9 @@ for dir in dirs:
             im=plt.imshow(grid_diff,extent=[x[0],x[-1],y[0],y[-1]],origin='lower',\
                     vmin=vmin,vmax=vmax,cmap=cmap)
         elif output == 'N':
+            print date, np.nanmin(grid_diff)
             im=plt.imshow(grid_diff,extent=[x[0],x[-1],y[0],y[-1]],origin='lower',\
-                vmin=0.75,vmax=1.25,cmap=cmap)
+                vmin=-100,vmax=100,cmap=cmap)
         plt.plot(np.r_[extent[:,0],extent[0,0]],np.r_[extent[:,1],extent[0,1]],'k')
         plt.axis('equal')
         plt.xlim([xmin,xmax])

@@ -88,21 +88,28 @@ def height(zb,rho_i=917.0,rho_sw=1020.0):
 
   # Set up output
   try:
-    floatheight = np.zeros(len(zb))
-    floatheight[:] = float('NaN') # no flotation height for bed elevations above sea level
-  
-    # Find places where bed is below sea level
-    nonnan = np.where(~(np.isnan(zb)))[0]
-    ind = np.where(zb[nonnan] < 0)[0]
-  
-    # Find flotation height
-    floatheight[nonnan[ind]] = (1-rho_sw/rho_i)*zb[nonnan[ind]]
-    
-  except:
-    if zb < 0:
+      floatheight = np.zeros(zb.shape)
+      floatheight[:,:] = np.float('nan')
+
       floatheight = (1-rho_sw/rho_i)*zb
-    else:
-      floatheight = float('nan')
+      floatheight[zb > 0] = np.float('nan')
+  except:
+    try:
+      floatheight = np.zeros(len(zb))
+      floatheight[:] = float('NaN') # no flotation height for bed elevations above sea level
+  
+      # Find places where bed is below sea level
+      nonnan = np.where(~(np.isnan(zb)))[0]
+      ind = np.where(zb[nonnan] < 0)[0]
+  
+      # Find flotation height
+      floatheight[nonnan[ind]] = (1-rho_sw/rho_i)*zb[nonnan[ind]]
+    
+    except:
+      if zb < 0:
+        floatheight = (1-rho_sw/rho_i)*zb
+      else:
+        floatheight = float('nan')
 
   return floatheight
 

@@ -31,6 +31,10 @@ parser.add_argument("-regpar2", dest="regpar2",required = True,
         help = "Second regularization parameter for plotting.")
 parser.add_argument("-regpar3", dest="regpar3",required = True,
         help = "Third regularization parameter for plotting.")
+parser.add_argument("-subpanel",dest="subpanel",required = False,
+        help = "Subpanel label.", default="none")
+parser.add_argument("-modelname",dest="modelname",required = False,
+        help = "Model name.",default="none")
 
 args, _ = parser.parse_known_args(sys.argv)
 RES = args.meshname
@@ -40,6 +44,8 @@ glacier = args.glacier
 regpar1 = args.regpar1
 regpar2 = args.regpar2
 regpar3 = args.regpar3
+subpanel = args.subpanel
+modelname = args.modelname
 
 regpars = [regpar1,regpar2,regpar3]
 
@@ -185,27 +191,41 @@ print "Saving as "+DIR+"figures/Regpars_taub_misfit_"+method+".pdf"
 
 bins = np.arange(0,np.ceil(np.max(surf_misfit['vsurfini'])/100)*100,100)
 e_bins = np.zeros([len(bins),3])
-s_bins = np.zeros([len(bins),3])
+s_bins_min = np.zeros([len(bins),3])
+s_bins_max = np.zeros([len(bins),3])
 e_bins[:] = np.float('NaN')
-s_bins[:] = np.float('NaN')
+s_bins_min[:] = np.float('NaN')
+s_bins_max[:] = np.float('NaN')
 for i in range(1,len(bins)):
     ind = np.where((surf_misfit['vsurfini'] < bins[i]) & (surf_misfit['vsurfini'] >= bins[i-1]))[0]
     e_bins[i-1,:] = np.mean(abs(misfits_all[ind,:]),axis=0)
-    s_bins[i-1,:] = np.std(abs(misfits_all[ind,:]),axis=0)
+    s_bins_min[i-1,:] = np.percentile(abs(misfits_all[ind,:]),25,axis=0)
+    s_bins_max[i-1,:] = np.percentile(abs(misfits_all[ind,:]),75,axis=0)
 
-fig = plt.figure(figsize=(3.75,2.5))
-plt.ylim([0,10])
-plt.plot([0,(bins[-1]+50)/1e3],[3,3],'k')
+fig = plt.figure(figsize=(3.75,3))
+plt.ylim([0,15])
 plt.xticks(np.arange(0,bins[-1]/1e3,1))
 plt.xlim([0,(bins[-1]+50)/1e3])
-colors = ['g','b','r']
+colors = ['g','r','b']
 for i in [0,1,2]:
     plt.plot((bins+50)/1e3,e_bins[:,i],c=colors[i],label=r'$\lambda$='+regpars[i])
-    plt.fill_between((bins+50)/1e3, e_bins[:,i]-s_bins[:,i], e_bins[:,i]+s_bins[:,i],alpha=0.2,edgecolor=colors[i])
-plt.legend(fontsize=10)
-plt.ylabel('MAR (%)',fontsize=10)
+    plt.fill_between((bins+50)/1e3, s_bins_min[:,i], s_bins_max[:,i],color=colors[i],alpha=0.2,edgecolor=colors[i])
+plt.plot([0,(bins[-1]+50)/1e3],[3,3],'k--',label = 'TSX velocity error')
+plt.legend(fontsize=8)
+if subpanel != 'none':
+    if glacier == 'Kanger':
+        plt.text(0.6,13.8,subpanel,fontsize=10,fontweight='bold')
+    elif glacier == 'Helheim':
+        plt.text(0.3,13.8,subpanel,fontsize=10,fontweight='bold')
+if modelname != 'none':
+    if glacier == 'Kanger':
+        plt.text(1,13.8,modelname,fontsize=10)
+    elif glacier == 'Helheim':
+        plt.text(0.6,13.8,modelname,fontsize=10)
+
+plt.ylabel('Absolute Residual (%)',fontsize=10)
 plt.xlabel(r'$u^{obs}$ bin (km / yr)',fontsize=10)
 plt.tight_layout()
-plt.subplots_adjust(left=0.13, bottom=0.19, right=0.98, top=0.97, wspace=0.0, hspace=0.0)
+plt.subplots_adjust(left=0.13, bottom=0.16, right=0.98, top=0.97, wspace=0.0, hspace=0.0)
 plt.savefig(DIR+"/figures/Regpars_MAPE_misfit_"+method+".pdf",DPI=600,transparent=False)
 plt.close()

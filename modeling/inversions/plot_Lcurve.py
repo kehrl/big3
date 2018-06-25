@@ -25,11 +25,21 @@ parser.add_argument("-dim", dest="dimension",required = False,
 	default='3D',help = "3D or Flowline.")
 parser.add_argument("-method", dest="method",required = False,
         help = "adjoint or robin.",default='adjoint')
+parser.add_argument("-highlight",dest="regpar_highlight", required = False,
+        help = "Choose a regularization parameter to highlight with a red circle.",default="none")
+parser.add_argument("-subpanel",dest="subpanel",required = False,
+	help = "Subpanel label.",default="none")
+parser.add_argument("-modelname",dest="modelname",required = False,
+        help = "Model name.",default="none")
+
 args, _ = parser.parse_known_args(sys.argv)
 RES = args.meshname
 ver = args.dimension
 method = args.method
 glacier = args.glacier
+regpar_highlight = args.regpar_highlight
+subpanel = args.subpanel
+modelname = args.modelname
 
 # Input directory
 DIR = os.path.join(os.getenv("MODEL_HOME"),glacier+"/"+ver+"/"+RES+"/")
@@ -102,16 +112,20 @@ area = (shapely.geometry.Polygon(np.loadtxt(DIR+'inputs/mesh_extent.dat'))).area
 #np.sqrt(cost_sur*2/area)
 
 
-fig =  plt.figure(figsize=(3.5,3))
+fig =  plt.figure(figsize=(3.0,2.5))
 ax1 = plt.gca()
-matplotlib.rc('font',family='sans-serif',size=10)
+matplotlib.rc('font',family='Arial')
+ax1.tick_params(axis='both',labelsize=8)
 strings=["{:.0e}".format(i) for i in regpar]   
 plt.plot(cost_bed,cost_sur,'ko--',linewidth=1.5)
-ax1.set_xlabel('$J_{reg}$',fontsize=10)
-ax1.set_ylabel(r'$J_o$',fontsize=10)
-plt.xticks(fontsize=10)
+ax1.set_xlabel(r'$J_{reg}$',fontsize=8,fontname='Arial')
+ax1.set_ylabel(r'$J_o$',fontsize=8,fontname='Arial')
+plt.xticks(fontsize=8)
+if not(regpar_highlight == 'none'):
+    ind = np.where(regpar == float(regpar_highlight))[0]
+    ax1.plot(cost_bed[ind],cost_sur[ind],'ko',markerfacecolor='r')
 ax1.yaxis.set_major_formatter(matplotlib.ticker.FormatStrFormatter("%.1E"))
-ax1.set_ylim([np.min(cost_sur)-(np.max(cost_sur)-np.min(cost_sur))/10,np.max(cost_sur)+(np.max(cost_sur)-np.min(cost_sur))/4])
+ax1.set_ylim([np.min(cost_sur)-(np.max(cost_sur)-np.min(cost_sur))/25,np.max(cost_sur)+(np.max(cost_sur)-np.min(cost_sur))/4])
 ymin,ymax = ax1.get_ylim()
 ax2 = ax1.twinx()
 mn, mx = ax1.get_ylim()
@@ -120,17 +134,29 @@ ax2.set_ylim(mn,mx)
 yticks_RMSE = np.arange(np.ceil(np.sqrt(mn*2/area)/10)*10,np.floor(np.sqrt(mx*2/area)/10)*10+1,10,dtype=int)
 yticks_J = (yticks_RMSE**2.0)*area/2.0
 ax2.set_yticks(yticks_J)
-ax2.set_yticklabels(yticks_RMSE)
-ax2.set_ylabel('RMSE (m/yr)')
-for i in range(0,len(strings)):
-    if strings[i].startswith('1') or strings[i].startswith('5'):
-        ax1.text(cost_bed[i]+0.0,cost_sur[i]+0.13*(ymax-ymin),strings[i],fontsize=10,rotation=45)
+ax2.set_yticklabels(yticks_RMSE,fontsize=8,fontname='Arial')
+ax2.set_ylabel(r'RMSE (m yr$^{-1}$)',fontsize=8,fontname='Arial')
 if np.max(cost_bed) > 40:
-    plt.xlim([-2,np.max(cost_bed)+(np.max(cost_bed)-np.min(cost_bed))/3])
+    plt.xlim([-2,np.max(cost_bed)+(np.max(cost_bed)-np.min(cost_bed))/4])
 elif np.max(cost_bed) > 12:
-    plt.xlim([-1,np.max(cost_bed)+(np.max(cost_bed)-np.min(cost_bed))/3])
+    plt.xlim([-1,np.max(cost_bed)+(np.max(cost_bed)-np.min(cost_bed))/4])
+elif np.max(cost_bed) > 1:
+    plt.xlim([-0.15,np.max(cost_bed)+(np.max(cost_bed)-np.min(cost_bed))/4])
 else:
-    plt.xlim([-0.02,np.max(cost_bed)+(np.max(cost_bed)-np.min(cost_bed))/3])
+    plt.xlim([-0.02,np.max(cost_bed)+(np.max(cost_bed)-np.min(cost_bed))/4])
+xmin,xmax = plt.xlim()
+for i in flipud(range(0,len(strings))):
+    if strings[i].startswith('1') or strings[i].startswith('5e+14'):
+        if i != len(strings)-1 and (abs(cost_bed[i+1]-cost_bed[i]) < 0.05*(xmax-xmin) and \
+                abs(cost_sur[i+1]-cost_sur[i]) < 0.05*(ymax-ymin)):
+            if regpar[i] > 1e10:
+                ax1.text(cost_bed[i]+0.01*(xmax-xmin),cost_sur[i]+0.11*(ymax-ymin),strings[i],fontsize=8,fontname='Arial',rotation=45)
+        else:
+            ax1.text(cost_bed[i]+0.01*(xmax-xmin),cost_sur[i]+0.11*(ymax-ymin),strings[i],fontsize=8,fontname='Arial',rotation=45)
+if subpanel != 'none':
+    ax1.text(xmin+0.33*(xmax-xmin),ymax-0.07*(ymax-ymin),subpanel,fontsize=8,fontweight='bold',fontname='Arial')
+if modelname != 'none':
+    ax1.text(xmin+0.43*(xmax-xmin),ymax-0.07*(ymax-ymin),modelname,fontsize=8)
 
 plt.tight_layout()
 plt.subplots_adjust(left=0.26, bottom=0.15, right=0.84, top=0.98, wspace=0.0, hspace=0.0)
@@ -139,15 +165,15 @@ plt.close()
 
 fig =  plt.figure(figsize=(3.5,3))
 ax1 = plt.gca()
-matplotlib.rc('font',family='sans-serif',size=10)
+matplotlib.rc('font',family='sans-serif',size=8)
 plt.plot([-0.5,len(regpar)],[3,3],'k-')
 for j in range(0,len(cutoffs)):
     plt.plot(MAPE[:,j],'o--',linewidth=1.5,label=r'$>$'+str(cutoffs[j]))
 ax1.set_xticks(range(0,len(regpar)))
 ax1.set_xlim([-0.2,len(regpar)-0.8])
-ax1.set_xticklabels(strings,rotation=45,fontsize=10,ha='right')
-ax1.set_xlabel('$\lambda$',fontsize=10)
-ax1.set_ylabel(r'MAR (%)',fontsize=10)
+ax1.set_xticklabels(strings,rotation=45,fontsize=8,ha='right')
+ax1.set_xlabel('$\lambda$',fontsize=8)
+ax1.set_ylabel(r'MAR (%)',fontsize=8)
 ax1.set_ylim([1,15])
 plt.legend(ncol=2,labelspacing=0.25,handlelength=1.5,handletextpad=0.25,columnspacing=0.5)
 

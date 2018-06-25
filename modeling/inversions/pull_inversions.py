@@ -71,16 +71,19 @@ for dir in DIRs:
                             copy2(dirvtu+'/'+file,DIRO)     
  
                 if SSA:
-                    surf = elmerreadlib.pvtu_file(dirvtu+"/adjoint_beta_ssa0001.pvtu",['vsurfini','ssavelocity','beta'])
-                    bed = surf
+                    vtu = elmerreadlib.pvtu_file(dirvtu+"/adjoint_beta_ssa0001.pvtu",['vsurfini','ssavelocity','beta'])
+                    bed = elmerreadlib.values_in_layer(vtu,'bed')
+                    surf = elmerreadlib.values_in_layer(vtu,'surf')
 
                     # Get specific bed values for SSA
                     x,y,bed_mod_ub = elmerreadlib.grid3d(bed,'ssavelocity 1',holes,extent)
                     x,y,bed_mod_vb = elmerreadlib.grid3d(bed,'ssavelocity 2',holes,extent)
+                    x,y,bed_mod_umag = elmerreadlib.grid3d(bed,'ssavelocity',holes,extent)
 
                     # Get specific surface values for SSA
                     x,y,surf_mod_us = elmerreadlib.grid3d(surf,'ssavelocity 1',holes,extent)
                     x,y,surf_mod_vs = elmerreadlib.grid3d(surf,'ssavelocity 2',holes,extent)
+                    x,y,surf_mod_umag = elmerreadlib.grid3d(surf,'ssavelocity',holes,extent)
 
                 else:
                     # Get values at bed and surface
@@ -92,11 +95,13 @@ for dir in DIRs:
                     x,y,bed_mod_zb = elmerreadlib.grid3d(bed,'z',holes,extent)
                     x,y,bed_mod_ub = elmerreadlib.grid3d(bed,'velocity 1',holes,extent)
                     x,y,bed_mod_vb = elmerreadlib.grid3d(bed,'velocity 2',holes,extent)
+                    x,y,bed_mod_umag = elmerreadlib.grid3d(bed,'velocity',holes,extent)
 
                     # Grid specific surface values for FS
                     x,y,surf_mea_zs = elmerreadlib.grid3d(surf,'z',holes,extent)
                     x,y,surf_mod_us = elmerreadlib.grid3d(surf,'velocity 1',holes,extent)
                     x,y,surf_mod_vs = elmerreadlib.grid3d(surf,'velocity 2',holes,extent)
+                    x,y,surf_mod_mag = elmerreadlib.grid3d(surf,'velocity',holes,extent)
 
                     geotifflib.write_from_grid(x,y,np.flipud(bed_mod_zb),float('nan'),DIRO+"/"+dir[0:11]+"_bed_mod_zb.tif")
                     geotifflib.write_from_grid(x,y,np.flipud(surf_mea_zs),float('nan'),DIRO+"/"+dir[0:11]+"_surf_mea_zs.tif")
@@ -108,15 +113,18 @@ for dir in DIRs:
                 # Grid surface values
                 x,y,surf_mea_us = elmerreadlib.grid3d(surf,'vsurfini 1',holes,extent)      
                 x,y,surf_mea_vs = elmerreadlib.grid3d(surf,'vsurfini 2',holes,extent)
+                x,y,surf_mea_umag = elmerreadlib.grid3d(surf,'vsurfini',holes,extent)
 
                 geotifflib.write_from_grid(x,y,np.flipud(bed_mod_taub),np.float('nan'),DIRO+"/"+dir[0:11]+"_bed_mod_taub.tif") 
                 geotifflib.write_from_grid(x,y,np.flipud(bed_mod_beta),np.float('nan'),DIRO+"/"+dir[0:11]+"_bed_mod_beta.tif")
                 geotifflib.write_from_grid(x,y,np.flipud(bed_mod_ub),np.float('nan'),DIRO+"/"+dir[0:11]+"_bed_mod_ub.tif")
                 geotifflib.write_from_grid(x,y,np.flipud(bed_mod_vb),np.float('nan'),DIRO+"/"+dir[0:11]+"_bed_mod_vb.tif")
+                geotifflib.write_from_grid(x,y,np.flipud(bed_mod_umag),np.float('nan'),DIRO+"/"+dir[0:11]+"_bed_mod_umag.tif")
 
                 geotifflib.write_from_grid(x,y,np.flipud(surf_mea_us),float('nan'),DIRO+"/"+dir[0:11]+"_surf_mea_us.tif")
                 geotifflib.write_from_grid(x,y,np.flipud(surf_mea_vs),float('nan'),DIRO+"/"+dir[0:11]+"_surf_mea_vs.tif")
                 geotifflib.write_from_grid(x,y,np.flipud(surf_mod_us),float('nan'),DIRO+"/"+dir[0:11]+"_surf_mod_us.tif")
                 geotifflib.write_from_grid(x,y,np.flipud(surf_mod_vs),float('nan'),DIRO+"/"+dir[0:11]+"_surf_mod_vs.tif")
+                geotifflib.write_from_grid(x,y,np.flipud(surf_mod_umag),float('nan'),DIRO+"/"+dir[0:11]+"_surf_mod_umag.tif")
 
                 n=n+1
