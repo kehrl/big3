@@ -15,7 +15,7 @@ args, _ = parser.parse_known_args(sys.argv)
 glacier = args.glacier
 
 # Cutoff for calculating mean absolute residual
-cutoff = 1000.0
+cutoff = 2000.0
 if glacier == 'Kanger':
     beta_suffix = 'DEM20120522'
 elif glacier == 'Helheim':
@@ -29,12 +29,13 @@ DIR_FS_MT = DIRG+"INV_FS_ModelT/"
 DIR_FS_CT = DIRG+"INV_FS_ConstantT/"
 
 # Get indices where velocity is always greater than the cutoff value
+clip = 0.0
 x_cutoff_SSA,y_cutoff_SSA,vsurfini_cutoff_SSA,ind_cutoff_grid,ind_cutoff_SSA  = inverselib.get_velocity_cutoff(glacier,\
-        velocity_cutoff=cutoff,model_dir='INV_SSA_ModelT',SSA=True,sign='over')
+        velocity_cutoff=cutoff,model_dir='INV_SSA_ModelT',SSA=True,sign='over',clip_boundary=clip)
 x_cutoff_SSA_fast,y_cutoff_SSA_fast,vsurfini_cutoff_SSA_fast,ind_cutoff_grid_fast,ind_cutoff_SSA_fast  = inverselib.get_velocity_cutoff(glacier,\
-        velocity_cutoff=4000,model_dir='INV_SSA_ModelT',SSA=True,sign='over')
+        velocity_cutoff=4000,model_dir='INV_SSA_ModelT',SSA=True,sign='over',clip_boundary=clip)
 x_cutoff_SSA_slow,y_cutoff_SSA_slow,vsurfini_cutoff_SSA_slow,ind_cutoff_grid_slow,ind_cutoff_SSA_slow  = inverselib.get_velocity_cutoff(glacier,\
-        velocity_cutoff=1000,model_dir='INV_SSA_ModelT',SSA=True,sign='under')
+        velocity_cutoff=1000,model_dir='INV_SSA_ModelT',SSA=True,sign='under',clip_boundary=clip)
 
 # Get ice front positions
 xflow,yflow,zflow,dflow = glaclib.load_flowline(glacier)
@@ -87,6 +88,10 @@ taud_slow = np.zeros([len(dates),])
 H = np.zeros([len(dates),])
 P_i = np.zeros([len(dates),])
 P_w = np.zeros([len(dates),])
+P_i_med = np.zeros([len(dates),])
+P_i_fast = np.zeros([len(dates),])
+P_w_med = np.zeros([len(dates),])
+P_w_fast = np.zeros([len(dates),])
 H_fast = np.zeros([len(dates),])
 H_med = np.zeros([len(dates),])
 Hf = np.zeros([len(dates),])
@@ -105,10 +110,14 @@ for i in range(0,len(dates)):
             grid = zs_grid - zb_grid
             grid[ind_cutoff_grid_fast] = np.float('nan')
             H_fast[i] = np.nanmean(grid)
+            P_i_fast[i] = np.nanmean(rho_i*g*grid)
+            P_w_fast[i] = np.nanmean(-rho_sw*g*zb_grid)
             grid = zs_grid - zb_grid
             grid[ind_cutoff_grid] = np.float('nan')
             zb_grid[ind_cutoff_grid] = np.float('nan')
             H_med[i] = np.nanmean(grid[vsurfini_cutoff_SSA < 4000])
+            P_i_med[i] = np.nanmean(rho_i*g*grid[vsurfini_cutoff_SSA < 4000])
+            P_w_med[i] = np.nanmean(-rho_sw*g*zb_grid[vsurfini_cutoff_SSA < 4000])
             H[i] = np.nanmean(grid)
             P_i[i] = np.nanmean(rho_i*g*grid)
             P_w[i] = np.nanmean(-rho_sw*g*zb_grid)
@@ -356,23 +365,29 @@ for i in range(0,len(inds)):
 
 m = 3.0
 if glacier == 'Kanger':
-    inds = [[1,2],[7,8]]
+    inds = [[1,2],[2,7],[7,8]]
 elif glacier == 'Helheim':
     inds = [[0,1],[1,2]]
 for i in range(0,len(inds)):
-    print dates[inds[i][0]], "to", dates[inds[i][1]], "with thinning of ", H[inds[i][0]] - H[inds[i][1]], "m"
+    print dates[inds[i][0]], "to", dates[inds[i][1]], "with thicknesss change of ", H[inds[i][1]] - H[inds[i][0]], "m"
     for j in range(0,4):
         ub_1 = ub_inv[inds[i][0],j]; ub_2 = ub_inv[inds[i][1],j]
         tb_1 = taub[inds[i][0],j]; tb_2 = taub[inds[i][1],j]
         H_1 = H[inds[i][0]]; H_2 = H[inds[i][1]]
         P_i_1 = P_i[inds[i][0]]; P_i_2 = P_i[inds[i][1]]
         P_w_1 = P_w[inds[i][0]]; P_w_2 = P_w[inds[i][1]]
-        f_N = ((tb_1/tb_2)*(ub_2/ub_1)**(1/m))**(1/m)
-        print modelnames[j]+":","Effective pressure varied by ", np.round((f_N-1)*100,1),"%"
-        f_P = (P_i_1-(P_i_1-P_w_1)*f_N)/P_w_1
-        print modelnames[j]+":","Vary P_w by", np.round((f_P-1)*100,1),"%"
-        f_H = ((rho_i*g*H_1-P_w_1)*f_N + P_w_1)/(rho_i*g)/H_1
-        print modelnames[j]+":","Vary H by", np.round(f_H*H_1-H_1), "m"
+        f_N_weertman = ((tb_1/tb_2)*(ub_2/ub_1)**(1/m))**(1/m)
+        f_N_coulomb = tb_2/tb_1
+        print modelnames[j]+":","Effective pressure: weertman", np.round((f_N_weertman-1)*100,1),"%, coulomb:",\
+                np.round((f_N_coulomb-1)*100,1),"%"
+        f_P_weertman = (P_i_1-(P_i_1-P_w_1)*f_N_weertman)/P_w_1
+        f_P_coulomb = (P_i_1-(P_i_1-P_w_1)*f_N_coulomb)/P_w_1
+        print modelnames[j]+":","P_w: weertman", np.round((f_P_weertman-1)*100,1),"%, coulomb:",\
+                np.round((f_P_coulomb-1)*100,1),"%"
+        f_H_weertman = ((rho_i*g*H_1-P_w_1)*f_N_weertman + P_w_1)/(rho_i*g)/H_1
+        f_H_coulomb = ((rho_i*g*H_1-P_w_1)*f_N_coulomb + P_w_1)/(rho_i*g)/H_1
+        print modelnames[j]+":","H: weertman", np.round(f_H_weertman*H_1-H_1), "m, coulomb:",\
+                np.round(f_H_coulomb*H_1-H_1), "m"
 
 # Get u_obs for all TSX velocity estimates
 x_tsx,y_tsx,grids_tsx,time_tsx = vellib.velocity_grid(glacier,x_cutoff_SSA[0],\
@@ -507,21 +522,34 @@ if glacier == 'Kanger':
 elif glacier == 'Helheim':
     inds = [[1,2],[5,6]]
 for i in range(0,len(inds)):
+    print dates[ind[inds[i][0]]],'to',dates[ind[inds[i][1]]]
     for j in range(0,4):
         ub_1 = ub_inv[ind[inds[i][0]],j]; ub_2 = ub_inv[ind[inds[i][1]],j]
         tb_1 = taub[ind[inds[i][0]],j]; tb_2 = taub[ind[inds[i][1]],j]
         H_1 = H[ind[inds[i][0]]]; H_2 = H[ind[inds[i][1]]]
         P_i_1 = P_i[ind[inds[i][0]]]; P_i_2 = P_i[ind[inds[i][1]]]
         P_w_1 = P_w[ind[inds[i][0]]]; P_w_2 = P_w[ind[inds[i][1]]]
-        f_N = ((tb_1/tb_2)*(ub_2/ub_1)**(1/m))**(1/m)
-        print modelnames[j]+":","Effective pressure varied by ", np.round((f_N-1)*100,1),"%"
-        f_P = (P_i_1-(P_i_1-P_w_1)*f_N)/P_w_1
-        print modelnames[j]+":","Vary P_w by", np.round((f_P-1)*100,1),"% to explain seasonal speedup"
-        f_H = ((rho_i*g*H_1-P_w_1)*f_N + P_w_1)/(rho_i*g)/H_1
-        print modelnames[j]+":","Vary H by", np.round(f_H*H_1-H_1), "m to explain seasonal speedup"
+        f_N_weertman = ((tb_1/tb_2)*(ub_2/ub_1)**(1/m))**(1/m)
+        f_N_coulomb = tb_2/tb_1
+        print modelnames[j]+":","Effective pressure: weertman", np.round((f_N_weertman-1)*100,1),"%, coulomb:",\
+                np.round((f_N_coulomb-1)*100,1),"%"
+        f_P_weertman = (P_i_2-(P_i_1-P_w_1)*f_N_weertman)/P_w_1
+        f_P_coulomb = (P_i_2-(P_i_1-P_w_1)*f_N_coulomb)/P_w_1
+        print modelnames[j]+":","P_w: weertman", np.round((f_P_weertman-1)*100,1),"%, coulomb:",\
+                np.round((f_P_coulomb-1)*100,1),"%"
+        f_H_weertman = ((rho_i*g*H_1-P_w_1)*f_N_weertman + P_w_2)/(rho_i*g)/H_1
+        f_H_coulomb = ((rho_i*g*H_1-P_w_1)*f_N_coulomb + P_w_2)/(rho_i*g)/H_1
+        print modelnames[j]+":","H: weertman", np.round(f_H_weertman*H_1-H_1), "m, coulomb:",\
+                np.round(f_H_coulomb*H_1-H_1), "m"
+        print modelnames[j]+":","TEST", np.round((P_w_1-f_P_w*P_w_1)/P_i*100,1),"%"
 
 # Plot u_b vs tau_b
-
+if glacier == 'Kanger':
+    subpanels = ['(a)','(b)','(c)']
+    labels = ['Lower KG','Upper KG','Combined KG']
+elif glacier == 'Helheim':
+    subpanels = ['(d)','(e)','(f)']
+    labels = ['Lower HG','Upper HG','Combined HG']    
 fig = plt.figure(figsize=(6.5,2.25))
 gs = matplotlib.gridspec.GridSpec(1,3)
 matplotlib.rc('font',family='Arial')
@@ -533,8 +561,14 @@ for i in range(0,len(modelnames)):
         plt.plot((ub_inv_fast[:,i]-np.mean(ub_inv_fast[:,i])),slope*(ub_inv_fast[:,i]-np.mean(ub_inv_fast[:,i]))+intercept,color=colors[i])
     else:
         plt.plot((ub_inv_fast[:,i]-np.mean(ub_inv_fast[:,i])),slope*(ub_inv_fast[:,i]-np.mean(ub_inv_fast[:,i]))+intercept,':',color=colors[i])
-    plt.plot((ub_inv_fast[:,i]-np.mean(ub_inv_fast[:,i])),(taub_fast[:,i]-np.mean(taub_fast[:,i]))*1e3,'ko',markerfacecolor=colors[i],markersize=5,zorder=10)
+    plt.plot((ub_inv_fast[:,i]-np.mean(ub_inv_fast[:,i])),(taub_fast[:,i]-np.mean(taub_fast[:,i]))*1e3,'ko',markerfacecolor=colors[i],markersize=5,zorder=10,label=modelnames[i])
+    print modelnames[i],': lower R, pvalue = ',np.round(rvalue,2), np.round(pvalue, 4)
+if glacier == 'Kanger':
+    plt.legend(loc=0,labelspacing=0.05,columnspacing=0.2,borderpad=0.1,handletextpad=0.3,handlelength=1,fontsize=8)
 plt.ylabel(r'$\tau_b$ (kPa)',fontsize=8,fontname='arial')
+xmin,xmax = plt.xlim(); ymin,ymax = plt.ylim()
+plt.text(xmin+0.02*(xmax-xmin),ymin+0.025*(ymax-ymin),subpanels[0],fontsize=8,fontweight='bold',fontname='Arial')
+plt.text(xmin+0.12*(xmax-xmin),ymin+0.025*(ymax-ymin),labels[0],fontsize=8,fontname='arial')
 
 ax = plt.subplot(gs[1]); ax.tick_params(labelsize=8); plt.grid()
 for i in range(0,len(modelnames)):
@@ -544,7 +578,11 @@ for i in range(0,len(modelnames)):
     else:
         plt.plot((ub_inv_med[:,i]-np.mean(ub_inv_med[:,i])),slope*(ub_inv_med[:,i]-np.mean(ub_inv_med[:,i]))+intercept,':',color=colors[i])
     plt.plot((ub_inv_med[:,i]-np.mean(ub_inv_med[:,i])),(taub_med[:,i]-np.mean(taub_med[:,i]))*1e3,'ko',markerfacecolor=colors[i],markersize=5,zorder=10)
+    print modelnames[i],': upper R, pvalue = ',np.round(rvalue,2), np.round(pvalue,4)
 plt.xlabel(r'$u_b$ (m yr$^{-1}$)',fontsize=8,fontname='arial')
+xmin,xmax = plt.xlim(); ymin,ymax = plt.ylim()
+plt.text(xmin+0.02*(xmax-xmin),ymin+0.025*(ymax-ymin),subpanels[1],fontsize=8,fontweight='bold',fontname='Arial')
+plt.text(xmin+0.12*(xmax-xmin),ymin+0.025*(ymax-ymin),labels[1],fontsize=8,fontname='arial')
 
 ax = plt.subplot(gs[2]); ax.tick_params(labelsize=8); plt.grid()
 for i in range(0,len(modelnames)):
@@ -554,8 +592,12 @@ for i in range(0,len(modelnames)):
     else:
         plt.plot((ub_inv[:,i]-np.mean(ub_inv[:,i])),slope*(ub_inv[:,i]-np.mean(ub_inv[:,i]))+intercept,':',color=colors[i])
     plt.plot((ub_inv[:,i]-np.mean(ub_inv[:,i])),(taub[:,i]-np.mean(taub[:,i]))*1e3,'ko',markerfacecolor=colors[i],markersize=5,zorder=10)
+    print modelnames[i],': combined R, pvalue = ',np.round(rvalue,2), np.round(pvalue,4)
+xmin,xmax = plt.xlim(); ymin,ymax = plt.ylim()
+plt.text(xmin+0.02*(xmax-xmin),ymin+0.025*(ymax-ymin),subpanels[2],fontsize=8,fontweight='bold',fontname='Arial')
+plt.text(xmin+0.12*(xmax-xmin),ymin+0.025*(ymax-ymin),labels[2],fontsize=8,fontname='arial')
 
-plt.subplots_adjust(hspace=0.2,wspace=0.2,top=0.98,right=0.98,left=0.08,bottom=0.18)
+plt.subplots_adjust(hspace=0.2,wspace=0.2,top=0.97,right=0.98,left=0.075,bottom=0.19)
 plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+'_ub_taub.pdf'),FORMAT='PDF',dpi=300)
 print "Saving as "+os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+'_ub_taub.pdf')
 plt.close()
