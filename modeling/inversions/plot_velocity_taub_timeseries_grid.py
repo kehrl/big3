@@ -15,7 +15,7 @@ args, _ = parser.parse_known_args(sys.argv)
 glacier = args.glacier
 
 # Cutoff for calculating mean absolute residual
-cutoff = 2000.0
+cutoff = 1000.0
 if glacier == 'Kanger':
     beta_suffix = 'DEM20120522'
 elif glacier == 'Helheim':
@@ -232,42 +232,44 @@ gs = matplotlib.gridspec.GridSpec(11,1)
 matplotlib.rc('font',family='Arial')
 
 ax1 = plt.subplot(gs[8:]); ax1.tick_params(labelsize=8)
-ax1.set_ylabel(r'$\bar{{\tau}}_b$ (kPa)',fontsize=8,fontname='Arial')
+ax1.set_ylabel(r'$\bar{{\tau}}$ (kPa)',fontsize=8,fontname='Arial')
 for i in range(0,len(modelnames)):
-    ax1.plot(times,taub_med[:,i]*1e3,'ko--',markerfacecolor=colors[i],markersize=4)
+    ax1.plot(times,taub_med[:,i]*1e3,'ko--',markerfacecolor=colors[i],markersize=4,label=modelnames[i])
 plt.xlim([time1,time2])
-ax2 = ax1.twinx(); ax2.tick_params(labelsize=8)
-ax2.plot(times,taud_med*1e3,'ko--',markerfacecolor='k',markersize=4)
-ax2.set_ylabel(r'$\bar{{\tau}}_d$ (kPa)',fontsize=8,fontname='Arial')
+#ax2 = ax1.twinx(); ax2.tick_params(labelsize=8)
+ax1.plot(times,taud_med*1e3,'ko--',markerfacecolor='k',markersize=4,label=r'$\bar{\tau}_d$')
+#ax2.set_ylabel(r'$\bar{{\tau}}_d$ (kPa)',fontsize=8,fontname='Arial')
 if glacier == 'Kanger':
-    ax1.text(2011.9,273,r'Upper glacier',fontname='Arial',fontsize=8)
+    ax1.text(2011.9,290,r'Upper glacier',fontname='Arial',fontsize=8)
     plt.xticks(np.arange(2002,2017,4))
-    ax1.set_ylim([140,290]); ax2.set_ylim([160,310])
+    ax1.set_ylim([135,310]); #ax2.set_ylim([160,310])
 elif glacier == 'Helheim':
     plt.xticks(np.arange(2004,2016,2))
-    ax1.text(2011.95,312,r'Upper glacier',fontname='Arial',fontsize=8)
-    ax2.set_ylim([190,340]); ax1.set_ylim([180,330])
+    ax1.text(2011.95,280,r'Upper glacier',fontname='Arial',fontsize=8)
+    ax1.set_ylim([150,330]); #ax1.set_ylim([180,330])
 ymin,ymax = plt.ylim()
 plt.text(time1+0.01*(time2-time1),ymin+0.03*(ymax-ymin),'(d)',fontsize=8,fontweight='bold')
+ax1.legend(loc=4,ncol=3,labelspacing=0.05,columnspacing=0.2,borderpad=0.1,handletextpad=0.3,handlelength=1,fontsize=8)
 
 ax1 = plt.subplot(gs[5:8]); ax1.tick_params(labelsize=8)
-ax2 = ax1.twinx(); ax2.tick_params(labelsize=8)
-ax2.plot(times,taud_fast*1e3,'ko--',markerfacecolor='k',markersize=4)
+#ax2 = ax1.twinx(); ax2.tick_params(labelsize=8)
+ax1.plot(times,taud_fast*1e3,'ko--',markerfacecolor='k',markersize=4,label=r'$\bar{\tau}_d$')
 for i in range(0,len(modelnames)):
-    ax1.plot(times,taub_fast[:,i]*1e3,'ko--',markerfacecolor=colors[i],markersize=4)
+    ax1.plot(times,taub_fast[:,i]*1e3,'ko--',markerfacecolor=colors[i],markersize=4,label=modelnames[i])
 plt.xlim([time1,time2])
-ax1.set_ylabel(r'$\bar{{\tau}}_b$ (kPa)',fontsize=8,fontname='Arial')
-ax2.set_ylabel(r'$\bar{{\tau}}_d$ (kPa)',fontsize=8,fontname='Arial')
+ax1.set_ylabel(r'$\bar{{\tau}}$ (kPa)',fontsize=8,fontname='Arial')
+#ax2.set_ylabel(r'$\bar{{\tau}}_d$ (kPa)',fontsize=8,fontname='Arial')
 if glacier == 'Kanger':
     plt.xticks(np.arange(2002,2017,4))
-    ax1.set_ylim([40,340]); ax2.set_ylim([90,390])
-    ax1.set_yticks(np.arange(50,350,100))
-    ax1.text(2011.9,303,r'Lower glacier',fontsize=8,fontname='Arial')
+    ax1.set_ylim([40,390]); #ax2.set_ylim([90,390])
+    ax1.set_yticks(np.arange(50,400,50))
+    ax1.text(2011.9,350,r'Lower glacier',fontsize=8,fontname='Arial')
 elif glacier == 'Helheim':
     plt.xticks(np.arange(2004,2016,2),fontsize=8)
-    ax1.set_ylim([55,205])
-    ax2.set_ylim([180,330])
-    ax1.text(2011.95,60,r'Lower glacier',fontname='Arial',fontsize=8)
+    ax1.set_ylim([50,330])
+    ax1.set_yticks(np.arange(50,350,50))
+    #ax2.set_ylim([180,330])
+    ax1.text(2011.95,270,r'Lower glacier',fontname='Arial',fontsize=8)
 ymin,ymax = plt.ylim()
 plt.text(time1+0.01*(time2-time1),ymin+0.03*(ymax-ymin),'(c)',fontsize=8,fontweight='bold')
 ax1.set_xticklabels([])
@@ -311,7 +313,7 @@ if glacier == 'Kanger':
     plt.xticks(np.arange(2002,2017,4))
     plt.ylim([3.7,9.5])
     plt.yticks(np.arange(4,10,1.00))
-    plt.text(2011.9,8.8,'Lower glacier',fontname='Arial',fontsize=8)
+    plt.text(2011.9,8.85,'Lower glacier',fontname='Arial',fontsize=8)
     plt.legend(loc=4,ncol=3,labelspacing=0.2,columnspacing=0.4,handletextpad=0.3,handlelength=1,fontsize=8)
 elif glacier == 'Helheim':
     plt.xticks(np.arange(2004,2016,2)); plt.yticks(np.arange(5,7.5,1))
@@ -470,12 +472,12 @@ for i in range(0,len(year_runoff)):
     path = matplotlib.path.Path([[day1_runoff[i],0],[day1_runoff[i],2000],[day2_runoff[i],2000],[day2_runoff[i],0]])
     patch = matplotlib.patches.PathPatch(path,facecolor='0.85',edgecolor='none',lw=0)
     ax.add_patch(patch)
-plt.plot(times, H,'ko--',markersize=4,markerfacecolor='w')
-plt.ylabel(r'$\bar{H}$ (m)',fontsize=8)
+plt.plot(times, Hf,'ko--',markersize=4,markerfacecolor='w')
+plt.ylabel(r'$\bar{H}_f$ (m)',fontsize=8)
 if glacier == 'Kanger':
-    plt.ylim([1025,1067]); plt.yticks(np.arange(1030,1080,20))
+    plt.ylim([445,480]); plt.yticks(np.arange(450,490,10))
 elif glacier == 'Helheim':
-    plt.ylim([905,925])
+    plt.ylim([485,505])
 ymin,ymax = plt.ylim()
 plt.text(time1+0.01*(time2-time1),ymin+0.06*(ymax-ymin),'(b)',fontsize=8,fontweight='bold')
 ax.set_xticks(np.arange(np.floor(time1),1+np.ceil(time2))); ax.set_xticklabels([])
@@ -541,7 +543,6 @@ for i in range(0,len(inds)):
         f_H_coulomb = ((rho_i*g*H_1-P_w_1)*f_N_coulomb + P_w_2)/(rho_i*g)/H_1
         print modelnames[j]+":","H: weertman", np.round(f_H_weertman*H_1-H_1), "m, coulomb:",\
                 np.round(f_H_coulomb*H_1-H_1), "m"
-        print modelnames[j]+":","TEST", np.round((P_w_1-f_P_w*P_w_1)/P_i*100,1),"%"
 
 # Plot u_b vs tau_b
 if glacier == 'Kanger':
