@@ -112,15 +112,14 @@ area = (shapely.geometry.Polygon(np.loadtxt(DIR+'inputs/mesh_extent.dat'))).area
 #np.sqrt(cost_sur*2/area)
 
 
-fig =  plt.figure(figsize=(3.0,2.5))
+fig =  plt.figure(figsize=(3.5,3))
 ax1 = plt.gca()
 matplotlib.rc('font',family='Arial')
-ax1.tick_params(axis='both',labelsize=8)
+ax1.tick_params(axis='both',labelsize=10)
 strings=["{:.0e}".format(i) for i in regpar]   
 plt.plot(cost_bed,cost_sur,'ko--',linewidth=1.5)
-ax1.set_xlabel(r'$J_{reg}$',fontsize=8,fontname='Arial')
-ax1.set_ylabel(r'$J_o$',fontsize=8,fontname='Arial')
-plt.xticks(fontsize=8)
+ax1.set_xlabel(r'$J_{reg}$',fontsize=10,fontname='Arial')
+ax1.set_ylabel(r'$J_o$',fontsize=10,fontname='Arial')
 if not(regpar_highlight == 'none'):
     ind = np.where(regpar == float(regpar_highlight))[0]
     ax1.plot(cost_bed[ind],cost_sur[ind],'ko',markerfacecolor='r')
@@ -134,8 +133,8 @@ ax2.set_ylim(mn,mx)
 yticks_RMSE = np.arange(np.ceil(np.sqrt(mn*2/area)/10)*10,np.floor(np.sqrt(mx*2/area)/10)*10+1,10,dtype=int)
 yticks_J = (yticks_RMSE**2.0)*area/2.0
 ax2.set_yticks(yticks_J)
-ax2.set_yticklabels(yticks_RMSE,fontsize=8,fontname='Arial')
-ax2.set_ylabel(r'RMSE (m yr$^{-1}$)',fontsize=8,fontname='Arial')
+ax2.set_yticklabels(yticks_RMSE,fontsize=10,fontname='Arial')
+ax2.set_ylabel(r'RMSE (m yr$^{-1}$)',fontsize=10,fontname='Arial')
 if np.max(cost_bed) > 40:
     plt.xlim([-2,np.max(cost_bed)+(np.max(cost_bed)-np.min(cost_bed))/4])
 elif np.max(cost_bed) > 12:
@@ -150,16 +149,16 @@ for i in flipud(range(0,len(strings))):
         if i != len(strings)-1 and (abs(cost_bed[i+1]-cost_bed[i]) < 0.05*(xmax-xmin) and \
                 abs(cost_sur[i+1]-cost_sur[i]) < 0.05*(ymax-ymin)):
             if regpar[i] > 1e10:
-                ax1.text(cost_bed[i]+0.01*(xmax-xmin),cost_sur[i]+0.11*(ymax-ymin),strings[i],fontsize=8,fontname='Arial',rotation=45)
+                ax1.text(cost_bed[i]+0.01*(xmax-xmin),cost_sur[i]+0.12*(ymax-ymin),strings[i],fontsize=10,fontname='Arial',rotation=45)
         else:
-            ax1.text(cost_bed[i]+0.01*(xmax-xmin),cost_sur[i]+0.11*(ymax-ymin),strings[i],fontsize=8,fontname='Arial',rotation=45)
+            ax1.text(cost_bed[i]+0.01*(xmax-xmin),cost_sur[i]+0.12*ymax-ymin),strings[i],fontsize=10,fontname='Arial',rotation=45)
 if subpanel != 'none':
     ax1.text(xmin+0.33*(xmax-xmin),ymax-0.07*(ymax-ymin),subpanel,fontsize=8,fontweight='bold',fontname='Arial')
 if modelname != 'none':
     ax1.text(xmin+0.43*(xmax-xmin),ymax-0.07*(ymax-ymin),modelname,fontsize=8)
 
 plt.tight_layout()
-plt.subplots_adjust(left=0.26, bottom=0.15, right=0.84, top=0.98, wspace=0.0, hspace=0.0)
+plt.subplots_adjust(left=0.26, bottom=0.19, right=0.84, top=0.98, wspace=0.0, hspace=0.0)
 plt.savefig(DIR+"/figures/Lcurve_"+method+".pdf")
 plt.close()
 

@@ -85,10 +85,12 @@ taub = np.zeros([len(dates),4])
 taub_fast = np.zeros([len(dates),4])
 taub_med = np.zeros([len(dates),4])
 taub_slow = np.zeros([len(dates),4])
+taub_all = np.zeros([len(dates),4])
 taud = np.zeros([len(dates),])
 taud_fast = np.zeros([len(dates),])
 taud_med = np.zeros([len(dates),])
 taud_slow = np.zeros([len(dates),])
+taud_all = np.zeros([len(dates),])
 H = np.zeros([len(dates),])
 P_i = np.zeros([len(dates),])
 P_w = np.zeros([len(dates),])
@@ -154,6 +156,7 @@ for i in range(0,len(dates)):
             f = scipy.interpolate.RegularGridInterpolator((yt,xt),taud_grid)
             xmesh,ymesh = np.meshgrid(x,y)
             grid = f((ymesh.flatten(),xmesh.flatten())).reshape([len(y),len(x)])
+            taud_all[i] = np.mean(grid[~(np.isnan(zs_grid))])
             grid[ind_cutoff_grid_fast] = np.float('nan')
             taud_fast[i] = np.nanmean(grid)
             grid = f((ymesh.flatten(),xmesh.flatten())).reshape([len(y),len(x)])
@@ -185,6 +188,7 @@ for i in range(0,len(dates)):
 
         # Get taub from inversion
         x,y,taub_grid = geotifflib.read(DIRs[j]+'DEM'+dates[i]+'_bed_mod_taub.tif')
+        taub_all[i,j] = np.nanmean(taub_grid)
         grid = np.array(taub_grid) 
         grid[ind_cutoff_grid_fast] = np.float('nan')
         taub_fast[i,j] = np.nanmean(grid)
@@ -620,6 +624,8 @@ for i in range(0,len(modelnames)):
         plt.plot((ub_inv_med[:,i]-np.mean(ub_inv_med[:,i])),slope*(ub_inv_med[:,i]-np.mean(ub_inv_med[:,i]))+intercept,':',color=colors[i])
     plt.plot((ub_inv_med[:,i]-np.mean(ub_inv_med[:,i])),(taub_med[:,i]-np.mean(taub_med[:,i]))*1e3,'ko',markerfacecolor=colors[i],markersize=5,zorder=10)
     print modelnames[i],': upper R, pvalue = ',np.round(rvalue,2), np.round(pvalue,4)
+if glacier == 'Helheim':
+    plt.ylim([-10,20])
 plt.xlabel(r'$u_b$ (m yr$^{-1}$)',fontsize=8,fontname='arial')
 xmin,xmax = plt.xlim(); ymin,ymax = plt.ylim()
 plt.text(xmin+0.02*(xmax-xmin),ymin+0.025*(ymax-ymin),subpanels[1],fontsize=8,fontweight='bold',fontname='Arial')
@@ -641,4 +647,133 @@ plt.text(xmin+0.12*(xmax-xmin),ymin+0.025*(ymax-ymin),labels[2],fontsize=8,fontn
 plt.subplots_adjust(hspace=0.2,wspace=0.2,top=0.97,right=0.98,left=0.075,bottom=0.19)
 plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+'_ub_taub.pdf'),FORMAT='PDF',dpi=300)
 print "Saving as "+os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+'_ub_taub.pdf')
+plt.close()
+
+# Plot H_f vs tau_b
+if glacier == 'Kanger':
+    subpanels = ['(a)','(b)','(c)']
+    labels = ['Lower KG','Upper KG','Combined KG']
+elif glacier == 'Helheim':
+    subpanels = ['(d)','(e)','(f)']
+    labels = ['Lower HG','Upper HG','Combined HG']
+fig = plt.figure(figsize=(6.5,2.25))
+gs = matplotlib.gridspec.GridSpec(1,3)
+matplotlib.rc('font',family='Arial')
+
+ax = plt.subplot(gs[0]); ax.tick_params(labelsize=8); plt.grid()
+for i in range(0,len(modelnames)):
+    slope,intercept,rvalue,pvalue,stderr = scipy.stats.linregress((Hf_fast-np.mean(Hf_fast)),(taub_fast[:,i]-np.mean(taub_fast[:,i]))*1e3)
+    #if (pvalue < 0.05):
+    #    plt.plot((Hf_fast-np.mean(Hf_fast)),slope*(Hf_fast-np.mean(Hf_fast))+intercept,color=colors[i])
+    #else:
+    #    plt.plot((Hf_fast-np.mean(Hf_fast)),slope*(Hf_fast-np.mean(Hf_fast))+intercept,':',color=colors[i])
+    plt.plot((Hf_fast),(taub_fast[:,i]-np.mean(taub_fast[:,i]))*1e3,'ko',markerfacecolor=colors[i],markersize=5,zorder=10,label=modelnames[i])
+    print modelnames[i],': lower R, pvalue = ',np.round(rvalue,2), np.round(pvalue, 4)
+if glacier == 'Kanger':
+    plt.legend(loc=0,labelspacing=0.05,columnspacing=0.2,borderpad=0.1,handletextpad=0.3,handlelength=1,fontsize=8)
+plt.ylabel(r'$\tau_b$ (kPa)',fontsize=8,fontname='arial')
+if glacier == 'Kanger':
+    plt.ylim([-86,80])
+elif glacier == 'Helheim':
+    plt.ylim([-35,12])
+xmin,xmax = plt.xlim(); ymin,ymax = plt.ylim()
+plt.text(xmin+0.02*(xmax-xmin),ymin+0.025*(ymax-ymin),subpanels[0],fontsize=8,fontweight='bold',fontname='Arial')
+plt.text(xmin+0.12*(xmax-xmin),ymin+0.025*(ymax-ymin),labels[0],fontsize=8,fontname='arial')
+
+ax = plt.subplot(gs[1]); ax.tick_params(labelsize=8); plt.grid()
+for i in range(0,len(modelnames)):
+    slope,intercept,rvalue,pvalue,stderr = scipy.stats.linregress((Hf_med-np.mean(Hf_med)),(taub_med[:,i]-np.mean(taub_med[:,i]))*1e3)
+    #if (pvalue < 0.05):
+    #    plt.plot((Hf_med-np.mean(Hf_med)),slope*(Hf_med-np.mean(Hf_med))+intercept,colors[i])
+    #else:
+    #    plt.plot((Hf_med-np.mean(Hf_med)),slope*(Hf_med-np.mean(Hf_med))+intercept,':',color=colors[i])
+    plt.plot((Hf_med),(taub_med[:,i]-np.mean(taub_med[:,i]))*1e3,'ko',markerfacecolor=colors[i],markersize=5,zorder=10)
+    print modelnames[i],': upper R, pvalue = ',np.round(rvalue,2), np.round(pvalue,4)
+plt.xlabel(r'$H_f$ (m)',fontsize=8,fontname='arial')
+if glacier == 'Kanger':
+    plt.ylim([-27,18])
+elif glacier == 'Helheim':
+    plt.ylim([-12,21])
+xmin,xmax = plt.xlim(); ymin,ymax = plt.ylim()
+plt.text(xmin+0.02*(xmax-xmin),ymin+0.025*(ymax-ymin),subpanels[1],fontsize=8,fontweight='bold',fontname='Arial')
+plt.text(xmin+0.12*(xmax-xmin),ymin+0.025*(ymax-ymin),labels[1],fontsize=8,fontname='arial')
+
+ax = plt.subplot(gs[2]); ax.tick_params(labelsize=8); plt.grid()
+for i in range(0,len(modelnames)):
+    slope,intercept,rvalue,pvalue,stderr = scipy.stats.linregress((Hf-np.mean(Hf)),(taub[:,i]-np.mean(taub[:,i]))*1e3)
+    #if (pvalue < 0.05):
+    #    plt.plot((Hf-np.mean(Hf)),slope*(Hf-np.mean(Hf))+intercept,color=colors[i])
+    #else:
+    #    plt.plot((Hf),slope*(Hf-np.mean(Hf))+intercept,':',color=colors[i])
+    plt.plot((Hf),(taub[:,i]-np.mean(taub[:,i]))*1e3,'ko',markerfacecolor=colors[i],markersize=5,zorder=10)
+    print modelnames[i],': combined R, pvalue = ',np.round(rvalue,2), np.round(pvalue,4)
+if glacier == 'Kanger':
+    plt.ylim([-28,19])
+elif glacier == 'Helheim':
+    plt.ylim([-12,16])
+xmin,xmax = plt.xlim(); ymin,ymax = plt.ylim()
+plt.text(xmin+0.02*(xmax-xmin),ymin+0.025*(ymax-ymin),subpanels[2],fontsize=8,fontweight='bold',fontname='Arial')
+plt.text(xmin+0.12*(xmax-xmin),ymin+0.025*(ymax-ymin),labels[2],fontsize=8,fontname='arial')
+
+plt.subplots_adjust(hspace=0.2,wspace=0.2,top=0.97,right=0.98,left=0.075,bottom=0.19)
+plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+'_Hf_taub.pdf'),FORMAT='PDF',dpi=300)
+print "Saving as "+os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+'_Hf_taub.pdf')
+plt.close()
+
+fig = plt.figure(figsize=(6.5,2.25))
+gs = matplotlib.gridspec.GridSpec(1,3)
+matplotlib.rc('font',family='Arial')
+
+ax = plt.subplot(gs[0]); ax.tick_params(labelsize=8); plt.grid()
+for i in range(0,len(modelnames)):
+    slope,intercept,rvalue,pvalue,stderr = scipy.stats.linregress((Hf_fast-np.mean(Hf_fast)),(taub_fast[:,i]-np.mean(taub_fast[:,i]))*1e3)
+    #if (pvalue < 0.05):
+    #    plt.plot((Hf_fast-np.mean(Hf_fast)),slope*(Hf_fast-np.mean(Hf_fast))+intercept,color=colors[i])
+    #else:
+    #    plt.plot((Hf_fast-np.mean(Hf_fast)),slope*(Hf_fast-np.mean(Hf_fast))+intercept,':',color=colors[i])
+    plt.plot((Hf_fast),(ub_inv_fast[:,i]-np.mean(ub_inv_fast[:,i])),'ko',markerfacecolor=colors[i],markersize=5,zorder=10,label=modelnames[i])
+    print modelnames[i],': lower R, pvalue = ',np.round(rvalue,2), np.round(pvalue, 4)
+if glacier == 'Kanger':
+    plt.legend(loc=0,labelspacing=0.05,columnspacing=0.2,borderpad=0.1,handletextpad=0.3,handlelength=1,fontsize=8)
+if glacier == 'Helheim':
+    plt.ylim([-750,1900])
+plt.ylabel(r'$u_b$ (km yr$^{-1}$)',fontsize=8,fontname='arial')
+xmin,xmax = plt.xlim(); ymin,ymax = plt.ylim()
+plt.text(xmin+0.02*(xmax-xmin),ymin+0.025*(ymax-ymin),subpanels[0],fontsize=8,fontweight='bold',fontname='Arial')
+plt.text(xmin+0.12*(xmax-xmin),ymin+0.025*(ymax-ymin),labels[0],fontsize=8,fontname='arial')
+
+ax = plt.subplot(gs[1]); ax.tick_params(labelsize=8); plt.grid()
+for i in range(0,len(modelnames)):
+    slope,intercept,rvalue,pvalue,stderr = scipy.stats.linregress((Hf_med-np.mean(Hf_med)),(taub_med[:,i]-np.mean(taub_med[:,i]))*1e3)
+    #if (pvalue < 0.05):
+    #    plt.plot((Hf_med-np.mean(Hf_med)),slope*(Hf_med-np.mean(Hf_med))+intercept,colors[i])
+    #else:
+    #    plt.plot((Hf_med-np.mean(Hf_med)),slope*(Hf_med-np.mean(Hf_med))+intercept,':',color=colors[i])
+    plt.plot((Hf_med),(ub_inv_med[:,i]-np.mean(ub_inv_med[:,i])),'ko',markerfacecolor=colors[i],markersize=5,zorder=10)
+    print modelnames[i],': upper R, pvalue = ',np.round(rvalue,2), np.round(pvalue,4)
+plt.xlabel(r'$H_f$ (m)',fontsize=8,fontname='arial')
+if glacier == 'Helheim':
+    plt.ylim([-80,190])
+xmin,xmax = plt.xlim(); ymin,ymax = plt.ylim()
+plt.text(xmin+0.02*(xmax-xmin),ymin+0.025*(ymax-ymin),subpanels[1],fontsize=8,fontweight='bold',fontname='Arial')
+plt.text(xmin+0.12*(xmax-xmin),ymin+0.025*(ymax-ymin),labels[1],fontsize=8,fontname='arial')
+
+ax = plt.subplot(gs[2]); ax.tick_params(labelsize=8); plt.grid()
+for i in range(0,len(modelnames)):
+    slope,intercept,rvalue,pvalue,stderr = scipy.stats.linregress((Hf-np.mean(Hf)),(taub[:,i]-np.mean(taub[:,i]))*1e3)
+    #if (pvalue < 0.05):
+    #    plt.plot((Hf-np.mean(Hf)),slope*(Hf-np.mean(Hf))+intercept,color=colors[i])
+    #else:
+    #    plt.plot((Hf),slope*(Hf-np.mean(Hf))+intercept,':',color=colors[i])
+    plt.plot((Hf),(ub_inv[:,i]-np.mean(ub_inv[:,i])),'ko',markerfacecolor=colors[i],markersize=5,zorder=10)
+    print modelnames[i],': combined R, pvalue = ',np.round(rvalue,2), np.round(pvalue,4)
+if glacier == 'Helheim':
+    plt.ylim([-300,800])
+xmin,xmax = plt.xlim(); ymin,ymax = plt.ylim()
+plt.text(xmin+0.02*(xmax-xmin),ymin+0.025*(ymax-ymin),subpanels[2],fontsize=8,fontweight='bold',fontname='Arial')
+plt.text(xmin+0.12*(xmax-xmin),ymin+0.025*(ymax-ymin),labels[2],fontsize=8,fontname='arial')
+
+plt.subplots_adjust(hspace=0.23,wspace=0.23,top=0.97,right=0.98,left=0.095,bottom=0.2)
+plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+'_Hf_ub.pdf'),FORMAT='PDF',dpi=300)
+print "Saving as "+os.path.join(os.getenv("HOME"),"Bigtmp/"+glacier+'_Hf_ub.pdf')
 plt.close()

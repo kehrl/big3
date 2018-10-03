@@ -79,7 +79,7 @@ elif glacier == "Kanger":
 if glacier == 'Helheim':
     fig=plt.figure(figsize=(5,4.4))
 elif glacier == 'Kanger':
-    fig=plt.figure(figsize=(5,3.2))
+    fig=plt.figure(figsize=(5,3.25))
 matplotlib.rc('font',family='sans-serif',size=10)
 gs = matplotlib.gridspec.GridSpec(2,3)
 
@@ -168,7 +168,7 @@ if glacier == 'Helheim':
     cbar_ax2 = fig.add_axes([0.86,0.01,0.02,0.45])
 elif glacier == 'Kanger':
     cbar_ax1 = fig.add_axes([0.86,0.49,0.02,0.43])
-    cbar_ax2 = fig.add_axes([0.86,0.01,0.02,0.43])
+    cbar_ax2 = fig.add_axes([0.86,0.04,0.02,0.43])
 cb1 = fig.colorbar(im1, cax=cbar_ax1,ticks=np.arange(0,450,100))
 cb1.set_label(r'$\tau_b$ (kPa)',fontsize=10,fontname='Arial',color='k')
 cb1.ax.yaxis.set_tick_params(color='k')
@@ -183,8 +183,8 @@ plt.tight_layout()
 if glacier == 'Helheim':
     plt.subplots_adjust(left=0.01, bottom=0.01, right=0.85, top=0.94, wspace=0.0, hspace=0.0)
 elif glacier == 'Kanger':
-    plt.subplots_adjust(left=0.01, bottom=0.01, right=0.85, top=0.92, wspace=0.0, hspace=0.0)
-plt.savefig(DIR+"/figures/Regpars_taub_misfit_"+method+".pdf",DPI=600,transparent=False)
+    plt.subplots_adjust(left=0.01, bottom=0.04, right=0.85, top=0.92, wspace=0.0, hspace=0.0)
+plt.savefig(DIR+"/figures/Regpars_taub_misfit_"+method+".pdf",DPI=400,transparent=False)
 plt.close()
 
 print "Saving as "+DIR+"figures/Regpars_taub_misfit_"+method+".pdf"
@@ -211,7 +211,7 @@ for i in [0,1,2]:
     plt.plot((bins+50)/1e3,e_bins[:,i],c=colors[i],label=r'$\lambda$='+regpars[i])
     plt.fill_between((bins+50)/1e3, s_bins_min[:,i], s_bins_max[:,i],color=colors[i],alpha=0.2,edgecolor=colors[i])
 plt.plot([0,(bins[-1]+50)/1e3],[3,3],'k--',label = 'TSX velocity error')
-plt.legend(fontsize=8)
+plt.legend(fontsize=10)
 if subpanel != 'none':
     if glacier == 'Kanger':
         plt.text(0.6,13.8,subpanel,fontsize=10,fontweight='bold')
@@ -224,8 +224,8 @@ if modelname != 'none':
         plt.text(0.6,13.8,modelname,fontsize=10)
 
 plt.ylabel('Absolute Residual (%)',fontsize=10)
-plt.xlabel(r'$u^{obs}$ bin (km / yr)',fontsize=10)
+plt.xlabel(r'$u^{obs}$ bin (km yr$^{-1}$)',fontsize=10)
 plt.tight_layout()
-plt.subplots_adjust(left=0.13, bottom=0.16, right=0.98, top=0.97, wspace=0.0, hspace=0.0)
+plt.subplots_adjust(left=0.13, bottom=0.18, right=0.98, top=0.97, wspace=0.0, hspace=0.0)
 plt.savefig(DIR+"/figures/Regpars_MAPE_misfit_"+method+".pdf",DPI=600,transparent=False)
 plt.close()
