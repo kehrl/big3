@@ -1132,7 +1132,7 @@ for glacier in ['Helheim','Kanger']:
   plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/Glunch_"+glacier+"_flux.pdf"),FORMAT='PDF',dpi=600)
   plt.close()
 
-del inttime, time, Q, balance fig, ax, labels, x_formatter, colorpt, meanQ
+del inttime, time, Q, balance, fig, ax, labels, x_formatter, colorpt, meanQ
 
 ################################
 # Ice-front position vs. speed #
