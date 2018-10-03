@@ -256,5 +256,5 @@ for glacier in ['Kanger','Helheim']:
   plt.savefig(os.path.join(os.getenv("HOME"),"Bigtmp/PARCA_"+glacier+"_all.pdf"),FORMAT='PDF',dpi=600)
   plt.close()
 
-del k,i, path, patch, ax, labels, handles, time1, time2
+del i, path, patch, ax, labels, handles, time1, time2
 
