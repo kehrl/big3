@@ -131,7 +131,7 @@ def guess_beta(x,y,zs,zb,u,v,frac,A=3.5e-25*365.25*24*60*60*1.0e18):
       
   return ub,vb,beta
 
-def get_velocity_cutoff(glacier,velocity_cutoff=1000,temperature='model',model_dir='',SSA=True,sign='over'):
+def get_velocity_cutoff(glacier,velocity_cutoff=1000,temperature='model',model_dir='',SSA=True,sign='over',clip_boundary=0.0):
     '''
     x_grid,y_grid,vsurfini_grid,ind_cutoff_grid,ind_cutoff = get_velocity_cutoff(glacier,
     velocity_cutoff=1000,temperature='model',model_dir='',SSA=True,sign='over')
@@ -212,7 +212,7 @@ def get_velocity_cutoff(glacier,velocity_cutoff=1000,temperature='model',model_d
 
     # Grid and filter minimum velocity. Filtering removes some of the spurious single grid cells
     # that remain above the cutoff value.
-    x_grid,y_grid,vsurfini_grid = elmerreadlib.grid3d(surf_min,'vsurfini',extent=extent,holes=holes)
+    x_grid,y_grid,vsurfini_grid = elmerreadlib.grid3d(surf_min,'vsurfini',extent=extent,holes=holes,clip_boundary=clip_boundary)
     vsurfini_grid_smooth = scipy.ndimage.filters.gaussian_filter(vsurfini_grid,sigma=2.5,truncate=4)
     
 

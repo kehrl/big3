@@ -3,6 +3,7 @@ import matplotlib.mlab as mlab
 import math
 from scipy.interpolate import griddata
 from matplotlib.path import Path
+import shapely
 from multiprocessing import Pool
 import os, shutil, sys
 
@@ -144,7 +145,7 @@ def saveline_boundary(DIR,runname,bound,variables):
        
   return subset
 
-def grid3d(data,variable,holes=[],extent=[],dx=50):
+def grid3d(data,variable,holes=[],extent=[],dx=50,clip_boundary=0):
 
   '''
   x,y,masked = grid3d(data,variable,holes,extent,dx=50)
@@ -158,6 +159,7 @@ def grid3d(data,variable,holes=[],extent=[],dx=50):
   holes: list of mesh holes or holes=[]
   extent: mesh extent
   dx: grid spacing for output grid
+  clip_boundary: mask grid elements that are within a certain distance of the mesh boundaries
   
   Outputs:
   x: list of x coords for grid
@@ -191,6 +193,13 @@ def grid3d(data,variable,holes=[],extent=[],dx=50):
     pts = exterior.contains_points(np.column_stack((xR,yR)))
     bool = ~(np.reshape(pts,(ny,nx)))
     mask[bool==0] = 0
+    
+    if clip_boundary > 0.0:
+      line = shapely.geometry.LineString(np.row_stack([extent,extent[0,:]]))
+      for i in range(0,nx):
+        for j in range(0,ny):
+          if line.distance(shapely.geometry.Point(x[i],y[j])) <= clip_boundary:    
+            mask[j,i] = 1
   
   if len(holes) > 0:
     # Mask out points inside holes
@@ -199,6 +208,12 @@ def grid3d(data,variable,holes=[],extent=[],dx=50):
       pts = hole.contains_points(np.column_stack((xR,yR)))
       bool = (np.reshape(pts,(ny,nx)))
       mask[bool==1] = 1
+
+      if clip_boundary > 0.0:
+        for k in range(0,nx):
+          for j in range(0,ny):
+            if np.min(np.sqrt((x[k]-holes[i][:,0])**2 + (y[j]-holes[i][:,1])**2)) <= clip_boundary:
+              mask[j,k] = 1
   
   if (len(holes) > 0) or (len(extent) > 0):  
     zz[mask] = float('nan')
